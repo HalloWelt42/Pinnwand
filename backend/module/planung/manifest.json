@@ -1,10 +1,11 @@
 {
   "id": "planung",
   "name": "Planung",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "extends": {
     "views": [
-      { "id": "planung", "titel": "Planung", "icon": "fa-solid fa-users" }
+      { "id": "planung", "titel": "Planung", "icon": "fa-solid fa-users" },
+      { "id": "jahreskalender", "titel": "Jahreskalender", "icon": "fa-solid fa-calendar" }
     ],
     "cardFields": [],
     "mappeTabs": [],

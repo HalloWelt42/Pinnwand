@@ -368,6 +368,58 @@ export const loescheFeiertage = (jahr: number, region: string | null): Promise<{
 export const ladePlanungsTage = (von: string, bis: string, person?: string): Promise<PlanTag[]> =>
   hole(`/api/planung/tage?von=${von}&bis=${bis}${person ? `&person=${person}` : ''}`)
 
+// --- Jahreskalender: Abwesenheitsarten, Tagesregeln, Aggregation ---
+
+export interface AbwesenheitTyp {
+  code: string
+  name: string
+  farbe: string
+  reduziert_soll: boolean
+  anrechnen: boolean
+  anwesend: boolean
+  reihenfolge: number
+}
+export interface Tagesregel {
+  id: string
+  person_id: string | null
+  art: 'jahrestag' | 'wochentag' | 'brueckentag'
+  monat?: number | null
+  tag?: number | null
+  wochentag?: number | null
+  anteil: number
+  notiz?: string | null
+  aktiv: boolean
+}
+export interface KalenderZelle {
+  soll: number
+  ist_sek: number
+  abw: { typ: string; anteil: number } | null
+  feiertag: string | null
+  regel: number | null
+  status: 'anwesend' | 'abwesend' | 'frei' | 'feiertag'
+}
+export interface KalenderAntwort {
+  jahr: number
+  personen: { id: string; name: string; kuerzel: string | null; farbe: string | null }[]
+  tage: string[]
+  zellen: Record<string, Record<string, KalenderZelle>>
+}
+
+export const ladeKalender = (jahr: number): Promise<KalenderAntwort> =>
+  hole(`/api/planung/kalender?jahr=${jahr}`)
+export const ladeAbwesenheitstypen = (): Promise<AbwesenheitTyp[]> =>
+  hole('/api/planung/abwesenheitstypen')
+export const aktualisiereAbwesenheitstyp = (code: string, d: Partial<AbwesenheitTyp>): Promise<AbwesenheitTyp> =>
+  hole(`/api/planung/abwesenheitstypen/${code}`, { method: 'PATCH', body: JSON.stringify(d) })
+export const ladeTagesregeln = (person?: string): Promise<Tagesregel[]> =>
+  hole(`/api/planung/tagesregeln${person ? `?person=${person}` : ''}`)
+export const setzeTagesregel = (d: Partial<Tagesregel>): Promise<Tagesregel> =>
+  hole('/api/planung/tagesregeln', { method: 'POST', body: JSON.stringify(d) })
+export const loescheTagesregel = (id: string): Promise<void> =>
+  hole(`/api/planung/tagesregeln/${id}`, { method: 'DELETE' })
+export const leereTag = (person_id: string, datum: string): Promise<{ geloescht: number }> =>
+  hole('/api/planung/tag-leeren', { method: 'POST', body: JSON.stringify({ person_id, datum }) })
+
 // --- Berichte ---
 
 export interface BerichtTyp { id: string; titel: string }

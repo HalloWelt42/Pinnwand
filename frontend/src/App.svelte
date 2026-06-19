@@ -73,7 +73,7 @@
   const aktuelleKomponente = $derived(ansichtsListe.find((a) => a.id === aktiveAnsicht)?.komponente)
 
   // Globale Ansichten brauchen keine Board-Navigation; boardgebundene schon.
-  const GLOBALE_ANSICHTEN = new Set(['heute', 'suche', 'transkripte', 'planung', 'berichte', 'einstellungen'])
+  const GLOBALE_ANSICHTEN = new Set(['heute', 'suche', 'transkripte', 'planung', 'jahreskalender', 'berichte', 'einstellungen'])
   const boardgebunden = $derived(!GLOBALE_ANSICHTEN.has(aktiveAnsicht))
   const aktuelleAnsichtMeta = $derived(ansichtsListe.find((a) => a.id === aktiveAnsicht))
 
@@ -172,7 +172,7 @@
     } catch {
       ansichtsListe = ansichten().map((a) => ({ id: a.id, titel: a.titel, icon: a.icon, komponente: a.komponente }))
     }
-    const REIHENFOLGE = ['heute', 'board', 'zeiten', 'kalender', 'flow', 'serien', 'suche', 'transkripte', 'planung', 'berichte', 'einstellungen']
+    const REIHENFOLGE = ['heute', 'board', 'zeiten', 'kalender', 'jahreskalender', 'flow', 'serien', 'suche', 'transkripte', 'planung', 'berichte', 'einstellungen']
     ansichtsListe.sort((a, b) => ((REIHENFOLGE.indexOf(a.id) + 1) || 99) - ((REIHENFOLGE.indexOf(b.id) + 1) || 99))
     const gespeichert = _ui.ansicht
     aktiveAnsicht = gespeichert && ansichtsListe.some((a) => a.id === gespeichert)

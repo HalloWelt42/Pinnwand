@@ -133,6 +133,37 @@
   <div class="body">
     <input class="titel" value={karte.titel} aria-label="Titel" onchange={(e) => onAendern({ titel: e.currentTarget.value })} />
 
+    <div class="sec-reihe">
+      <p class="sec">Beschreibung</p>
+      <span class="md-werkzeuge">
+        {#if bearbeiten}
+          {#if gespeichert}<span class="gesp">gespeichert</span>{/if}
+          <button class="mini geist" onclick={() => (vollbild = !vollbild)}><i class="fa-solid {vollbild ? 'fa-compress' : 'fa-expand'}" aria-hidden="true"></i> {vollbild ? 'Verkleinern' : 'Vollbild'}</button>
+          <button class="mini" onclick={bearbeitenFertig}>Fertig</button>
+        {:else}
+          {#if beschr.trim()}
+            <button class="mini geist" onclick={vorlesenUmschalten}><i class="fa-solid {tts.laeuft ? 'fa-stop' : 'fa-volume-high'}" aria-hidden="true"></i> {tts.laeuft ? 'Stopp' : 'Vorlesen'}</button>
+          {/if}
+          <button class="mini geist" onclick={() => (bearbeiten = true)}><i class="fa-solid fa-pen" aria-hidden="true"></i> Bearbeiten</button>
+        {/if}
+      </span>
+    </div>
+    {#if bearbeiten}
+      <div class="md-editor" class:vollbild>
+        {#if vollbild}
+          <div class="vb-kopf"><b>Beschreibung bearbeiten</b><button class="mini" onclick={bearbeitenFertig}>Fertig</button></div>
+        {/if}
+        <div class="md-split">
+          <textarea class="desc" placeholder="Markdown ... (Ueberschriften, Listen, Code, Tabellen, $Mathe$, Mermaid)" bind:value={beschr} oninput={autoSpeichern}></textarea>
+          <div class="md-vorschau"><Markdown md={beschr || '*Vorschau*'} /></div>
+        </div>
+      </div>
+    {:else if beschr.trim()}
+      <button class="md-ansicht" onclick={() => (bearbeiten = true)} title="Zum Bearbeiten klicken"><Markdown md={beschr} /></button>
+    {:else}
+      <button class="leer-hinweis" onclick={() => (bearbeiten = true)}>Keine Beschreibung. Klicken zum Bearbeiten.</button>
+    {/if}
+
     <div class="zeile"><span class="lbl"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Status</span>
       <select value={karte.spalte} onchange={(e) => onAendern({ spalte: e.currentTarget.value })}>
         {#each spalten as s (s.id)}<option value={s.id}>{s.titel}</option>{/each}
@@ -188,36 +219,6 @@
       <input class="labinput" placeholder="+ Label" bind:value={neuesLabel} onkeydown={(e) => { if (e.key === 'Enter') labelHinzufuegen() }} onblur={labelHinzufuegen} />
     </div>
 
-    <div class="sec-reihe">
-      <p class="sec">Beschreibung</p>
-      <span class="md-werkzeuge">
-        {#if bearbeiten}
-          {#if gespeichert}<span class="gesp">gespeichert</span>{/if}
-          <button class="mini geist" onclick={() => (vollbild = !vollbild)}><i class="fa-solid {vollbild ? 'fa-compress' : 'fa-expand'}" aria-hidden="true"></i> {vollbild ? 'Verkleinern' : 'Vollbild'}</button>
-          <button class="mini" onclick={bearbeitenFertig}>Fertig</button>
-        {:else}
-          {#if beschr.trim()}
-            <button class="mini geist" onclick={vorlesenUmschalten}><i class="fa-solid {tts.laeuft ? 'fa-stop' : 'fa-volume-high'}" aria-hidden="true"></i> {tts.laeuft ? 'Stopp' : 'Vorlesen'}</button>
-          {/if}
-          <button class="mini geist" onclick={() => (bearbeiten = true)}><i class="fa-solid fa-pen" aria-hidden="true"></i> Bearbeiten</button>
-        {/if}
-      </span>
-    </div>
-    {#if bearbeiten}
-      <div class="md-editor" class:vollbild>
-        {#if vollbild}
-          <div class="vb-kopf"><b>Beschreibung bearbeiten</b><button class="mini" onclick={bearbeitenFertig}>Fertig</button></div>
-        {/if}
-        <div class="md-split">
-          <textarea class="desc" placeholder="Markdown ... (Ueberschriften, Listen, Code, Tabellen, $Mathe$, Mermaid)" bind:value={beschr} oninput={autoSpeichern}></textarea>
-          <div class="md-vorschau"><Markdown md={beschr || '*Vorschau*'} /></div>
-        </div>
-      </div>
-    {:else if beschr.trim()}
-      <button class="md-ansicht" onclick={() => (bearbeiten = true)} title="Zum Bearbeiten klicken"><Markdown md={beschr} /></button>
-    {:else}
-      <button class="leer-hinweis" onclick={() => (bearbeiten = true)}>Keine Beschreibung. Klicken zum Bearbeiten.</button>
-    {/if}
 
     <p class="sec">Checkliste {#if karte.checkliste.length}<span class="dezent">&middot; {erledigt} von {karte.checkliste.length}</span>{/if}</p>
     {#if karte.checkliste.length}

@@ -19,6 +19,22 @@
     komponente: Component<{ boardId: string }>
   }
 
+  // UI-Zustand im Browser merken (Sidebar, aktive Ansicht, letztes Board).
+  const _ui: { rail?: boolean; ansicht?: string; board?: string | null } = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('pw_ui') || '{}')
+    } catch {
+      return {}
+    }
+  })()
+  function _merkeUi(): void {
+    try {
+      localStorage.setItem('pw_ui', JSON.stringify({ rail: railEin, ansicht: aktiveAnsicht, board: aktivesBoard?.id ?? null }))
+    } catch {
+      /* localStorage nicht verfuegbar */
+    }
+  }
+
   let mappen = $state<Projektmappe[]>([])
   let aktiveMappe = $state<Projektmappe | null>(null)
   let boards = $state<Board[]>([])
@@ -50,7 +66,15 @@
   let boardEntwurf = $state('')
   let neuesBoard = $state(false)
   let neuerBoardTitel = $state('')
-  let railEin = $state(true)
+  let railEin = $state(_ui.rail !== false)
+
+  // Aenderungen am UI-Zustand merken.
+  $effect(() => {
+    void railEin
+    void aktiveAnsicht
+    void aktivesBoard
+    _merkeUi()
+  })
 
   async function ladeBoardListe() {
     if (aktiveMappe) boards = await ladeBoards(aktiveMappe.id)
@@ -61,7 +85,7 @@
     loescheBoardId = null
     neuesBoard = false
     await ladeBoardListe()
-    aktivesBoard = boards[0] ?? null
+    aktivesBoard = boards.find((b) => b.id === _ui.board) ?? boards[0] ?? null
   }
   async function neuesBoardErstellen() {
     const t = neuerBoardTitel.trim()
@@ -100,7 +124,10 @@
     } catch {
       ansichtsListe = ansichten().map((a) => ({ id: a.id, titel: a.titel, icon: a.icon, komponente: a.komponente }))
     }
-    if (ansichtsListe[0]) aktiveAnsicht = ansichtsListe[0].id
+    const gespeichert = _ui.ansicht
+    aktiveAnsicht = gespeichert && ansichtsListe.some((a) => a.id === gespeichert)
+      ? gespeichert
+      : ansichtsListe[0]?.id ?? ''
   }
 
   onMount(async () => {

@@ -80,15 +80,43 @@
     baueAnsicht()
   }
 
+  // Spalten-/Filterzustand je Board im Browser merken.
+  function _ladeBoardUi(id: string): { suche?: string; sortModus?: typeof sortModus; filterPrio?: Prioritaet | null; filterLabels?: string[]; eingeklappt?: string[] } {
+    try {
+      return JSON.parse(localStorage.getItem('pw_board_' + id) || '{}')
+    } catch {
+      return {}
+    }
+  }
+  function _merkeBoardUi(): void {
+    try {
+      localStorage.setItem('pw_board_' + boardId, JSON.stringify({
+        suche, sortModus, filterPrio, filterLabels, eingeklappt: Array.from(eingeklappt),
+      }))
+    } catch {
+      /* localStorage nicht verfuegbar */
+    }
+  }
+
   $effect(() => {
     void boardId
-    suche = ''
-    sortModus = 'manuell'
-    filterPrio = null
-    filterLabels = []
+    const s = _ladeBoardUi(boardId)
+    suche = s.suche ?? ''
+    sortModus = s.sortModus ?? 'manuell'
+    filterPrio = s.filterPrio ?? null
+    filterLabels = s.filterLabels ?? []
     ausgewaehlt = null
-    eingeklappt = new Set()
+    eingeklappt = new Set(s.eingeklappt ?? [])
     laden()
+  })
+
+  $effect(() => {
+    void suche
+    void sortModus
+    void filterPrio
+    void filterLabels
+    void eingeklappt
+    _merkeBoardUi()
   })
 
   // Timer-Aenderungen (Start/Pause irgendwo) -> Board neu laden, damit der Lauf-Status stimmt.

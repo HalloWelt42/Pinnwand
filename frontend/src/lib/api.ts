@@ -78,6 +78,9 @@ export interface KarteAenderung {
   faellig?: string | null
   zustaendig?: string | null
   schaetzung_min?: number | null
+  flow_x?: number | null
+  flow_y?: number | null
+  blockiert_von?: string[]
 }
 
 export const aktualisiereKarte = (id: string, daten: KarteAenderung): Promise<Karte> =>

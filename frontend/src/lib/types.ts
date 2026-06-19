@@ -34,6 +34,9 @@ export interface Karte {
   schaetzung_min?: number | null
   erfasst_sek?: number
   laeuft_seit?: string | null
+  flow_x?: number | null
+  flow_y?: number | null
+  blockiert_von?: string[]
 }
 
 export interface Spalte {
@@ -41,6 +44,7 @@ export interface Spalte {
   titel: string
   wip_limit?: number | null
   reihenfolge: number
+  erledigt?: boolean
 }
 
 export interface Board {

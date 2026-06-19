@@ -163,3 +163,17 @@ export async function transkribiere(audio: Blob): Promise<{ text: string }> {
   if (!antwort.ok) throw new Error('Spracheingabe nicht verfuegbar')
   return antwort.json()
 }
+
+// --- Vorlesen (TTS) ---
+
+export const ttsStatus = (): Promise<{ verfuegbar: boolean }> => hole('/api/tts/status')
+
+export async function vorleseAudio(text: string, stimme?: string): Promise<Blob> {
+  const antwort = await fetch(`${BASIS}/api/tts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, stimme }),
+  })
+  if (!antwort.ok) throw new Error('Vorlesen nicht verfuegbar')
+  return antwort.blob()
+}

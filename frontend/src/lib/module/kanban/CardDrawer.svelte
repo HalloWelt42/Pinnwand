@@ -5,6 +5,7 @@
   import { theme } from '../../theme/theme.svelte'
   import { timer, timerStarten, timerPausieren, erfassteSekunden, formatDauer, formatPlan } from '../../timer.svelte'
   import Markdown from '../../Markdown.svelte'
+  import { tts, vorlesen, stoppeVorlesen } from '../../tts.svelte'
 
   let {
     karte,
@@ -46,6 +47,10 @@
     onAendern({ beschreibung: beschr || null })
     bearbeiten = false
     vollbild = false
+  }
+  function vorlesenUmschalten() {
+    if (tts.laeuft) stoppeVorlesen()
+    else vorlesen(beschr)
   }
 
   // Beschreibungs-Entwurf folgt der Karte (auch beim ersten Oeffnen).
@@ -191,6 +196,9 @@
           <button class="mini geist" onclick={() => (vollbild = !vollbild)}><i class="fa-solid {vollbild ? 'fa-compress' : 'fa-expand'}" aria-hidden="true"></i> {vollbild ? 'Verkleinern' : 'Vollbild'}</button>
           <button class="mini" onclick={bearbeitenFertig}>Fertig</button>
         {:else}
+          {#if beschr.trim()}
+            <button class="mini geist" onclick={vorlesenUmschalten}><i class="fa-solid {tts.laeuft ? 'fa-stop' : 'fa-volume-high'}" aria-hidden="true"></i> {tts.laeuft ? 'Stopp' : 'Vorlesen'}</button>
+          {/if}
           <button class="mini geist" onclick={() => (bearbeiten = true)}><i class="fa-solid fa-pen" aria-hidden="true"></i> Bearbeiten</button>
         {/if}
       </span>

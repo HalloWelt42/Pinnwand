@@ -1,0 +1,16 @@
+{
+  "id": "vorlesen",
+  "name": "Vorlesen",
+  "version": "0.1.0",
+  "extends": {
+    "views": [],
+    "cardFields": [],
+    "mappeTabs": [],
+    "commands": []
+  },
+  "backend": {
+    "router": "module.vorlesen.api:router"
+  },
+  "permissions": [],
+  "requires": []
+}

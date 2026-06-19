@@ -35,6 +35,10 @@
     }
   }
 
+  // Startpfad fruehzeitig sichern (bevor Effekte die URL anfassen koennen).
+  const _startPfad = typeof window !== 'undefined' ? window.location.pathname : '/'
+  let routingBereit = $state(false)
+
   let mappen = $state<Projektmappe[]>([])
   let aktiveMappe = $state<Projektmappe | null>(null)
   let boards = $state<Board[]>([])
@@ -74,6 +78,27 @@
     void aktiveAnsicht
     void aktivesBoard
     _merkeUi()
+  })
+
+  // Routing ohne Hashes: echte Pfade /ansicht bzw. /ansicht/boardId.
+  function pfadAusZustand(): string {
+    if (!aktiveAnsicht) return '/'
+    return boardgebunden && aktivesBoard ? `/${aktiveAnsicht}/${aktivesBoard.id}` : `/${aktiveAnsicht}`
+  }
+  function wendePfadAn(pfad: string): void {
+    const [ans, bId] = pfad.split('/').filter(Boolean)
+    if (ans && ansichtsListe.some((a) => a.id === ans)) aktiveAnsicht = ans
+    if (bId) {
+      const b = boards.find((x) => x.id === bId)
+      if (b) aktivesBoard = b
+    }
+  }
+  $effect(() => {
+    const p = pfadAusZustand()
+    if (!routingBereit) return
+    if (typeof window !== 'undefined' && window.location.pathname !== p) {
+      window.history.pushState(null, '', p)
+    }
   })
 
   async function ladeBoardListe() {
@@ -141,6 +166,12 @@
     } catch (e) {
       fehler = e instanceof Error ? e.message : 'unbekannter Fehler'
     }
+    // Deep-Link aus dem (frueh gesicherten) Startpfad anwenden, dann Routing scharf schalten.
+    if (_startPfad && _startPfad !== '/') {
+      wendePfadAn(_startPfad)
+    }
+    routingBereit = true
+    window.addEventListener('popstate', () => wendePfadAn(window.location.pathname))
   })
 </script>
 

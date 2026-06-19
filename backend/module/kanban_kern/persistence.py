@@ -498,6 +498,50 @@ def finde_karte_per_text(text: str, board_id: str | None = None) -> Karte | None
     return _karte_aus_row(row) if row else None
 
 
+def was_steht_an(heute: str) -> dict:
+    """Handlungsorientierte Uebersicht: ueberfaellig, heute, diese Woche, laufend, liegengeblieben.
+
+    Wiederkehrende Termine erscheinen automatisch ueber ihre Faelligkeit.
+    """
+    from datetime import date, timedelta
+
+    heute_d = date.fromisoformat(heute)
+    woche = (heute_d + timedelta(days=7)).isoformat()
+    alt = (heute_d - timedelta(days=7)).isoformat()
+    with _verb() as conn:
+        done = {r["board_id"]: r["id"] for r in conn.execute("SELECT board_id, id FROM spalte WHERE erledigt = 1").fetchall()}
+        rows = conn.execute(
+            "SELECT id, board_id, spalte, schluessel, titel, faellig, laeuft_seit, bewegt_am FROM karte"
+        ).fetchall()
+
+    def offen(r) -> bool:
+        return done.get(r["board_id"]) != r["spalte"]
+
+    def eintrag(r) -> dict:
+        return {"id": r["id"], "board_id": r["board_id"], "schluessel": r["schluessel"],
+                "titel": r["titel"], "faellig": r["faellig"]}
+
+    ueberfaellig, heute_f, diese_woche, laufend, liegengeblieben = [], [], [], [], []
+    faellig_ids: set[str] = set()
+    for r in rows:
+        if r["laeuft_seit"]:
+            laufend.append(eintrag(r))
+        if r["faellig"] and offen(r):
+            if r["faellig"] < heute:
+                ueberfaellig.append(eintrag(r)); faellig_ids.add(r["id"])
+            elif r["faellig"] == heute:
+                heute_f.append(eintrag(r)); faellig_ids.add(r["id"])
+            elif r["faellig"] <= woche:
+                diese_woche.append(eintrag(r)); faellig_ids.add(r["id"])
+    for r in rows:
+        if offen(r) and not r["laeuft_seit"] and r["id"] not in faellig_ids and r["bewegt_am"] and r["bewegt_am"] < alt:
+            liegengeblieben.append(eintrag(r))
+    return {
+        "datum": heute, "ueberfaellig": ueberfaellig, "heute": heute_f,
+        "diese_woche": diese_woche, "laufend": laufend, "liegengeblieben": liegengeblieben,
+    }
+
+
 def markiere_serie(karte_id: str, serie_id: str, datum: str) -> None:
     """Verknuepft eine Karte mit einer Serie und ihrem Termin-Datum (fuer Vorbuchung/Dedup)."""
     with _verb() as conn:

@@ -31,6 +31,23 @@ export const ladeMappen = (): Promise<Projektmappe[]> => hole('/api/kanban/mappe
 export const ladeBoards = (mappeId: string): Promise<Board[]> => hole(`/api/kanban/mappen/${mappeId}/boards`)
 export const ladeBoard = (boardId: string): Promise<BoardDetail> => hole(`/api/kanban/boards/${boardId}`)
 
+export interface HeuteEintrag {
+  id: string
+  board_id: string
+  schluessel: string | null
+  titel: string
+  faellig: string | null
+}
+export interface HeuteUebersicht {
+  datum: string
+  ueberfaellig: HeuteEintrag[]
+  heute: HeuteEintrag[]
+  diese_woche: HeuteEintrag[]
+  laufend: HeuteEintrag[]
+  liegengeblieben: HeuteEintrag[]
+}
+export const ladeHeute = (): Promise<HeuteUebersicht> => hole('/api/kanban/heute')
+
 // --- Karten ---
 
 export interface KarteEingabe {

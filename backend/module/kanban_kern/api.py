@@ -49,6 +49,13 @@ def board(board_id: str) -> BoardDetail:
     return detail
 
 
+@router.get("/heute")
+def heute(datum: str | None = None) -> dict:
+    from datetime import date
+
+    return db.was_steht_an(datum or date.today().isoformat())
+
+
 # -- Karten ---------------------------------------------------------------
 
 @router.post("/karten", response_model=Karte, status_code=201)

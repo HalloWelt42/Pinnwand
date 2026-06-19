@@ -112,25 +112,45 @@ def berechne(detail: BoardDetail) -> dict:
                 dist[v] = kand
                 cp_pred[v] = u
 
+    # Endpunkt nur unter Knoten waehlen, deren laengste Kette mindestens zwei
+    # Knoten (also eine Kante) hat. Sonst koennte ein schwerer, isolierter
+    # Einzelknoten eine real existierende Kette verdraengen und den kritischen
+    # Pfad faelschlich leeren.
     pfad: list[str] = []
-    if topo:
-        ende = max(topo, key=lambda i: (dist[i], -reihenfolge[i]))
+    kandidaten = [i for i in topo if dist[i][1] >= 2]
+    if kandidaten:
+        ende = max(kandidaten, key=lambda i: (dist[i], -reihenfolge[i]))
         cur: str | None = ende
         while cur is not None:
             pfad.append(cur)
             cur = cp_pred[cur]
         pfad.reverse()
-    # Ein einzelner Knoten ist kein Pfad - kritischer Pfad braucht mindestens eine Kante.
-    if len(pfad) <= 1:
-        pfad = []
     pfad_set = set(pfad)
     pfad_kanten = {(pfad[i], pfad[i + 1]) for i in range(len(pfad) - 1)}
     dauer_min = dist[pfad[-1]][0] if pfad else 0
 
+    # Alle Knoten eines Zyklus markieren, nicht nur die Endpunkte der Rueckkante:
+    # je Rueckkante u->v den Vorwaertsweg v..u suchen und den ganzen Ring markieren.
     zyklus_knoten: set[str] = set()
     for u, v in back:
-        zyklus_knoten.add(u)
-        zyklus_knoten.add(v)
+        vorg: dict[str, str | None] = {v: None}
+        schlange = [v]
+        while schlange:
+            x = schlange.pop(0)
+            if x == u:
+                break
+            for w in dag_succ[x]:
+                if w not in vorg:
+                    vorg[w] = x
+                    schlange.append(w)
+        if u in vorg:
+            knoten: str | None = u
+            while knoten is not None:
+                zyklus_knoten.add(knoten)
+                knoten = vorg[knoten]
+        else:
+            zyklus_knoten.add(u)
+            zyklus_knoten.add(v)
 
     def status(k) -> str:
         if k.spalte in done:

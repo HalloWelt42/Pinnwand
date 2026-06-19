@@ -14,13 +14,16 @@
 
   let graph = $state<FlowGraph | null>(null)
   let laedt = $state(true)
+  let fehler = $state(false)
 
   async function laden(): Promise<void> {
     laedt = true
+    fehler = false
     try {
       graph = await ladeFlow(boardId)
     } catch {
       graph = null
+      fehler = true
     } finally {
       laedt = false
     }
@@ -55,8 +58,9 @@
   })
 
   const posVon = $derived(new Map(platzierung.map((p) => [p.id, p])))
-  const leinwandB = $derived(platzierung.length ? Math.max(...platzierung.map((p) => p.x)) + W + PAD : 400)
-  const leinwandH = $derived(platzierung.length ? Math.max(...platzierung.map((p) => p.y)) + H + PAD : 240)
+  // Zusatzpuffer rechts/unten, damit die Bogen der Rueckwaertskanten nicht abgeschnitten werden.
+  const leinwandB = $derived(platzierung.length ? Math.max(...platzierung.map((p) => p.x)) + W + PAD + 48 : 400)
+  const leinwandH = $derived(platzierung.length ? Math.max(...platzierung.map((p) => p.y)) + H + PAD + 48 : 240)
 
   interface Kante { id: string; d: string; kritisch: boolean; zyklus: boolean }
   const kanten = $derived.by<Kante[]>(() => {
@@ -91,6 +95,7 @@
   const zyklen = $derived(graph?.zyklus_kanten.length ?? 0)
 </script>
 
+<div class="flowwrap">
 <div class="flowtop">
   {#if kp.karten.length > 1}
     <span class="summe"><i class="fa-solid fa-bolt" aria-hidden="true"></i> Kritischer Pfad: {kp.karten.length} Aufgaben{kp.dauer_min > 0 ? ' · ' + hhmm(kp.dauer_min) : ''}</span>
@@ -115,6 +120,8 @@
 <div class="flow">
   {#if laedt}
     <p class="hinweis">Diagramm wird geladen ...</p>
+  {:else if fehler}
+    <p class="hinweis">Diagramm konnte nicht geladen werden.</p>
   {:else if !graph || !graph.nodes.length}
     <p class="hinweis">Keine Karten auf diesem Board.</p>
   {:else}
@@ -143,7 +150,7 @@
             style="left:{p.x}px; top:{p.y}px; width:{W}px; height:{H}px;"
             role="button" tabindex="0"
             onclick={() => oeffneKarte(boardId, n.id)}
-            onkeydown={(ev) => { if (ev.key === 'Enter') oeffneKarte(boardId, n.id) }}>
+            onkeydown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); oeffneKarte(boardId, n.id) } }}>
             <div class="kkopf">
               {#if n.schluessel}<span class="key">{n.schluessel}</span>{/if}
               <span class="iconrow">
@@ -161,9 +168,11 @@
     </div>
   {/if}
 </div>
+</div>
 
 <style>
-  .flowtop { display: flex; align-items: center; gap: 16px; padding: 10px 14px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .flowwrap { height: 100%; display: flex; flex-direction: column; }
+  .flowtop { flex: none; display: flex; align-items: center; gap: 16px; padding: 10px 14px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
   .summe { font-size: 12.5px; color: var(--text-1); display: inline-flex; align-items: center; gap: 7px; }
   .summe i { color: var(--hl-primary-text); }
   .summe.leer { color: var(--text-3); }
@@ -174,8 +183,8 @@
   .pkt.blk { background: var(--gefahr); }
   .pkt.bereit { background: var(--ok, #2e7d32); }
   .pkt.erl { background: var(--text-3); }
-  .zwarn { display: flex; align-items: center; gap: 8px; margin: 10px 14px 0; padding: 8px 12px; font-size: 12px; color: var(--gefahr); background: color-mix(in srgb, var(--gefahr) 12%, transparent); border: 1px solid color-mix(in srgb, var(--gefahr) 35%, transparent); border-radius: var(--r-m); }
-  .flow { height: calc(100% - 46px); overflow: auto; }
+  .zwarn { flex: none; display: flex; align-items: center; gap: 8px; margin: 10px 14px 0; padding: 8px 12px; font-size: 12px; color: var(--gefahr); background: color-mix(in srgb, var(--gefahr) 12%, transparent); border: 1px solid color-mix(in srgb, var(--gefahr) 35%, transparent); border-radius: var(--r-m); }
+  .flow { flex: 1; min-height: 0; overflow: auto; }
   .hinweis { color: var(--text-3); font-size: 12.5px; padding: 16px; }
   .hinweis.tipp { max-width: 70ch; line-height: 1.55; }
   .canvas { position: relative; }

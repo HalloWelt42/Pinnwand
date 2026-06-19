@@ -64,7 +64,9 @@ CREATE TABLE IF NOT EXISTS karte (
     bewegt_am TEXT,
     schaetzung_min INTEGER,
     erfasst_sek INTEGER NOT NULL DEFAULT 0,
-    laeuft_seit TEXT
+    laeuft_seit TEXT,
+    serie_id TEXT,
+    serie_datum TEXT
 );
 CREATE TABLE IF NOT EXISTS zeiteintrag (
     id TEXT PRIMARY KEY,
@@ -90,6 +92,11 @@ def _migriere(conn: sqlite3.Connection) -> None:
     spalten = {r["name"] for r in conn.execute("PRAGMA table_info(spalte)").fetchall()}
     if "erledigt" not in spalten:
         conn.execute("ALTER TABLE spalte ADD COLUMN erledigt INTEGER NOT NULL DEFAULT 0")
+    kspalten = {r["name"] for r in conn.execute("PRAGMA table_info(karte)").fetchall()}
+    if "serie_id" not in kspalten:
+        conn.execute("ALTER TABLE karte ADD COLUMN serie_id TEXT")
+    if "serie_datum" not in kspalten:
+        conn.execute("ALTER TABLE karte ADD COLUMN serie_datum TEXT")
 
 
 def init_db() -> None:
@@ -489,6 +496,20 @@ def finde_karte_per_text(text: str, board_id: str | None = None) -> Karte | None
                 (f"%{suchtext}%", *args_basis),
             ).fetchone()
     return _karte_aus_row(row) if row else None
+
+
+def markiere_serie(karte_id: str, serie_id: str, datum: str) -> None:
+    """Verknuepft eine Karte mit einer Serie und ihrem Termin-Datum (fuer Vorbuchung/Dedup)."""
+    with _verb() as conn:
+        conn.execute("UPDATE karte SET serie_id = ?, serie_datum = ? WHERE id = ?", (serie_id, datum, karte_id))
+
+
+def serien_instanz_existiert(serie_id: str, datum: str) -> bool:
+    with _verb() as conn:
+        r = conn.execute(
+            "SELECT 1 FROM karte WHERE serie_id = ? AND serie_datum = ? LIMIT 1", (serie_id, datum)
+        ).fetchone()
+    return r is not None
 
 
 def verschiebe_spalte(spalte_id: str, richtung: int) -> Spalte | None:

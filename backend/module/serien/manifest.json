@@ -1,0 +1,19 @@
+{
+  "id": "serien",
+  "name": "Serien",
+  "version": "0.1.0",
+  "extends": {
+    "views": [
+      { "id": "serien", "titel": "Serien", "icon": "fa-solid fa-repeat" }
+    ],
+    "cardFields": [],
+    "mappeTabs": [],
+    "commands": []
+  },
+  "backend": {
+    "router": "module.serien.api:router",
+    "init": "module.serien.dienst:init"
+  },
+  "permissions": ["card.write"],
+  "requires": ["kanban-kern"]
+}

@@ -208,6 +208,40 @@ export const transkripteSuche = (q: string, limit = 30): Promise<{ treffer: Tran
 export const transkriptDetail = (id: string): Promise<TranskriptDetail> =>
   hole(`/api/transkripte/${id}`)
 
+// --- Serien (wiederkehrende Termine/Aufgaben) ---
+
+export interface Serie {
+  id: string
+  board_id: string
+  spalte_id?: string | null
+  titel: string
+  beschreibung?: string | null
+  labels: string[]
+  zustaendig?: string | null
+  typ: 'taeglich' | 'woechentlich' | 'monatlich'
+  intervall: number
+  wochentage: number[]
+  monatstag?: number | null
+  uhrzeit?: string | null
+  dauer_min?: number | null
+  wochenenden_ueberspringen: boolean
+  vorlauf_tage: number
+  start?: string | null
+  ende?: string | null
+  aktiv: boolean
+}
+export const ladeSerien = (boardId: string): Promise<Serie[]> => hole(`/api/serien?board_id=${boardId}`)
+export const erstelleSerie = (daten: Partial<Serie>): Promise<Serie> =>
+  hole('/api/serien', { method: 'POST', body: JSON.stringify(daten) })
+export const aktualisiereSerie = (id: string, daten: Partial<Serie>): Promise<Serie> =>
+  hole(`/api/serien/${id}`, { method: 'PATCH', body: JSON.stringify(daten) })
+export const loescheSerie = (id: string): Promise<void> =>
+  hole(`/api/serien/${id}`, { method: 'DELETE' })
+export const serieVorschau = (id: string, tage = 30): Promise<{ termine: string[] }> =>
+  hole(`/api/serien/${id}/vorschau?tage=${tage}`)
+export const serieVorbuchen = (id: string): Promise<{ erzeugt: number }> =>
+  hole(`/api/serien/${id}/vorbuchen`, { method: 'POST' })
+
 export async function vorleseAudio(text: string, stimme?: string): Promise<Blob> {
   const antwort = await fetch(`${BASIS}/api/tts`, {
     method: 'POST',

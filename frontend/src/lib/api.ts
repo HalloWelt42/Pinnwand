@@ -298,7 +298,20 @@ export interface Person {
   kuerzel?: string | null
   farbe?: string | null
   wochenstunden: number[]
+  bundesland?: string | null
+  urlaubsanspruch: number
+  resturlaub_vorjahr: number
   aktiv: boolean
+}
+export interface Urlaubskonto {
+  person_id: string
+  jahr: number
+  anspruch: number
+  uebertrag: number
+  verfuegbar: number
+  genommen: number
+  verbleibend: number
+  genommen_vorjahr: number
 }
 export interface Urlaubstag {
   id: string
@@ -321,6 +334,8 @@ export interface PlanTag {
 }
 
 export const ladePersonen = (): Promise<Person[]> => hole('/api/planung/personen')
+export const ladeUrlaubskonten = (jahr: number): Promise<Urlaubskonto[]> =>
+  hole(`/api/planung/urlaubskonten?jahr=${jahr}`)
 export const erstellePerson = (d: Partial<Person>): Promise<Person> =>
   hole('/api/planung/personen', { method: 'POST', body: JSON.stringify(d) })
 export const aktualisierePerson = (id: string, d: Partial<Person>): Promise<Person> =>

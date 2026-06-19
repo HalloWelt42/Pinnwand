@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS person (
     kuerzel TEXT,
     farbe TEXT,
     wochenstunden TEXT NOT NULL DEFAULT '[8,8,8,8,8,0,0]',
+    bundesland TEXT,
+    urlaubsanspruch REAL NOT NULL DEFAULT 30,
+    resturlaub_vorjahr REAL NOT NULL DEFAULT 0,
     aktiv INTEGER NOT NULL DEFAULT 1
 );
 CREATE TABLE IF NOT EXISTS urlaub (
@@ -40,9 +43,21 @@ CREATE TABLE IF NOT EXISTS feiertag (
 _STD_WOCHE = [8, 8, 8, 8, 8, 0, 0]
 
 
+def _migriere(conn: sqlite3.Connection) -> None:
+    """Ergaenzt neue Personen-Spalten in einer bestehenden Datenbank."""
+    spalten = {r["name"] for r in conn.execute("PRAGMA table_info(person)").fetchall()}
+    if "bundesland" not in spalten:
+        conn.execute("ALTER TABLE person ADD COLUMN bundesland TEXT")
+    if "urlaubsanspruch" not in spalten:
+        conn.execute("ALTER TABLE person ADD COLUMN urlaubsanspruch REAL NOT NULL DEFAULT 30")
+    if "resturlaub_vorjahr" not in spalten:
+        conn.execute("ALTER TABLE person ADD COLUMN resturlaub_vorjahr REAL NOT NULL DEFAULT 0")
+
+
 def init_db() -> None:
     with verbindung() as conn:
         conn.executescript(SCHEMA)
+        _migriere(conn)
         if conn.execute("SELECT COUNT(*) AS n FROM person").fetchone()["n"] == 0:
             for kuerzel, name in [("AK", "Anke Krause"), ("TB", "Tom Berger"), ("ML", "Mara Lang")]:
                 conn.execute(
@@ -54,9 +69,14 @@ def init_db() -> None:
 # -- Personen -------------------------------------------------------------
 
 def _person(r: sqlite3.Row) -> dict:
+    schluessel = r.keys()
     return {
         "id": r["id"], "name": r["name"], "kuerzel": r["kuerzel"], "farbe": r["farbe"],
-        "wochenstunden": json.loads(r["wochenstunden"]), "aktiv": bool(r["aktiv"]),
+        "wochenstunden": json.loads(r["wochenstunden"]),
+        "bundesland": r["bundesland"] if "bundesland" in schluessel else None,
+        "urlaubsanspruch": r["urlaubsanspruch"] if "urlaubsanspruch" in schluessel else 30,
+        "resturlaub_vorjahr": r["resturlaub_vorjahr"] if "resturlaub_vorjahr" in schluessel else 0,
+        "aktiv": bool(r["aktiv"]),
     }
 
 
@@ -72,18 +92,22 @@ def hole_person(pid: str) -> dict | None:
     return _person(r) if r else None
 
 
-def erstelle_person(name: str, kuerzel: str | None, wochenstunden: list | None, farbe: str | None) -> dict:
+def erstelle_person(name: str, kuerzel: str | None, wochenstunden: list | None, farbe: str | None,
+                    bundesland: str | None = None, urlaubsanspruch: float = 30,
+                    resturlaub_vorjahr: float = 0) -> dict:
     pid = "p_" + uuid4().hex[:8]
     with verbindung() as conn:
         conn.execute(
-            "INSERT INTO person (id, name, kuerzel, farbe, wochenstunden, aktiv) VALUES (?, ?, ?, ?, ?, 1)",
-            (pid, name, kuerzel, farbe, json.dumps(wochenstunden or _STD_WOCHE)),
+            "INSERT INTO person (id, name, kuerzel, farbe, wochenstunden, bundesland, urlaubsanspruch, resturlaub_vorjahr, aktiv)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)",
+            (pid, name, kuerzel, farbe, json.dumps(wochenstunden or _STD_WOCHE), bundesland, urlaubsanspruch, resturlaub_vorjahr),
         )
     return hole_person(pid)  # type: ignore[return-value]
 
 
 def aktualisiere_person(pid: str, aenderungen: dict) -> dict | None:
-    f = {k: v for k, v in aenderungen.items() if k in {"name", "kuerzel", "farbe", "wochenstunden", "aktiv"}}
+    f = {k: v for k, v in aenderungen.items()
+         if k in {"name", "kuerzel", "farbe", "wochenstunden", "bundesland", "urlaubsanspruch", "resturlaub_vorjahr", "aktiv"}}
     if not f:
         return hole_person(pid)
     if "wochenstunden" in f:
@@ -141,6 +165,42 @@ def loesche_urlaub(uid: str) -> bool:
     with verbindung() as conn:
         cur = conn.execute("DELETE FROM urlaub WHERE id = ?", (uid,))
     return cur.rowcount > 0
+
+
+def _genommen(conn: sqlite3.Connection, person_id: str, jahr: int) -> float:
+    """Summe der im Jahr genommenen Urlaubstage (nur typ 'urlaub', Anteil 1.0/0.5)."""
+    r = conn.execute(
+        "SELECT COALESCE(SUM(anteil), 0) AS s FROM urlaub"
+        " WHERE person_id = ? AND typ = 'urlaub' AND datum >= ? AND datum <= ?",
+        (person_id, f"{jahr}-01-01", f"{jahr}-12-31"),
+    ).fetchone()
+    return round(float(r["s"] or 0), 2)
+
+
+def urlaubskonto(person_id: str, jahr: int) -> dict | None:
+    p = hole_person(person_id)
+    if p is None:
+        return None
+    anspruch = float(p["urlaubsanspruch"] or 0)
+    uebertrag = float(p["resturlaub_vorjahr"] or 0)
+    with verbindung() as conn:
+        genommen = _genommen(conn, person_id, jahr)
+        genommen_vorjahr = _genommen(conn, person_id, jahr - 1)
+    verfuegbar = round(anspruch + uebertrag, 2)
+    return {
+        "person_id": person_id,
+        "jahr": jahr,
+        "anspruch": anspruch,
+        "uebertrag": uebertrag,
+        "verfuegbar": verfuegbar,
+        "genommen": genommen,
+        "verbleibend": round(verfuegbar - genommen, 2),
+        "genommen_vorjahr": genommen_vorjahr,
+    }
+
+
+def urlaubskonten(jahr: int) -> list[dict]:
+    return [k for p in liste_personen() if (k := urlaubskonto(p["id"], jahr)) is not None]
 
 
 # -- Feiertage ------------------------------------------------------------

@@ -1,9 +1,9 @@
 <script lang="ts">
   import {
     ladePersonen, erstellePerson, aktualisierePerson, loeschePerson,
-    ladeUrlaub, setzeUrlaub, loescheUrlaub,
+    ladeUrlaub, setzeUrlaub, loescheUrlaub, ladeUrlaubskonten,
     ladeLaender, feiertageVorschau, feiertageUebernehmen, ladeFeiertage, loescheFeiertage,
-    type Person, type Urlaubstag, type Feiertag,
+    type Person, type Urlaubstag, type Feiertag, type Urlaubskonto,
   } from '../../api'
 
   let { boardId }: { boardId: string } = $props()
@@ -15,6 +15,7 @@
   let personen = $state<Person[]>([])
   let neuerName = $state('')
   let neuesKuerzel = $state('')
+  let konten = $state<Record<string, Urlaubskonto>>({})
 
   // Urlaub
   let urlaubPerson = $state('')
@@ -35,6 +36,33 @@
   async function ladenPersonen(): Promise<void> {
     personen = await ladePersonen()
     if (!urlaubPerson && personen[0]) urlaubPerson = personen[0].id
+    await ladenKonten()
+  }
+  async function ladenKonten(): Promise<void> {
+    try {
+      const liste = await ladeUrlaubskonten(jahr)
+      konten = Object.fromEntries(liste.map((k) => [k.person_id, k]))
+    } catch { /* Planung bleibt nutzbar */ }
+  }
+  const deRegionen = $derived(laender['DE'] ?? [])
+
+  async function bundeslandAendern(p: Person, wert: string): Promise<void> {
+    await aktualisierePerson(p.id, { bundesland: wert || null })
+    await ladenPersonen()
+  }
+  async function anspruchAendern(p: Person, wert: number): Promise<void> {
+    await aktualisierePerson(p.id, { urlaubsanspruch: wert })
+    await ladenPersonen()
+  }
+  async function restAendern(p: Person, wert: number): Promise<void> {
+    await aktualisierePerson(p.id, { resturlaub_vorjahr: wert })
+    await ladenPersonen()
+  }
+  async function restAusVorjahr(p: Person): Promise<void> {
+    const k = konten[p.id]
+    const vorschlag = Math.max(0, (p.urlaubsanspruch || 0) - (k?.genommen_vorjahr ?? 0))
+    await aktualisierePerson(p.id, { resturlaub_vorjahr: vorschlag })
+    await ladenPersonen()
   }
   $effect(() => { ladenPersonen() })
   $effect(() => {
@@ -70,10 +98,12 @@
     const { gesetzt } = await setzeUrlaub({ person_id: urlaubPerson, von: uVon, bis: uBis || uVon, anteil: uAnteil })
     meldung = `${gesetzt} Urlaubstage eingetragen.`
     urlaub = await ladeUrlaub(urlaubPerson, `${jahr}-01-01`, `${jahr}-12-31`)
+    await ladenKonten()
   }
   async function urlaubLoeschen(u: Urlaubstag): Promise<void> {
     await loescheUrlaub(u.id)
     urlaub = await ladeUrlaub(urlaubPerson, `${jahr}-01-01`, `${jahr}-12-31`)
+    await ladenKonten()
   }
 
   async function ftVorschau(): Promise<void> {
@@ -113,6 +143,30 @@
       <input class="kz" placeholder="Kuerzel" bind:value={neuesKuerzel} />
       <button class="btn primaer" onclick={personAnlegen}>Person hinzufuegen</button>
     </div>
+  </section>
+
+  <section class="block">
+    <p class="sec">Urlaubsanspruch {jahr} (Bundesland, Tage je Jahr, Resturlaub Vorjahr)</p>
+    <div class="utab">
+      <div class="ukopf"><span class="pn">Person</span><span>Bundesland</span><span>Anspruch</span><span>Rest Vorjahr</span><span>genommen</span><span>verbleibend</span><span></span></div>
+      {#each personen as p (p.id)}
+        {@const k = konten[p.id]}
+        <div class="uzeile">
+          <span class="pn"><b>{p.kuerzel ?? ''}</b> {p.name}</span>
+          <select class="bl" value={p.bundesland ?? ''} onchange={(e) => bundeslandAendern(p, e.currentTarget.value)} aria-label="Bundesland">
+            <option value="">-</option>
+            {#each deRegionen as r (r)}<option value={r}>{r}</option>{/each}
+          </select>
+          <input class="uz" type="number" min="0" step="0.5" value={p.urlaubsanspruch} onchange={(e) => anspruchAendern(p, parseFloat(e.currentTarget.value) || 0)} aria-label="Urlaubsanspruch" />
+          <input class="uz" type="number" min="0" step="0.5" value={p.resturlaub_vorjahr} onchange={(e) => restAendern(p, parseFloat(e.currentTarget.value) || 0)} aria-label="Resturlaub Vorjahr" />
+          <span class="uw">{k ? k.genommen : 0}</span>
+          <span class="uw" class:knapp={k ? k.verbleibend < 0 : false}>{k ? k.verbleibend : '-'}</span>
+          <button class="mini geist" title="Resturlaub aus dem Vorjahr berechnen (Anspruch minus im Vorjahr genommen)" onclick={() => restAusVorjahr(p)}>aus Vorjahr</button>
+        </div>
+      {/each}
+      {#if !personen.length}<div class="uzeile leerz">Noch keine Personen.</div>{/if}
+    </div>
+    <p class="hinweis">Verbleibend = Anspruch + Resturlaub Vorjahr − die {jahr} genommenen Urlaubstage (halbe Tage zaehlen 0,5). Das Bundesland ist je Person hinterlegt und dient als Grundlage fuer die regionalen Feiertage (Import unten).</p>
   </section>
 
   <section class="block">
@@ -191,4 +245,19 @@
   .chip.vs { background: var(--hl-primary-weich); color: var(--hl-primary-text); }
   .vorschau { max-height: 160px; overflow-y: auto; }
   .leer { color: var(--text-3); font-size: 12px; }
+
+  .utab { border: 1px solid var(--border); border-radius: var(--r-l); overflow: hidden; background: var(--surface-col); }
+  .ukopf, .uzeile { display: grid; grid-template-columns: 1fr 104px 72px 88px 80px 90px 88px; align-items: center; gap: 8px; padding: 6px 10px; }
+  .ukopf { border-bottom: 1px solid var(--border); font-size: 10.5px; color: var(--text-3); text-transform: uppercase; }
+  .ukopf span:not(.pn) { text-align: right; }
+  .uzeile { border-top: 1px solid var(--border); font-size: 12.5px; }
+  .uz { width: 100%; border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-1); border-radius: var(--r-s); padding: 4px 6px; font-size: 12px; font-family: var(--font-mono); text-align: right; }
+  .bl { width: 100%; border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-1); border-radius: var(--r-s); padding: 4px 6px; font-size: 12px; }
+  .uw { text-align: right; font-family: var(--font-mono); font-size: 12px; color: var(--text-2); }
+  .uw.knapp { color: var(--gefahr); }
+  .leerz { padding: 10px; color: var(--text-3); font-size: 12px; }
+  .mini { border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-2); border-radius: var(--r-s); padding: 4px 6px; font-size: 10.5px; }
+  .mini.geist { background: transparent; }
+  .mini:hover { border-color: var(--hl-primary); color: var(--hl-primary-text); }
+  .hinweis { font-size: 11.5px; color: var(--text-3); line-height: 1.55; margin: 8px 0 0; max-width: 80ch; }
 </style>

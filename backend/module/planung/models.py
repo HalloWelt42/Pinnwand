@@ -10,6 +10,9 @@ class Person(BaseModel):
     kuerzel: str | None = None
     farbe: str | None = None
     wochenstunden: list[float] = Field(default_factory=lambda: [8, 8, 8, 8, 8, 0, 0])
+    bundesland: str | None = None
+    urlaubsanspruch: float = 30
+    resturlaub_vorjahr: float = 0
     aktiv: bool = True
 
 
@@ -18,6 +21,9 @@ class PersonCreate(BaseModel):
     kuerzel: str | None = None
     farbe: str | None = None
     wochenstunden: list[float] | None = None
+    bundesland: str | None = None
+    urlaubsanspruch: float = 30
+    resturlaub_vorjahr: float = 0
 
 
 class PersonUpdate(BaseModel):
@@ -25,7 +31,21 @@ class PersonUpdate(BaseModel):
     kuerzel: str | None = None
     farbe: str | None = None
     wochenstunden: list[float] | None = None
+    bundesland: str | None = None
+    urlaubsanspruch: float | None = None
+    resturlaub_vorjahr: float | None = None
     aktiv: bool | None = None
+
+
+class Urlaubskonto(BaseModel):
+    person_id: str
+    jahr: int
+    anspruch: float
+    uebertrag: float
+    verfuegbar: float
+    genommen: float
+    verbleibend: float
+    genommen_vorjahr: float
 
 
 class UrlaubSetzen(BaseModel):

@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from . import feiertage, kapazitaet
 from . import persistence as db
-from .models import FeiertageUebernehmen, Person, PersonCreate, PersonUpdate, UrlaubSetzen
+from .models import FeiertageUebernehmen, Person, PersonCreate, PersonUpdate, Urlaubskonto, UrlaubSetzen
 
 router = APIRouter(prefix="/api/planung", tags=["planung"])
 
@@ -21,7 +21,23 @@ def personen() -> list[dict]:
 
 @router.post("/personen", response_model=Person, status_code=201)
 def person_anlegen(e: PersonCreate) -> dict:
-    return db.erstelle_person(e.name, e.kuerzel, e.wochenstunden, e.farbe)
+    return db.erstelle_person(
+        e.name, e.kuerzel, e.wochenstunden, e.farbe,
+        bundesland=e.bundesland, urlaubsanspruch=e.urlaubsanspruch, resturlaub_vorjahr=e.resturlaub_vorjahr,
+    )
+
+
+@router.get("/urlaubskonten", response_model=list[Urlaubskonto])
+def urlaubskonten(jahr: int = Query(...)) -> list[dict]:
+    return db.urlaubskonten(jahr)
+
+
+@router.get("/urlaubskonto", response_model=Urlaubskonto)
+def urlaubskonto(person: str = Query(...), jahr: int = Query(...)) -> dict:
+    k = db.urlaubskonto(person, jahr)
+    if k is None:
+        raise HTTPException(status_code=404, detail="Person nicht gefunden")
+    return k
 
 
 @router.patch("/personen/{pid}", response_model=Person)

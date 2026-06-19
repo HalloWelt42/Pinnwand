@@ -11,7 +11,7 @@ from contextlib import AsyncExitStack, asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import dienste_status, einstellungen
+from app.config import VERSION, dienste_status, einstellungen
 from app.modul_registry import (
     aggregiere_erweiterungen,
     init_fuer,
@@ -35,7 +35,7 @@ async def lebenszyklus(app: FastAPI):
         yield
 
 
-app = FastAPI(title="Pinnwand", version="0.16.5", lifespan=lebenszyklus)
+app = FastAPI(title="Pinnwand", version=VERSION, lifespan=lebenszyklus)
 
 app.add_middleware(
     CORSMiddleware,

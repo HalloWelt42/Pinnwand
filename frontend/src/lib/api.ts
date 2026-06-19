@@ -359,6 +359,51 @@ export async function erzeugeBericht(anfrage: BerichtAnfrage): Promise<{ blob: B
   return { blob: await r.blob(), dateiname: m ? m[1] : 'bericht' }
 }
 
+// --- Sicherung (Backup/Restore) ---
+
+export interface SnapshotInfo {
+  id: string
+  dateiname: string
+  erstellt_am: string
+  groesse: number
+  version: string
+  art: 'manuell' | 'automatisch' | 'vor_wiederherstellung'
+  notiz: string
+}
+export interface BackupZustand {
+  version: string
+  zaehler: Record<string, number>
+  berichte: number
+}
+export interface SchemaTabelle {
+  tabelle: string
+  spalten: string[]
+}
+export interface BackupVorschau {
+  info: SnapshotInfo
+  snapshot: BackupZustand
+  aktuell: BackupZustand
+  schema: SchemaTabelle[]
+  warnungen: string[]
+}
+export interface WiederherstellenErgebnis {
+  ok: boolean
+  vorher_gesichert: string
+  wiederhergestellt: BackupZustand
+}
+
+export const ladeSnapshots = (): Promise<SnapshotInfo[]> => hole('/api/backup')
+export const backupZustand = (): Promise<BackupZustand> => hole('/api/backup/zustand')
+export const erzeugeSnapshot = (notiz: string): Promise<SnapshotInfo> =>
+  hole('/api/backup/erzeugen', { method: 'POST', body: JSON.stringify({ notiz }) })
+export const snapshotVorschau = (id: string): Promise<BackupVorschau> =>
+  hole(`/api/backup/${id}/vorschau`)
+export const snapshotDownloadUrl = (id: string): string => `${BASIS}/api/backup/${id}/datei`
+export const stelleSnapshotWiederHer = (id: string): Promise<WiederherstellenErgebnis> =>
+  hole(`/api/backup/${id}/wiederherstellen`, { method: 'POST' })
+export const loescheSnapshot = (id: string): Promise<void> =>
+  hole(`/api/backup/${id}`, { method: 'DELETE' })
+
 export async function vorleseAudio(text: string, stimme?: string): Promise<Blob> {
   const antwort = await fetch(`${BASIS}/api/tts`, {
     method: 'POST',

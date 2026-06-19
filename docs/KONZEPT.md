@@ -77,6 +77,8 @@ Serien mit einfachem Rhythmus (täglich, wöchentlich, monatlich), benutzerdefin
 ### R - Backup und Wiederherstellung
 Gesichert werden Datenbank, Inhalte und Dokumente, das Berichts-Archiv und die Konfiguration (ohne Geheimnisse; der Vektor-Index bleibt außen vor, da neu aufbaubar). Modus: Sofort-Backup auf Knopfdruck und zeitgesteuerte Sicherung. Lokale Snapshots enthalten das Schema und die Version, sind also über Versionswechsel konsistent. Wiederherstellung mit Vorschau vor der Übernahme.
 
+Umsetzung (Modul backup): Ein Snapshot ist eine ZIP-Datei mit fester Struktur (manifest.json mit Version, Zeit, Art, Schema und Datensatz-Zähler; db/pinnwand.db als konsistente Online-Kopie über die SQLite-Backup-Schnittstelle; berichte/ als Archiv-Kopie; konfig/ mit Vorlage und vorhandener .env). Snapshots liegen unter backend/data/backups (per .gitignore nie im Repo). Es gibt drei Arten: manuell, automatisch (beim Start höchstens einmal in 24 Stunden, Aufbewahrung der letzten zehn) und vor_wiederherstellung (Sicherheitsnetz, das vor jeder Wiederherstellung automatisch erzeugt wird). Die Metadaten-Tabelle backup_archiv liegt selbst in der Datenbank; da eine Wiederherstellung die Datenbank zurücksetzt, wird der Index danach aus den vorhandenen Dateien neu aufgebaut (selbstheilend, die Kennung steckt im Manifest). Die Wiederherstellung prüft die entpackte Datenbank per integrity_check, tauscht sie zwischen Anfragen aus (Verbindungen sind kurzlebig) und ersetzt das Berichts-Archiv. Die Vorschau stellt die Zähler des Snapshots dem aktuellen Stand gegenüber und warnt bei abweichender Version oder fehlenden Tabellen und Spalten.
+
 ## Phasenplan
 
 0. Fundament: Konzept, Git-Guard für Vorlagen, Konfigurations- und Diensterkennungs-Schicht (optionale Dienste).

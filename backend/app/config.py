@@ -15,6 +15,9 @@ from pathlib import Path
 
 import httpx
 
+# Zentrale Versionsangabe der Anwendung (Backend + Snapshots beziehen sich hierauf).
+VERSION = "0.16.6"
+
 # backend/app/config.py -> Projektwurzel (Pinnwand/)
 _PROJEKT_WURZEL = Path(__file__).resolve().parents[2]
 
@@ -65,6 +68,8 @@ class Einstellungen:
     stt_url: str
     agent_token: str
     mcp_aktiv: bool
+    backup_auto: bool
+    backup_behalten: int
 
 
 def _lese_einstellungen() -> Einstellungen:
@@ -80,6 +85,8 @@ def _lese_einstellungen() -> Einstellungen:
         stt_url=_env("PINNWAND_STT_URL"),
         agent_token=_env("PINNWAND_AGENT_TOKEN"),
         mcp_aktiv=_env("PINNWAND_MCP").lower() in ("1", "true", "yes", "an"),
+        backup_auto=_env("PINNWAND_BACKUP_AUTO", "1").lower() not in ("0", "false", "no", "aus"),
+        backup_behalten=_port("PINNWAND_BACKUP_BEHALTEN", 10),
     )
 
 

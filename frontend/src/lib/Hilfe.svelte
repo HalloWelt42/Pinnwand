@@ -18,6 +18,7 @@
     { titel: 'Transkripte', text: 'Transkriptionen aus dem Sprachdienst durchsuchen, anzeigen, vorlesen und das Original-Audio abspielen.' },
     { titel: 'Planung', text: 'Personen mit Wochen-Soll je Wochentag, Urlaub (auch halbe Tage) und Feiertags-Import (Land/Region) mit Vorschau vor Uebernahme.' },
     { titel: 'Berichte', text: 'Stundenzettel, Soll/Ist, Kapazitaet und Zeit je Person/Karte als PDF, CSV oder Markdown. Erzeugte Berichte landen unveraenderlich im Archiv.' },
+    { titel: 'Einstellungen und Sicherung', text: 'Unter Einstellungen erstellst du Snapshots (Datenbank, Berichts-Archiv, Konfigurationsvorlage). Beim Start wird hoechstens taeglich automatisch gesichert. Vor jeder Wiederherstellung wird der aktuelle Stand gesichert; die Wiederherstellung zeigt vorher eine Vorschau mit den Unterschieden.' },
     { titel: 'KI ist optional', text: 'LLM, Vorlesen, Spracheingabe und semantische Suche sind optional. Ohne die Dienste laeuft alles weiter; der Dienste-Status unten in der Seitenleiste zeigt, was erreichbar ist.' },
     { titel: 'Agenten-API', text: 'Unter /api/agent koennen KI-Werkzeuge Zeiten buchen, Aufgaben anlegen/erledigen und suchen (Token mit Scopes, Audit-Log, Trockenlauf). Zusaetzlich MCP-Server und OpenAI-Tools.' },
   ]

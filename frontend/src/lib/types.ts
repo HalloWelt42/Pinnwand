@@ -34,8 +34,6 @@ export interface Karte {
   schaetzung_min?: number | null
   erfasst_sek?: number
   laeuft_seit?: string | null
-  flow_x?: number | null
-  flow_y?: number | null
   blockiert_von?: string[]
 }
 

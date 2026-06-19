@@ -340,6 +340,7 @@
     <CardDrawer
       karte={ausgewaehlt}
       spalten={board.spalten}
+      alleKarten={board.karten}
       onSchliessen={() => (ausgewaehlt = null)}
       onAendern={karteAendern}
       onKommentar={karteKommentar}

@@ -140,8 +140,6 @@ def _karte_aus_row(row: sqlite3.Row) -> Karte:
         schaetzung_min=row["schaetzung_min"],
         erfasst_sek=row["erfasst_sek"],
         laeuft_seit=row["laeuft_seit"],
-        flow_x=row["flow_x"] if "flow_x" in row.keys() else None,
-        flow_y=row["flow_y"] if "flow_y" in row.keys() else None,
         blockiert_von=json.loads(row["blockiert_von"]) if ("blockiert_von" in row.keys() and row["blockiert_von"]) else [],
     )
 
@@ -256,7 +254,7 @@ def verschiebe_karte(karte_id: str, ziel_spalte: str, ziel_reihenfolge: int) -> 
 
 
 def aktualisiere_karte(karte_id: str, aenderungen: dict) -> Karte | None:
-    erlaubt = {"titel", "beschreibung", "labels", "prioritaet", "checkliste", "cover", "spalte", "reihenfolge", "start", "faellig", "zustaendig", "schaetzung_min", "flow_x", "flow_y", "blockiert_von"}
+    erlaubt = {"titel", "beschreibung", "labels", "prioritaet", "checkliste", "cover", "spalte", "reihenfolge", "start", "faellig", "zustaendig", "schaetzung_min", "blockiert_von"}
     felder = {k: v for k, v in aenderungen.items() if k in erlaubt}
     if not felder:
         return hole_karte(karte_id)

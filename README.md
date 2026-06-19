@@ -48,4 +48,4 @@ Erweiterungspunkte im Manifest werden unter `/api/erweiterungen` aggregiert bere
 
 ## Ansichten
 
-Aktuell: Board, Zeiten (Wochen-Stundenzettel mit Soll/Ist), Kalender (Heatmap + Monatsansicht). Vorgesehen als weitere Module: Tabelle, Zeitachse, Flow-Ansicht (Boxen mit Verbindungspfaden).
+Aktuell: Heute (Was steht an), Board, Zeiten (Wochen-Stundenzettel mit Soll/Ist), Kalender (Heatmap + Monatsansicht), Flow (Abhängigkeitsdiagramm mit kritischem Pfad), Serien (wiederkehrende Termine), Suche, Transkripte, Planung (Personen, Wochenstunden, Urlaub, Feiertage), Berichte (PDF/CSV/Markdown mit Archiv), Einstellungen (Sicherung, Agenten-Token). Vorgesehen als weitere Module: Tabelle, Zeitachse.

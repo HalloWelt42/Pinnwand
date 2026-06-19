@@ -46,8 +46,6 @@ class Karte(BaseModel):
     schaetzung_min: int | None = None
     erfasst_sek: int = 0
     laeuft_seit: str | None = None
-    flow_x: float | None = None
-    flow_y: float | None = None
     blockiert_von: list[str] = Field(default_factory=list)
 
 
@@ -103,8 +101,6 @@ class KarteUpdate(BaseModel):
     faellig: date | None = None
     zustaendig: str | None = None
     schaetzung_min: int | None = None
-    flow_x: float | None = None
-    flow_y: float | None = None
     blockiert_von: list[str] | None = None
 
 

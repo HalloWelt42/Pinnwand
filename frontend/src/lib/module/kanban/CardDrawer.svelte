@@ -10,6 +10,7 @@
   let {
     karte,
     spalten,
+    alleKarten = [],
     onSchliessen,
     onAendern,
     onKommentar,
@@ -17,6 +18,7 @@
   }: {
     karte: Karte
     spalten: Spalte[]
+    alleKarten?: Karte[]
     onSchliessen: () => void
     onAendern: (daten: KarteAenderung) => void
     onKommentar: (text: string) => void
@@ -114,6 +116,50 @@
     const [j, m, t] = iso.slice(0, 10).split('-')
     return `${t}.${m}.${j}`
   }
+  // -- Abhaengigkeiten / Blocker --
+  const karteVon = $derived(new Map(alleKarten.map((k) => [k.id, k])))
+  const doneSpalten = $derived(new Set(spalten.filter((s) => s.erledigt).map((s) => s.id)))
+  // Karten, die diese Karte (transitiv) blockiert - sie als Blocker zu waehlen ergaebe einen Zyklus.
+  const erreichbarVonKarte = $derived.by(() => {
+    const succ = new Map<string, string[]>()
+    for (const c of alleKarten) {
+      for (const b of c.blockiert_von ?? []) {
+        const arr = succ.get(b)
+        if (arr) arr.push(c.id)
+        else succ.set(b, [c.id])
+      }
+    }
+    const gesehen = new Set<string>()
+    const stack = [karte.id]
+    while (stack.length) {
+      const u = stack.pop() as string
+      for (const v of succ.get(u) ?? []) {
+        if (!gesehen.has(v)) {
+          gesehen.add(v)
+          stack.push(v)
+        }
+      }
+    }
+    return gesehen
+  })
+  const blockerKandidaten = $derived(
+    alleKarten.filter(
+      (c) =>
+        c.id !== karte.id &&
+        !(karte.blockiert_von ?? []).includes(c.id) &&
+        !erreichbarVonKarte.has(c.id),
+    ),
+  )
+  function blockerHinzufuegen(id: string): void {
+    if (!id) return
+    const liste = karte.blockiert_von ?? []
+    if (liste.includes(id) || id === karte.id) return
+    onAendern({ blockiert_von: [...liste, id] })
+  }
+  function blockerEntfernen(id: string): void {
+    onAendern({ blockiert_von: (karte.blockiert_von ?? []).filter((x) => x !== id) })
+  }
+
   const imStatus = $derived(tage(karte.bewegt_am) ?? 0)
   const durchlauf = $derived(tage(karte.erstellt_am) ?? 0)
   const laeuft = $derived(!!karte.laeuft_seit)
@@ -219,6 +265,30 @@
       <input class="labinput" placeholder="+ Label" bind:value={neuesLabel} onkeydown={(e) => { if (e.key === 'Enter') labelHinzufuegen() }} onblur={labelHinzufuegen} />
     </div>
 
+    <p class="sec">Abhängigkeiten <span class="dezent">&middot; muss zuerst fertig sein</span></p>
+    {#if (karte.blockiert_von ?? []).length}
+      <div class="deps">
+        {#each karte.blockiert_von ?? [] as id (id)}
+          {@const b = karteVon.get(id)}
+          <span class="depchip" class:offen={b ? !doneSpalten.has(b.spalte) : false}>
+            {#if b?.schluessel}<span class="dk">{b.schluessel}</span>{/if}
+            <span class="dt">{b?.titel ?? 'unbekannt'}</span>
+            <button aria-label="Abhängigkeit entfernen" onclick={() => blockerEntfernen(id)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+          </span>
+        {/each}
+      </div>
+    {:else}
+      <p class="dezent dep-leer">Keine - diese Karte ist startklar.</p>
+    {/if}
+    {#if blockerKandidaten.length}
+      <select class="depsel" value="" onchange={(e) => { blockerHinzufuegen(e.currentTarget.value); e.currentTarget.value = '' }} aria-label="Blocker hinzufügen">
+        <option value="">+ Blocker hinzufügen ...</option>
+        {#each blockerKandidaten as c (c.id)}
+          <option value={c.id}>{c.schluessel ? c.schluessel + ' - ' : ''}{c.titel}</option>
+        {/each}
+      </select>
+    {/if}
+
 
     <p class="sec">Checkliste {#if karte.checkliste.length}<span class="dezent">&middot; {erledigt} von {karte.checkliste.length}</span>{/if}</p>
     {#if karte.checkliste.length}
@@ -251,6 +321,16 @@
 </aside>
 
 <style>
+  .deps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .depchip { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border-2); border-radius: 999px; padding: 3px 9px; }
+  .depchip.offen { border-color: color-mix(in srgb, var(--gefahr) 45%, transparent); }
+  .depchip .dk { font-family: var(--font-mono); font-size: 10px; color: var(--text-3); }
+  .depchip .dt { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .depchip button { border: none; background: transparent; color: var(--text-3); padding: 0; font-size: 10px; }
+  .depchip button:hover { color: var(--gefahr); }
+  .dep-leer { margin: 0 0 8px; }
+  .depsel { width: 100%; border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-2); border-radius: var(--r-m); padding: 7px 9px; font-size: 12px; margin-bottom: 4px; }
+
   .backdrop {
     position: fixed;
     inset: 0;

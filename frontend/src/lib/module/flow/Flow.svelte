@@ -1,186 +1,200 @@
 <script lang="ts">
-  import { ladeBoard, aktualisiereKarte } from '../../api'
-  import type { BoardDetail, Karte, Spalte } from '../../types'
+  import { ladeFlow, type FlowGraph } from '../../api'
+  import { oeffneKarte } from '../../navigation.svelte'
 
   let { boardId }: { boardId: string } = $props()
 
-  const BOX_B = 180
-  const BOX_H = 70
-  const SP_X = 230
-  const SP_Y = 96
+  // Layout-Masse der automatischen Anordnung.
+  const W = 196
+  const H = 76
+  const GX = 76
+  const GY = 24
+  const PAD = 24
+  const COLS = 4 // nur im abhaengigkeitsfreien Raster
 
-  let board = $state<BoardDetail | null>(null)
-  let pos = $state<Record<string, { x: number; y: number }>>({})
-  let verknuepfen = $state(false)
-  let quelle = $state<string | null>(null)
-  let hinweis = $state('')
+  let graph = $state<FlowGraph | null>(null)
+  let laedt = $state(true)
 
   async function laden(): Promise<void> {
-    const b = await ladeBoard(boardId)
-    board = b
-    const spaltenIdx: Record<string, number> = {}
-    b.spalten.forEach((s, i) => (spaltenIdx[s.id] = i))
-    const zaehler: Record<string, number> = {}
-    const p: Record<string, { x: number; y: number }> = {}
-    for (const k of b.karten) {
-      if (k.flow_x != null && k.flow_y != null) {
-        p[k.id] = { x: k.flow_x, y: k.flow_y }
-      } else {
-        const sp = spaltenIdx[k.spalte] ?? 0
-        const r = (zaehler[k.spalte] = (zaehler[k.spalte] ?? 0) + 1) - 1
-        p[k.id] = { x: 20 + sp * SP_X, y: 20 + r * SP_Y }
-      }
+    laedt = true
+    try {
+      graph = await ladeFlow(boardId)
+    } catch {
+      graph = null
+    } finally {
+      laedt = false
     }
-    pos = p
   }
   $effect(() => {
     void boardId
     laden()
   })
 
-  const karten = $derived(board?.karten ?? [])
-  const doneSpalten = $derived(new Set((board?.spalten ?? []).filter((s) => s.erledigt).map((s) => s.id)))
+  const hatKanten = $derived((graph?.edges.length ?? 0) > 0)
 
-  function blockiert(k: Karte): boolean {
-    // rot, wenn ein blockierender Vorgaenger noch nicht erledigt ist
-    return (k.blockiert_von ?? []).some((id) => {
-      const v = karten.find((x) => x.id === id)
-      return v ? !doneSpalten.has(v.spalte) : false
-    })
-  }
+  interface Platzierung { id: string; x: number; y: number }
 
-  // -- Ziehen --
-  let zieht: string | null = null
-  let startMaus = { x: 0, y: 0 }
-  let startPos = { x: 0, y: 0 }
-  function down(e: PointerEvent, k: Karte): void {
-    if (verknuepfen) {
-      verknuepfe(k)
-      return
+  // Knoten automatisch anordnen: nach Abhaengigkeitsschicht (links nach rechts),
+  // ohne Abhaengigkeiten als kompaktes Raster.
+  const platzierung = $derived.by<Platzierung[]>(() => {
+    if (!graph) return []
+    const res: Platzierung[] = []
+    if (!hatKanten) {
+      graph.nodes.forEach((n, i) => {
+        res.push({ id: n.id, x: PAD + (i % COLS) * (W + GX), y: PAD + Math.floor(i / COLS) * (H + GY) })
+      })
+    } else {
+      const proSchicht: Record<number, number> = {}
+      for (const n of graph.nodes) {
+        const idx = proSchicht[n.layer] ?? 0
+        proSchicht[n.layer] = idx + 1
+        res.push({ id: n.id, x: PAD + n.layer * (W + GX), y: PAD + idx * (H + GY) })
+      }
     }
-    zieht = k.id
-    startMaus = { x: e.clientX, y: e.clientY }
-    startPos = { ...pos[k.id] }
-    window.addEventListener('pointermove', move)
-    window.addEventListener('pointerup', up, { once: true })
-  }
-  function move(e: PointerEvent): void {
-    if (!zieht) return
-    pos[zieht] = { x: Math.max(0, startPos.x + (e.clientX - startMaus.x)), y: Math.max(0, startPos.y + (e.clientY - startMaus.y)) }
-  }
-  async function up(): Promise<void> {
-    window.removeEventListener('pointermove', move)
-    const id = zieht
-    zieht = null
-    if (id && pos[id]) await aktualisiereKarte(id, { flow_x: Math.round(pos[id].x), flow_y: Math.round(pos[id].y) })
+    return res
+  })
+
+  const posVon = $derived(new Map(platzierung.map((p) => [p.id, p])))
+  const leinwandB = $derived(platzierung.length ? Math.max(...platzierung.map((p) => p.x)) + W + PAD : 400)
+  const leinwandH = $derived(platzierung.length ? Math.max(...platzierung.map((p) => p.y)) + H + PAD : 240)
+
+  interface Kante { id: string; d: string; kritisch: boolean; zyklus: boolean }
+  const kanten = $derived.by<Kante[]>(() => {
+    if (!graph) return []
+    const out: Kante[] = []
+    for (const e of graph.edges) {
+      const a = posVon.get(e.von)
+      const b = posVon.get(e.nach)
+      if (!a || !b) continue
+      const sx = a.x + W
+      const sy = a.y + H / 2
+      const tx = b.x
+      const ty = b.y + H / 2
+      const dx = Math.max(34, (tx - sx) / 2)
+      out.push({
+        id: e.von + '->' + e.nach,
+        d: `M${sx},${sy} C${sx + dx},${sy} ${tx - dx},${ty} ${tx},${ty}`,
+        kritisch: e.auf_kritischem_pfad,
+        zyklus: e.zyklus,
+      })
+    }
+    return out
+  })
+
+  function hhmm(min: number): string {
+    const h = Math.floor(min / 60)
+    const m = min % 60
+    return h ? `${h}:${String(m).padStart(2, '0')} h` : `${m} min`
   }
 
-  // -- Verknuepfen --
-  async function verknuepfe(ziel: Karte): Promise<void> {
-    if (!quelle) {
-      quelle = ziel.id
-      hinweis = 'Jetzt die abhaengige Karte waehlen (wird vom ersten blockiert).'
-      return
-    }
-    if (quelle === ziel.id) {
-      quelle = null
-      hinweis = ''
-      return
-    }
-    const liste = new Set(ziel.blockiert_von ?? [])
-    liste.add(quelle)
-    await aktualisiereKarte(ziel.id, { blockiert_von: [...liste] })
-    quelle = null
-    hinweis = ''
-    await laden()
-  }
-  async function entferne(k: Karte, vonId: string): Promise<void> {
-    await aktualisiereKarte(k.id, { blockiert_von: (k.blockiert_von ?? []).filter((x) => x !== vonId) })
-    await laden()
-  }
-
-  function mitte(id: string): { x: number; y: number } {
-    const p = pos[id] ?? { x: 0, y: 0 }
-    return { x: p.x + BOX_B / 2, y: p.y + BOX_H / 2 }
-  }
-  const kanten = $derived(
-    karten.flatMap((k) =>
-      (k.blockiert_von ?? [])
-        .filter((vid) => pos[vid] && pos[k.id])
-        .map((vid) => ({ id: vid + '->' + k.id, von: mitte(vid), zu: mitte(k.id) })),
-    ),
-  )
+  const kp = $derived(graph?.kritischer_pfad ?? { karten: [], dauer_min: 0 })
+  const zyklen = $derived(graph?.zyklus_kanten.length ?? 0)
 </script>
 
 <div class="flowtop">
-  <button class="btn" class:an={verknuepfen} onclick={() => { verknuepfen = !verknuepfen; quelle = null; hinweis = verknuepfen ? 'Verknuepfen: erst die blockierende, dann die abhaengige Karte klicken.' : '' }}>
-    <i class="fa-solid fa-diagram-project" aria-hidden="true"></i> {verknuepfen ? 'Verknuepfen aktiv' : 'Verknuepfen'}
-  </button>
-  {#if hinweis}<span class="hw">{hinweis}</span>{/if}
-  <span class="legende"><span class="pkt rot"></span> blockiert</span>
-</div>
-
-<div class="flow">
-  <div class="canvas">
-    <svg class="kanten" aria-hidden="true">
-      <defs>
-        <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 z" fill="var(--text-3)" />
-        </marker>
-      </defs>
-      {#each kanten as e (e.id)}
-        <line x1={e.von.x} y1={e.von.y} x2={e.zu.x} y2={e.zu.y} stroke="var(--text-3)" stroke-width="1.6" marker-end="url(#pfeil)" />
-      {/each}
-    </svg>
-    {#each karten as k (k.id)}
-      <div
-        class="box"
-        class:blockiert={blockiert(k)}
-        class:quelle={quelle === k.id}
-        style="left:{pos[k.id]?.x ?? 0}px; top:{pos[k.id]?.y ?? 0}px; width:{BOX_B}px;"
-        onpointerdown={(e) => down(e, k)}
-        role="button"
-        tabindex="0"
-      >
-        <div class="bk">
-          {#if k.schluessel}<span class="key">{k.schluessel}</span>{/if}
-          {#if blockiert(k)}<i class="fa-solid fa-lock rot" aria-hidden="true"></i>{/if}
-        </div>
-        <div class="bt">{k.titel}</div>
-        {#if (k.blockiert_von ?? []).length}
-          <div class="deps">
-            {#each k.blockiert_von ?? [] as vid (vid)}
-              {@const v = karten.find((x) => x.id === vid)}
-              <span class="dep">{v?.schluessel ?? '?'}<button aria-label="Verknuepfung entfernen" onpointerdown={(ev) => ev.stopPropagation()} onclick={() => entferne(k, vid)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></span>
-            {/each}
-          </div>
-        {/if}
-      </div>
-    {/each}
+  {#if kp.karten.length > 1}
+    <span class="summe"><i class="fa-solid fa-bolt" aria-hidden="true"></i> Kritischer Pfad: {kp.karten.length} Aufgaben{kp.dauer_min > 0 ? ' · ' + hhmm(kp.dauer_min) : ''}</span>
+  {:else}
+    <span class="summe leer">Kein kritischer Pfad (keine Abhaengigkeiten)</span>
+  {/if}
+  <div class="legende">
+    <span><span class="pkt krit"></span> kritisch</span>
+    <span><span class="pkt blk"></span> blockiert</span>
+    <span><span class="pkt bereit"></span> startklar</span>
+    <span><span class="pkt erl"></span> erledigt</span>
   </div>
 </div>
 
+{#if zyklen > 0}
+  <div class="zwarn">
+    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+    Zyklische Abhaengigkeit erkannt ({zyklen} {zyklen === 1 ? 'Kante' : 'Kanten'}). Betroffene Verbindungen sind rot gestrichelt - bitte aufloesen.
+  </div>
+{/if}
+
+<div class="flow">
+  {#if laedt}
+    <p class="hinweis">Diagramm wird geladen ...</p>
+  {:else if !graph || !graph.nodes.length}
+    <p class="hinweis">Keine Karten auf diesem Board.</p>
+  {:else}
+    {#if !hatKanten}
+      <p class="hinweis tipp">Noch keine Abhaengigkeiten. Lege im Karten-Detail unter "Abhaengigkeiten" fest, welche Karte eine andere blockiert - dann ordnet dieses Diagramm sie automatisch nach Reihenfolge an und zeigt den kritischen Pfad.</p>
+    {/if}
+    <div class="canvas" style="width:{leinwandB}px; height:{leinwandH}px;">
+      <svg class="kanten" width={leinwandB} height={leinwandH} aria-hidden="true">
+        <defs>
+          <marker id="pf-norm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--text-3)" /></marker>
+          <marker id="pf-krit" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--hl-primary)" /></marker>
+          <marker id="pf-zyk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--gefahr)" /></marker>
+        </defs>
+        {#each kanten as e (e.id)}
+          <path d={e.d} fill="none"
+            stroke={e.zyklus ? 'var(--gefahr)' : e.kritisch ? 'var(--hl-primary)' : 'var(--border-2)'}
+            stroke-width={e.kritisch ? 2.4 : 1.6}
+            stroke-dasharray={e.zyklus ? '5 4' : undefined}
+            marker-end={e.zyklus ? 'url(#pf-zyk)' : e.kritisch ? 'url(#pf-krit)' : 'url(#pf-norm)'} />
+        {/each}
+      </svg>
+      {#each graph.nodes as n (n.id)}
+        {@const p = posVon.get(n.id)}
+        {#if p}
+          <div class="knoten s-{n.status}" class:kritisch={n.auf_kritischem_pfad} class:zyklus={n.in_zyklus}
+            style="left:{p.x}px; top:{p.y}px; width:{W}px; height:{H}px;"
+            role="button" tabindex="0"
+            onclick={() => oeffneKarte(boardId, n.id)}
+            onkeydown={(ev) => { if (ev.key === 'Enter') oeffneKarte(boardId, n.id) }}>
+            <div class="kkopf">
+              {#if n.schluessel}<span class="key">{n.schluessel}</span>{/if}
+              <span class="iconrow">
+                {#if n.auf_kritischem_pfad}<i class="fa-solid fa-bolt ic-krit" title="kritischer Pfad" aria-hidden="true"></i>{/if}
+                {#if n.status === 'blockiert'}<i class="fa-solid fa-lock ic-blk" title="blockiert" aria-hidden="true"></i>{/if}
+                {#if n.status === 'startklar'}<i class="fa-solid fa-circle-play ic-bereit" title="startklar" aria-hidden="true"></i>{/if}
+                {#if n.status === 'erledigt'}<i class="fa-solid fa-check ic-erl" title="erledigt" aria-hidden="true"></i>{/if}
+              </span>
+            </div>
+            <div class="ktitel">{n.titel}</div>
+            {#if n.schaetzung_min > 0}<div class="kmeta">{hhmm(n.schaetzung_min)}</div>{/if}
+          </div>
+        {/if}
+      {/each}
+    </div>
+  {/if}
+</div>
+
 <style>
-  .flowtop { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
-  .btn { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); border-radius: var(--r-m); padding: 7px 12px; font-size: 12.5px; }
-  .btn.an { background: var(--hl-primary); color: var(--hl-on-primary); border-color: transparent; }
-  .hw { font-size: 12px; color: var(--text-3); }
-  .legende { margin-left: auto; font-size: 11.5px; color: var(--text-3); display: inline-flex; align-items: center; gap: 6px; }
+  .flowtop { display: flex; align-items: center; gap: 16px; padding: 10px 14px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .summe { font-size: 12.5px; color: var(--text-1); display: inline-flex; align-items: center; gap: 7px; }
+  .summe i { color: var(--hl-primary-text); }
+  .summe.leer { color: var(--text-3); }
+  .legende { margin-left: auto; display: inline-flex; gap: 12px; font-size: 11.5px; color: var(--text-3); }
+  .legende span { display: inline-flex; align-items: center; gap: 5px; }
   .pkt { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-  .pkt.rot { background: var(--gefahr); }
-  .flow { height: calc(100% - 44px); overflow: auto; }
-  .canvas { position: relative; width: 2200px; height: 1500px; }
-  .kanten { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-  .box { position: absolute; background: var(--surface-col); border: 1px solid var(--border-2); border-radius: var(--r-m); padding: 8px 10px; cursor: grab; box-shadow: var(--schatten-karte); user-select: none; }
-  .box:active { cursor: grabbing; }
-  .box.blockiert { border-color: var(--gefahr); }
-  .box.quelle { border-color: var(--hl-primary); box-shadow: 0 0 0 2px var(--hl-primary-weich); }
-  .bk { display: flex; align-items: center; gap: 6px; }
+  .pkt.krit { background: var(--hl-primary); }
+  .pkt.blk { background: var(--gefahr); }
+  .pkt.bereit { background: var(--ok, #2e7d32); }
+  .pkt.erl { background: var(--text-3); }
+  .zwarn { display: flex; align-items: center; gap: 8px; margin: 10px 14px 0; padding: 8px 12px; font-size: 12px; color: var(--gefahr); background: color-mix(in srgb, var(--gefahr) 12%, transparent); border: 1px solid color-mix(in srgb, var(--gefahr) 35%, transparent); border-radius: var(--r-m); }
+  .flow { height: calc(100% - 46px); overflow: auto; }
+  .hinweis { color: var(--text-3); font-size: 12.5px; padding: 16px; }
+  .hinweis.tipp { max-width: 70ch; line-height: 1.55; }
+  .canvas { position: relative; }
+  .kanten { position: absolute; inset: 0; pointer-events: none; }
+  .knoten { position: absolute; background: var(--surface-col); border: 1px solid var(--border-2); border-radius: var(--r-m); padding: 8px 10px; box-shadow: var(--schatten-karte); cursor: pointer; overflow: hidden; display: flex; flex-direction: column; gap: 3px; }
+  .knoten:hover { border-color: var(--hl-primary); }
+  .knoten:focus-visible { outline: 2px solid var(--hl-primary); outline-offset: 1px; }
+  .knoten.kritisch { border-color: var(--hl-primary); box-shadow: 0 0 0 1px var(--hl-primary) inset, var(--schatten-karte); }
+  .knoten.s-blockiert { border-color: var(--gefahr); }
+  .knoten.s-erledigt { opacity: 0.62; }
+  .knoten.zyklus { border-color: var(--gefahr); border-style: dashed; }
+  .kkopf { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
   .key { font-family: var(--font-mono); font-size: 10px; color: var(--text-3); }
-  .rot { color: var(--gefahr); font-size: 10px; }
-  .bt { font-size: 12.5px; color: var(--text-1); margin-top: 2px; line-height: 1.3; max-height: 2.6em; overflow: hidden; }
-  .deps { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
-  .dep { display: inline-flex; align-items: center; gap: 3px; font-size: 9.5px; font-family: var(--font-mono); background: var(--surface-2); color: var(--text-3); border-radius: 999px; padding: 1px 6px; }
-  .dep button { border: none; background: transparent; color: var(--text-3); font-size: 8px; padding: 0; }
-  .dep button:hover { color: var(--gefahr); }
+  .iconrow { display: inline-flex; gap: 6px; align-items: center; }
+  .iconrow i { font-size: 10.5px; }
+  .ic-krit { color: var(--hl-primary-text); }
+  .ic-blk { color: var(--gefahr); }
+  .ic-bereit { color: var(--ok, #2e7d32); }
+  .ic-erl { color: var(--text-3); }
+  .ktitel { font-size: 12.5px; color: var(--text-1); line-height: 1.3; max-height: 2.6em; overflow: hidden; }
+  .kmeta { font-size: 10.5px; color: var(--text-3); font-family: var(--font-mono); }
 </style>

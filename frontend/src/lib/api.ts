@@ -48,6 +48,36 @@ export interface HeuteUebersicht {
 }
 export const ladeHeute = (): Promise<HeuteUebersicht> => hole('/api/kanban/heute')
 
+// --- Abhaengigkeits-Graph (Flow) ---
+
+export interface FlowKnoten {
+  id: string
+  schluessel: string | null
+  titel: string
+  spalte: string
+  schaetzung_min: number
+  blockiert_von: string[]
+  layer: number
+  status: 'erledigt' | 'startklar' | 'blockiert'
+  auf_kritischem_pfad: boolean
+  in_zyklus: boolean
+}
+export interface FlowKante {
+  von: string
+  nach: string
+  auf_kritischem_pfad: boolean
+  zyklus: boolean
+}
+export interface FlowGraph {
+  nodes: FlowKnoten[]
+  edges: FlowKante[]
+  kritischer_pfad: { karten: string[]; dauer_min: number }
+  zyklus_kanten: { von: string; nach: string }[]
+  layer_anzahl: number
+}
+export const ladeFlow = (boardId: string): Promise<FlowGraph> =>
+  hole(`/api/kanban/boards/${boardId}/flow`)
+
 // --- Karten ---
 
 export interface KarteEingabe {
@@ -78,8 +108,6 @@ export interface KarteAenderung {
   faellig?: string | null
   zustaendig?: string | null
   schaetzung_min?: number | null
-  flow_x?: number | null
-  flow_y?: number | null
   blockiert_von?: string[]
 }
 

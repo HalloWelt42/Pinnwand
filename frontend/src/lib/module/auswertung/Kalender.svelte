@@ -1,11 +1,32 @@
 <script lang="ts">
-  import { ladeZeiteintraege } from '../../api'
+  import { ladeZeiteintraege, ladePlanungsTage, ladePersonen, type PlanTag, type Person } from '../../api'
   import { ymd, formatStd } from '../../zeit'
 
   let { boardId }: { boardId: string } = $props()
 
   let jahr = $state(new Date().getFullYear())
   let monat = $state(new Date().getMonth())
+  let personen = $state<Person[]>([])
+  let person = $state('')
+  let planTage = $state<Record<string, PlanTag>>({})
+
+  $effect(() => {
+    ladePersonen().then((p) => (personen = p)).catch(() => {})
+  })
+  $effect(() => {
+    void jahr
+    void monat
+    void person
+    const von = ymd(new Date(jahr, monat, 1))
+    const bis = ymd(new Date(jahr, monat + 1, 0))
+    ladePlanungsTage(von, bis, person || undefined)
+      .then((ts) => {
+        const m: Record<string, PlanTag> = {}
+        for (const t of ts) m[t.datum] = t
+        planTage = m
+      })
+      .catch(() => {})
+  })
   let tagMap = $state<Map<string, number>>(new Map())
   let maxSek = $state(0)
 
@@ -158,12 +179,20 @@
         <span class="titel">{MONATE[monat]} {jahr}</span>
         <button class="ib" aria-label="Monat vor" onclick={monatVor}><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
         <span class="ges">{formatStd(monatSumme)} h</span>
+        <select class="psel" bind:value={person} aria-label="Person fuer Urlaub">
+          <option value="">Urlaub: -</option>
+          {#each personen as p (p.id)}<option value={p.id}>{p.kuerzel ?? p.name}</option>{/each}
+        </select>
       </div>
       <div class="mweekdays">{#each WD as w (w)}<div class="mwd">{w}</div>{/each}</div>
       <div class="mgrid">
         {#each zellen as z, i (i)}
           {#if z}
-            <div class="mtag" class:heute={z.key === HEUTE} class:kraeftig={kraeftig(z.sek)} style="background:{farbe(z.sek)}" title={tipp(z.key, z.sek)}>
+            {@const info = planTage[z.key]}
+            <div class="mtag" class:heute={z.key === HEUTE} class:kraeftig={kraeftig(z.sek)}
+              class:we={info?.wochenende} class:ft={!!info?.feiertag} class:ur={!!info?.urlaub}
+              style="background:{farbe(z.sek)}"
+              title={tipp(z.key, z.sek) + (info?.feiertag ? ' · ' + info.feiertag : '') + (info?.urlaub ? ' · Urlaub' : '')}>
               <span class="mnum">{z.tag}</span>
               {#if z.sek}<span class="mstd">{formatStd(z.sek)}</span>{/if}
             </div>
@@ -329,6 +358,24 @@
   }
   .mtag.heute {
     border-color: var(--ok);
+  }
+  .mtag.ft {
+    box-shadow: inset 0 0 0 2px var(--due-rot-fg);
+  }
+  .mtag.ur {
+    box-shadow: inset 0 0 0 2px var(--due-amber-fg);
+  }
+  .mtag.we .mnum {
+    opacity: 0.4;
+  }
+  .psel {
+    margin-left: 8px;
+    background: var(--surface-2);
+    color: var(--text-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-s);
+    font-size: 11px;
+    padding: 3px 6px;
   }
   .mnum {
     font-size: 11px;

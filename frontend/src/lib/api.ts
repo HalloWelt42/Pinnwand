@@ -242,6 +242,65 @@ export const serieVorschau = (id: string, tage = 30): Promise<{ termine: string[
 export const serieVorbuchen = (id: string): Promise<{ erzeugt: number }> =>
   hole(`/api/serien/${id}/vorbuchen`, { method: 'POST' })
 
+// --- Planung (Personen, Urlaub, Feiertage) ---
+
+export interface Person {
+  id: string
+  name: string
+  kuerzel?: string | null
+  farbe?: string | null
+  wochenstunden: number[]
+  aktiv: boolean
+}
+export interface Urlaubstag {
+  id: string
+  person_id: string
+  datum: string
+  anteil: number
+  typ: string
+  notiz?: string | null
+}
+export interface Feiertag {
+  datum: string
+  name: string
+  region?: string | null
+}
+export interface PlanTag {
+  datum: string
+  wochenende: boolean
+  feiertag: string | null
+  urlaub: number
+}
+
+export const ladePersonen = (): Promise<Person[]> => hole('/api/planung/personen')
+export const erstellePerson = (d: Partial<Person>): Promise<Person> =>
+  hole('/api/planung/personen', { method: 'POST', body: JSON.stringify(d) })
+export const aktualisierePerson = (id: string, d: Partial<Person>): Promise<Person> =>
+  hole(`/api/planung/personen/${id}`, { method: 'PATCH', body: JSON.stringify(d) })
+export const loeschePerson = (id: string): Promise<void> =>
+  hole(`/api/planung/personen/${id}`, { method: 'DELETE' })
+
+export const ladeUrlaub = (person: string, von: string, bis: string): Promise<Urlaubstag[]> =>
+  hole(`/api/planung/urlaub?person=${person}&von=${von}&bis=${bis}`)
+export const setzeUrlaub = (d: { person_id: string; von: string; bis?: string; anteil?: number; typ?: string; notiz?: string; wochenenden_ueberspringen?: boolean; feiertage_ueberspringen?: boolean }): Promise<{ gesetzt: number }> =>
+  hole('/api/planung/urlaub', { method: 'POST', body: JSON.stringify(d) })
+export const loescheUrlaub = (id: string): Promise<void> =>
+  hole(`/api/planung/urlaub/${id}`, { method: 'DELETE' })
+
+export const ladeLaender = (): Promise<{ verfuegbar: boolean; laender: Record<string, string[]> }> =>
+  hole('/api/planung/laender')
+export const ladeFeiertage = (von: string, bis: string): Promise<Feiertag[]> =>
+  hole(`/api/planung/feiertage?von=${von}&bis=${bis}`)
+export const feiertageVorschau = (land: string, region: string | null, jahr: number): Promise<{ eintraege: Feiertag[] }> =>
+  hole(`/api/planung/feiertage/vorschau?land=${land}&jahr=${jahr}${region ? `&region=${region}` : ''}`)
+export const feiertageUebernehmen = (land: string, region: string | null, jahr: number): Promise<{ uebernommen: number }> =>
+  hole('/api/planung/feiertage/uebernehmen', { method: 'POST', body: JSON.stringify({ land, region, jahr }) })
+export const loescheFeiertage = (jahr: number, region: string | null): Promise<{ geloescht: number }> =>
+  hole(`/api/planung/feiertage?jahr=${jahr}${region ? `&region=${region}` : ''}`, { method: 'DELETE' })
+
+export const ladePlanungsTage = (von: string, bis: string, person?: string): Promise<PlanTag[]> =>
+  hole(`/api/planung/tage?von=${von}&bis=${bis}${person ? `&person=${person}` : ''}`)
+
 export async function vorleseAudio(text: string, stimme?: string): Promise<Blob> {
   const antwort = await fetch(`${BASIS}/api/tts`, {
     method: 'POST',

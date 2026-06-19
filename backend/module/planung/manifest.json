@@ -1,0 +1,19 @@
+{
+  "id": "planung",
+  "name": "Planung",
+  "version": "0.1.0",
+  "extends": {
+    "views": [
+      { "id": "planung", "titel": "Planung", "icon": "fa-solid fa-users" }
+    ],
+    "cardFields": [],
+    "mappeTabs": [],
+    "commands": []
+  },
+  "backend": {
+    "router": "module.planung.api:router",
+    "init": "module.planung.persistence:init_db"
+  },
+  "permissions": [],
+  "requires": []
+}

@@ -4,6 +4,7 @@
   import { labelFarbe } from '../../labels'
   import { theme } from '../../theme/theme.svelte'
   import { timer, timerStarten, timerPausieren, erfassteSekunden, formatDauer, formatPlan } from '../../timer.svelte'
+  import Markdown from '../../Markdown.svelte'
 
   let {
     karte,
@@ -27,6 +28,25 @@
   let neuerPunkt = $state('')
   let neuesLabel = $state('')
   let kommentar = $state('')
+  let bearbeiten = $state(false)
+  let vollbild = $state(false)
+  let gespeichert = $state(false)
+  let spTimer: ReturnType<typeof setTimeout> | null = null
+
+  function autoSpeichern() {
+    if (spTimer) clearTimeout(spTimer)
+    gespeichert = false
+    spTimer = setTimeout(() => {
+      onAendern({ beschreibung: beschr || null })
+      gespeichert = true
+    }, 600)
+  }
+  function bearbeitenFertig() {
+    if (spTimer) clearTimeout(spTimer)
+    onAendern({ beschreibung: beschr || null })
+    bearbeiten = false
+    vollbild = false
+  }
 
   // Beschreibungs-Entwurf folgt der Karte (auch beim ersten Oeffnen).
   let zuletzt = $state<string | null>(null)
@@ -163,8 +183,33 @@
       <input class="labinput" placeholder="+ Label" bind:value={neuesLabel} onkeydown={(e) => { if (e.key === 'Enter') labelHinzufuegen() }} onblur={labelHinzufuegen} />
     </div>
 
-    <p class="sec">Beschreibung</p>
-    <textarea class="desc" rows="3" placeholder="Beschreibung ..." bind:value={beschr} onblur={() => onAendern({ beschreibung: beschr || null })}></textarea>
+    <div class="sec-reihe">
+      <p class="sec">Beschreibung</p>
+      <span class="md-werkzeuge">
+        {#if bearbeiten}
+          {#if gespeichert}<span class="gesp">gespeichert</span>{/if}
+          <button class="mini geist" onclick={() => (vollbild = !vollbild)}><i class="fa-solid {vollbild ? 'fa-compress' : 'fa-expand'}" aria-hidden="true"></i> {vollbild ? 'Verkleinern' : 'Vollbild'}</button>
+          <button class="mini" onclick={bearbeitenFertig}>Fertig</button>
+        {:else}
+          <button class="mini geist" onclick={() => (bearbeiten = true)}><i class="fa-solid fa-pen" aria-hidden="true"></i> Bearbeiten</button>
+        {/if}
+      </span>
+    </div>
+    {#if bearbeiten}
+      <div class="md-editor" class:vollbild>
+        {#if vollbild}
+          <div class="vb-kopf"><b>Beschreibung bearbeiten</b><button class="mini" onclick={bearbeitenFertig}>Fertig</button></div>
+        {/if}
+        <div class="md-split">
+          <textarea class="desc" placeholder="Markdown ... (Ueberschriften, Listen, Code, Tabellen, $Mathe$, Mermaid)" bind:value={beschr} oninput={autoSpeichern}></textarea>
+          <div class="md-vorschau"><Markdown md={beschr || '*Vorschau*'} /></div>
+        </div>
+      </div>
+    {:else if beschr.trim()}
+      <button class="md-ansicht" onclick={() => (bearbeiten = true)} title="Zum Bearbeiten klicken"><Markdown md={beschr} /></button>
+    {:else}
+      <button class="leer-hinweis" onclick={() => (bearbeiten = true)}>Keine Beschreibung. Klicken zum Bearbeiten.</button>
+    {/if}
 
     <p class="sec">Checkliste {#if karte.checkliste.length}<span class="dezent">&middot; {erledigt} von {karte.checkliste.length}</span>{/if}</p>
     {#if karte.checkliste.length}
@@ -183,7 +228,7 @@
 
     <p class="sec">Aktivität</p>
     {#each karte.kommentare as k (k.zeit + k.autor)}
-      <div class="cmt"><span class="av">{initialen(k.autor)}</span><div class="ct"><b>{k.autor}</b> <span class="zeit">{zeitKurz(k.zeit)}</span><p>{k.text}</p></div></div>
+      <div class="cmt"><span class="av">{initialen(k.autor)}</span><div class="ct"><b>{k.autor}</b> <span class="zeit">{zeitKurz(k.zeit)}</span><div class="cmt-md"><Markdown md={k.text} /></div></div></div>
     {/each}
     <div class="cmtinput">
       <input placeholder="Kommentar schreiben ..." bind:value={kommentar} onkeydown={(e) => { if (e.key === 'Enter') kommentarSenden() }} />
@@ -534,7 +579,7 @@
     font-size: 10.5px;
     margin-left: 6px;
   }
-  .ct p {
+  .ct .cmt-md {
     margin: 3px 0 0;
     color: var(--text-2);
     line-height: 1.45;
@@ -581,5 +626,103 @@
     margin-top: 22px;
     padding-top: 14px;
     border-top: 1px solid var(--border);
+  }
+
+  /* -- Markdown-Beschreibung -- */
+  .sec-reihe {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .md-werkzeuge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .gesp {
+    font-size: 10.5px;
+    color: var(--ok);
+  }
+  .mini {
+    border: 1px solid var(--hl-primary);
+    background: var(--hl-primary);
+    color: var(--hl-on-primary);
+    border-radius: var(--r-s);
+    padding: 4px 9px;
+    font-size: 11.5px;
+    white-space: nowrap;
+  }
+  .mini.geist {
+    background: transparent;
+    color: var(--text-2);
+    border-color: var(--border-2);
+  }
+  .md-ansicht {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-m);
+    padding: 10px 11px;
+    cursor: text;
+  }
+  .md-ansicht:hover {
+    border-color: var(--border-2);
+  }
+  .leer-hinweis {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 1px dashed var(--border-2);
+    border-radius: var(--r-m);
+    padding: 10px 11px;
+    color: var(--text-3);
+    font-size: 12.5px;
+  }
+  .md-editor .md-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .md-editor .desc {
+    min-height: 120px;
+  }
+  .md-vorschau {
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    border-radius: var(--r-m);
+    padding: 9px 10px;
+    overflow-y: auto;
+    max-height: 320px;
+  }
+  .md-editor.vollbild {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: var(--surface-col);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .md-editor.vollbild .md-split {
+    flex: 1;
+    min-height: 0;
+  }
+  .md-editor.vollbild .desc,
+  .md-editor.vollbild .md-vorschau {
+    max-height: none;
+    height: 100%;
+  }
+  .vb-kopf {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cmt-md {
+    font-size: 12.5px;
   }
 </style>

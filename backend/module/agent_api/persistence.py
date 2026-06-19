@@ -145,21 +145,33 @@ def liste_audit(limit: int = 100) -> list[dict]:
 
 # -- Idempotenz -----------------------------------------------------------
 
-def idempotenz_treffer(schluessel: str | None) -> dict | None:
+def _idem_schluessel(akteur: str, schluessel: str) -> str:
+    """Bindet den Idempotenz-Schluessel an den Akteur.
+
+    Sonst koennte ein Akteur mit dem Schluessel eines anderen dessen Ergebnis
+    erhalten oder dessen Schreibaktion unterdruecken.
+    """
+    return f"{akteur}:{schluessel}"
+
+
+def idempotenz_treffer(akteur: str, schluessel: str | None) -> dict | None:
     if not schluessel:
         return None
     with verbindung() as conn:
-        r = conn.execute("SELECT ergebnis FROM agent_idempotenz WHERE schluessel = ?", (schluessel,)).fetchone()
+        r = conn.execute(
+            "SELECT ergebnis FROM agent_idempotenz WHERE schluessel = ?",
+            (_idem_schluessel(akteur, schluessel),),
+        ).fetchone()
     if r is None:
         return None
     return json.loads(r["ergebnis"]) if r["ergebnis"] else {}
 
 
-def idempotenz_merke(schluessel: str | None, ergebnis: dict) -> None:
+def idempotenz_merke(akteur: str, schluessel: str | None, ergebnis: dict) -> None:
     if not schluessel:
         return
     with verbindung() as conn:
         conn.execute(
             "INSERT OR REPLACE INTO agent_idempotenz (schluessel, zeit, ergebnis) VALUES (?, ?, ?)",
-            (schluessel, _jetzt(), json.dumps(ergebnis, ensure_ascii=False)),
+            (_idem_schluessel(akteur, schluessel), _jetzt(), json.dumps(ergebnis, ensure_ascii=False)),
         )

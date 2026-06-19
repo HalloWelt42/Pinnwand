@@ -36,7 +36,7 @@ def _ziel(ergebnis: dict) -> str | None:
 def _schreibe(akteur: Akteur, aktion_name: str, idem: str | None, dry_run: bool, fn: Callable[[], dict]) -> dict:
     """Gemeinsamer Pfad fuer Schreibaktionen: Idempotenz, Trockenlauf, Audit."""
     if not dry_run:
-        treffer = db.idempotenz_treffer(idem)
+        treffer = db.idempotenz_treffer(akteur.name, idem)
         if treffer is not None:
             return {**treffer, "wiederholt": True}
     try:
@@ -47,7 +47,7 @@ def _schreibe(akteur: Akteur, aktion_name: str, idem: str | None, dry_run: bool,
     if dry_run:
         db.protokolliere(akteur.name, aktion_name, _ziel(ergebnis), "vorschau", None)
         return ergebnis
-    db.idempotenz_merke(idem, ergebnis)
+    db.idempotenz_merke(akteur.name, idem, ergebnis)
     db.protokolliere(akteur.name, aktion_name, _ziel(ergebnis), "ok", None)
     return ergebnis
 

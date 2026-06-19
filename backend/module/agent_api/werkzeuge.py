@@ -139,7 +139,7 @@ def fuehre_aus(name: str, argumente: dict, akteur: Akteur,
     schreibt = w.scope == "write"
 
     if schreibt and not dry_run and idempotenz_schluessel:
-        treffer = db.idempotenz_treffer(idempotenz_schluessel)
+        treffer = db.idempotenz_treffer(akteur.name, idempotenz_schluessel)
         if treffer is not None:
             return {**treffer, "wiederholt": True}
 
@@ -156,7 +156,7 @@ def fuehre_aus(name: str, argumente: dict, akteur: Akteur,
     if schreibt and dry_run:
         db.protokolliere(akteur.name, name, _ziel(ergebnis), "vorschau", None)
     elif schreibt:
-        db.idempotenz_merke(idempotenz_schluessel, ergebnis)
+        db.idempotenz_merke(akteur.name, idempotenz_schluessel, ergebnis)
         db.protokolliere(akteur.name, name, _ziel(ergebnis), "ok", None)
     else:
         db.protokolliere(akteur.name, name, None, "ok", None)

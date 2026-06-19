@@ -29,8 +29,8 @@ def erzeugen(e: BerichtAnfrage) -> Response:
         inhalt, mime = render.rendere(bericht, e.format)
     except ValueError as ex:
         raise HTTPException(status_code=400, detail=str(ex))
-    except Exception as ex:  # z.B. WeasyPrint nicht verfuegbar
-        raise HTTPException(status_code=500, detail=f"Render-Fehler: {ex}")
+    except Exception:  # z.B. WeasyPrint nicht verfuegbar - Details nicht nach aussen geben
+        raise HTTPException(status_code=500, detail="Bericht konnte nicht erzeugt werden (Render-Dienst nicht verfuegbar).")
     if e.archivieren:
         db.archiviere(e.typ, bericht["titel"], bericht["zeitraum"], e.format, e.person, inhalt)
     dateiname = f"{e.typ}_{e.von or 'gesamt'}.{_EXT.get(e.format, 'bin')}"

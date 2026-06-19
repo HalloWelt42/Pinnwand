@@ -47,7 +47,8 @@
   let modus = $state<'normal' | 'edit'>('normal')
   let menuOffen = $state(false)
   let titelEntwurf = $state('')
-  let wipEntwurf = $state('')
+  // Das WIP-Feld ist ein type=number-Input: Svelte bindet hier eine Zahl bzw. null, keinen String.
+  let wipEntwurf = $state<number | null>(null)
   let neueKarte = $state(false)
   let karteTitel = $state('')
 
@@ -57,15 +58,14 @@
 
   function bearbeiten() {
     titelEntwurf = spalte.titel
-    wipEntwurf = spalte.wip_limit != null ? String(spalte.wip_limit) : ''
+    wipEntwurf = spalte.wip_limit ?? null
     menuOffen = false
     modus = 'edit'
   }
   function speichern() {
     const titel = titelEntwurf.trim()
     if (!titel) return
-    const zahl = parseInt(wipEntwurf, 10)
-    const wip = wipEntwurf.trim() === '' || Number.isNaN(zahl) ? null : Math.max(1, zahl)
+    const wip = wipEntwurf == null || Number.isNaN(wipEntwurf) ? null : Math.max(1, Math.floor(wipEntwurf))
     onSpalteUmbenennen({ titel, wip_limit: wip })
     modus = 'normal'
   }

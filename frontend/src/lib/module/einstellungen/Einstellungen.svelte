@@ -320,7 +320,7 @@
   .stand { font-size: 12.5px; color: var(--text-2); margin: 0 0 10px; }
   .form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .notiz { flex: 1; min-width: 220px; border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-1); border-radius: var(--r-m); padding: 8px 10px; font-size: 12.5px; }
-  .btn { border: 1px solid var(--border); border-radius: var(--r-m); padding: 8px 13px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 7px; }
+  .btn { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); border-radius: var(--r-m); padding: 8px 13px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 7px; }
   .btn.primaer { background: var(--hl-primary); color: var(--hl-on-primary); border-color: transparent; font-weight: 500; }
   .btn.klein { padding: 5px 10px; font-size: 11.5px; }
   .btn.gefahr { color: var(--gefahr, #e5484d); border-color: var(--gefahr, #e5484d); background: transparent; }

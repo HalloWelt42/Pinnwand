@@ -181,7 +181,7 @@
   .reihe { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .mini { display: inline-flex; align-items: center; gap: 6px; color: var(--text-3); font-size: 11.5px; }
   .mini input { width: 130px; }
-  .btn { border: 1px solid var(--border); border-radius: var(--r-m); padding: 7px 12px; font-size: 12.5px; }
+  .btn { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); border-radius: var(--r-m); padding: 7px 12px; font-size: 12.5px; }
   .btn.primaer { background: var(--hl-primary); color: var(--hl-on-primary); border-color: transparent; font-weight: 500; }
   .btn.geist { background: transparent; color: var(--text-2); }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }

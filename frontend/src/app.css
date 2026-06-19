@@ -24,6 +24,11 @@ button {
   font-family: inherit;
   cursor: pointer;
   color: inherit;
+  /* Kein Rueckfall auf die fast weisse Browser-Standardflaeche: ein Knopf ohne
+     eigenen Hintergrund bleibt transparent und damit auf dunklem Grund lesbar. */
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 input,

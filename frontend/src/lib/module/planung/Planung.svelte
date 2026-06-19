@@ -3,7 +3,9 @@
     ladePersonen, erstellePerson, aktualisierePerson, loeschePerson,
     ladeUrlaub, setzeUrlaub, loescheUrlaub, ladeUrlaubskonten,
     ladeLaender, feiertageVorschau, feiertageUebernehmen, ladeFeiertage, loescheFeiertage,
+    ladeAbwesenheitstypen, aktualisiereAbwesenheitstyp, ladeTagesregeln, setzeTagesregel, loescheTagesregel,
     type Person, type Urlaubstag, type Feiertag, type Urlaubskonto, type Region,
+    type AbwesenheitTyp, type Tagesregel,
   } from '../../api'
 
   let { boardId }: { boardId: string } = $props()
@@ -32,6 +34,16 @@
   let vorschau = $state<Feiertag[]>([])
   let feiertage = $state<Feiertag[]>([])
   let meldung = $state('')
+
+  // Abwesenheits-Arten + Regeln (Konfiguration)
+  let abwTypen = $state<AbwesenheitTyp[]>([])
+  let regeln = $state<Tagesregel[]>([])
+  let rArt = $state<'jahrestag' | 'wochentag'>('jahrestag')
+  let rMonat = $state(12)
+  let rTag = $state(24)
+  let rWochentag = $state(4)
+  let rAnteil = $state(0.5)
+  let rNotiz = $state('')
 
   async function ladenPersonen(): Promise<void> {
     personen = await ladePersonen()
@@ -72,6 +84,44 @@
   $effect(() => {
     if (urlaubPerson) ladeUrlaub(urlaubPerson, `${jahr}-01-01`, `${jahr}-12-31`).then((u) => (urlaub = u)).catch(() => {})
   })
+  $effect(() => { ladenKonfig() })
+
+  async function ladenKonfig(): Promise<void> {
+    abwTypen = await ladeAbwesenheitstypen().catch(() => [])
+    regeln = await ladeTagesregeln().catch(() => [])
+  }
+  async function anrechnenAendern(t: AbwesenheitTyp, wert: boolean): Promise<void> {
+    await aktualisiereAbwesenheitstyp(t.code, { anrechnen: wert })
+    await ladenKonfig()
+    await ladenKonten()
+  }
+  async function farbeAendern(t: AbwesenheitTyp, wert: string): Promise<void> {
+    await aktualisiereAbwesenheitstyp(t.code, { farbe: wert })
+    await ladenKonfig()
+  }
+  async function regelHinzufuegen(): Promise<void> {
+    const d: Partial<Tagesregel> = rArt === 'jahrestag'
+      ? { art: 'jahrestag', monat: rMonat, tag: rTag, anteil: rAnteil, notiz: rNotiz || null }
+      : { art: 'wochentag', wochentag: rWochentag, anteil: rAnteil, notiz: rNotiz || null }
+    await setzeTagesregel(d)
+    rNotiz = ''
+    await ladenKonfig()
+  }
+  async function regelLoeschen(id: string): Promise<void> {
+    await loescheTagesregel(id)
+    await ladenKonfig()
+  }
+  async function brueckeUmschalten(r: Tagesregel): Promise<void> {
+    await setzeTagesregel({ ...r, aktiv: !r.aktiv })
+    await ladenKonfig()
+  }
+  const MON = ['', 'Jan', 'Feb', 'Maer', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
+  const WDV = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+  function regelText(r: Tagesregel): string {
+    if (r.art === 'jahrestag') return `${r.tag}. ${MON[r.monat ?? 0]} (jaehrlich)`
+    if (r.art === 'wochentag') return `jeden ${WDV[r.wochentag ?? 0]}`
+    return 'Brueckentage'
+  }
 
   const regionen = $derived(laender[ftLand] ?? [])
   const regionNamen = $derived(new Map((laender[ftLand] ?? laender['DE'] ?? []).map((r) => [r.code, r.name])))
@@ -247,6 +297,52 @@
       {/if}
     </div>
   </section>
+
+  <section class="block">
+    <p class="sec">Abwesenheits-Arten</p>
+    <div class="atab">
+      {#each abwTypen as t (t.code)}
+        <div class="azeile">
+          <input class="cfarbe" type="color" value={t.farbe} onchange={(e) => farbeAendern(t, e.currentTarget.value)} aria-label="Farbe" />
+          <span class="aname">{t.name}</span>
+          <span class="adez">{t.anwesend ? 'gilt als anwesend' : t.reduziert_soll ? 'reduziert Soll' : ''}</span>
+          <label class="chk"><input type="checkbox" checked={t.anrechnen} onchange={(e) => anrechnenAendern(t, e.currentTarget.checked)} /> zaehlt gegen Urlaubsanspruch</label>
+        </div>
+      {/each}
+    </div>
+  </section>
+
+  <section class="block">
+    <p class="sec">Halbtags- und Sonderregeln</p>
+    <p class="hinweis">Gelten global fuer alle. Anteil 0,5 = halber Tag, 0 = frei.</p>
+    <div class="rliste">
+      {#each regeln as r (r.id)}
+        <div class="rzeile">
+          {#if r.art === 'brueckentag'}
+            <label class="chk"><input type="checkbox" checked={r.aktiv} onchange={() => brueckeUmschalten(r)} /> Brueckentage automatisch frei</label>
+          {:else}
+            <span class="rtext">{regelText(r)} - {r.anteil === 0 ? 'frei' : 'halber Tag'}{r.notiz ? ' (' + r.notiz + ')' : ''}</span>
+            <button class="del" aria-label="Regel loeschen" onclick={() => regelLoeschen(r.id)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+          {/if}
+        </div>
+      {/each}
+    </div>
+    <div class="reihe rneu">
+      <select bind:value={rArt}>
+        <option value="jahrestag">fester Jahrestag</option>
+        <option value="wochentag">Wochentag</option>
+      </select>
+      {#if rArt === 'jahrestag'}
+        <select bind:value={rMonat}>{#each MON.slice(1) as m, i (i)}<option value={i + 1}>{m}</option>{/each}</select>
+        <input class="kz" type="number" min="1" max="31" bind:value={rTag} aria-label="Tag" />
+      {:else}
+        <select bind:value={rWochentag}>{#each WDV as w, i (i)}<option value={i}>{w}</option>{/each}</select>
+      {/if}
+      <select bind:value={rAnteil}><option value={0.5}>halber Tag</option><option value={0}>frei</option></select>
+      <input placeholder="Notiz" bind:value={rNotiz} />
+      <button class="btn primaer" onclick={regelHinzufuegen}>Regel hinzufuegen</button>
+    </div>
+  </section>
 </div>
 
 <style>
@@ -304,4 +400,15 @@
   .ftn { color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ftg { justify-self: end; font-size: 10.5px; padding: 2px 8px; border-radius: 999px; background: var(--surface-3); color: var(--text-3); white-space: nowrap; }
   .ftg.land { background: var(--due-rot-bg); color: var(--due-rot-fg); }
+
+  .atab { border: 1px solid var(--border); border-radius: var(--r-l); overflow: hidden; background: var(--surface-col); }
+  .azeile { display: grid; grid-template-columns: 36px 160px 1fr auto; align-items: center; gap: 10px; padding: 7px 12px; border-top: 1px solid var(--border); font-size: 12.5px; }
+  .azeile:first-child { border-top: none; }
+  .cfarbe { width: 28px; height: 24px; border: 1px solid var(--border-2); border-radius: var(--r-s); background: none; padding: 0; }
+  .aname { color: var(--text-1); }
+  .adez { color: var(--text-3); font-size: 11.5px; }
+  .rliste { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+  .rzeile { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--surface-col); border-radius: var(--r-m); padding: 7px 11px; font-size: 12.5px; }
+  .rtext { flex: 1; color: var(--text-1); }
+  .rneu .kz { width: 64px; }
 </style>

@@ -12,7 +12,8 @@
   },
   "backend": {
     "router": "module.backup.api:router",
-    "init": "module.backup.persistence:init_db"
+    "init": "module.backup.persistence:init_db",
+    "lifespan": "module.backup.dienst:lebenszyklus"
   },
   "permissions": [],
   "requires": ["kanban-kern"]

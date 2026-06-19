@@ -18,6 +18,7 @@ import shutil
 import sqlite3
 import tempfile
 import zipfile
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
@@ -201,9 +202,22 @@ def synchronisiere_index() -> None:
             db.loesche_meta(sid)
 
 
+def _bereit_fuer_snapshot() -> bool:
+    """Sicherung: erst sichern, wenn die Kerntabellen wirklich existieren.
+
+    Verhindert einen leeren automatischen Snapshot, falls die Funktion je vor der
+    Initialisierung der anderen Module aufgerufen wuerde.
+    """
+    with verbindung() as conn:
+        tabellen = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+    return "karte" in tabellen and "person" in tabellen
+
+
 def auto_wenn_faellig() -> None:
     """Erzeugt beim Start einen automatischen Snapshot, falls aktiviert und der letzte aelter als 24 Stunden ist."""
     if not einstellungen.backup_auto:
+        return
+    if not _bereit_fuer_snapshot():
         return
     letzter = db.letzter_automatischer()
     if letzter:
@@ -346,3 +360,13 @@ def wiederherstellen(sid: str) -> dict | None:
     # vorhandenen Dateien wieder vervollstaendigen (inklusive Sicherheits-Snapshot).
     synchronisiere_index()
     return {"ok": True, "vorher_gesichert": sicherung["id"], "wiederhergestellt": aktueller_zustand()}
+
+
+@asynccontextmanager
+async def lebenszyklus():
+    """Laeuft erst, nachdem alle Module initialisiert und geseedet sind.
+
+    Erst dann ist ein automatischer Snapshot vollstaendig (alle Tabellen + Daten).
+    """
+    auto_wenn_faellig()
+    yield

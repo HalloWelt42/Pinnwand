@@ -27,9 +27,11 @@ def init_db() -> None:
     # Verzoegerter Import vermeidet einen Ringschluss mit dem Dienst.
     from . import dienst
 
-    # Erst den Index mit den Dateien abgleichen, dann ggf. automatisch sichern.
+    # Nur den Index mit den vorhandenen Dateien abgleichen. Die automatische
+    # Sicherung laeuft bewusst NICHT hier, sondern im Lebenszyklus - sonst
+    # entstuende sie, bevor die anderen Module (kanban_kern, planung, ...) ihre
+    # Tabellen und Seed-Daten angelegt haben, und der Snapshot waere leer.
     dienst.synchronisiere_index()
-    dienst.auto_wenn_faellig()
 
 
 def speichere_meta(info: dict) -> None:

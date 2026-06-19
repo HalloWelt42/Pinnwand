@@ -53,6 +53,7 @@ class Spalte(BaseModel):
     titel: str
     wip_limit: int | None = None
     reihenfolge: int = 0
+    erledigt: bool = False
 
 
 class Board(BaseModel):

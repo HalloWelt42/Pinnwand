@@ -41,7 +41,8 @@ CREATE TABLE IF NOT EXISTS spalte (
     board_id TEXT NOT NULL,
     titel TEXT NOT NULL,
     wip_limit INTEGER,
-    reihenfolge INTEGER NOT NULL DEFAULT 0
+    reihenfolge INTEGER NOT NULL DEFAULT 0,
+    erledigt INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS karte (
     id TEXT PRIMARY KEY,
@@ -84,9 +85,17 @@ def _verb() -> sqlite3.Connection:
     return verbindung()
 
 
+def _migriere(conn: sqlite3.Connection) -> None:
+    """Sanfte Schema-Migrationen fuer bestehende Datenbanken."""
+    spalten = {r["name"] for r in conn.execute("PRAGMA table_info(spalte)").fetchall()}
+    if "erledigt" not in spalten:
+        conn.execute("ALTER TABLE spalte ADD COLUMN erledigt INTEGER NOT NULL DEFAULT 0")
+
+
 def init_db() -> None:
     with _verb() as conn:
         conn.executescript(SCHEMA)
+        _migriere(conn)
         if conn.execute("SELECT COUNT(*) AS n FROM mappe").fetchone()["n"] == 0:
             _seed(conn)
 
@@ -122,7 +131,7 @@ def _spalten(conn: sqlite3.Connection, board_id: str) -> list[Spalte]:
     rows = conn.execute(
         "SELECT * FROM spalte WHERE board_id = ? ORDER BY reihenfolge, id", (board_id,)
     ).fetchall()
-    return [Spalte(id=r["id"], titel=r["titel"], wip_limit=r["wip_limit"], reihenfolge=r["reihenfolge"]) for r in rows]
+    return [Spalte(id=r["id"], titel=r["titel"], wip_limit=r["wip_limit"], reihenfolge=r["reihenfolge"], erledigt=bool(r["erledigt"])) for r in rows]
 
 
 def liste_mappen() -> list[Projektmappe]:
@@ -162,7 +171,7 @@ def hole_karte(karte_id: str) -> Karte | None:
 def hole_spalte(spalte_id: str) -> Spalte | None:
     with _verb() as conn:
         r = conn.execute("SELECT * FROM spalte WHERE id = ?", (spalte_id,)).fetchone()
-    return Spalte(id=r["id"], titel=r["titel"], wip_limit=r["wip_limit"], reihenfolge=r["reihenfolge"]) if r else None
+    return Spalte(id=r["id"], titel=r["titel"], wip_limit=r["wip_limit"], reihenfolge=r["reihenfolge"], erledigt=bool(r["erledigt"])) if r else None
 
 
 # -- Karten schreiben -----------------------------------------------------
@@ -426,6 +435,62 @@ def aktualisiere_spalte(spalte_id: str, aenderungen: dict) -> Spalte | None:
     return hole_spalte(spalte_id)
 
 
+def setze_erledigt_spalte(spalte_id: str) -> Spalte | None:
+    """Markiert eine Spalte als Erledigt-Spalte des Boards (genau eine pro Board)."""
+    with _verb() as conn:
+        r = conn.execute("SELECT board_id FROM spalte WHERE id = ?", (spalte_id,)).fetchone()
+        if r is None:
+            return None
+        conn.execute("UPDATE spalte SET erledigt = 0 WHERE board_id = ?", (r["board_id"],))
+        conn.execute("UPDATE spalte SET erledigt = 1 WHERE id = ?", (spalte_id,))
+    return hole_spalte(spalte_id)
+
+
+def done_spalte_id(board_id: str) -> str | None:
+    """Id der als Erledigt markierten Spalte, sonst die letzte Spalte als Rueckfall."""
+    with _verb() as conn:
+        r = conn.execute(
+            "SELECT id FROM spalte WHERE board_id = ? AND erledigt = 1 ORDER BY reihenfolge LIMIT 1",
+            (board_id,),
+        ).fetchone()
+        if r:
+            return r["id"]
+        letzte = conn.execute(
+            "SELECT id FROM spalte WHERE board_id = ? ORDER BY reihenfolge DESC, id DESC LIMIT 1",
+            (board_id,),
+        ).fetchone()
+    return letzte["id"] if letzte else None
+
+
+def finde_karte_per_text(text: str, board_id: str | None = None) -> Karte | None:
+    """Loest eine Karte ueber ihren Schluessel (z.B. R3-130) oder per Titel auf.
+
+    Reihenfolge: exakter Schluessel, dann Titel-Gleichheit, dann Titel enthaelt.
+    Ohne board_id wird ueber alle Boards gesucht.
+    """
+    suchtext = (text or "").strip()
+    if not suchtext:
+        return None
+    bedingung = " AND board_id = ?" if board_id else ""
+    args_basis: tuple = (board_id,) if board_id else ()
+    with _verb() as conn:
+        row = conn.execute(
+            f"SELECT * FROM karte WHERE LOWER(schluessel) = LOWER(?){bedingung} LIMIT 1",
+            (suchtext, *args_basis),
+        ).fetchone()
+        if row is None:
+            row = conn.execute(
+                f"SELECT * FROM karte WHERE LOWER(titel) = LOWER(?){bedingung} ORDER BY bewegt_am DESC LIMIT 1",
+                (suchtext, *args_basis),
+            ).fetchone()
+        if row is None:
+            row = conn.execute(
+                f"SELECT * FROM karte WHERE titel LIKE ?{bedingung} ORDER BY bewegt_am DESC LIMIT 1",
+                (f"%{suchtext}%", *args_basis),
+            ).fetchone()
+    return _karte_aus_row(row) if row else None
+
+
 def verschiebe_spalte(spalte_id: str, richtung: int) -> Spalte | None:
     with _verb() as conn:
         r = conn.execute("SELECT board_id FROM spalte WHERE id = ?", (spalte_id,)).fetchone()
@@ -488,8 +553,8 @@ def erstelle_board(board_id: str, mappe_id: str, titel: str) -> BoardDetail | No
         )
         for ordnung, titel_s in enumerate(["Offen", "In Arbeit", "Erledigt"]):
             conn.execute(
-                "INSERT INTO spalte (id, board_id, titel, wip_limit, reihenfolge) VALUES (?, ?, ?, ?, ?)",
-                (f"s_{uuid4().hex[:8]}", board_id, titel_s, None, ordnung),
+                "INSERT INTO spalte (id, board_id, titel, wip_limit, reihenfolge, erledigt) VALUES (?, ?, ?, ?, ?, ?)",
+                (f"s_{uuid4().hex[:8]}", board_id, titel_s, None, ordnung, 1 if titel_s == "Erledigt" else 0),
             )
     return board_detail(board_id)
 
@@ -518,14 +583,14 @@ def _seed(conn: sqlite3.Connection) -> None:
                  ("m_r3", "Gerät R3", "Produktion und Abnahme des Geräts R3"))
     conn.execute("INSERT INTO board (id, mappe_id, titel, kuerzel, laufnummer) VALUES (?, ?, ?, ?, ?)",
                  ("b_prod", "m_r3", "Produktionsplanung", "R3", 131))
-    for sid, titel, wip, ordnung in [
-        ("s_backlog", "Backlog", None, 0),
-        ("s_arbeit", "In Arbeit", 3, 1),
-        ("s_pruefung", "Prüfung", None, 2),
-        ("s_fertig", "Fertig", None, 3),
+    for sid, titel, wip, ordnung, erledigt in [
+        ("s_backlog", "Backlog", None, 0, 0),
+        ("s_arbeit", "In Arbeit", 3, 1, 0),
+        ("s_pruefung", "Prüfung", None, 2, 0),
+        ("s_fertig", "Fertig", None, 3, 1),
     ]:
-        conn.execute("INSERT INTO spalte (id, board_id, titel, wip_limit, reihenfolge) VALUES (?, ?, ?, ?, ?)",
-                     (sid, "b_prod", titel, wip, ordnung))
+        conn.execute("INSERT INTO spalte (id, board_id, titel, wip_limit, reihenfolge, erledigt) VALUES (?, ?, ?, ?, ?, ?)",
+                     (sid, "b_prod", titel, wip, ordnung, erledigt))
 
     cl_flash = [
         {"text": "JTAG-Adapter einrichten", "erledigt": True},

@@ -1,0 +1,17 @@
+{
+  "id": "agent-api",
+  "name": "Agenten-API",
+  "version": "0.1.0",
+  "extends": {
+    "views": [],
+    "cardFields": [],
+    "mappeTabs": [],
+    "commands": []
+  },
+  "backend": {
+    "router": "module.agent_api.api:router",
+    "init": "module.agent_api.persistence:init_db"
+  },
+  "permissions": ["card.read", "card.write", "time.write", "admin"],
+  "requires": ["kanban-kern"]
+}

@@ -27,7 +27,7 @@ async def lebenszyklus(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Pinnwand", version="0.8.0", lifespan=lebenszyklus)
+app = FastAPI(title="Pinnwand", version="0.9.0", lifespan=lebenszyklus)
 
 app.add_middleware(
     CORSMiddleware,

@@ -197,6 +197,15 @@ def spalte_aendern(spalte_id: str, eingabe: SpalteUpdate) -> Spalte:
     return spalte
 
 
+@router.post("/spalten/{spalte_id}/erledigt", response_model=Spalte)
+def spalte_als_erledigt(spalte_id: str) -> Spalte:
+    """Markiert die Spalte als Erledigt-Spalte des Boards (genau eine pro Board)."""
+    spalte = db.setze_erledigt_spalte(spalte_id)
+    if spalte is None:
+        raise HTTPException(status_code=404, detail="Spalte nicht gefunden")
+    return spalte
+
+
 @router.post("/spalten/{spalte_id}/move", response_model=Spalte)
 def spalte_verschieben(spalte_id: str, ziel: SpalteMove) -> Spalte:
     spalte = db.verschiebe_spalte(spalte_id, ziel.richtung)

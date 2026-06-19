@@ -16,7 +16,7 @@ from pathlib import Path
 import httpx
 
 # Zentrale Versionsangabe der Anwendung (Backend + Snapshots beziehen sich hierauf).
-VERSION = "0.16.6"
+VERSION = "0.16.7"
 
 # backend/app/config.py -> Projektwurzel (Pinnwand/)
 _PROJEKT_WURZEL = Path(__file__).resolve().parents[2]
@@ -91,6 +91,25 @@ def _lese_einstellungen() -> Einstellungen:
 
 
 einstellungen = _lese_einstellungen()
+
+
+def cors_origins() -> list[str]:
+    """Erlaubte Browser-Herkuenfte fuer die API.
+
+    Die API ist unauthentifiziert und lokal gedacht. Ein offenes '*' wuerde es
+    beliebigen Webseiten erlauben, im Browser des Nutzers auf die lokale API
+    zuzugreifen. Deshalb sind nur die bekannte Oberflaeche (localhost auf dem
+    Frontend-Port) und ausdruecklich gesetzte Herkuenfte erlaubt.
+    """
+    roh = _env("PINNWAND_CORS_ORIGINS")
+    if roh:
+        return [t.strip() for t in roh.split(",") if t.strip()]
+    p = einstellungen.frontend_port
+    herkuenfte: list[str] = []
+    for host in ("localhost", "127.0.0.1"):
+        herkuenfte.append(f"http://{host}:{p}")
+        herkuenfte.append(f"https://{host}:{p}")
+    return herkuenfte
 
 
 # --- Optionale Dienste: Beschreibung + Erreichbarkeitspruefung mit kurzem Cache ---

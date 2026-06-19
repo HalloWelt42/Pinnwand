@@ -5,6 +5,8 @@ Konfig-Token (PINNWAND_AGENT_TOKEN) gilt als Bootstrap mit Vollzugriff.
 """
 from __future__ import annotations
 
+import hmac
+
 from fastapi import Depends, Header, HTTPException
 
 from app.config import einstellungen
@@ -35,7 +37,7 @@ def aktueller_akteur(authorization: str | None = Header(default=None)) -> Akteur
     token = _token_aus_header(authorization)
     if not token:
         raise HTTPException(status_code=401, detail="Token fehlt (Authorization: Bearer ...)")
-    if einstellungen.agent_token and token == einstellungen.agent_token:
+    if einstellungen.agent_token and hmac.compare_digest(token, einstellungen.agent_token):
         return Akteur("konfig", {"admin"})
     treffer = db.pruefe_token(token)
     if treffer is None:

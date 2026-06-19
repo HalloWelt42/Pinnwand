@@ -11,7 +11,7 @@ from contextlib import AsyncExitStack, asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import VERSION, dienste_status, einstellungen
+from app.config import VERSION, cors_origins, dienste_status, einstellungen
 from app.modul_registry import (
     aggregiere_erweiterungen,
     init_fuer,
@@ -39,7 +39,7 @@ app = FastAPI(title="Pinnwand", version=VERSION, lifespan=lebenszyklus)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins(),
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -2,7 +2,8 @@
   import {
     ladeSnapshots, backupZustand, erzeugeSnapshot, snapshotVorschau,
     snapshotDownloadUrl, stelleSnapshotWiederHer, loescheSnapshot,
-    type SnapshotInfo, type BackupZustand, type BackupVorschau,
+    ladeAgentTokens, erstelleAgentToken, widerrufeAgentToken, AuthFehler,
+    type SnapshotInfo, type BackupZustand, type BackupVorschau, type AgentToken,
   } from '../../api'
 
   let { boardId }: { boardId: string } = $props()
@@ -103,6 +104,55 @@
       meldung = 'Snapshot konnte nicht geloescht werden.'
     } finally {
       arbeitet = false
+    }
+  }
+
+  // --- Agenten-Zugriff (Token-Verwaltung) ---
+  let adminToken = $state(localStorage.getItem('pw_admin_token') ?? '')
+  let tokens = $state<AgentToken[]>([])
+  let tokenGeladen = $state(false)
+  let tokenFehler = $state('')
+  let neuName = $state('')
+  let neuRead = $state(true)
+  let neuWrite = $state(true)
+  let neuAdmin = $state(false)
+  let neuesGeheimnis = $state<{ name: string; token: string } | null>(null)
+
+  async function tokensLaden(): Promise<void> {
+    tokenFehler = ''
+    neuesGeheimnis = null
+    if (!adminToken.trim()) { tokenFehler = 'Bitte ein Verwaltungs-Token eingeben.'; return }
+    try {
+      tokens = await ladeAgentTokens(adminToken.trim())
+      tokenGeladen = true
+      localStorage.setItem('pw_admin_token', adminToken.trim())
+    } catch (e) {
+      tokenGeladen = false
+      tokenFehler = e instanceof AuthFehler ? e.message : 'Agenten-API nicht erreichbar.'
+    }
+  }
+
+  async function tokenErstellen(): Promise<void> {
+    tokenFehler = ''
+    if (!neuName.trim()) { tokenFehler = 'Bitte einen Namen vergeben.'; return }
+    const scopes = [neuRead && 'read', neuWrite && 'write', neuAdmin && 'admin'].filter(Boolean) as string[]
+    try {
+      const t = await erstelleAgentToken(adminToken.trim(), neuName.trim(), scopes)
+      neuName = ''
+      // Erst die Liste auffrischen (setzt das Geheimnis zurueck), dann das neue Geheimnis anzeigen.
+      await tokensLaden()
+      neuesGeheimnis = { name: t.name, token: t.token }
+    } catch (e) {
+      tokenFehler = e instanceof AuthFehler ? e.message : 'Token konnte nicht erstellt werden.'
+    }
+  }
+
+  async function tokenWiderrufen(id: string): Promise<void> {
+    try {
+      await widerrufeAgentToken(adminToken.trim(), id)
+      await tokensLaden()
+    } catch {
+      tokenFehler = 'Token konnte nicht widerrufen werden.'
     }
   }
 
@@ -211,6 +261,55 @@
       </div>
     {/each}
   </section>
+
+  <section class="block">
+    <p class="sec">Agenten-Zugriff (API-Token)</p>
+    <p class="hint">
+      KI-Werkzeuge koennen ueber die Agenten-API Aufgaben anlegen, Zeiten buchen und suchen.
+      Die Verwaltung erfordert ein Token mit Admin-Recht. Das einfachste ist das in der Konfiguration
+      gesetzte Verwaltungs-Token (PINNWAND_AGENT_TOKEN aus der .env). Das Token wird nur lokal in diesem
+      Browser gespeichert.
+    </p>
+    <div class="form">
+      <input class="notiz" type="password" placeholder="Verwaltungs-Token" bind:value={adminToken} aria-label="Verwaltungs-Token" />
+      <button class="btn primaer" onclick={tokensLaden}>
+        <i class="fa-solid fa-key" aria-hidden="true"></i> Laden
+      </button>
+    </div>
+    {#if tokenFehler}<p class="fehler">{tokenFehler}</p>{/if}
+
+    {#if tokenGeladen}
+      <div class="tokenneu">
+        <input class="tname" placeholder="Name (z.B. LM Studio)" bind:value={neuName} aria-label="Name des Tokens" />
+        <label class="chk"><input type="checkbox" bind:checked={neuRead} /> lesen</label>
+        <label class="chk"><input type="checkbox" bind:checked={neuWrite} /> schreiben</label>
+        <label class="chk"><input type="checkbox" bind:checked={neuAdmin} /> admin</label>
+        <button class="btn" onclick={tokenErstellen}>Token erstellen</button>
+      </div>
+
+      {#if neuesGeheimnis}
+        <div class="geheimnis">
+          <p><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Neues Token fuer "{neuesGeheimnis.name}" - jetzt kopieren, es wird nicht erneut angezeigt:</p>
+          <code>{neuesGeheimnis.token}</code>
+        </div>
+      {/if}
+
+      {#if !tokens.length}<p class="leer">Noch keine Token vergeben.</p>{/if}
+      {#each tokens as t (t.id)}
+        <div class="trow" class:inaktiv={!t.aktiv}>
+          <span class="tn">{t.name}</span>
+          <span class="ts">{t.scopes.join(', ')}</span>
+          <span class="td">{t.zuletzt_genutzt ? 'zuletzt ' + datum(t.zuletzt_genutzt) : 'nie genutzt'}</span>
+          <span class="tstatus">{t.aktiv ? 'aktiv' : 'widerrufen'}</span>
+          {#if t.aktiv}
+            <button class="ibtn gefahr" title="Widerrufen" aria-label="Widerrufen" onclick={() => tokenWiderrufen(t.id)}>
+              <i class="fa-solid fa-ban" aria-hidden="true"></i>
+            </button>
+          {:else}<span></span>{/if}
+        </div>
+      {/each}
+    {/if}
+  </section>
 </div>
 
 <style>
@@ -254,4 +353,17 @@
   .diff tr.geaendert td { color: var(--hl-primary-text); }
   .ersetzt { font-size: 11.5px; color: var(--text-3); margin: 10px 0; line-height: 1.5; }
   .vfuss { display: flex; gap: 8px; }
+
+  .fehler { margin-top: 8px; font-size: 12px; color: var(--gefahr, #e5484d); }
+  .tokenneu { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 12px 0; }
+  .tname { border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-1); border-radius: var(--r-m); padding: 8px 10px; font-size: 12.5px; min-width: 200px; }
+  .chk { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font-size: 12px; }
+  .geheimnis { background: var(--surface-2); border: 1px solid var(--border-2); border-radius: var(--r-m); padding: 10px 12px; margin-bottom: 12px; }
+  .geheimnis p { margin: 0 0 6px; font-size: 12px; color: var(--text-2); }
+  .geheimnis code { display: block; font-family: var(--font-mono, monospace); font-size: 12px; color: var(--hl-primary-text); word-break: break-all; background: var(--surface-3); padding: 8px 10px; border-radius: var(--r-s, 6px); }
+  .trow { display: grid; grid-template-columns: 1fr 150px 160px 90px 32px; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--border); background: var(--surface-col); border-radius: var(--r-m); margin-bottom: 5px; font-size: 12.5px; }
+  .trow.inaktiv { opacity: 0.55; }
+  .tn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ts { color: var(--hl-primary-text); font-size: 11.5px; }
+  .td, .tstatus { color: var(--text-3); font-size: 11.5px; }
 </style>

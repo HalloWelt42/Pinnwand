@@ -404,6 +404,41 @@ export const stelleSnapshotWiederHer = (id: string): Promise<WiederherstellenErg
 export const loescheSnapshot = (id: string): Promise<void> =>
   hole(`/api/backup/${id}`, { method: 'DELETE' })
 
+// --- Agenten-Zugriff (Token-Verwaltung, Scope admin) ---
+
+export interface AgentToken {
+  id: string
+  name: string
+  scopes: string[]
+  erstellt_am: string
+  zuletzt_genutzt: string | null
+  aktiv: boolean
+}
+
+export class AuthFehler extends Error {}
+
+async function adminHole<T>(pfad: string, adminToken: string, init?: RequestInit): Promise<T> {
+  const antwort = await fetch(`${BASIS}${pfad}`, {
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+    ...init,
+  })
+  if (antwort.status === 401 || antwort.status === 403) {
+    throw new AuthFehler('Verwaltungs-Token ungueltig oder ohne Admin-Recht')
+  }
+  if (!antwort.ok) throw new Error(`Anfrage fehlgeschlagen: ${antwort.status}`)
+  if (antwort.status === 204) return undefined as T
+  return (await antwort.json()) as T
+}
+
+export const ladeAgentTokens = (adminToken: string): Promise<AgentToken[]> =>
+  adminHole('/api/agent/token', adminToken)
+
+export const erstelleAgentToken = (adminToken: string, name: string, scopes: string[]): Promise<AgentToken & { token: string }> =>
+  adminHole('/api/agent/token', adminToken, { method: 'POST', body: JSON.stringify({ name, scopes }) })
+
+export const widerrufeAgentToken = (adminToken: string, id: string): Promise<void> =>
+  adminHole(`/api/agent/token/${id}`, adminToken, { method: 'DELETE' })
+
 export async function vorleseAudio(text: string, stimme?: string): Promise<Blob> {
   const antwort = await fetch(`${BASIS}/api/tts`, {
     method: 'POST',

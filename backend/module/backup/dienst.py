@@ -94,11 +94,16 @@ def _kopiere_db(ziel: Path) -> None:
 
 
 def _konfig_dateien() -> list[tuple[Path, str]]:
+    """Nur die Konfigurationsvorlage sichern, niemals die echte .env.
+
+    Ein Snapshot kann heruntergeladen und weitergegeben werden; Geheimnisse
+    (Token, Schluessel) gehoeren daher bewusst nicht hinein. Die Datei .env bleibt
+    ohnehin lokal im Projekt und wird nicht versioniert.
+    """
     paare: list[tuple[Path, str]] = []
-    for name in (".env.muster", ".env"):
-        p = _PROJEKT_WURZEL / name
-        if p.is_file():
-            paare.append((p, f"konfig/{name}"))
+    p = _PROJEKT_WURZEL / ".env.muster"
+    if p.is_file():
+        paare.append((p, "konfig/.env.muster"))
     return paare
 
 

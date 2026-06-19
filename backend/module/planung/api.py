@@ -5,9 +5,21 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, HTTPException, Query
 
-from . import feiertage, kapazitaet
+from . import feiertage, kalender, kapazitaet
 from . import persistence as db
-from .models import FeiertageUebernehmen, Person, PersonCreate, PersonUpdate, Urlaubskonto, UrlaubSetzen
+from .models import (
+    AbwesenheitTyp,
+    AbwesenheitTypUpdate,
+    FeiertageUebernehmen,
+    Person,
+    PersonCreate,
+    PersonUpdate,
+    Tagesregel,
+    TagesregelCreate,
+    TagLeeren,
+    Urlaubskonto,
+    UrlaubSetzen,
+)
 
 router = APIRouter(prefix="/api/planung", tags=["planung"])
 
@@ -139,3 +151,54 @@ def kapazitaet_abruf(person: str = Query(...), von: str = Query(...), bis: str =
 @router.get("/tage")
 def tage(von: str = Query(...), bis: str = Query(...), person: str | None = Query(default=None)) -> list[dict]:
     return kapazitaet.tage_overlay(von, bis, person)
+
+
+# -- Jahreskalender (Aggregation ueber alle Personen) --------------------
+
+@router.get("/kalender")
+def kalender_abruf(jahr: int = Query(...)) -> dict:
+    return kalender.kalender(jahr)
+
+
+# -- Abwesenheits-Arten ---------------------------------------------------
+
+@router.get("/abwesenheitstypen", response_model=list[AbwesenheitTyp])
+def abwesenheitstypen() -> list[dict]:
+    return db.liste_abwesenheitstypen()
+
+
+@router.patch("/abwesenheitstypen/{code}", response_model=AbwesenheitTyp)
+def abwesenheitstyp_aendern(code: str, e: AbwesenheitTypUpdate) -> dict:
+    t = db.aktualisiere_abwesenheitstyp(code, e.model_dump(exclude_unset=True))
+    if t is None:
+        raise HTTPException(status_code=404, detail="Abwesenheits-Art nicht gefunden")
+    return t
+
+
+# -- Tagesregeln (halbe Tage / Sonderregeln) ------------------------------
+
+@router.get("/tagesregeln", response_model=list[Tagesregel])
+def tagesregeln(person: str | None = Query(default=None)) -> list[dict]:
+    return db.liste_tagesregeln(person)
+
+
+@router.post("/tagesregeln", response_model=Tagesregel, status_code=201)
+def tagesregel_anlegen(e: TagesregelCreate) -> dict:
+    return db.setze_tagesregel(e.model_dump(exclude_unset=True))
+
+
+@router.delete("/tagesregeln/{rid}", status_code=204)
+def tagesregel_loeschen(rid: str) -> None:
+    if not db.loesche_tagesregel(rid):
+        raise HTTPException(status_code=404, detail="Regel nicht gefunden")
+
+
+# -- Komfort: einen Tag einer Person leeren (alle Abwesenheiten entfernen) -
+
+@router.post("/tag-leeren")
+def tag_leeren(e: TagLeeren) -> dict:
+    geloescht = 0
+    for u in db.liste_urlaub(e.person_id, e.datum, e.datum):
+        if db.loesche_urlaub(u["id"]):
+            geloescht += 1
+    return {"geloescht": geloescht}

@@ -15,14 +15,28 @@
   } = $props()
 
   const CW = 18
+  const NAME_B = 150
   const MONATE = ['Jan', 'Feb', 'Maer', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
   const monate = $derived(
     MONATE.map((name, m) => ({ name, tage: new Date(daten.jahr, m + 1, 0).getDate() })),
   )
+  const heuteD = new Date()
+  const HEUTE = `${heuteD.getFullYear()}-${String(heuteD.getMonth() + 1).padStart(2, '0')}-${String(heuteD.getDate()).padStart(2, '0')}`
 
   function istWE(iso: string): boolean {
     return (new Date(iso + 'T00:00:00').getDay() + 6) % 7 >= 5
   }
+
+  // Beim Oeffnen den heutigen Tag in den sichtbaren Bereich ruecken (einmalig je Jahr).
+  let wrapEl: HTMLDivElement | undefined = $state()
+  let zentriertesJahr = $state<number | null>(null)
+  $effect(() => {
+    if (!wrapEl || zentriertesJahr === daten.jahr) return
+    const idx = daten.tage.indexOf(HEUTE)
+    if (idx < 0) { zentriertesJahr = daten.jahr; return }
+    wrapEl.scrollLeft = Math.max(0, NAME_B + idx * CW - wrapEl.clientWidth / 2)
+    zentriertesJahr = daten.jahr
+  })
 
   // Auswahl per Ziehen
   let ziehPerson = $state<string | null>(null)
@@ -55,7 +69,7 @@
 </script>
 
 <svelte:window onpointerup={fertig} />
-<div class="wrap">
+<div class="wrap" bind:this={wrapEl}>
   <div class="inhalt" style="--cw:{CW}px">
     <div class="kopf">
       <div class="namensp eck"></div>
@@ -79,6 +93,7 @@
                 class:we={istWE(iso)}
                 class:sel={imBereich(p.id, iso)}
                 class:halb={zellHalb(z)}
+                class:heute={iso === HEUTE}
                 style="background:{zellHintergrund(z, ebenen, typen)}; {mark ? `box-shadow: inset 0 0 0 2px ${mark}` : ''}"
                 title={`${p.name} ${iso}: ${z.status}${z.abw ? ' (' + z.abw.typ + ')' : ''}${z.feiertag ? ' - ' + z.feiertag : ''}`}
                 onpointerdown={() => start(p.id, iso)}
@@ -109,5 +124,6 @@
   .z { width: var(--cw); height: 26px; border-right: 1px solid var(--border); box-sizing: border-box; cursor: pointer; }
   .z.we { filter: brightness(0.8); }
   .z.sel { outline: 2px solid var(--hl-primary); outline-offset: -2px; }
+  .z.heute { box-shadow: inset 1px 0 0 var(--ok), inset -1px 0 0 var(--ok); }
   .z.halb { background-image: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.28) 50%); }
 </style>

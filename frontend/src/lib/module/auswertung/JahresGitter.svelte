@@ -6,6 +6,8 @@
 
   const MONATE = ['Januar', 'Februar', 'Maerz', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
   const WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+  const heuteD = new Date()
+  const HEUTE = `${heuteD.getFullYear()}-${String(heuteD.getMonth() + 1).padStart(2, '0')}-${String(heuteD.getDate()).padStart(2, '0')}`
 
   // iso -> Zellen aller Personen
   const proTag = $derived.by(() => {
@@ -42,7 +44,7 @@
             {@const agg = tagAggregat(proTag[z.iso] ?? [], ebenen)}
             {@const tag = Number(z.iso.slice(8, 10))}
             <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-            <div class="tag" style="background:{agg.bg}" role="button" tabindex="-1" title={z.iso + ' - ' + agg.titel} onclick={() => onTag(z.iso!)}>
+            <div class="tag" class:heute={z.iso === HEUTE} style="background:{agg.bg}" role="button" tabindex="-1" title={z.iso + ' - ' + agg.titel} onclick={() => onTag(z.iso!)}>
               <span class="nr">{tag}</span>
               {#if agg.zahl}<span class="zahl">{agg.zahl}</span>{/if}
             </div>
@@ -64,6 +66,7 @@
   .tage { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
   .tag { position: relative; aspect-ratio: 1; border-radius: var(--r-s, 5px); border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; }
   .tag:hover { outline: 1px solid var(--hl-primary); }
+  .tag.heute { outline: 2px solid var(--ok); outline-offset: -2px; z-index: 1; }
   .nr { font-size: 9px; color: var(--text-3); position: absolute; top: 1px; left: 3px; }
   .zahl { font-size: 10px; color: var(--text-1); font-weight: 500; }
   .leer { aspect-ratio: 1; }

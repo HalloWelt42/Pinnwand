@@ -30,7 +30,7 @@
   const aktuelleKomponente = $derived(ansichtsListe.find((a) => a.id === aktiveAnsicht)?.komponente)
 
   // Globale Ansichten brauchen keine Board-Navigation; boardgebundene schon.
-  const GLOBALE_ANSICHTEN = new Set(['suche', 'transkripte', 'planung'])
+  const GLOBALE_ANSICHTEN = new Set(['suche', 'transkripte', 'planung', 'berichte'])
   const boardgebunden = $derived(!GLOBALE_ANSICHTEN.has(aktiveAnsicht))
   const aktuelleAnsichtMeta = $derived(ansichtsListe.find((a) => a.id === aktiveAnsicht))
 

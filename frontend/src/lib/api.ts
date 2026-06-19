@@ -301,6 +301,44 @@ export const loescheFeiertage = (jahr: number, region: string | null): Promise<{
 export const ladePlanungsTage = (von: string, bis: string, person?: string): Promise<PlanTag[]> =>
   hole(`/api/planung/tage?von=${von}&bis=${bis}${person ? `&person=${person}` : ''}`)
 
+// --- Berichte ---
+
+export interface BerichtTyp { id: string; titel: string }
+export interface ArchivEintrag {
+  id: string
+  typ: string
+  titel: string
+  zeitraum: string
+  format: string
+  person?: string | null
+  erstellt_am: string
+  groesse: number
+}
+export interface BerichtAnfrage {
+  typ: string
+  format: string
+  von?: string
+  bis?: string
+  person?: string | null
+  board_id?: string | null
+  archivieren?: boolean
+}
+export const ladeBerichtTypen = (): Promise<{ typen: BerichtTyp[] }> => hole('/api/berichte/typen')
+export const ladeArchiv = (): Promise<ArchivEintrag[]> => hole('/api/berichte/archiv')
+export const archivDownloadUrl = (id: string): string => `${BASIS}/api/berichte/archiv/${id}`
+
+export async function erzeugeBericht(anfrage: BerichtAnfrage): Promise<{ blob: Blob; dateiname: string }> {
+  const r = await fetch(`${BASIS}/api/berichte/erzeugen`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(anfrage),
+  })
+  if (!r.ok) throw new Error('Bericht konnte nicht erzeugt werden')
+  const cd = r.headers.get('Content-Disposition') || ''
+  const m = cd.match(/filename="(.+?)"/)
+  return { blob: await r.blob(), dateiname: m ? m[1] : 'bericht' }
+}
+
 export async function vorleseAudio(text: string, stimme?: string): Promise<Blob> {
   const antwort = await fetch(`${BASIS}/api/tts`, {
     method: 'POST',

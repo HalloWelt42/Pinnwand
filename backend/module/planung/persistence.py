@@ -38,9 +38,40 @@ CREATE TABLE IF NOT EXISTS feiertag (
     region TEXT,
     PRIMARY KEY (datum, region)
 );
+CREATE TABLE IF NOT EXISTS abwesenheit_typ (
+    code TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    farbe TEXT NOT NULL,
+    reduziert_soll INTEGER NOT NULL DEFAULT 1,
+    anrechnen INTEGER NOT NULL DEFAULT 1,
+    anwesend INTEGER NOT NULL DEFAULT 0,
+    reihenfolge INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS tagesregel (
+    id TEXT PRIMARY KEY,
+    person_id TEXT,
+    art TEXT NOT NULL,
+    monat INTEGER,
+    tag INTEGER,
+    wochentag INTEGER,
+    anteil REAL NOT NULL DEFAULT 0.5,
+    notiz TEXT,
+    aktiv INTEGER NOT NULL DEFAULT 1
+);
 """
 
 _STD_WOCHE = [8, 8, 8, 8, 8, 0, 0]
+
+# Abwesenheits-Arten (Seed). Farben aus der Material-Palette. reduziert_soll:
+# senkt das Tages-Soll; anrechnen: zaehlt gegen den Urlaubsanspruch; anwesend:
+# gilt trotzdem als anwesend (Homeoffice/Dienstreise).
+_ABW_SEED = [
+    ("urlaub", "Urlaub", "#4CAF50", 1, 1, 0, 1),
+    ("krankheit", "Krankheit", "#EF5350", 1, 1, 0, 2),
+    ("sonderurlaub", "Sonderurlaub", "#9575CD", 1, 1, 0, 3),
+    ("unbezahlt", "Unbezahlt", "#78909C", 1, 1, 0, 4),
+    ("homeoffice", "Homeoffice/Dienstreise", "#2196F3", 0, 0, 1, 5),
+]
 
 
 def _migriere(conn: sqlite3.Connection) -> None:
@@ -64,6 +95,26 @@ def init_db() -> None:
                     "INSERT INTO person (id, name, kuerzel, wochenstunden, aktiv) VALUES (?, ?, ?, ?, 1)",
                     ("p_" + uuid4().hex[:8], name, kuerzel, json.dumps(_STD_WOCHE)),
                 )
+        if conn.execute("SELECT COUNT(*) AS n FROM abwesenheit_typ").fetchone()["n"] == 0:
+            conn.executemany(
+                "INSERT INTO abwesenheit_typ (code, name, farbe, reduziert_soll, anrechnen, anwesend, reihenfolge)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?)",
+                _ABW_SEED,
+            )
+        if conn.execute("SELECT COUNT(*) AS n FROM tagesregel").fetchone()["n"] == 0:
+            # Typische halbe Tage: Heiligabend und Silvester, global.
+            for monat, tag, notiz in [(12, 24, "Heiligabend"), (12, 31, "Silvester")]:
+                conn.execute(
+                    "INSERT INTO tagesregel (id, person_id, art, monat, tag, anteil, notiz, aktiv)"
+                    " VALUES (?, NULL, 'jahrestag', ?, ?, 0.5, ?, 1)",
+                    ("r_" + uuid4().hex[:8], monat, tag, notiz),
+                )
+            # Brueckentage als globaler Schalter (Standard: aus).
+            conn.execute(
+                "INSERT INTO tagesregel (id, person_id, art, anteil, notiz, aktiv)"
+                " VALUES (?, NULL, 'brueckentag', 0.0, 'Brueckentage automatisch', 0)",
+                ("r_" + uuid4().hex[:8],),
+            )
 
 
 # -- Personen -------------------------------------------------------------
@@ -168,11 +219,13 @@ def loesche_urlaub(uid: str) -> bool:
 
 
 def _genommen(conn: sqlite3.Connection, person_id: str, jahr: int) -> float:
-    """Summe der im Jahr genommenen Urlaubstage (nur typ 'urlaub', Anteil 1.0/0.5)."""
+    """Summe der im Jahr verbrauchten Tage - alle Abwesenheits-Arten mit anrechnen=1 (Anteil 1.0/0.5)."""
+    codes = [r["code"] for r in conn.execute("SELECT code FROM abwesenheit_typ WHERE anrechnen = 1").fetchall()] or ["urlaub"]
+    platzhalter = ",".join("?" for _ in codes)
     r = conn.execute(
-        "SELECT COALESCE(SUM(anteil), 0) AS s FROM urlaub"
-        " WHERE person_id = ? AND typ = 'urlaub' AND datum >= ? AND datum <= ?",
-        (person_id, f"{jahr}-01-01", f"{jahr}-12-31"),
+        f"SELECT COALESCE(SUM(anteil), 0) AS s FROM urlaub"
+        f" WHERE person_id = ? AND typ IN ({platzhalter}) AND datum >= ? AND datum <= ?",
+        (person_id, *codes, f"{jahr}-01-01", f"{jahr}-12-31"),
     ).fetchone()
     return round(float(r["s"] or 0), 2)
 
@@ -249,3 +302,94 @@ def loesche_feiertage(jahr: int, region: str | None) -> int:
         else:
             cur = conn.execute("DELETE FROM feiertag WHERE datum LIKE ?", (f"{jahr}-%",))
     return cur.rowcount
+
+
+# -- Abwesenheits-Arten ---------------------------------------------------
+
+def _abw_typ(r: sqlite3.Row) -> dict:
+    return {
+        "code": r["code"], "name": r["name"], "farbe": r["farbe"],
+        "reduziert_soll": bool(r["reduziert_soll"]), "anrechnen": bool(r["anrechnen"]),
+        "anwesend": bool(r["anwesend"]), "reihenfolge": r["reihenfolge"],
+    }
+
+
+def liste_abwesenheitstypen() -> list[dict]:
+    with verbindung() as conn:
+        rows = conn.execute("SELECT * FROM abwesenheit_typ ORDER BY reihenfolge, name").fetchall()
+    return [_abw_typ(r) for r in rows]
+
+
+def hole_abwesenheitstyp(code: str) -> dict | None:
+    with verbindung() as conn:
+        r = conn.execute("SELECT * FROM abwesenheit_typ WHERE code = ?", (code,)).fetchone()
+    return _abw_typ(r) if r else None
+
+
+def aktualisiere_abwesenheitstyp(code: str, aenderungen: dict) -> dict | None:
+    f = {k: v for k, v in aenderungen.items() if k in {"name", "farbe", "reduziert_soll", "anrechnen", "anwesend", "reihenfolge"}}
+    if not f:
+        return hole_abwesenheitstyp(code)
+    for flag in ("reduziert_soll", "anrechnen", "anwesend"):
+        if flag in f:
+            f[flag] = 1 if f[flag] else 0
+    zuweisung = ", ".join(f"{k} = ?" for k in f)
+    with verbindung() as conn:
+        conn.execute(f"UPDATE abwesenheit_typ SET {zuweisung} WHERE code = ?", (*f.values(), code))
+    return hole_abwesenheitstyp(code)
+
+
+def _anrechenbare_codes() -> set[str]:
+    """Codes der Abwesenheits-Arten, die gegen den Urlaubsanspruch zaehlen."""
+    with verbindung() as conn:
+        rows = conn.execute("SELECT code FROM abwesenheit_typ WHERE anrechnen = 1").fetchall()
+    codes = {r["code"] for r in rows}
+    return codes or {"urlaub"}  # Fallback, falls die Tabelle noch leer ist
+
+
+# -- Tagesregeln (halbe Tage / Sonderregeln) ------------------------------
+
+def _tagesregel(r: sqlite3.Row) -> dict:
+    return {
+        "id": r["id"], "person_id": r["person_id"], "art": r["art"],
+        "monat": r["monat"], "tag": r["tag"], "wochentag": r["wochentag"],
+        "anteil": r["anteil"], "notiz": r["notiz"], "aktiv": bool(r["aktiv"]),
+    }
+
+
+def liste_tagesregeln(person_id: str | None = None, nur_person: bool = False) -> list[dict]:
+    """Tagesregeln. Standard: globale + die der Person. nur_person=True: nur die der Person."""
+    with verbindung() as conn:
+        if nur_person:
+            rows = conn.execute("SELECT * FROM tagesregel WHERE person_id = ? ORDER BY art, monat, tag", (person_id,)).fetchall()
+        elif person_id:
+            rows = conn.execute(
+                "SELECT * FROM tagesregel WHERE person_id IS NULL OR person_id = ? ORDER BY art, monat, tag",
+                (person_id,),
+            ).fetchall()
+        else:
+            rows = conn.execute("SELECT * FROM tagesregel ORDER BY person_id IS NOT NULL, art, monat, tag").fetchall()
+    return [_tagesregel(r) for r in rows]
+
+
+def setze_tagesregel(daten: dict) -> dict:
+    rid = daten.get("id") or ("r_" + uuid4().hex[:8])
+    werte = (
+        rid, daten.get("person_id"), daten["art"], daten.get("monat"), daten.get("tag"),
+        daten.get("wochentag"), float(daten.get("anteil", 0.5)), daten.get("notiz"),
+        1 if daten.get("aktiv", True) else 0,
+    )
+    with verbindung() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO tagesregel (id, person_id, art, monat, tag, wochentag, anteil, notiz, aktiv)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            werte,
+        )
+        r = conn.execute("SELECT * FROM tagesregel WHERE id = ?", (rid,)).fetchone()
+    return _tagesregel(r)
+
+
+def loesche_tagesregel(rid: str) -> bool:
+    with verbindung() as conn:
+        cur = conn.execute("DELETE FROM tagesregel WHERE id = ?", (rid,))
+    return cur.rowcount > 0

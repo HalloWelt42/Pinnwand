@@ -63,3 +63,51 @@ class FeiertageUebernehmen(BaseModel):
     land: str = "DE"
     region: str | None = None
     jahr: int
+
+
+class AbwesenheitTyp(BaseModel):
+    code: str
+    name: str
+    farbe: str
+    reduziert_soll: bool = True
+    anrechnen: bool = True
+    anwesend: bool = False
+    reihenfolge: int = 0
+
+
+class AbwesenheitTypUpdate(BaseModel):
+    name: str | None = None
+    farbe: str | None = None
+    reduziert_soll: bool | None = None
+    anrechnen: bool | None = None
+    anwesend: bool | None = None
+    reihenfolge: int | None = None
+
+
+class Tagesregel(BaseModel):
+    id: str
+    person_id: str | None = None
+    art: str  # 'jahrestag' | 'wochentag' | 'brueckentag'
+    monat: int | None = None
+    tag: int | None = None
+    wochentag: int | None = None
+    anteil: float = 0.5
+    notiz: str | None = None
+    aktiv: bool = True
+
+
+class TagesregelCreate(BaseModel):
+    id: str | None = None
+    person_id: str | None = None
+    art: str
+    monat: int | None = None
+    tag: int | None = None
+    wochentag: int | None = None
+    anteil: float = 0.5
+    notiz: str | None = None
+    aktiv: bool = True
+
+
+class TagLeeren(BaseModel):
+    person_id: str
+    datum: str

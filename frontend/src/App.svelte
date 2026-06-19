@@ -29,6 +29,11 @@
   let aktiveAnsicht = $state('')
   const aktuelleKomponente = $derived(ansichtsListe.find((a) => a.id === aktiveAnsicht)?.komponente)
 
+  // Globale Ansichten brauchen keine Board-Navigation; boardgebundene schon.
+  const GLOBALE_ANSICHTEN = new Set(['suche', 'transkripte'])
+  const boardgebunden = $derived(!GLOBALE_ANSICHTEN.has(aktiveAnsicht))
+  const aktuelleAnsichtMeta = $derived(ansichtsListe.find((a) => a.id === aktiveAnsicht))
+
   // Navigationswunsch (z.B. aus der Suche): zum Board wechseln; Board oeffnet die Karte.
   $effect(() => {
     const ziel = nav.ziel
@@ -122,6 +127,16 @@
       </button>
     </div>
 
+    <p class="rubrik">Ansichten</p>
+    <nav>
+      {#each ansichtsListe as a (a.id)}
+        <button class="zeile menu" class:aktiv={aktiveAnsicht === a.id} onclick={() => (aktiveAnsicht = a.id)} title={a.titel}>
+          <i class={a.icon} aria-hidden="true"></i><span>{a.titel}</span>
+        </button>
+      {/each}
+    </nav>
+
+    {#if boardgebunden}
     <p class="rubrik">Projektmappen</p>
     <nav>
       {#each mappen as m (m.id)}
@@ -170,6 +185,7 @@
         {/if}
       </nav>
     {/if}
+    {/if}
 
     <div class="fussbereich">
       <DiensteStatus />
@@ -183,24 +199,17 @@
   <div class="haupt">
     <header class="topbar">
       <div class="ort">
-        <span class="btitel">{aktivesBoard?.titel ?? 'Pinnwand'}</span>
-        {#if aktiveMappe}<span class="krumen">{aktiveMappe.titel}{#if aktivesBoard?.kuerzel} &middot; {aktivesBoard.kuerzel}{/if}</span>{/if}
-      </div>
-      <div class="vsw">
-        {#each ansichtsListe as a (a.id)}
-          <button class="vbtn" class:on={aktiveAnsicht === a.id} onclick={() => (aktiveAnsicht = a.id)}>
-            <i class={a.icon} aria-hidden="true"></i><span>{a.titel}</span>
-          </button>
-        {/each}
+        <span class="btitel">{boardgebunden ? (aktivesBoard?.titel ?? 'Pinnwand') : (aktuelleAnsichtMeta?.titel ?? 'Pinnwand')}</span>
+        {#if boardgebunden && aktiveMappe}<span class="krumen">{aktiveMappe.titel}{#if aktivesBoard?.kuerzel} &middot; {aktivesBoard.kuerzel}{/if}</span>{/if}
       </div>
     </header>
 
     <main class="buehne">
       {#if fehler}
         <p class="hinweis">Backend nicht erreichbar ({fehler}). Läuft das Backend auf Port 8420?</p>
-      {:else if aktivesBoard && aktuelleKomponente}
+      {:else if aktuelleKomponente && (!boardgebunden || aktivesBoard)}
         {@const Ansicht = aktuelleKomponente}
-        <Ansicht boardId={aktivesBoard.id} />
+        <Ansicht boardId={aktivesBoard?.id ?? ''} />
       {:else}
         <p class="hinweis">Lädt ...</p>
       {/if}
@@ -277,6 +286,7 @@
   .rail.zu .marke .name,
   .rail.zu .add,
   .rail.zu .mappe span,
+  .rail.zu .menu span,
   .rail.zu .bname span,
   .rail.zu .aktionen,
   .rail.zu .thema span {
@@ -289,6 +299,7 @@
     display: none;
   }
   .rail.zu .mappe,
+  .rail.zu .menu,
   .rail.zu .bname,
   .rail.zu .thema {
     justify-content: center;
@@ -312,6 +323,7 @@
     border-radius: var(--r-m);
   }
   .mappe,
+  .menu,
   .bname {
     display: flex;
     align-items: center;
@@ -325,20 +337,24 @@
     width: 100%;
     min-width: 0;
   }
-  .mappe {
+  .mappe,
+  .menu {
     border-radius: var(--r-m);
   }
   .bname span,
+  .menu span,
   .mappe span {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .mappe:hover {
+  .mappe:hover,
+  .menu:hover {
     background: var(--surface-3);
     color: var(--text-1);
   }
-  .mappe.aktiv {
+  .mappe.aktiv,
+  .menu.aktiv {
     background: var(--hl-primary-weich);
     color: var(--hl-primary-text);
   }
@@ -482,32 +498,6 @@
   .krumen {
     font-size: 11px;
     color: var(--text-3);
-  }
-  .vsw {
-    margin-left: auto;
-    display: flex;
-    gap: 2px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: var(--r-m);
-    padding: 3px;
-  }
-  .vbtn {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    border: 1px solid transparent;
-    background: transparent;
-    color: var(--text-2);
-    font-family: var(--font-display);
-    font-size: 12px;
-    padding: 5px 11px;
-    border-radius: var(--r-s);
-  }
-  .vbtn.on {
-    background: var(--surface-1);
-    color: var(--hl-primary-text);
-    border-color: var(--border);
   }
   .buehne {
     flex: 1;

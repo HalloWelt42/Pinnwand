@@ -3,7 +3,9 @@
   "name": "Suche",
   "version": "0.1.0",
   "extends": {
-    "views": [],
+    "views": [
+      { "id": "suche", "titel": "Suche", "icon": "fa-solid fa-magnifying-glass" }
+    ],
     "cardFields": [],
     "mappeTabs": [],
     "commands": []

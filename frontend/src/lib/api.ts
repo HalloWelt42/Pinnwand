@@ -126,3 +126,40 @@ export const verschiebeSpalte = (spalteId: string, richtung: -1 | 1): Promise<Sp
 
 export const loescheSpalte = (spalteId: string): Promise<void> =>
   hole(`/api/kanban/spalten/${spalteId}`, { method: 'DELETE' })
+
+// --- Suche ---
+
+export interface SuchTreffer {
+  karte_id: string
+  schluessel: string | null
+  titel: string
+  board_id?: string
+  spalte?: string
+  score?: number
+  quelle: string
+}
+export interface SuchErgebnis {
+  treffer: SuchTreffer[]
+  anzahl: number
+  modus: string
+}
+export interface SuchStatus {
+  embeddings: boolean
+  vektor_konfiguriert: boolean
+  vektor_erreichbar: boolean
+  mikrofon: boolean
+  modus: string
+}
+
+export const sucheInhalte = (q: string, limit = 15): Promise<SuchErgebnis> =>
+  hole(`/api/suche?q=${encodeURIComponent(q)}&limit=${limit}`)
+
+export const sucheStatus = (): Promise<SuchStatus> => hole('/api/suche/status')
+
+export async function transkribiere(audio: Blob): Promise<{ text: string }> {
+  const daten = new FormData()
+  daten.append('datei', audio, 'aufnahme.webm')
+  const antwort = await fetch(`${BASIS}/api/suche/sprache`, { method: 'POST', body: daten })
+  if (!antwort.ok) throw new Error('Spracheingabe nicht verfuegbar')
+  return antwort.json()
+}

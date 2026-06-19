@@ -7,6 +7,7 @@
   import { theme, wechsleTheme } from './lib/theme/theme.svelte'
   import { VERSION } from './lib/version'
   import { aktualisiereLaufend } from './lib/timer.svelte'
+  import { nav } from './lib/navigation.svelte'
   import Toast from './lib/Toast.svelte'
   import LaufBar from './lib/LaufBar.svelte'
 
@@ -26,6 +27,17 @@
   let ansichtsListe = $state<Ansicht[]>([])
   let aktiveAnsicht = $state('')
   const aktuelleKomponente = $derived(ansichtsListe.find((a) => a.id === aktiveAnsicht)?.komponente)
+
+  // Navigationswunsch (z.B. aus der Suche): zum Board wechseln; Board oeffnet die Karte.
+  $effect(() => {
+    const ziel = nav.ziel
+    if (!ziel) return
+    const b = boards.find((x) => x.id === ziel.boardId)
+    if (b) {
+      if (ansichtsListe.some((a) => a.id === 'board')) aktiveAnsicht = 'board'
+      aktivesBoard = b
+    }
+  })
 
   let bearbeiteBoardId = $state<string | null>(null)
   let loescheBoardId = $state<string | null>(null)

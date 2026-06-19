@@ -725,6 +725,19 @@
     max-height: none;
     height: 100%;
   }
+  /* Im Vollbild komfortabel grosse Schrift in Eingabe und Vorschau. */
+  .md-editor.vollbild .desc {
+    font-size: 16px;
+    line-height: 1.65;
+    padding: 18px 20px;
+  }
+  .md-editor.vollbild .md-vorschau {
+    padding: 18px 20px;
+  }
+  .md-editor.vollbild .md-vorschau :global(.md-body) {
+    font-size: 16px;
+    line-height: 1.7;
+  }
   .vb-kopf {
     display: flex;
     align-items: center;

@@ -64,6 +64,7 @@ class Einstellungen:
     transcripts_url: str
     stt_url: str
     agent_token: str
+    mcp_aktiv: bool
 
 
 def _lese_einstellungen() -> Einstellungen:
@@ -78,6 +79,7 @@ def _lese_einstellungen() -> Einstellungen:
         transcripts_url=_env("PINNWAND_TRANSCRIPTS_URL"),
         stt_url=_env("PINNWAND_STT_URL"),
         agent_token=_env("PINNWAND_AGENT_TOKEN"),
+        mcp_aktiv=_env("PINNWAND_MCP").lower() in ("1", "true", "yes", "an"),
     )
 
 

@@ -51,3 +51,10 @@ class Freitext(BaseModel):
 class TokenAnlage(BaseModel):
     name: str
     scopes: list[str] = Field(default_factory=lambda: ["read", "write"])
+
+
+class WerkzeugAufruf(BaseModel):
+    name: str
+    arguments: dict = Field(default_factory=dict)
+    dry_run: bool = False
+    idempotenz_schluessel: str | None = None

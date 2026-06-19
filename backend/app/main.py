@@ -6,7 +6,7 @@ bereitstellen. Die eigentliche Funktionalitaet liefern die Module.
 """
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
+from contextlib import AsyncExitStack, asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +16,8 @@ from app.modul_registry import (
     aggregiere_erweiterungen,
     init_fuer,
     lade_manifeste,
+    lifespan_fuer,
+    mount_fuer,
     router_fuer,
 )
 
@@ -24,10 +26,16 @@ from app.modul_registry import (
 async def lebenszyklus(app: FastAPI):
     for manifest in lade_manifeste():
         init_fuer(manifest)
-    yield
+    # Optionale Modul-Lebenszyklen (z.B. MCP-Session-Manager) sauber starten/stoppen.
+    async with AsyncExitStack() as stack:
+        for manifest in lade_manifeste():
+            cm = lifespan_fuer(manifest)
+            if cm is not None:
+                await stack.enter_async_context(cm)
+        yield
 
 
-app = FastAPI(title="Pinnwand", version="0.9.0", lifespan=lebenszyklus)
+app = FastAPI(title="Pinnwand", version="0.10.0", lifespan=lebenszyklus)
 
 app.add_middleware(
     CORSMiddleware,
@@ -68,3 +76,9 @@ for _manifest in lade_manifeste():
     _router = router_fuer(_manifest)
     if _router is not None:
         app.include_router(_router)
+
+# Optionale Sub-Apps einhaengen (z.B. MCP-Server unter /mcp).
+for _manifest in lade_manifeste():
+    _mount = mount_fuer(_manifest)
+    if _mount is not None:
+        app.mount(_mount[0], _mount[1])

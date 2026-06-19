@@ -10,7 +10,9 @@
   },
   "backend": {
     "router": "module.agent_api.api:router",
-    "init": "module.agent_api.persistence:init_db"
+    "init": "module.agent_api.persistence:init_db",
+    "mount": { "path": "/mcp", "app": "module.agent_api.mcp_server:asgi_app" },
+    "lifespan": "module.agent_api.mcp_server:lebenszyklus"
   },
   "permissions": ["card.read", "card.write", "time.write", "admin"],
   "requires": ["kanban-kern"]

@@ -46,6 +46,30 @@ def init_fuer(manifest: dict[str, Any]) -> None:
         init()
 
 
+def mount_fuer(manifest: dict[str, Any]) -> tuple[str, Any] | None:
+    """Liefert (Pfad, ASGI-App) eines Moduls, das eine Sub-App einhaengen will.
+
+    Erlaubt z.B. einen MCP-Server. Ist die App None (Feature abgeschaltet),
+    wird nichts eingehaengt - so bleiben solche Dienste optional.
+    """
+    spez = manifest.get("backend", {}).get("mount")
+    if not isinstance(spez, dict):
+        return None
+    pfad = spez.get("path")
+    app_obj = _aufgeloest(spez.get("app"))
+    if not pfad or app_obj is None:
+        return None
+    return pfad, app_obj
+
+
+def lifespan_fuer(manifest: dict[str, Any]):
+    """Liefert einen async-Kontextmanager eines Moduls fuer Start/Stopp, falls deklariert."""
+    fabrik = _aufgeloest(manifest.get("backend", {}).get("lifespan"))
+    if callable(fabrik):
+        return fabrik()
+    return None
+
+
 def aggregiere_erweiterungen() -> dict[str, list[dict[str, Any]]]:
     """Sammelt die deklarierten Erweiterungspunkte aller Module."""
     punkte: dict[str, list[dict[str, Any]]] = {p: [] for p in ERWEITERUNGSPUNKTE}

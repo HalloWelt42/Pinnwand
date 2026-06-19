@@ -10,6 +10,7 @@ from typing import Callable
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from . import persistence as db
+from . import werkzeuge
 from .aktionen import Aktionen, AktionsFehler
 from .auth import Akteur, aktueller_akteur, erfordere
 from .models import (
@@ -18,6 +19,7 @@ from .models import (
     KartenAnlage,
     Kommentierung,
     TokenAnlage,
+    WerkzeugAufruf,
     ZeitBuchung,
 )
 
@@ -106,6 +108,25 @@ def briefing(datum: str | None = Query(default=None), akteur: Akteur = Depends(e
 @router.get("/info")
 def info(akteur: Akteur = Depends(aktueller_akteur)) -> dict:
     return {"akteur": akteur.name, "scopes": sorted(akteur.scopes)}
+
+
+# -- Generische Werkzeuge (OpenAI-Function-Tools) -------------------------
+
+@router.get("/tools")
+def tools(akteur: Akteur = Depends(erfordere("read"))) -> dict:
+    """Werkzeug-Definitionen im OpenAI-Function-Calling-Format."""
+    return {"tools": werkzeuge.openai_schemas()}
+
+
+@router.post("/tools/execute")
+def tools_execute(eingabe: WerkzeugAufruf, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
+    """Fuehrt ein Werkzeug generisch aus (Scope wird je Werkzeug geprueft)."""
+    try:
+        return werkzeuge.fuehre_aus(
+            eingabe.name, eingabe.arguments, akteur, eingabe.dry_run, eingabe.idempotenz_schluessel
+        )
+    except AktionsFehler as e:
+        raise HTTPException(status_code=e.status, detail=e.nachricht)
 
 
 # -- Verwaltung (Scope admin) --------------------------------------------

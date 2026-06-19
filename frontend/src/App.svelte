@@ -11,6 +11,8 @@
   import Toast from './lib/Toast.svelte'
   import LaufBar from './lib/LaufBar.svelte'
   import DiensteStatus from './lib/DiensteStatus.svelte'
+  import Hilfe from './lib/Hilfe.svelte'
+  import Onboarding from './lib/Onboarding.svelte'
 
   interface Ansicht {
     id: string
@@ -38,6 +40,27 @@
   // Startpfad fruehzeitig sichern (bevor Effekte die URL anfassen koennen).
   const _startPfad = typeof window !== 'undefined' ? window.location.pathname : '/'
   let routingBereit = $state(false)
+
+  // Hilfe + Einrichtungs-Assistent.
+  let hilfeOffen = $state(false)
+  let onboardingOffen = $state((() => {
+    try {
+      return localStorage.getItem('pw_onboarding_done') !== '1'
+    } catch {
+      return false
+    }
+  })())
+  function onboardingFertig(): void {
+    onboardingOffen = false
+    try {
+      localStorage.setItem('pw_onboarding_done', '1')
+    } catch {
+      /* ignorieren */
+    }
+  }
+  function geheZuAnsicht(id: string): void {
+    if (ansichtsListe.some((a) => a.id === id)) aktiveAnsicht = id
+  }
 
   let mappen = $state<Projektmappe[]>([])
   let aktiveMappe = $state<Projektmappe | null>(null)
@@ -249,10 +272,15 @@
 
     <div class="fussbereich">
       <DiensteStatus />
-      <button class="thema" onclick={wechsleTheme} aria-label="Theme wechseln">
-        <i class={theme.modus === 'dunkel' ? 'fa-solid fa-sun' : 'fa-solid fa-moon'} aria-hidden="true"></i>
-        <span>{theme.modus === 'dunkel' ? 'Hell' : 'Dunkel'}</span>
-      </button>
+      <div class="fzeile">
+        <button class="thema" onclick={wechsleTheme} aria-label="Theme wechseln">
+          <i class={theme.modus === 'dunkel' ? 'fa-solid fa-sun' : 'fa-solid fa-moon'} aria-hidden="true"></i>
+          <span>{theme.modus === 'dunkel' ? 'Hell' : 'Dunkel'}</span>
+        </button>
+        <button class="hilfebtn" onclick={() => (hilfeOffen = true)} aria-label="Hilfe" title="Hilfe">
+          <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
+        </button>
+      </div>
     </div>
   </aside>
 
@@ -279,6 +307,8 @@
 </div>
 
 <Toast />
+{#if hilfeOffen}<Hilfe onSchliessen={() => (hilfeOffen = false)} />{/if}
+{#if onboardingOffen}<Onboarding onFertig={onboardingFertig} onGeheZu={geheZuAnsicht} />{/if}
 
 <style>
   .wurzel {
@@ -513,6 +543,29 @@
   .fussbereich {
     margin-top: auto;
     display: flex;
+    flex-direction: column;
+  }
+  .fzeile {
+    display: flex;
+    gap: 6px;
+  }
+  .fzeile .thema {
+    flex: 1;
+  }
+  .hilfebtn {
+    flex: none;
+    width: 38px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-2);
+    border-radius: var(--r-m);
+    font-size: 14px;
+  }
+  .hilfebtn:hover {
+    color: var(--hl-primary-text);
+    border-color: var(--hl-primary);
+  }
+  .rail.zu .fzeile {
     flex-direction: column;
   }
   .thema {

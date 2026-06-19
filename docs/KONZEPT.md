@@ -62,8 +62,8 @@ Im Browser (localStorage) gemerkt: Thema und Seitenleisten-Zustand, eingeklappte
 ### L - Routing
 History-API mit echten Pfaden ohne Hashes, tief verlinkbar (Board, Karte über Schlüssel, Ansichten). Server-Fallback auf `index.html`.
 
-### N - Flow-Ansicht
-Eigene Ansicht: Aufgaben als Boxen, frei anordenbar, mit Verbindungspfaden für Reihenfolge und Abhängigkeiten, Blocker rot. Ergänzt Board und Kalender.
+### N - Flow-Ansicht (entfernt)
+War als eigene Ansicht umgesetzt (zuletzt als automatisch geschichtetes Abhängigkeitsdiagramm mit kritischem Pfad), wurde aber auf Wunsch wieder entfernt, da ohne erkennbaren Mehrwert. Mit entfernt: das Feld blockiert_von, der Graph-Endpunkt und die Abhängigkeits-Pflege im Karten-Detail.
 
 ### O - Benutzerführung und Hilfe
 Überspringbarer Einrichtungs-Assistent beim ersten Start (Mappe, Board und Spalten samt Erledigt-Spalte, Personen und Wochenstunden, Feiertage und Region, optional API-Token), dazu dezente Erklärungen im Betrieb. Globaler Hilfe-Knopf öffnet ein durchsuchbares Panel.

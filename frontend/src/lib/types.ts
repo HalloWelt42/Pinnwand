@@ -34,7 +34,6 @@ export interface Karte {
   schaetzung_min?: number | null
   erfasst_sek?: number
   laeuft_seit?: string | null
-  blockiert_von?: string[]
 }
 
 export interface Spalte {

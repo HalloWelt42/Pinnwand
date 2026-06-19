@@ -12,7 +12,6 @@
     { titel: 'Karte bearbeiten', text: 'Karte anklicken oeffnet die Detailansicht. Beschreibung ganz oben als Markdown (Split-Editor, Vollbild, Auto-Speichern). Zeiterfassung mit Start/Pause, Schaetzung als Soll. Labels, Checkliste, Kommentare.' },
     { titel: 'Zeiten', text: 'Wochen-Stundenzettel mit Soll/Ist je Karte. Zeiten nachtragen und korrigieren (Dauer als 1:30 oder 1,5).' },
     { titel: 'Kalender', text: 'Jahres-Heatmap und Monat. Wochenenden, Feiertage (rot) und Urlaub (amber, Person waehlbar) sind eingefaerbt.' },
-    { titel: 'Flow', text: 'Abhaengigkeitsdiagramm: ordnet die Karten automatisch nach Reihenfolge an (links nach rechts) und hebt den kritischen Pfad hervor (laengste Kette, gewichtet nach Schaetzung). Status je Karte: startklar, blockiert oder erledigt. Zyklen werden gewarnt. Abhaengigkeiten legst du im Karten-Detail unter "Abhaengigkeiten" an. Klick auf eine Karte oeffnet sie.' },
     { titel: 'Serien', text: 'Wiederkehrende Termine/Aufgaben (taeglich/woechentlich/monatlich, Wochentage, Uhrzeit, Dauer). Werden automatisch als Karten vorgebucht.' },
     { titel: 'Suche', text: 'Freitextsuche ueber alle Karteninhalte. Mit lokalem Whisper auch per Mikrofon. Mit Qdrant + Embeddings zusaetzlich semantisch.' },
     { titel: 'Transkripte', text: 'Transkriptionen aus dem Sprachdienst durchsuchen, anzeigen, vorlesen und das Original-Audio abspielen.' },

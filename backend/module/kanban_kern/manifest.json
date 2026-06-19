@@ -7,8 +7,7 @@
       { "id": "heute", "titel": "Heute", "icon": "fa-solid fa-bolt" },
       { "id": "board", "titel": "Board", "icon": "fa-solid fa-table-columns" },
       { "id": "zeiten", "titel": "Zeiten", "icon": "fa-solid fa-table-list" },
-      { "id": "kalender", "titel": "Kalender", "icon": "fa-solid fa-calendar-days" },
-      { "id": "flow", "titel": "Flow", "icon": "fa-solid fa-diagram-project" }
+      { "id": "kalender", "titel": "Kalender", "icon": "fa-solid fa-calendar-days" }
     ],
     "cardFields": [],
     "mappeTabs": [],

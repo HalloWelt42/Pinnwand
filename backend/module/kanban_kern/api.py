@@ -56,17 +56,6 @@ def heute(datum: str | None = None) -> dict:
     return db.was_steht_an(datum or date.today().isoformat())
 
 
-@router.get("/boards/{board_id}/flow")
-def flow_graph(board_id: str) -> dict:
-    """Abhaengigkeitsgraph des Boards: Schichten, kritischer Pfad, Zyklen, Status."""
-    detail = db.board_detail(board_id)
-    if detail is None:
-        raise HTTPException(status_code=404, detail="Board nicht gefunden")
-    from . import graph
-
-    return graph.berechne(detail)
-
-
 # -- Karten ---------------------------------------------------------------
 
 @router.post("/karten", response_model=Karte, status_code=201)

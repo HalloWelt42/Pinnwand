@@ -172,7 +172,7 @@
     } catch {
       ansichtsListe = ansichten().map((a) => ({ id: a.id, titel: a.titel, icon: a.icon, komponente: a.komponente }))
     }
-    const REIHENFOLGE = ['heute', 'board', 'zeiten', 'kalender', 'jahreskalender', 'flow', 'serien', 'suche', 'transkripte', 'planung', 'berichte', 'einstellungen']
+    const REIHENFOLGE = ['heute', 'board', 'zeiten', 'kalender', 'jahreskalender', 'serien', 'suche', 'transkripte', 'planung', 'berichte', 'einstellungen']
     ansichtsListe.sort((a, b) => ((REIHENFOLGE.indexOf(a.id) + 1) || 99) - ((REIHENFOLGE.indexOf(b.id) + 1) || 99))
     const gespeichert = _ui.ansicht
     aktiveAnsicht = gespeichert && ansichtsListe.some((a) => a.id === gespeichert)

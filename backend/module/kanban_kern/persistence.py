@@ -66,10 +66,7 @@ CREATE TABLE IF NOT EXISTS karte (
     erfasst_sek INTEGER NOT NULL DEFAULT 0,
     laeuft_seit TEXT,
     serie_id TEXT,
-    serie_datum TEXT,
-    flow_x REAL,
-    flow_y REAL,
-    blockiert_von TEXT NOT NULL DEFAULT '[]'
+    serie_datum TEXT
 );
 CREATE TABLE IF NOT EXISTS zeiteintrag (
     id TEXT PRIMARY KEY,
@@ -100,12 +97,6 @@ def _migriere(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE karte ADD COLUMN serie_id TEXT")
     if "serie_datum" not in kspalten:
         conn.execute("ALTER TABLE karte ADD COLUMN serie_datum TEXT")
-    if "flow_x" not in kspalten:
-        conn.execute("ALTER TABLE karte ADD COLUMN flow_x REAL")
-    if "flow_y" not in kspalten:
-        conn.execute("ALTER TABLE karte ADD COLUMN flow_y REAL")
-    if "blockiert_von" not in kspalten:
-        conn.execute("ALTER TABLE karte ADD COLUMN blockiert_von TEXT NOT NULL DEFAULT '[]'")
 
 
 def init_db() -> None:
@@ -140,7 +131,6 @@ def _karte_aus_row(row: sqlite3.Row) -> Karte:
         schaetzung_min=row["schaetzung_min"],
         erfasst_sek=row["erfasst_sek"],
         laeuft_seit=row["laeuft_seit"],
-        blockiert_von=json.loads(row["blockiert_von"]) if ("blockiert_von" in row.keys() and row["blockiert_von"]) else [],
     )
 
 
@@ -254,11 +244,11 @@ def verschiebe_karte(karte_id: str, ziel_spalte: str, ziel_reihenfolge: int) -> 
 
 
 def aktualisiere_karte(karte_id: str, aenderungen: dict) -> Karte | None:
-    erlaubt = {"titel", "beschreibung", "labels", "prioritaet", "checkliste", "cover", "spalte", "reihenfolge", "start", "faellig", "zustaendig", "schaetzung_min", "blockiert_von"}
+    erlaubt = {"titel", "beschreibung", "labels", "prioritaet", "checkliste", "cover", "spalte", "reihenfolge", "start", "faellig", "zustaendig", "schaetzung_min"}
     felder = {k: v for k, v in aenderungen.items() if k in erlaubt}
     if not felder:
         return hole_karte(karte_id)
-    for json_feld in ("labels", "checkliste", "blockiert_von"):
+    for json_feld in ("labels", "checkliste"):
         if json_feld in felder:
             felder[json_feld] = json.dumps(felder[json_feld])
     zuweisung = ", ".join(f"{k} = ?" for k in felder)

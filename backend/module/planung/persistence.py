@@ -214,13 +214,29 @@ def liste_feiertage(von: str, bis: str) -> list[dict]:
     return [{"datum": r["datum"], "name": r["name"], "region": r["region"]} for r in rows]
 
 
-def uebernehme_feiertage(eintraege: list[dict], region: str | None) -> int:
+def feiertage_relevant(von: str, bis: str, bundesland: str | None) -> list[dict]:
+    """Feiertage, die fuer ein Bundesland gelten: bundesweite (Region NULL) plus die
+    des eigenen Bundeslands. Ohne Bundesland nur die bundesweiten."""
+    return [f for f in liste_feiertage(von, bis) if f["region"] is None or f["region"] == bundesland]
+
+
+def uebernehme_feiertage(eintraege: list[dict]) -> int:
+    """Speichert Feiertage mit ihrer jeweiligen Region (None = bundesweit).
+
+    Vorher denselben Tag/dieselbe Region entfernen - das dedupliziert auch
+    bundesweite Eintraege (Region NULL gilt im Primaerschluessel als verschieden).
+    """
     n = 0
     with verbindung() as conn:
         for e in eintraege:
+            reg = e.get("region")
+            if reg is None:
+                conn.execute("DELETE FROM feiertag WHERE datum = ? AND region IS NULL", (e["datum"],))
+            else:
+                conn.execute("DELETE FROM feiertag WHERE datum = ? AND region = ?", (e["datum"], reg))
             conn.execute(
-                "INSERT OR REPLACE INTO feiertag (datum, name, region) VALUES (?, ?, ?)",
-                (e["datum"], e["name"], region or e.get("region")),
+                "INSERT INTO feiertag (datum, name, region) VALUES (?, ?, ?)",
+                (e["datum"], e["name"], reg),
             )
             n += 1
     return n

@@ -64,7 +64,10 @@ def urlaub(person: str | None = Query(default=None), von: str = Query(...), bis:
 @router.post("/urlaub")
 def urlaub_setzen(e: UrlaubSetzen) -> dict:
     bis = e.bis or e.von
-    feier = {f["datum"] for f in db.liste_feiertage(e.von, bis)} if e.feiertage_ueberspringen else set()
+    feier: set[str] = set()
+    if e.feiertage_ueberspringen:
+        p = db.hole_person(e.person_id)
+        feier = {f["datum"] for f in db.feiertage_relevant(e.von, bis, p.get("bundesland") if p else None)}
     cur = date.fromisoformat(e.von)
     ende = date.fromisoformat(bis)
     erzeugt = 0
@@ -106,8 +109,8 @@ def feiertage_uebernehmen(e: FeiertageUebernehmen) -> dict:
     eintraege = feiertage.vorschau(e.land, e.region, e.jahr)
     if not eintraege:
         raise HTTPException(status_code=400, detail="Keine Feiertage fuer diese Auswahl gefunden")
-    region = f"{e.land}-{e.region}" if e.region else e.land
-    return {"uebernommen": db.uebernehme_feiertage(eintraege, region)}
+    # Jeder Eintrag traegt bereits seine korrekte Region (None = bundesweit, sonst Code).
+    return {"uebernommen": db.uebernehme_feiertage(eintraege)}
 
 
 @router.delete("/feiertage")

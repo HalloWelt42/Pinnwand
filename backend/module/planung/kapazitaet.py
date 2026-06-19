@@ -12,7 +12,7 @@ def kapazitaet(person_id: str, von: str, bis: str) -> dict | None:
     if not p:
         return None
     ws = p["wochenstunden"]
-    feier = {f["datum"] for f in db.liste_feiertage(von, bis)}
+    feier = {f["datum"] for f in db.feiertage_relevant(von, bis, p.get("bundesland"))}
     url = {u["datum"]: u["anteil"] for u in db.liste_urlaub(person_id, von, bis)}
     tage: list[dict] = []
     summe = 0.0
@@ -39,11 +39,18 @@ def kapazitaet(person_id: str, von: str, bis: str) -> dict | None:
 
 
 def tage_overlay(von: str, bis: str, person_id: str | None = None) -> list[dict]:
-    """Pro Tag: Wochenende, Feiertagsname, Urlaubsanteil - fuer die Kalender-Einfaerbung."""
-    feier = {f["datum"]: f["name"] for f in db.liste_feiertage(von, bis)}
+    """Pro Tag: Wochenende, Feiertagsname, Urlaubsanteil - fuer die Kalender-Einfaerbung.
+
+    Mit Person werden nur deren Feiertage (bundesweit + eigenes Bundesland) gezeigt,
+    ohne Person alle hinterlegten Feiertage.
+    """
     url: dict[str, float] = {}
     if person_id:
+        p = db.hole_person(person_id)
+        feier = {f["datum"]: f["name"] for f in db.feiertage_relevant(von, bis, p.get("bundesland") if p else None)}
         url = {u["datum"]: u["anteil"] for u in db.liste_urlaub(person_id, von, bis)}
+    else:
+        feier = {f["datum"]: f["name"] for f in db.liste_feiertage(von, bis)}
     out: list[dict] = []
     cur = date.fromisoformat(von)
     ende = date.fromisoformat(bis)

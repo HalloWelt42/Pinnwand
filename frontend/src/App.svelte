@@ -10,6 +10,7 @@
   import { nav } from './lib/navigation.svelte'
   import Toast from './lib/Toast.svelte'
   import LaufBar from './lib/LaufBar.svelte'
+  import DiensteStatus from './lib/DiensteStatus.svelte'
 
   interface Ansicht {
     id: string
@@ -170,10 +171,13 @@
       </nav>
     {/if}
 
-    <button class="thema" onclick={wechsleTheme} aria-label="Theme wechseln">
-      <i class={theme.modus === 'dunkel' ? 'fa-solid fa-sun' : 'fa-solid fa-moon'} aria-hidden="true"></i>
-      <span>{theme.modus === 'dunkel' ? 'Hell' : 'Dunkel'}</span>
-    </button>
+    <div class="fussbereich">
+      <DiensteStatus />
+      <button class="thema" onclick={wechsleTheme} aria-label="Theme wechseln">
+        <i class={theme.modus === 'dunkel' ? 'fa-solid fa-sun' : 'fa-solid fa-moon'} aria-hidden="true"></i>
+        <span>{theme.modus === 'dunkel' ? 'Hell' : 'Dunkel'}</span>
+      </button>
+    </div>
   </aside>
 
   <div class="haupt">
@@ -280,6 +284,9 @@
   }
   .rail.zu .marke {
     justify-content: center;
+  }
+  .rail.zu :global(.dienste) {
+    display: none;
   }
   .rail.zu .mappe,
   .rail.zu .bname,
@@ -427,8 +434,12 @@
     border-color: transparent;
     font-weight: 500;
   }
-  .thema {
+  .fussbereich {
     margin-top: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .thema {
     display: flex;
     align-items: center;
     gap: 10px;

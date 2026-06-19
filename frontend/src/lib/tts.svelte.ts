@@ -4,7 +4,22 @@
 
 import { vorleseAudio } from './api'
 
-export const tts = $state<{ laeuft: boolean }>({ laeuft: false })
+export const tts = $state<{ laeuft: boolean; stimme: string }>({ laeuft: false, stimme: '' })
+
+try {
+  tts.stimme = localStorage.getItem('pw_tts_stimme') ?? ''
+} catch {
+  /* localStorage nicht verfuegbar */
+}
+
+export function setzeStimme(stimme: string): void {
+  tts.stimme = stimme
+  try {
+    localStorage.setItem('pw_tts_stimme', stimme)
+  } catch {
+    /* ignorieren */
+  }
+}
 
 let audio: HTMLAudioElement | null = null
 
@@ -24,8 +39,9 @@ export async function vorlesen(text: string, opts?: { tempo?: number; stimme?: s
   stoppeVorlesen()
   const sauber = nurText(text)
   if (!sauber) return
+  const stimme = opts?.stimme ?? (tts.stimme || undefined)
   try {
-    const blob = await vorleseAudio(sauber, opts?.stimme)
+    const blob = await vorleseAudio(sauber, stimme)
     audio = new Audio(URL.createObjectURL(blob))
     audio.playbackRate = opts?.tempo ?? 1
     audio.onended = () => (tts.laeuft = false)

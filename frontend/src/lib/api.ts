@@ -168,6 +168,21 @@ export async function transkribiere(audio: Blob): Promise<{ text: string }> {
 
 export const ttsStatus = (): Promise<{ verfuegbar: boolean }> => hole('/api/tts/status')
 
+export interface Dienst {
+  schluessel: string
+  name: string
+  konfiguriert: boolean
+  erreichbar: boolean
+}
+export const ladeDienste = (): Promise<{ bind: string; dienste: Dienst[] }> => hole('/api/dienste')
+
+export interface Stimmen {
+  model?: string
+  speakers?: string[]
+  custom?: { id: string; name: string }[]
+}
+export const ttsStimmen = (): Promise<{ stimmen: Stimmen | [] }> => hole('/api/tts/stimmen')
+
 export async function vorleseAudio(text: string, stimme?: string): Promise<Blob> {
   const antwort = await fetch(`${BASIS}/api/tts`, {
     method: 'POST',

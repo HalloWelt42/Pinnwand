@@ -22,6 +22,16 @@ def verfuegbar() -> bool:
     return bool(einstellungen.tts_url)
 
 
+def erreichbar() -> bool:
+    """Prueft, ob der TTS-Dienst (pappagei) tatsaechlich antwortet."""
+    if not einstellungen.tts_url:
+        return False
+    try:
+        return httpx.get(einstellungen.tts_url.rstrip("/") + "/health", timeout=1.5).status_code < 500
+    except Exception:
+        return False
+
+
 def _wav(pcm: bytes) -> bytes:
     byte_rate = _RATE * _KANAELE * _BITS // 8
     block_align = _KANAELE * _BITS // 8

@@ -75,7 +75,7 @@ def _lese_einstellungen() -> Einstellungen:
         llm_url=_env("PINNWAND_LLM_URL"),
         embedding_model=_env("PINNWAND_EMBEDDING_MODEL"),
         qdrant_url=_env("PINNWAND_QDRANT_URL"),
-        tts_url=_env("PINNWAND_TTS_URL"),
+        tts_url=_env("PINNWAND_TTS_URL", "http://127.0.0.1:8765"),
         transcripts_url=_env("PINNWAND_TRANSCRIPTS_URL"),
         stt_url=_env("PINNWAND_STT_URL"),
         agent_token=_env("PINNWAND_AGENT_TOKEN"),

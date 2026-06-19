@@ -16,7 +16,7 @@ class TtsEingabe(BaseModel):
 
 @router.get("/status")
 def status() -> dict:
-    return {"verfuegbar": dienst.verfuegbar()}
+    return {"verfuegbar": dienst.erreichbar()}
 
 
 @router.get("/stimmen")

@@ -115,6 +115,11 @@ def init_db() -> None:
                 " VALUES (?, NULL, 'brueckentag', 0.0, 'Brueckentage automatisch', 0)",
                 ("r_" + uuid4().hex[:8],),
             )
+    # Bundesweite Feiertage fuer das laufende und naechste Jahr sicherstellen.
+    from datetime import date
+    jetzt = date.today().year
+    for j in (jetzt, jetzt + 1):
+        stelle_feiertage_sicher(j)
 
 
 # -- Personen -------------------------------------------------------------
@@ -293,6 +298,23 @@ def uebernehme_feiertage(eintraege: list[dict]) -> int:
             )
             n += 1
     return n
+
+
+def stelle_feiertage_sicher(jahr: int, land: str = "DE") -> int:
+    """Sorgt dafuer, dass fuer ein Jahr Feiertage vorhanden sind.
+
+    Sind fuer das Jahr noch gar keine Feiertage hinterlegt, werden die bundesweiten
+    (Region NULL) automatisch importiert, damit der Kalender sofort stimmt. Sobald
+    der Nutzer eigene (auch landesspezifische) Feiertage fuer das Jahr hat, passiert
+    nichts mehr.
+    """
+    with verbindung() as conn:
+        n = conn.execute("SELECT COUNT(*) AS n FROM feiertag WHERE datum LIKE ?", (f"{jahr}-%",)).fetchone()["n"]
+    if n:
+        return 0
+    from . import feiertage
+    eintraege = feiertage.vorschau(land, None, jahr)
+    return uebernehme_feiertage(eintraege) if eintraege else 0
 
 
 def loesche_feiertage(jahr: int, region: str | None) -> int:

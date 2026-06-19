@@ -190,6 +190,7 @@ def tageszellen(person: dict, von: str, bis: str) -> list[dict]:
 def kalender(jahr: int) -> dict:
     """Jahresaggregation ueber alle aktiven Personen je Tag (fuer den Jahreskalender)."""
     von, bis = f"{jahr}-01-01", f"{jahr}-12-31"
+    db.stelle_feiertage_sicher(jahr)  # bundesweite Feiertage bei Bedarf automatisch laden
     personen = [p for p in db.liste_personen() if p["aktiv"]]
     all_feier = _feiertage_gepuffert(von, bis)
     regelinfo = _regeln_aufbereiten(db.liste_tagesregeln())

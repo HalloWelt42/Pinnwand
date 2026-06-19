@@ -17,7 +17,8 @@ const TAG_REF_SEK = 8 * 3600 // Referenz fuer die Stunden-Heatmap (ein voller Ar
 /** Hintergrundfarbe einer Zelle (Matrix) je nach aktiven Ebenen. */
 export function zellHintergrund(z: KalenderZelle, e: Ebenen, typen: TypMap): string {
   if (e.feiertage && z.feiertag) return 'var(--due-rot-bg)'
-  if (z.status === 'frei') return 'var(--surface-2)'
+  // Feiertag und freier Tag gelten nie als anwesend (keine gruene Faerbung).
+  if (z.status === 'frei' || z.status === 'feiertag') return 'var(--surface-2)'
   if (e.anwesenheit && z.status === 'abwesend' && z.abw) {
     return typen[z.abw.typ]?.farbe ?? 'var(--due-rot-bg)'
   }
@@ -56,32 +57,33 @@ export interface TagAggregat {
 
 /** Verdichtet die Zellen aller Personen eines Tages zu Zahl + Farbe (Monatsgitter). */
 export function tagAggregat(zellen: KalenderZelle[], e: Ebenen): TagAggregat {
-  const n = zellen.length
   const anwesend = zellen.filter((z) => z.status === 'anwesend').length
   const abwesend = zellen.filter((z) => z.status === 'abwesend').length
+  // Eingeplant = an dem Tag arbeitende Personen (ohne Feiertag/Wochenende/Teilzeit-frei).
+  const eingeplant = anwesend + abwesend
   const feier = zellen.find((z) => z.feiertag)?.feiertag ?? null
   const sumIst = zellen.reduce((s, z) => s + z.ist_sek, 0)
   const sumSoll = zellen.reduce((s, z) => s + z.soll, 0)
-  const alleFrei = zellen.every((z) => z.status === 'frei' || z.status === 'feiertag')
 
   let zahl = ''
   let bg = 'var(--surface-2)'
   if (e.stunden && sumIst > 0) {
     zahl = formatStd(sumIst)
-    const pct = Math.min(100, Math.max(16, Math.round((sumIst / (TAG_REF_SEK * Math.max(n, 1))) * 100)))
+    const pct = Math.min(100, Math.max(16, Math.round((sumIst / (TAG_REF_SEK * Math.max(eingeplant, 1))) * 100)))
     bg = `color-mix(in srgb, var(--hl-primary) ${pct}%, transparent)`
   } else if (e.auslastung && sumSoll > 0 && sumIst > 0) {
     const r = sumIst / 3600 / sumSoll
     zahl = Math.round(r * 100) + '%'
     bg = r > 1.05 ? 'color-mix(in srgb, var(--gefahr) 38%, transparent)' : 'color-mix(in srgb, var(--ok) 42%, transparent)'
-  } else if (e.anwesenheit && !alleFrei) {
-    zahl = `${anwesend}/${n}`
-    const r = n ? anwesend / n : 0
+  } else if (e.anwesenheit && eingeplant > 0) {
+    zahl = `${anwesend}/${eingeplant}`
+    const r = anwesend / eingeplant
     bg = `color-mix(in srgb, var(--ok) ${Math.round(10 + r * 40)}%, transparent)`
   }
   if (e.feiertage && feier) bg = 'var(--due-rot-bg)'
 
-  const teile = [`anwesend ${anwesend}/${n}`, `abwesend ${abwesend}`]
+  const teile = eingeplant > 0 ? [`anwesend ${anwesend}/${eingeplant}`] : ['arbeitsfrei']
+  if (abwesend) teile.push(`abwesend ${abwesend}`)
   if (feier) teile.push(`Feiertag: ${feier}`)
   if (sumIst) teile.push(`${formatStd(sumIst)} h`)
   return { zahl, bg, feiertag: feier, titel: teile.join(', ') }

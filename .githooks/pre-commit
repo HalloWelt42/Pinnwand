@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Prueft die zum Commit vorgemerkten Dateien gegen die Projektregeln.
+HIER="$(cd "$(dirname "$0")" && pwd)"
+DATEIEN="$(git diff --cached --name-only --diff-filter=ACM)"
+[ -z "$DATEIEN" ] && exit 0
+OLDIFS="$IFS"; IFS='
+'
+set -- $DATEIEN
+IFS="$OLDIFS"
+if ! "$HIER/regelpruefung.sh" "$@"; then
+  echo "Commit blockiert. (Umgehung mit --no-verify ist unerwuenscht.)"
+  exit 1
+fi
+exit 0

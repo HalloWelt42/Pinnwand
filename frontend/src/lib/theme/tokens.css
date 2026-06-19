@@ -1,0 +1,83 @@
+/* Pinnwand Design-Token - dunkel als Standard, hell gleichwertig.
+   Dichte, professionelle Werkzeug-Optik mit Tiefe (Elevation).
+   Highlights aus der Material-Palette (siehe palette.ts). */
+
+:root {
+  --font-display: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-text: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --r-s: 6px;
+  --r-m: 8px;
+  --r-l: 10px;
+  --r-xl: 13px;
+}
+
+/* ---- Dunkel (Standard) ---- */
+:root,
+[data-theme='dark'] {
+  --surface-page: #131519;
+  --surface-col: #1a1d23;
+  --surface-1: #21252c;
+  --surface-2: #181b21;
+  --surface-3: #262b33;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-2: rgba(255, 255, 255, 0.13);
+  --text-1: #eceef1;
+  --text-2: #aab0b8;
+  --text-3: #6c727b;
+
+  --hl-primary: #4f9be8;
+  --hl-primary-text: #7cb6ee;
+  --hl-primary-weich: rgba(79, 155, 232, 0.16);
+  --hl-on-primary: #ffffff;
+
+  --prio-hoch: #ef5350;
+  --prio-mittel: #ffb300;
+  --prio-niedrig: #5c9ce6;
+
+  --due-rot-bg: rgba(239, 154, 154, 0.16);
+  --due-rot-fg: #ef9a9a;
+  --due-amber-bg: rgba(255, 224, 130, 0.14);
+  --due-amber-fg: #ffe082;
+  --ok: #a5d6a7;
+  --gefahr: #ef5350;
+
+  --schatten-karte: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --schatten-pop: 0 14px 34px rgba(0, 0, 0, 0.55);
+  --schatten-lift: 0 16px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* ---- Hell ---- */
+[data-theme='light'] {
+  --surface-page: #eceef2;
+  --surface-col: #f4f5f8;
+  --surface-1: #ffffff;
+  --surface-2: #eef0f3;
+  --surface-3: #ffffff;
+  --border: rgba(18, 20, 24, 0.10);
+  --border-2: rgba(18, 20, 24, 0.17);
+  --text-1: #181b20;
+  --text-2: #474d56;
+  --text-3: #7a818b;
+
+  --hl-primary: #1e88e5;
+  --hl-primary-text: #1565c0;
+  --hl-primary-weich: #e3f2fd;
+  --hl-on-primary: #ffffff;
+
+  --prio-hoch: #e53935;
+  --prio-mittel: #fb8c00;
+  --prio-niedrig: #1e88e5;
+
+  --due-rot-bg: #ffebee;
+  --due-rot-fg: #c62828;
+  --due-amber-bg: #fff3e0;
+  --due-amber-fg: #b26a00;
+  --ok: #2e7d32;
+  --gefahr: #d32f2f;
+
+  --schatten-karte: 0 1px 2px rgba(18, 20, 24, 0.10);
+  --schatten-pop: 0 12px 30px rgba(18, 20, 24, 0.18);
+  --schatten-lift: 0 14px 30px rgba(18, 20, 24, 0.22);
+}

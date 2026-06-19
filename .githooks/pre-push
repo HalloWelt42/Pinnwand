@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Letzter Schutz vor dem Push: prueft alle versionierten Dateien gegen die Projektregeln.
+HIER="$(cd "$(dirname "$0")" && pwd)"
+OLDIFS="$IFS"; IFS='
+'
+set -- $(git ls-files)
+IFS="$OLDIFS"
+if ! "$HIER/regelpruefung.sh" "$@"; then
+  echo "Push blockiert: Regelverstoesse im Repository (siehe oben)."
+  exit 1
+fi
+exit 0

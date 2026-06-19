@@ -1,0 +1,21 @@
+{
+  "id": "kanban-kern",
+  "name": "Kanban-Kern",
+  "version": "0.1.0",
+  "extends": {
+    "views": [
+      { "id": "board", "titel": "Board", "icon": "fa-solid fa-table-columns" },
+      { "id": "zeiten", "titel": "Zeiten", "icon": "fa-solid fa-table-list" },
+      { "id": "kalender", "titel": "Kalender", "icon": "fa-solid fa-calendar-days" }
+    ],
+    "cardFields": [],
+    "mappeTabs": [],
+    "commands": []
+  },
+  "backend": {
+    "router": "module.kanban_kern.api:router",
+    "init": "module.kanban_kern.persistence:init_db"
+  },
+  "permissions": ["board.read", "card.read", "card.write"],
+  "requires": []
+}

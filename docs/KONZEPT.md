@@ -1,0 +1,84 @@
+# Pinnwand - Konzept und Roadmap
+
+Dieses Dokument hält den abgestimmten Funktionsumfang und die Architektur der nächsten Ausbaustufen fest. Es beschreibt das Zielbild, nicht den Verlauf; der aktuelle Ist-Zustand steht in der README.
+
+## Zweck
+
+Pinnwand ist eine lokale, modulare Kanban-Plattform. Sie wird erweitert um eine agentenfähige Schnittstelle, mit der lokale KI-Werkzeuge (LM Studio, Fundus sowie MCP-Clients) das Board befüllen und als Wissensquelle lesen können, dazu um Inhalte (Markdown, Vorlesen, Transkriptionen), Planung (Wochenstunden, Urlaub), Auswertung (Berichte, PDF) und Komfort (semantische Suche, Benutzerführung).
+
+## Architekturprinzipien
+
+- Stark modular: jede Fähigkeit ist ein austauschbares Modul oder ein Adapter hinter einer klaren Schnittstelle, angebunden über eine Registry statt fester Verdrahtung.
+- Saubere Schichten, objektorientiert: eine Domänen-/Aktionsschicht ist die einzige Wahrheit der Operationen; Protokolle (REST, MCP, OpenAI-Tools) sind dünne Adapter darüber.
+- Durchgängig typisiert: Pydantic-Modelle im Backend, TypeScript-Interfaces im Frontend, keine rohen Dicts.
+- Lokal-only und datenschutzfreundlich: Standardbindung an 127.0.0.1, externe Erreichbarkeit nur bewusst per Konfiguration. Keine Cloud-Abhängigkeiten.
+- Austauschbare Engines: TTS, STT, Embeddings, Such-Engine, Export-Renderer und Feiertags-Quelle sind je hinter einer Schnittstelle gekapselt.
+
+## Externe Anbindungen (lokale Dienste)
+
+- LM Studio (OpenAI-kompatibel): Chat und Embeddings über `/v1`. Embedding-Modell per Konfiguration, sonst Heuristik.
+- Qdrant (Vektor-DB): eigene Collection in der vorhandenen Instanz auf `:6333`, Cosinus-Distanz.
+- pappagei (TTS): `127.0.0.1:8765`, `POST /synthesize` liefert einen PCM-Strom (24 kHz mono), dazu `/voices` und `/health`.
+- txt2voice (Transkriptionen): Backend `:10031`, `GET /api/transcribe/{id}`, Original-Audio unter `/api/transcribe/{id}/audio`, Suche `GET /api/search?source_type=transcription` (FTS5 mit Wort- und Phrasensuche, Trefferausschnitt, Segment-Zeitstempel).
+- Lokales Whisper (STT fürs Mikrofon): Mitschrift `:8766` oder txt2voice-Worker; Aufnahme im Browser, Transkription lokal.
+- Feiertage: gebündelte Offline-Bibliothek als Standard, optional Online-Abgleich, immer mit mehrstufiger Vorschau vor der Übernahme.
+
+## Entscheidungen
+
+### A - Agenten-API
+REST plus MCP-Server (FastMCP, eingehängt unter `/mcp`, Streamable HTTP) plus OpenAI-Function-Schemas mit Ausführ-Endpunkt. Sicherheit: Bearer-Token je Client (gehasht), Scopes `read`/`write`/`admin`, Audit-Log jeder Aktion. Token-Verwaltung über eine Admin-Ansicht und über Konfiguration. Schutz: Idempotenz-Schlüssel gegen Doppelbuchung, Auflösung von Karten über Schlüssel oder Titel statt interner ID, Trockenlauf-Vorschau, klare Fehlertexte fürs Modell.
+
+### B - Erfassungs-Komfort
+Natürlichsprachiges Erfassen hybrid: das Modell extrahiert Felder, Pinnwand validiert deterministisch (Dauer wie "2 Std", "1:30", "1,5h", "90min"; relative Daten wie "gestern", "Montag") und zeigt immer eine Vorschau vor dem Schreiben. "Erledigt" ist eine je Board markierte Spalte. Natürlichsprachig möglich: Zeit buchen, Aufgabe anlegen, erledigen oder verschieben, Kommentar oder Checkliste ergänzen.
+
+### C - Semantische Suche
+KI-Freifeld mit optionalem Mikrofon (lokales Whisper). Hybride Suche aus Vektor (Qdrant) und der vorhandenen Stichwort-Tiefensuche. Indiziert werden Karten, Kommentare und Checklisten, Zeit-Kommentare sowie Notizen, Dokumente und verlinkte Transkriptionen. Aktualisierung inkrementell bei Änderung plus manueller Voll-Reindex.
+
+### D - Markdown-Inhalte
+Sehr gute Darstellung über die bewährte Kette (svelte-exmarkdown mit GFM, KaTeX für Mathe, Mermaid mit dunklem Thema und Aufruf-Gate, highlight.js für Code, DOMPurify zur Absicherung). Markdown in Karten-Beschreibung, Karten-Notizen und -Dokumenten, projektweiten Mappen-Dokumenten und Kommentaren. Editor als Split aus Eingabe und Live-Vorschau, dazu Vollbild-Modus.
+
+### E - TTS / Vorlesen
+Modularer TTS-Adapter mit pappagei als Standard, Browser-Sprachausgabe als Notnagel. Vorlesbar sind Karten-Inhalte, Kommentare, das Tages-Briefing und Transkriptionen. Komfort: Stimme und Modell wählbar, Tempo einstellbar, Hervorhebung des gerade gelesenen Satzes, volle Wiedergabesteuerung.
+
+### F - Transkriptionen
+Aus txt2voice gezielt verlinken: in Pinnwand durchsuchen und auswählen. Anzeige an Karten, in einer eigenen Transkripte-Ansicht und in Mappen-Dokumenten. Vorlesen wahlweise als Text (TTS) und als Original-Audio mit Sprung zum Segment. Suche spiegelt die FTS5-Suche von txt2voice inklusive Trefferausschnitt und Zeitstempel. Bei nicht laufendem Dienst ein klarer Hinweis.
+
+### G - Wochenstunden-Planung und Urlaub
+Echte Personen ersetzen die bisherigen Kürzel; je Person Wochen-Soll und Urlaubskonto. Wochen-Soll je Wochentag mit Überschreibung einzelner Wochen. Urlaub reduziert das Soll, halbe Tage möglich. Feiertage aus wählbarer Quelle (offline oder online) mit mehrstufiger Vorschau, mehrere Länder. Wochenenden, Feiertage und Urlaub sind im Kalender klar eingefärbt.
+
+### H - PDF, Berichte und Archiv
+Server-seitiger Export über WeasyPrint. Druckbar sind alle Ansichten plus eigens reduzierte Druckansichten. Formate PDF, CSV und Markdown. Standardberichte: Wochen-Stundenzettel, Soll/Ist, Kapazität und Auslastung, Zeit je Person und Karte. Mathe und Diagramme werden für den Druck server-seitig vorgerendert. Generierte Berichte landen unveränderlich im Berichts-Archiv (Zeitraum, Person, Erstelldatum) und bleiben als Stunden-Nachweis abrufbar.
+
+### I - Was-steht-an-Panel
+Handlungsorientierte Übersicht: überfällig, heute oder diese Woche fällig, in Arbeit, zu lange liegengeblieben. Platzierung unter der Heatmap und als Startbildschirm "Heute". Speist auch das gesprochene Tages-Briefing.
+
+### J - Detailansicht
+Beschreibung steht oben. Split- und Vollbild-Editor für mehr Raum. Automatisches Speichern (verzögert) mit sichtbarem Status (geändert oder gespeichert) und lokalem Entwurf gegen Datenverlust.
+
+### K - UI-Einstellungen merken
+Im Browser (localStorage) gemerkt: Thema und Seitenleisten-Zustand, eingeklappte Spalten, zuletzt geöffnetes Board und Ansicht sowie Filter, Sortierung und Suche.
+
+### L - Routing
+History-API mit echten Pfaden ohne Hashes, tief verlinkbar (Board, Karte über Schlüssel, Ansichten). Server-Fallback auf `index.html`.
+
+### N - Flow-Ansicht
+Eigene Ansicht: Aufgaben als Boxen, frei anordenbar, mit Verbindungspfaden für Reihenfolge und Abhängigkeiten, Blocker rot. Ergänzt Board und Kalender.
+
+### O - Benutzerführung und Hilfe
+Überspringbarer Einrichtungs-Assistent beim ersten Start (Mappe, Board und Spalten samt Erledigt-Spalte, Personen und Wochenstunden, Feiertage und Region, optional API-Token), dazu dezente Erklärungen im Betrieb. Globaler Hilfe-Knopf öffnet ein durchsuchbares Panel.
+
+### P - Git-Schutz
+Hooks unter `.githooks` (per `core.hooksPath` aktiv) prüfen vor Commit und Push und blockieren: Erwähnungen von KI-Assistenten oder deren Herstellern sowie Mitautoren-Angaben in Commits, typografische Sonderzeichen, falsche Umlaut-Ersetzungen in Doku sowie eingecheckte Geheimnisse und Schlüssel.
+
+## Phasenplan
+
+1. Agenten-API-Fundament und Erfassungs-Komfort (A, B): REST plus Auth, Scopes und Audit-Log; Zeiten nachtragen, Schnell-Erledigt, natürlichsprachig mit Vorschau, Retrieval und Tages-Briefing.
+2. MCP-Server und OpenAI-Function-Schemas (A).
+3. Semantische Suche und KI-Freifeld mit Mikrofon (C).
+4. Markdown-Inhalte und Vorlesen (D, E).
+5. Transkriptionen (F).
+6. Wochenstunden, Urlaub, Berichte, PDF und Archiv (G, H).
+7. Flow-Ansicht, Was-steht-an, Detailansicht, UI-Persistenz, Routing, Benutzerführung (N, I, J, K, L, O).
+8. Mehrere Security-Audit-Runden.
+
+Querschnitt: strenge Versionierung (Patch je Änderung, Feature je Ausbaustufe), saubere Commits, README hält den Ist-Zustand.

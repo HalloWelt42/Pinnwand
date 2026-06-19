@@ -1,0 +1,506 @@
+<script lang="ts">
+  import { onMount } from 'svelte'
+  import type { Component } from 'svelte'
+  import type { Board, Projektmappe } from './lib/types'
+  import { ladeMappen, ladeBoards, ladeErweiterungen, erstelleBoard, benenneBoard, loescheBoard } from './lib/api'
+  import { ansichten, komponenteFuer } from './lib/module/registry'
+  import { theme, wechsleTheme } from './lib/theme/theme.svelte'
+  import { VERSION } from './lib/version'
+  import { aktualisiereLaufend } from './lib/timer.svelte'
+  import Toast from './lib/Toast.svelte'
+  import LaufBar from './lib/LaufBar.svelte'
+
+  interface Ansicht {
+    id: string
+    titel: string
+    icon: string
+    komponente: Component<{ boardId: string }>
+  }
+
+  let mappen = $state<Projektmappe[]>([])
+  let aktiveMappe = $state<Projektmappe | null>(null)
+  let boards = $state<Board[]>([])
+  let aktivesBoard = $state<Board | null>(null)
+  let fehler = $state<string | null>(null)
+
+  let ansichtsListe = $state<Ansicht[]>([])
+  let aktiveAnsicht = $state('')
+  const aktuelleKomponente = $derived(ansichtsListe.find((a) => a.id === aktiveAnsicht)?.komponente)
+
+  let bearbeiteBoardId = $state<string | null>(null)
+  let loescheBoardId = $state<string | null>(null)
+  let boardEntwurf = $state('')
+  let neuesBoard = $state(false)
+  let neuerBoardTitel = $state('')
+  let railEin = $state(true)
+
+  async function ladeBoardListe() {
+    if (aktiveMappe) boards = await ladeBoards(aktiveMappe.id)
+  }
+  async function waehleMappe(m: Projektmappe) {
+    aktiveMappe = m
+    bearbeiteBoardId = null
+    loescheBoardId = null
+    neuesBoard = false
+    await ladeBoardListe()
+    aktivesBoard = boards[0] ?? null
+  }
+  async function neuesBoardErstellen() {
+    const t = neuerBoardTitel.trim()
+    if (!t || !aktiveMappe) return
+    const neu = await erstelleBoard(aktiveMappe.id, t)
+    await ladeBoardListe()
+    aktivesBoard = boards.find((b) => b.id === neu.id) ?? aktivesBoard
+    neuerBoardTitel = ''
+    neuesBoard = false
+  }
+  async function boardSpeichern(id: string) {
+    const t = boardEntwurf.trim()
+    if (t) {
+      await benenneBoard(id, t)
+      await ladeBoardListe()
+      if (aktivesBoard?.id === id) aktivesBoard = boards.find((b) => b.id === id) ?? aktivesBoard
+    }
+    bearbeiteBoardId = null
+  }
+  async function boardLoeschenBestaetigt(id: string) {
+    await loescheBoard(id)
+    loescheBoardId = null
+    await ladeBoardListe()
+    if (aktivesBoard?.id === id) aktivesBoard = boards[0] ?? null
+  }
+
+  async function ladeAnsichten() {
+    try {
+      const erw = await ladeErweiterungen()
+      ansichtsListe = erw.views
+        .map((v) => {
+          const k = komponenteFuer(v.wert.id)
+          return k ? { ...v.wert, komponente: k } : null
+        })
+        .filter((a): a is Ansicht => a !== null)
+    } catch {
+      ansichtsListe = ansichten().map((a) => ({ id: a.id, titel: a.titel, icon: a.icon, komponente: a.komponente }))
+    }
+    if (ansichtsListe[0]) aktiveAnsicht = ansichtsListe[0].id
+  }
+
+  onMount(async () => {
+    await ladeAnsichten()
+    aktualisiereLaufend()
+    try {
+      mappen = await ladeMappen()
+      if (mappen[0]) await waehleMappe(mappen[0])
+    } catch (e) {
+      fehler = e instanceof Error ? e.message : 'unbekannter Fehler'
+    }
+  })
+</script>
+
+<div class="wurzel">
+<LaufBar />
+<div class="app">
+  <aside class="rail" class:zu={!railEin}>
+    <div class="marke">
+      <img class="logo" src="/favicon.svg" alt="" />
+      <span class="name">Pinnwand <span class="ver">v{VERSION}</span></span>
+      <button class="railtog" aria-label="Seitenleiste ein- oder ausklappen" onclick={() => (railEin = !railEin)}>
+        <i class="fa-solid {railEin ? 'fa-angles-left' : 'fa-angles-right'}" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <p class="rubrik">Projektmappen</p>
+    <nav>
+      {#each mappen as m (m.id)}
+        <button class="zeile mappe" class:aktiv={aktiveMappe?.id === m.id} onclick={() => waehleMappe(m)}>
+          <i class="fa-solid fa-folder" aria-hidden="true"></i><span>{m.titel}</span>
+        </button>
+      {/each}
+    </nav>
+
+    {#if aktiveMappe}
+      <p class="rubrik">Boards</p>
+      <nav>
+        {#each boards as b (b.id)}
+          {#if bearbeiteBoardId === b.id}
+            <!-- svelte-ignore a11y_autofocus -->
+            <input class="feld" bind:value={boardEntwurf} aria-label="Board umbenennen" autofocus
+              onkeydown={(e) => { if (e.key === 'Enter') boardSpeichern(b.id); if (e.key === 'Escape') (bearbeiteBoardId = null) }}
+              onblur={() => boardSpeichern(b.id)} />
+          {:else if loescheBoardId === b.id}
+            <div class="confirm">
+              <span>Board und alle Karten löschen?</span>
+              <div class="reihe">
+                <button class="mini gefahr" onclick={() => boardLoeschenBestaetigt(b.id)}>Löschen</button>
+                <button class="mini geist" onclick={() => (loescheBoardId = null)}>Abbrechen</button>
+              </div>
+            </div>
+          {:else}
+            <div class="zeile board" class:aktiv={aktivesBoard?.id === b.id}>
+              <button class="bname" onclick={() => (aktivesBoard = b)}>
+                <i class="fa-solid fa-table-columns" aria-hidden="true"></i><span>{b.titel}</span>
+              </button>
+              <div class="aktionen">
+                <button class="ic" aria-label="Umbenennen" onclick={() => { bearbeiteBoardId = b.id; boardEntwurf = b.titel }}><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+                <button class="ic" aria-label="Löschen" onclick={() => (loescheBoardId = b.id)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+              </div>
+            </div>
+          {/if}
+        {/each}
+
+        {#if neuesBoard}
+          <!-- svelte-ignore a11y_autofocus -->
+          <input class="feld" placeholder="Board-Name" bind:value={neuerBoardTitel} aria-label="Neues Board" autofocus
+            onkeydown={(e) => { if (e.key === 'Enter') neuesBoardErstellen(); if (e.key === 'Escape') { neuesBoard = false; neuerBoardTitel = '' } }} />
+        {:else}
+          <button class="add" onclick={() => (neuesBoard = true)}><i class="fa-solid fa-plus" aria-hidden="true"></i> Board</button>
+        {/if}
+      </nav>
+    {/if}
+
+    <button class="thema" onclick={wechsleTheme} aria-label="Theme wechseln">
+      <i class={theme.modus === 'dunkel' ? 'fa-solid fa-sun' : 'fa-solid fa-moon'} aria-hidden="true"></i>
+      <span>{theme.modus === 'dunkel' ? 'Hell' : 'Dunkel'}</span>
+    </button>
+  </aside>
+
+  <div class="haupt">
+    <header class="topbar">
+      <div class="ort">
+        <span class="btitel">{aktivesBoard?.titel ?? 'Pinnwand'}</span>
+        {#if aktiveMappe}<span class="krumen">{aktiveMappe.titel}{#if aktivesBoard?.kuerzel} &middot; {aktivesBoard.kuerzel}{/if}</span>{/if}
+      </div>
+      <div class="vsw">
+        {#each ansichtsListe as a (a.id)}
+          <button class="vbtn" class:on={aktiveAnsicht === a.id} onclick={() => (aktiveAnsicht = a.id)}>
+            <i class={a.icon} aria-hidden="true"></i><span>{a.titel}</span>
+          </button>
+        {/each}
+      </div>
+    </header>
+
+    <main class="buehne">
+      {#if fehler}
+        <p class="hinweis">Backend nicht erreichbar ({fehler}). Läuft das Backend auf Port 8420?</p>
+      {:else if aktivesBoard && aktuelleKomponente}
+        {@const Ansicht = aktuelleKomponente}
+        <Ansicht boardId={aktivesBoard.id} />
+      {:else}
+        <p class="hinweis">Lädt ...</p>
+      {/if}
+    </main>
+  </div>
+</div>
+</div>
+
+<Toast />
+
+<style>
+  .wurzel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .app {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    background: var(--surface-page);
+  }
+  .rail {
+    flex: 0 0 232px;
+    background: var(--surface-col);
+    border-right: 1px solid var(--border);
+    padding: 14px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+  }
+  .marke {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-1);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 4px 8px 14px;
+  }
+  .marke .logo {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: block;
+    flex: none;
+  }
+  .marke .name {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .railtog {
+    margin-left: auto;
+    border: none;
+    background: transparent;
+    color: var(--text-3);
+    width: 26px;
+    height: 26px;
+    border-radius: var(--r-s);
+    font-size: 12px;
+    flex: none;
+  }
+  .railtog:hover {
+    color: var(--hl-primary-text);
+    background: var(--surface-3);
+  }
+  .rail.zu {
+    flex-basis: 58px;
+  }
+  .rail.zu .rubrik,
+  .rail.zu .marke .name,
+  .rail.zu .add,
+  .rail.zu .mappe span,
+  .rail.zu .bname span,
+  .rail.zu .aktionen,
+  .rail.zu .thema span {
+    display: none;
+  }
+  .rail.zu .marke {
+    justify-content: center;
+  }
+  .rail.zu .mappe,
+  .rail.zu .bname,
+  .rail.zu .thema {
+    justify-content: center;
+  }
+  .rubrik {
+    font-family: var(--font-display);
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin: 13px 8px 5px;
+  }
+  nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .zeile {
+    display: flex;
+    align-items: center;
+    border-radius: var(--r-m);
+  }
+  .mappe,
+  .bname {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    font-size: 13px;
+    text-align: left;
+    padding: 8px 9px;
+    width: 100%;
+    min-width: 0;
+  }
+  .mappe {
+    border-radius: var(--r-m);
+  }
+  .bname span,
+  .mappe span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mappe:hover {
+    background: var(--surface-3);
+    color: var(--text-1);
+  }
+  .mappe.aktiv {
+    background: var(--hl-primary-weich);
+    color: var(--hl-primary-text);
+  }
+  .board {
+    flex: 1;
+  }
+  .board.aktiv {
+    background: var(--hl-primary-weich);
+  }
+  .board.aktiv .bname {
+    color: var(--hl-primary-text);
+  }
+  .bname {
+    flex: 1;
+  }
+  .aktionen {
+    display: flex;
+    gap: 1px;
+    padding-right: 4px;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .board:hover .aktionen,
+  .board:focus-within .aktionen {
+    opacity: 1;
+  }
+  .ic {
+    border: none;
+    background: transparent;
+    color: var(--text-3);
+    width: 24px;
+    height: 24px;
+    border-radius: var(--r-s);
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ic:hover {
+    background: var(--surface-1);
+    color: var(--hl-primary-text);
+  }
+  .add {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border: 1px dashed var(--border-2);
+    background: transparent;
+    color: var(--text-3);
+    font-size: 13px;
+    padding: 7px 9px;
+    border-radius: var(--r-m);
+    margin-top: 3px;
+  }
+  .add:hover {
+    color: var(--hl-primary-text);
+    border-color: var(--hl-primary);
+  }
+  .feld {
+    width: 100%;
+    border: 1px solid var(--border-2);
+    background: var(--surface-1);
+    color: var(--text-1);
+    border-radius: var(--r-m);
+    padding: 8px 9px;
+    font-size: 13px;
+  }
+  .confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 8px 9px;
+    font-size: 12px;
+    color: var(--text-2);
+  }
+  .reihe {
+    display: flex;
+    gap: 7px;
+  }
+  .mini {
+    border: 1px solid var(--border);
+    border-radius: var(--r-s);
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  .mini.geist {
+    background: transparent;
+    color: var(--text-2);
+  }
+  .mini.gefahr {
+    background: var(--gefahr);
+    color: #fff;
+    border-color: transparent;
+    font-weight: 500;
+  }
+  .thema {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-2);
+    font-size: 13px;
+    padding: 9px 11px;
+    border-radius: var(--r-m);
+  }
+  .thema:hover {
+    color: var(--text-1);
+    border-color: var(--border-2);
+  }
+  .haupt {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 16px;
+    background: var(--surface-col);
+    border-bottom: 1px solid var(--border);
+  }
+  .ort {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .btitel {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-1);
+  }
+  .krumen {
+    font-size: 11px;
+    color: var(--text-3);
+  }
+  .vsw {
+    margin-left: auto;
+    display: flex;
+    gap: 2px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-m);
+    padding: 3px;
+  }
+  .vbtn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-2);
+    font-family: var(--font-display);
+    font-size: 12px;
+    padding: 5px 11px;
+    border-radius: var(--r-s);
+  }
+  .vbtn.on {
+    background: var(--surface-1);
+    color: var(--hl-primary-text);
+    border-color: var(--border);
+  }
+  .buehne {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .ver {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    font-weight: 400;
+  }
+  .hinweis {
+    color: var(--text-2);
+    padding: 24px;
+  }
+</style>

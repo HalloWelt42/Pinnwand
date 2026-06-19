@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pyc
+pinnwand.db
+.DS_Store
+.run/
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.keystore

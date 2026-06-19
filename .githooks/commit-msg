@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Prueft die Commit-Message auf verbotene Referenzen und typografische Zeichen.
+MSGFILE="$1"
+[ -f "$MSGFILE" ] || exit 0
+emdash=$(printf '\xe2\x80\x94'); endash=$(printf '\xe2\x80\x93')
+lsq=$(printf '\xe2\x80\x98');     rsq=$(printf '\xe2\x80\x99')
+ldq=$(printf '\xe2\x80\x9c');     rdq=$(printf '\xe2\x80\x9d')
+
+if grep -nIiE 'claude|anthropic|co-authored-by|generated with (claude|ai)' "$MSGFILE" >/dev/null 2>&1; then
+  echo "Commit-Message blockiert: verbotene Referenz (Claude/AI/Co-Authored-By)."
+  exit 1
+fi
+if LC_ALL=C grep -nF -e "$emdash" -e "$endash" -e "$lsq" -e "$rsq" -e "$ldq" -e "$rdq" "$MSGFILE" >/dev/null 2>&1; then
+  echo "Commit-Message blockiert: typografisches Sonderzeichen."
+  exit 1
+fi
+exit 0

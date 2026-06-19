@@ -1,0 +1,454 @@
+<script lang="ts">
+  import { dndzone, SHADOW_PLACEHOLDER_ITEM_ID } from 'svelte-dnd-action'
+  import { flip } from 'svelte/animate'
+  import type { Karte, Spalte } from '../../types'
+  import Card from './Card.svelte'
+
+  let {
+    spalte,
+    karten,
+    dragDisabled,
+    akzent,
+    eingeklappt,
+    istErste,
+    istLetzte,
+    einzige,
+    onCardsConsider,
+    onCardsFinalize,
+    onOeffnen,
+    onLoeschenKarte,
+    onKarteAnlegen,
+    onGriffDown,
+    onToggleEinklappen,
+    onSpalteUmbenennen,
+    onSpalteVerschieben,
+    onSpalteLoeschen,
+  }: {
+    spalte: Spalte
+    karten: Karte[]
+    dragDisabled: boolean
+    akzent: string
+    eingeklappt: boolean
+    istErste: boolean
+    istLetzte: boolean
+    einzige: boolean
+    onCardsConsider: (items: Karte[]) => void
+    onCardsFinalize: (items: Karte[], info: { id: string }) => void
+    onOeffnen: (id: string) => void
+    onLoeschenKarte: (id: string) => void
+    onKarteAnlegen: (titel: string) => void
+    onGriffDown: () => void
+    onToggleEinklappen: () => void
+    onSpalteUmbenennen: (daten: { titel: string; wip_limit: number | null }) => void
+    onSpalteVerschieben: (richtung: -1 | 1) => void
+    onSpalteLoeschen: () => void
+  } = $props()
+
+  let modus = $state<'normal' | 'edit'>('normal')
+  let menuOffen = $state(false)
+  let titelEntwurf = $state('')
+  let wipEntwurf = $state('')
+  let neueKarte = $state(false)
+  let karteTitel = $state('')
+
+  const anzahl = $derived(karten.filter((k) => k.id !== SHADOW_PLACEHOLDER_ITEM_ID).length)
+  const wipVoll = $derived(spalte.wip_limit != null && anzahl >= spalte.wip_limit)
+  const fuellung = $derived(spalte.wip_limit ? Math.min(100, (anzahl / spalte.wip_limit) * 100) : 0)
+
+  function bearbeiten() {
+    titelEntwurf = spalte.titel
+    wipEntwurf = spalte.wip_limit != null ? String(spalte.wip_limit) : ''
+    menuOffen = false
+    modus = 'edit'
+  }
+  function speichern() {
+    const titel = titelEntwurf.trim()
+    if (!titel) return
+    const zahl = parseInt(wipEntwurf, 10)
+    const wip = wipEntwurf.trim() === '' || Number.isNaN(zahl) ? null : Math.max(1, zahl)
+    onSpalteUmbenennen({ titel, wip_limit: wip })
+    modus = 'normal'
+  }
+  function karteAbschicken() {
+    const titel = karteTitel.trim()
+    if (!titel) return
+    onKarteAnlegen(titel)
+    karteTitel = ''
+  }
+</script>
+
+{#if eingeklappt}
+  <section class="zu">
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="zukopf" role="button" tabindex="0" title="Ausklappen"
+      onclick={onToggleEinklappen}
+      onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleEinklappen() } }}>
+      <i class="fa-solid fa-angles-right" aria-hidden="true"></i>
+      <span class="dot" style="background:{akzent}"></span>
+      <span class="vtitel">{spalte.titel}</span>
+      <span class="vzahl">{anzahl}</span>
+    </div>
+    <div
+      class="zuliste"
+      use:dndzone={{ items: karten, type: 'karte', dragDisabled, flipDurationMs: 160, dropTargetStyle: { outline: '2px dashed var(--hl-primary)', outlineOffset: '-3px', borderRadius: '8px' } }}
+      onconsider={(e) => onCardsConsider(e.detail.items)}
+      onfinalize={(e) => onCardsFinalize(e.detail.items, e.detail.info)}
+    >
+      {#each karten as karte (karte.id)}
+        <div animate:flip={{ duration: 160 }}>
+          {#if karte.id === SHADOW_PLACEHOLDER_ITEM_ID}
+            <div class="slim ph"></div>
+          {:else}
+            <div class="slim" style="background:{akzent}" title={karte.titel}></div>
+          {/if}
+        </div>
+      {/each}
+    </div>
+  </section>
+{:else}
+  <section class="col">
+    {#if modus === 'edit'}
+      <div class="bearbeiten">
+        <!-- svelte-ignore a11y_autofocus -->
+        <input class="feld" bind:value={titelEntwurf} aria-label="Spaltentitel" autofocus
+          onkeydown={(e) => { if (e.key === 'Enter') speichern(); if (e.key === 'Escape') (modus = 'normal') }} />
+        <input class="feld" type="number" min="1" placeholder="WIP-Limit (leer = keins)" bind:value={wipEntwurf} aria-label="WIP-Limit" />
+        <div class="reihe">
+          <button class="btn primaer" onclick={speichern}>Speichern</button>
+          <button class="btn geist" onclick={() => (modus = 'normal')}>Abbrechen</button>
+        </div>
+      </div>
+    {:else}
+      <header>
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <span class="griff" title="Spalte ziehen" onmousedown={onGriffDown} ontouchstart={onGriffDown}><i class="fa-solid fa-grip-vertical" aria-hidden="true"></i></span>
+        <span class="punkt" style="background:{akzent}"></span>
+        <span class="titel">{spalte.titel}</span>
+        <span class="zaehler" class:warn={wipVoll}>{anzahl}{#if spalte.wip_limit != null}/{spalte.wip_limit}{/if}</span>
+        <button class="hbtn" aria-label="Spalte einklappen" title="Einklappen" onclick={onToggleEinklappen}><i class="fa-solid fa-angles-left" aria-hidden="true"></i></button>
+        <button class="hbtn" class:aktiv={menuOffen} aria-label="Spaltenmenü" onclick={() => (menuOffen = !menuOffen)}><i class="fa-solid fa-ellipsis" aria-hidden="true"></i></button>
+        {#if menuOffen}
+          <div class="menu">
+            <button onclick={bearbeiten}><i class="fa-solid fa-pen" aria-hidden="true"></i> Umbenennen / WIP</button>
+            <button onclick={() => { onToggleEinklappen(); menuOffen = false }}><i class="fa-solid fa-angles-left" aria-hidden="true"></i> Einklappen</button>
+            <button disabled={istErste} onclick={() => { onSpalteVerschieben(-1); menuOffen = false }}><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Nach links</button>
+            <button disabled={istLetzte} onclick={() => { onSpalteVerschieben(1); menuOffen = false }}><i class="fa-solid fa-arrow-right" aria-hidden="true"></i> Nach rechts</button>
+            <div class="trenner"></div>
+            <button class="rot" disabled={einzige} onclick={() => { menuOffen = false; onSpalteLoeschen() }}><i class="fa-solid fa-trash" aria-hidden="true"></i> Löschen</button>
+          </div>
+        {/if}
+      </header>
+      {#if spalte.wip_limit != null}
+        <div class="wip"><span style="width:{fuellung}%;background:{wipVoll ? 'var(--prio-mittel)' : akzent}"></span></div>
+      {/if}
+    {/if}
+
+    <div
+      class="liste"
+      use:dndzone={{ items: karten, type: 'karte', dragDisabled, flipDurationMs: 160, dropTargetStyle: {} }}
+      onconsider={(e) => onCardsConsider(e.detail.items)}
+      onfinalize={(e) => onCardsFinalize(e.detail.items, e.detail.info)}
+    >
+      {#each karten as karte (karte.id)}
+        <div animate:flip={{ duration: 160 }}>
+          {#if karte.id === SHADOW_PLACEHOLDER_ITEM_ID}
+            <div class="platzhalter"></div>
+          {:else}
+            <Card {karte} {onOeffnen} onLoeschen={onLoeschenKarte} />
+          {/if}
+        </div>
+      {/each}
+    </div>
+
+    {#if neueKarte}
+      <div class="composer">
+        <!-- svelte-ignore a11y_autofocus -->
+        <textarea class="feld" rows="2" placeholder="Titel der Karte ..." bind:value={karteTitel} aria-label="Neue Karte" autofocus
+          onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); karteAbschicken() } if (e.key === 'Escape') { neueKarte = false; karteTitel = '' } }}></textarea>
+        <div class="reihe">
+          <button class="btn primaer" onclick={karteAbschicken}>Hinzufügen</button>
+          <button class="btn geist" onclick={() => { neueKarte = false; karteTitel = '' }}>Abbrechen</button>
+        </div>
+      </div>
+    {:else}
+      <button class="add" onclick={() => (neueKarte = true)}><i class="fa-solid fa-plus" aria-hidden="true"></i> Karte</button>
+    {/if}
+  </section>
+{/if}
+
+<style>
+  .col {
+    flex: 0 0 286px;
+    width: 286px;
+    height: 100%;
+    background: var(--surface-col);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    padding: 9px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .zu {
+    flex: 0 0 46px;
+    width: 46px;
+    height: 100%;
+    background: var(--surface-col);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0 8px;
+  }
+  .zukopf {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-2);
+    cursor: pointer;
+    padding-bottom: 10px;
+  }
+  .zukopf:hover {
+    color: var(--text-1);
+  }
+  .zukopf .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 3px;
+  }
+  .vtitel {
+    writing-mode: vertical-rl;
+    font-family: var(--font-display);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-1);
+    letter-spacing: 0.02em;
+  }
+  .vzahl {
+    font-size: 11px;
+    color: var(--text-3);
+  }
+  .zuliste {
+    flex: 1;
+    min-height: 20px;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 0;
+  }
+  .slim {
+    width: 22px;
+    height: 6px;
+    border-radius: 3px;
+    opacity: 0.7;
+  }
+  .slim.ph {
+    width: 28px;
+    height: 18px;
+    background: var(--hl-primary-weich);
+    border: 1.5px dashed var(--hl-primary);
+    opacity: 1;
+  }
+  .zuliste > div {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 2px 8px;
+    position: relative;
+  }
+  .griff {
+    color: var(--text-3);
+    cursor: grab;
+    font-size: 11px;
+    opacity: 0;
+    transition: opacity 0.12s;
+    margin-right: -1px;
+  }
+  header:hover .griff {
+    opacity: 0.7;
+  }
+  .punkt {
+    width: 8px;
+    height: 8px;
+    border-radius: 3px;
+    flex: none;
+  }
+  .titel {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-1);
+  }
+  .zaehler {
+    font-size: 11px;
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .zaehler.warn {
+    color: var(--prio-mittel);
+    font-weight: 600;
+  }
+  .hbtn {
+    border: none;
+    background: transparent;
+    color: var(--text-3);
+    width: 22px;
+    height: 22px;
+    border-radius: var(--r-s);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .hbtn:hover,
+  .hbtn.aktiv {
+    background: var(--surface-3);
+    color: var(--text-1);
+  }
+  .menu {
+    position: absolute;
+    top: 28px;
+    right: 0;
+    z-index: 20;
+    background: var(--surface-3);
+    border: 1px solid var(--border-2);
+    border-radius: var(--r-l);
+    padding: 5px;
+    width: 184px;
+    box-shadow: var(--schatten-pop);
+  }
+  .menu button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    font-size: 12.5px;
+    padding: 7px 8px;
+    border-radius: var(--r-s);
+    text-align: left;
+  }
+  .menu button:hover:not(:disabled) {
+    background: var(--surface-1);
+    color: var(--text-1);
+  }
+  .menu button:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .menu button.rot {
+    color: var(--gefahr);
+  }
+  .menu .trenner {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 2px;
+  }
+  .wip {
+    height: 3px;
+    border-radius: 3px;
+    background: var(--border);
+    margin: 0 2px 9px;
+    overflow: hidden;
+  }
+  .wip span {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+  }
+  .liste {
+    flex: 1;
+    min-height: 10px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 2px;
+    margin: 0 -2px;
+  }
+  .platzhalter {
+    border: 2px dashed var(--hl-primary);
+    background: var(--hl-primary-weich);
+    border-radius: var(--r-l);
+    height: 58px;
+    flex: none;
+  }
+  .add {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--text-3);
+    font-size: 12.5px;
+    padding: 8px;
+    border-radius: var(--r-m);
+  }
+  .add:hover {
+    background: var(--surface-3);
+    color: var(--text-1);
+  }
+  .composer {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .bearbeiten {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 2px 2px 9px;
+  }
+  .feld {
+    width: 100%;
+    border: 1px solid var(--border-2);
+    background: var(--surface-2);
+    color: var(--text-1);
+    border-radius: var(--r-m);
+    padding: 8px 9px;
+    font-size: 13px;
+    resize: vertical;
+  }
+  .reihe {
+    display: flex;
+    gap: 7px;
+  }
+  .btn {
+    border: 1px solid var(--border);
+    border-radius: var(--r-m);
+    padding: 6px 12px;
+    font-size: 12.5px;
+  }
+  .btn.primaer {
+    background: var(--hl-primary);
+    color: var(--hl-on-primary);
+    border-color: transparent;
+    font-weight: 500;
+  }
+  .btn.geist {
+    background: transparent;
+    color: var(--text-2);
+  }
+</style>

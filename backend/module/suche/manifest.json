@@ -1,0 +1,16 @@
+{
+  "id": "suche",
+  "name": "Suche",
+  "version": "0.1.0",
+  "extends": {
+    "views": [],
+    "cardFields": [],
+    "mappeTabs": [],
+    "commands": []
+  },
+  "backend": {
+    "router": "module.suche.api:router"
+  },
+  "permissions": ["card.read"],
+  "requires": ["kanban-kern"]
+}

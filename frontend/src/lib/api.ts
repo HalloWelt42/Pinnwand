@@ -183,6 +183,31 @@ export interface Stimmen {
 }
 export const ttsStimmen = (): Promise<{ stimmen: Stimmen | [] }> => hole('/api/tts/stimmen')
 
+// --- Transkripte ---
+
+export interface TranskriptTreffer {
+  id: string
+  name: string
+  snippet: string
+  speaker_names: string[]
+  language?: string
+}
+export interface TranskriptDetail {
+  id: string
+  name: string
+  full_text: string
+  speaker_names: string[]
+  language?: string
+  audio_url?: string | null
+  segment_count?: number
+}
+export const transkripteStatus = (): Promise<{ erreichbar: boolean; konfiguriert: boolean }> =>
+  hole('/api/transkripte/status')
+export const transkripteSuche = (q: string, limit = 30): Promise<{ treffer: TranskriptTreffer[] }> =>
+  hole(`/api/transkripte/suche?q=${encodeURIComponent(q)}&limit=${limit}`)
+export const transkriptDetail = (id: string): Promise<TranskriptDetail> =>
+  hole(`/api/transkripte/${id}`)
+
 export async function vorleseAudio(text: string, stimme?: string): Promise<Blob> {
   const antwort = await fetch(`${BASIS}/api/tts`, {
     method: 'POST',

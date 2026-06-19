@@ -1,0 +1,18 @@
+{
+  "id": "transkripte",
+  "name": "Transkripte",
+  "version": "0.1.0",
+  "extends": {
+    "views": [
+      { "id": "transkripte", "titel": "Transkripte", "icon": "fa-solid fa-headphones" }
+    ],
+    "cardFields": [],
+    "mappeTabs": [],
+    "commands": []
+  },
+  "backend": {
+    "router": "module.transkripte.api:router"
+  },
+  "permissions": [],
+  "requires": []
+}

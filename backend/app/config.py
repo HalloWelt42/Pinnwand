@@ -76,7 +76,7 @@ def _lese_einstellungen() -> Einstellungen:
         embedding_model=_env("PINNWAND_EMBEDDING_MODEL"),
         qdrant_url=_env("PINNWAND_QDRANT_URL"),
         tts_url=_env("PINNWAND_TTS_URL", "http://127.0.0.1:8765"),
-        transcripts_url=_env("PINNWAND_TRANSCRIPTS_URL"),
+        transcripts_url=_env("PINNWAND_TRANSCRIPTS_URL", "http://localhost:10031"),
         stt_url=_env("PINNWAND_STT_URL"),
         agent_token=_env("PINNWAND_AGENT_TOKEN"),
         mcp_aktiv=_env("PINNWAND_MCP").lower() in ("1", "true", "yes", "an"),
@@ -103,7 +103,7 @@ def optionale_dienste() -> list[Dienst]:
         Dienst("llm", "LLM und Embeddings", e.llm_url, "/v1/models"),
         Dienst("qdrant", "Vektor-Datenbank", e.qdrant_url, "/"),
         Dienst("tts", "Vorlesen", e.tts_url, "/health"),
-        Dienst("transcripts", "Transkriptionen", e.transcripts_url, "/api/health"),
+        Dienst("transcripts", "Transkriptionen", e.transcripts_url, "/api/search/stats"),
         Dienst("stt", "Spracheingabe", e.stt_url, "/"),
     ]
 

@@ -3,7 +3,7 @@
     ladePersonen, erstellePerson, aktualisierePerson, loeschePerson,
     ladeUrlaub, setzeUrlaub, loescheUrlaub, ladeUrlaubskonten,
     ladeLaender, feiertageVorschau, feiertageUebernehmen, ladeFeiertage, loescheFeiertage,
-    type Person, type Urlaubstag, type Feiertag, type Urlaubskonto,
+    type Person, type Urlaubstag, type Feiertag, type Urlaubskonto, type Region,
   } from '../../api'
 
   let { boardId }: { boardId: string } = $props()
@@ -25,7 +25,7 @@
   let urlaub = $state<Urlaubstag[]>([])
 
   // Feiertage
-  let laender = $state<Record<string, string[]>>({})
+  let laender = $state<Record<string, Region[]>>({})
   let ftLand = $state('DE')
   let ftRegion = $state('')
   let ftJahr = $state(jahr)
@@ -74,6 +74,18 @@
   })
 
   const regionen = $derived(laender[ftLand] ?? [])
+  const regionNamen = $derived(new Map((laender[ftLand] ?? laender['DE'] ?? []).map((r) => [r.code, r.name])))
+  const regionName = (code: string | null | undefined): string => (code ? (regionNamen.get(code) ?? code) : 'bundesweit')
+
+  const WTAG = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+  function wtag(iso: string): string {
+    const d = new Date(iso + 'T00:00:00')
+    return WTAG[(d.getDay() + 6) % 7]
+  }
+  function dmy(iso: string): string {
+    const [j, m, t] = iso.slice(0, 10).split('-')
+    return `${t}.${m}.${j}`
+  }
 
   async function personAnlegen(): Promise<void> {
     if (!neuerName.trim()) return
@@ -95,8 +107,8 @@
 
   async function urlaubEintragen(): Promise<void> {
     if (!urlaubPerson || !uVon) return
-    const { gesetzt } = await setzeUrlaub({ person_id: urlaubPerson, von: uVon, bis: uBis || uVon, anteil: uAnteil })
-    meldung = `${gesetzt} Urlaubstage eingetragen.`
+    const { gesetzt, uebersprungen } = await setzeUrlaub({ person_id: urlaubPerson, von: uVon, bis: uBis || uVon, anteil: uAnteil })
+    meldung = `${gesetzt} Urlaubstage eingetragen` + (uebersprungen ? `, ${uebersprungen} freie Tage/Feiertage uebersprungen.` : '.')
     urlaub = await ladeUrlaub(urlaubPerson, `${jahr}-01-01`, `${jahr}-12-31`)
     await ladenKonten()
   }
@@ -155,7 +167,7 @@
           <span class="pn"><b>{p.kuerzel ?? ''}</b> {p.name}</span>
           <select class="bl" value={p.bundesland ?? ''} onchange={(e) => bundeslandAendern(p, e.currentTarget.value)} aria-label="Bundesland">
             <option value="">-</option>
-            {#each deRegionen as r (r)}<option value={r}>{r}</option>{/each}
+            {#each deRegionen as r (r.code)}<option value={r.code}>{r.name}</option>{/each}
           </select>
           <input class="uz" type="number" min="0" step="0.5" value={p.urlaubsanspruch} onchange={(e) => anspruchAendern(p, parseFloat(e.currentTarget.value) || 0)} aria-label="Urlaubsanspruch" />
           <input class="uz" type="number" min="0" step="0.5" value={p.resturlaub_vorjahr} onchange={(e) => restAendern(p, parseFloat(e.currentTarget.value) || 0)} aria-label="Resturlaub Vorjahr" />
@@ -196,7 +208,7 @@
       </select>
       <select bind:value={ftRegion}>
         <option value="">(ganzes Land)</option>
-        {#each regionen as r (r)}<option value={r}>{r}</option>{/each}
+        {#each regionen as r (r.code)}<option value={r.code}>{r.name}</option>{/each}
       </select>
       <label class="mini">Jahr <input type="number" min="2000" max="2100" bind:value={ftJahr} /></label>
       <button class="btn" onclick={ftVorschau}>Vorschau</button>
@@ -204,13 +216,35 @@
       {#if feiertage.length}<button class="btn geist" onclick={ftLoeschen}>{jahr} entfernen</button>{/if}
     </div>
     {#if vorschau.length}
-      <div class="chips vorschau">
-        {#each vorschau as f (f.datum)}<span class="chip vs">{f.datum} {f.name}</span>{/each}
+      <div class="ftbox">
+        <p class="ftkopf"><i class="fa-solid fa-eye" aria-hidden="true"></i> Vorschau: {vorschau.length} Feiertage gefunden (noch nicht uebernommen)</p>
+        <div class="ftliste">
+          {#each vorschau as f (f.datum + (f.region ?? ''))}
+            <div class="ftz vs">
+              <span class="ftd">{dmy(f.datum)}</span>
+              <span class="ftw">{wtag(f.datum)}</span>
+              <span class="ftn">{f.name}</span>
+              <span class="ftg" class:land={f.region}>{regionName(f.region)}</span>
+            </div>
+          {/each}
+        </div>
       </div>
     {/if}
-    <div class="chips">
-      {#each feiertage as f (f.datum + (f.region ?? ''))}<span class="chip ft">{f.datum} {f.name}</span>{/each}
-      {#if !feiertage.length}<span class="leer">Noch keine Feiertage uebernommen.</span>{/if}
+    <div class="ftbox">
+      <p class="ftkopf">Uebernommene Feiertage {jahr} ({feiertage.length})</p>
+      {#if !feiertage.length}<p class="leer">Noch keine Feiertage uebernommen.</p>{/if}
+      {#if feiertage.length}
+        <div class="ftliste">
+          {#each feiertage as f (f.datum + (f.region ?? ''))}
+            <div class="ftz">
+              <span class="ftd">{dmy(f.datum)}</span>
+              <span class="ftw">{wtag(f.datum)}</span>
+              <span class="ftn">{f.name}</span>
+              <span class="ftg" class:land={f.region}>{regionName(f.region)}</span>
+            </div>
+          {/each}
+        </div>
+      {/if}
     </div>
   </section>
 </div>
@@ -241,9 +275,6 @@
   .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
   .chip button { border: none; background: transparent; color: var(--text-3); font-size: 10px; }
-  .chip.ft { background: var(--due-rot-bg); color: var(--due-rot-fg); }
-  .chip.vs { background: var(--hl-primary-weich); color: var(--hl-primary-text); }
-  .vorschau { max-height: 160px; overflow-y: auto; }
   .leer { color: var(--text-3); font-size: 12px; }
 
   .utab { border: 1px solid var(--border); border-radius: var(--r-l); overflow: hidden; background: var(--surface-col); }
@@ -260,4 +291,17 @@
   .mini.geist { background: transparent; }
   .mini:hover { border-color: var(--hl-primary); color: var(--hl-primary-text); }
   .hinweis { font-size: 11.5px; color: var(--text-3); line-height: 1.55; margin: 8px 0 0; max-width: 80ch; }
+
+  .ftbox { margin-top: 12px; }
+  .ftkopf { font-size: 12px; color: var(--text-2); margin: 0 0 6px; display: flex; align-items: center; gap: 7px; }
+  .ftkopf i { color: var(--hl-primary-text); }
+  .ftliste { border: 1px solid var(--border); border-radius: var(--r-m); overflow: hidden; background: var(--surface-col); max-height: 320px; overflow-y: auto; }
+  .ftz { display: grid; grid-template-columns: 78px 34px 1fr 150px; align-items: center; gap: 8px; padding: 6px 11px; font-size: 12.5px; border-top: 1px solid var(--border); }
+  .ftz:first-child { border-top: none; }
+  .ftz.vs { background: color-mix(in srgb, var(--hl-primary) 6%, transparent); }
+  .ftd { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-2); }
+  .ftw { color: var(--text-3); font-size: 11px; }
+  .ftn { color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ftg { justify-self: end; font-size: 10.5px; padding: 2px 8px; border-radius: 999px; background: var(--surface-3); color: var(--text-3); white-space: nowrap; }
+  .ftg.land { background: var(--due-rot-bg); color: var(--due-rot-fg); }
 </style>

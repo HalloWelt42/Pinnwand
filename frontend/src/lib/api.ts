@@ -345,12 +345,16 @@ export const loeschePerson = (id: string): Promise<void> =>
 
 export const ladeUrlaub = (person: string, von: string, bis: string): Promise<Urlaubstag[]> =>
   hole(`/api/planung/urlaub?person=${person}&von=${von}&bis=${bis}`)
-export const setzeUrlaub = (d: { person_id: string; von: string; bis?: string; anteil?: number; typ?: string; notiz?: string; wochenenden_ueberspringen?: boolean; feiertage_ueberspringen?: boolean }): Promise<{ gesetzt: number }> =>
+export const setzeUrlaub = (d: { person_id: string; von: string; bis?: string; anteil?: number; typ?: string; notiz?: string; wochenenden_ueberspringen?: boolean; feiertage_ueberspringen?: boolean }): Promise<{ gesetzt: number; uebersprungen: number }> =>
   hole('/api/planung/urlaub', { method: 'POST', body: JSON.stringify(d) })
 export const loescheUrlaub = (id: string): Promise<void> =>
   hole(`/api/planung/urlaub/${id}`, { method: 'DELETE' })
 
-export const ladeLaender = (): Promise<{ verfuegbar: boolean; laender: Record<string, string[]> }> =>
+export interface Region {
+  code: string
+  name: string
+}
+export const ladeLaender = (): Promise<{ verfuegbar: boolean; laender: Record<string, Region[]> }> =>
   hole('/api/planung/laender')
 export const ladeFeiertage = (von: string, bis: string): Promise<Feiertag[]> =>
   hole(`/api/planung/feiertage?von=${von}&bis=${bis}`)

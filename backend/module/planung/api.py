@@ -64,21 +64,29 @@ def urlaub(person: str | None = Query(default=None), von: str = Query(...), bis:
 @router.post("/urlaub")
 def urlaub_setzen(e: UrlaubSetzen) -> dict:
     bis = e.bis or e.von
+    p = db.hole_person(e.person_id)
+    ws = p["wochenstunden"] if p else [8, 8, 8, 8, 8, 0, 0]
     feier: set[str] = set()
     if e.feiertage_ueberspringen:
-        p = db.hole_person(e.person_id)
         feier = {f["datum"] for f in db.feiertage_relevant(e.von, bis, p.get("bundesland") if p else None)}
     cur = date.fromisoformat(e.von)
     ende = date.fromisoformat(bis)
     erzeugt = 0
+    uebersprungen = 0
     while cur <= ende:
         iso = cur.isoformat()
-        ueberspringen = (e.wochenenden_ueberspringen and cur.weekday() >= 5) or (iso in feier)
-        if not ueberspringen:
+        wd = cur.weekday()
+        # Arbeitstag = die Person hat an diesem Wochentag ueberhaupt Soll-Stunden.
+        arbeitstag = wd < len(ws) and float(ws[wd]) > 0
+        kein_arbeitstag = e.wochenenden_ueberspringen and not arbeitstag
+        ist_feiertag = e.feiertage_ueberspringen and iso in feier
+        if kein_arbeitstag or ist_feiertag:
+            uebersprungen += 1
+        else:
             db.setze_urlaub(e.person_id, iso, e.anteil, e.typ, e.notiz)
             erzeugt += 1
         cur += timedelta(days=1)
-    return {"gesetzt": erzeugt}
+    return {"gesetzt": erzeugt, "uebersprungen": uebersprungen}
 
 
 @router.delete("/urlaub/{uid}", status_code=204)

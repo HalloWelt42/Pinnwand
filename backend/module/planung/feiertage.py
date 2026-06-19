@@ -17,13 +17,33 @@ def verfuegbar() -> bool:
     return _OK
 
 
+# Lesbare Namen der deutschen Bundeslaender (die Bibliothek liefert nur Codes).
+_DE_NAMEN = {
+    "BW": "Baden-Württemberg", "BY": "Bayern", "BE": "Berlin", "BB": "Brandenburg",
+    "HB": "Bremen", "HH": "Hamburg", "HE": "Hessen", "MV": "Mecklenburg-Vorpommern",
+    "NI": "Niedersachsen", "NW": "Nordrhein-Westfalen", "RP": "Rheinland-Pfalz",
+    "SL": "Saarland", "SN": "Sachsen", "ST": "Sachsen-Anhalt",
+    "SH": "Schleswig-Holstein", "TH": "Thüringen",
+}
+
+
+def _region_name(land: str, code: str) -> str:
+    if land == "DE":
+        return _DE_NAMEN.get(code, code)
+    return code
+
+
 def laender() -> dict:
-    """Unterstuetzte Laender mit ihren Regionen (Subdivisionen)."""
+    """Unterstuetzte Laender mit ihren Regionen als {code, name}.
+
+    Fuer Deutschland werden die ausgeschriebenen Bundesland-Namen geliefert; fuer
+    andere Laender bleibt der Code als Name stehen.
+    """
     if not _OK:
         return {}
-    out: dict[str, list[str]] = {}
+    out: dict[str, list[dict]] = {}
     for land, regionen in holidays.list_supported_countries().items():
-        out[land] = list(regionen)
+        out[land] = [{"code": r, "name": _region_name(land, r)} for r in regionen]
     return out
 
 

@@ -8,6 +8,7 @@ Pinnwand ist eine lokale, modulare Kanban-Plattform. Sie wird erweitert um eine 
 
 ## Architekturprinzipien
 
+- KI ist optional, nie Pflicht: LLM, TTS, STT und semantische Suche bieten Mehrwert, sind aber kein Zwang. Die App ist ohne diese Dienste voll funktionsfähig. Jeder KI-Adapter hat einen Aus-Zustand und einen deterministischen Fallback (Erfassung regelbasiert, Suche auf Stichwort, Vorlesen auf Browser oder aus). Fehlende Dienste werden erkannt und das Feature dezent ausgeblendet.
 - Stark modular: jede Fähigkeit ist ein austauschbares Modul oder ein Adapter hinter einer klaren Schnittstelle, angebunden über eine Registry statt fester Verdrahtung.
 - Saubere Schichten, objektorientiert: eine Domänen-/Aktionsschicht ist die einzige Wahrheit der Operationen; Protokolle (REST, MCP, OpenAI-Tools) sind dünne Adapter darüber.
 - Durchgängig typisiert: Pydantic-Modelle im Backend, TypeScript-Interfaces im Frontend, keine rohen Dicts.
@@ -50,7 +51,7 @@ Echte Personen ersetzen die bisherigen Kürzel; je Person Wochen-Soll und Urlaub
 Server-seitiger Export über WeasyPrint. Druckbar sind alle Ansichten plus eigens reduzierte Druckansichten. Formate PDF, CSV und Markdown. Standardberichte: Wochen-Stundenzettel, Soll/Ist, Kapazität und Auslastung, Zeit je Person und Karte. Mathe und Diagramme werden für den Druck server-seitig vorgerendert. Generierte Berichte landen unveränderlich im Berichts-Archiv (Zeitraum, Person, Erstelldatum) und bleiben als Stunden-Nachweis abrufbar.
 
 ### I - Was-steht-an-Panel
-Handlungsorientierte Übersicht: überfällig, heute oder diese Woche fällig, in Arbeit, zu lange liegengeblieben. Platzierung unter der Heatmap und als Startbildschirm "Heute". Speist auch das gesprochene Tages-Briefing.
+Handlungsorientierte Übersicht: überfällig, heute oder diese Woche fällig, in Arbeit, zu lange liegengeblieben. Zusätzlich tägliche und wöchentliche Termine aus den Serien (siehe Q). Platzierung unter der Heatmap und als Startbildschirm "Heute". Speist auch das gesprochene Tages-Briefing.
 
 ### J - Detailansicht
 Beschreibung steht oben. Split- und Vollbild-Editor für mehr Raum. Automatisches Speichern (verzögert) mit sichtbarem Status (geändert oder gespeichert) und lokalem Entwurf gegen Datenverlust.
@@ -68,17 +69,27 @@ Eigene Ansicht: Aufgaben als Boxen, frei anordenbar, mit Verbindungspfaden für 
 Überspringbarer Einrichtungs-Assistent beim ersten Start (Mappe, Board und Spalten samt Erledigt-Spalte, Personen und Wochenstunden, Feiertage und Region, optional API-Token), dazu dezente Erklärungen im Betrieb. Globaler Hilfe-Knopf öffnet ein durchsuchbares Panel.
 
 ### P - Git-Schutz
-Hooks unter `.githooks` (per `core.hooksPath` aktiv) prüfen vor Commit und Push und blockieren: Erwähnungen von KI-Assistenten oder deren Herstellern sowie Mitautoren-Angaben in Commits, typografische Sonderzeichen, falsche Umlaut-Ersetzungen in Doku sowie eingecheckte Geheimnisse und Schlüssel.
+Hooks unter `.githooks` (per `core.hooksPath` aktiv) prüfen vor Commit und Push und blockieren: Erwähnungen von KI-Assistenten oder deren Herstellern sowie Mitautoren-Angaben in Commits, typografische Sonderzeichen, falsche Umlaut-Ersetzungen in Doku sowie eingecheckte Geheimnisse und Schlüssel. Konfigurationsvorlagen mit Platzhaltern sind erlaubt (`.env.example`, `.env.muster`); echte `.env` und jegliche Produktivdaten bleiben ausgeschlossen.
+
+### Q - Wiederkehrende Termine und Aufgaben
+Serien mit einfachem Rhythmus (täglich, wöchentlich, monatlich), benutzerdefiniert (z.B. Mo und Mi, alle zwei Wochen, jeder erste Werktag) und als Sprechzeiten (feste Uhrzeit plus Dauer, etwa eine wiederkehrende Telefonkonferenz). Serien überspringen Feiertage und Urlaub oder verschieben sich. Automatisches Vorbuchen: kommende Instanzen werden im Voraus als Termine oder Karten angelegt, die geplante Zeit (Soll) wird vorgebucht, und sie sind wie Aufgaben per Timer (Start, Pause, Stopp) für die Ist-Zeit nutzbar. Erinnerungen erscheinen im eigenen UI (kein Browser-Dialog) und tauchen im Was-steht-an-Panel auf.
+
+### R - Backup und Wiederherstellung
+Gesichert werden Datenbank, Inhalte und Dokumente, das Berichts-Archiv und die Konfiguration (ohne Geheimnisse; der Vektor-Index bleibt außen vor, da neu aufbaubar). Modus: Sofort-Backup auf Knopfdruck und zeitgesteuerte Sicherung. Lokale Snapshots enthalten das Schema und die Version, sind also über Versionswechsel konsistent. Wiederherstellung mit Vorschau vor der Übernahme.
 
 ## Phasenplan
 
+0. Fundament: Konzept, Git-Guard für Vorlagen, Konfigurations- und Diensterkennungs-Schicht (optionale Dienste).
 1. Agenten-API-Fundament und Erfassungs-Komfort (A, B): REST plus Auth, Scopes und Audit-Log; Zeiten nachtragen, Schnell-Erledigt, natürlichsprachig mit Vorschau, Retrieval und Tages-Briefing.
 2. MCP-Server und OpenAI-Function-Schemas (A).
 3. Semantische Suche und KI-Freifeld mit Mikrofon (C).
 4. Markdown-Inhalte und Vorlesen (D, E).
 5. Transkriptionen (F).
-6. Wochenstunden, Urlaub, Berichte, PDF und Archiv (G, H).
-7. Flow-Ansicht, Was-steht-an, Detailansicht, UI-Persistenz, Routing, Benutzerführung (N, I, J, K, L, O).
-8. Mehrere Security-Audit-Runden.
+6. Wiederkehrende Termine und Aufgaben mit Erinnerungen (Q).
+7. Personen, Wochenstunden, Urlaub und Feiertage (G).
+8. Berichte, PDF, CSV und Archiv (H).
+9. Flow-Ansicht, Was-steht-an, Detailansicht, UI-Persistenz, Routing und Benutzerführung (N, I, J, K, L, O).
+10. Backup und Wiederherstellung (R).
+11. Mehrere Security-Audit-Runden.
 
 Querschnitt: strenge Versionierung (Patch je Änderung, Feature je Ausbaustufe), saubere Commits, README hält den Ist-Zustand.

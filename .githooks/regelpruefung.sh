@@ -30,7 +30,10 @@ for f in "$@"; do
   grep -Iq . "$f" 2>/dev/null || continue   # Binaerdateien ueberspringen
 
   base=$(basename "$f")
-  case "$base" in .env|.env.*) melde "$f: .env-Datei darf nicht eingecheckt werden" ;; esac
+  case "$base" in
+    .env.example|.env.muster|.env.sample|.env.template) : ;;  # Vorlagen mit Platzhaltern erlaubt
+    .env|.env.*) melde "$f: echte .env-Datei darf nicht eingecheckt werden (nur .env.example/.env.muster mit Platzhaltern)" ;;
+  esac
   case "$f" in *.pem|*.key|*.p12|*.keystore) melde "$f: Schluesseldatei darf nicht eingecheckt werden" ;; esac
 
   if out=$(grep -nIiE 'claude|anthropic|co-authored-by|generated with (claude|ai)' "$f" 2>/dev/null); then

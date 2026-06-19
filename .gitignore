@@ -8,6 +8,8 @@ pinnwand.db
 .run/
 .env
 .env.*
+!.env.example
+!.env.muster
 *.key
 *.pem
 *.p12

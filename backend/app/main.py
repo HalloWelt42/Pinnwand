@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.config import dienste_status, einstellungen
 from app.modul_registry import (
     aggregiere_erweiterungen,
     init_fuer,
@@ -26,7 +27,7 @@ async def lebenszyklus(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Pinnwand", version="0.7.1", lifespan=lebenszyklus)
+app = FastAPI(title="Pinnwand", version="0.8.0", lifespan=lebenszyklus)
 
 app.add_middleware(
     CORSMiddleware,
@@ -51,6 +52,16 @@ def erweiterungen() -> dict[str, list[dict]]:
 @app.get("/api/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/api/dienste")
+def dienste() -> dict:
+    """Status der optionalen KI-/Integrationsdienste.
+
+    Dient der Oberflaeche dazu, KI-Funktionen nur anzubieten, wenn der jeweilige
+    Dienst konfiguriert und erreichbar ist. KI bleibt damit optional.
+    """
+    return {"bind": einstellungen.bind, "dienste": dienste_status()}
 
 
 for _manifest in lade_manifeste():

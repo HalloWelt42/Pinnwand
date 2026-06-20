@@ -1,13 +1,45 @@
 <script lang="ts">
-  import { ladeHeute, type HeuteUebersicht, type HeuteEintrag } from '../../api'
+  import { ladeHeute, schnellErfassen, type HeuteUebersicht, type HeuteEintrag, type ErfassenErgebnis } from '../../api'
   import { oeffneKarte } from '../../navigation.svelte'
   import { tts, vorlesen, stoppeVorlesen } from '../../tts.svelte'
-  import { isoKurz, isoGesprochen } from '../../zeit'
+  import { isoKurz, isoGesprochen, formatStd } from '../../zeit'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
 
   let d = $state<HeuteUebersicht | null>(null)
+
+  // Schnell-Erfassung (natuersprachliche Zeitbuchung mit Vorschau)
+  let qText = $state('')
+  let qVorschau = $state<ErfassenErgebnis | null>(null)
+  let qFehler = $state('')
+  let qMeldung = $state('')
+  async function qPruefen(): Promise<void> {
+    qFehler = ''
+    qMeldung = ''
+    if (!qText.trim()) return
+    try {
+      qVorschau = await schnellErfassen(qText, true)
+    } catch (e) {
+      qVorschau = null
+      qFehler = e instanceof Error ? e.message : 'nicht verstanden'
+    }
+  }
+  async function qBuchen(): Promise<void> {
+    try {
+      await schnellErfassen(qText, false)
+      qMeldung = 'Zeit gebucht.'
+      qText = ''
+      qVorschau = null
+      ladeHeute().then((x) => (d = x)).catch(() => {})
+    } catch (e) {
+      qFehler = e instanceof Error ? e.message : 'Buchen fehlgeschlagen'
+    }
+  }
+  function qAbbrechen(): void {
+    qVorschau = null
+    qFehler = ''
+  }
 
   $effect(() => {
     ladeHeute().then((x) => (d = x)).catch(() => {})
@@ -53,6 +85,27 @@
       {tts.laeuft ? 'Stopp' : 'Vorlesen'}
     </button>
   </div>
+
+  <div class="quick">
+    <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+    <input class="qin" placeholder="Schnell erfassen: z.B. R3-130 1:30 Doku geschrieben gestern" bind:value={qText}
+      oninput={() => { qVorschau = null; qFehler = '' }}
+      onkeydown={(e) => { if (e.key === 'Enter') qPruefen() }} />
+    <button class="btn" onclick={qPruefen}>Vorschau</button>
+  </div>
+  {#if qFehler}<p class="qfehler">{qFehler}</p>{/if}
+  {#if qMeldung}<p class="qok">{qMeldung}</p>{/if}
+  {#if qVorschau && qVorschau.karte}
+    <div class="qvor">
+      <span class="ql">Buchung:</span>
+      <b>{qVorschau.karte.schluessel ?? ''}</b> {qVorschau.karte.titel}
+      <span class="qd">{formatStd(qVorschau.sekunden ?? 0)} h{#if qVorschau.datum} &middot; {isoKurz(qVorschau.datum)}{/if}{#if qVorschau.kommentar} &middot; "{qVorschau.kommentar}"{/if}</span>
+      <span class="qbtns">
+        <button class="btn primaer" onclick={qBuchen}>Buchen</button>
+        <button class="btn geist" onclick={qAbbrechen}>Abbrechen</button>
+      </span>
+    </div>
+  {/if}
   <div class="gitter">
     {#each gruppen as g (g.titel)}
       <section class="karte {g.klasse}">
@@ -98,4 +151,22 @@
   .ti { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .fa { font-size: 10.5px; color: var(--text-3); flex: none; }
   .leer { color: var(--text-3); font-size: 12px; margin: 2px 0; }
+  .btn.primaer { background: var(--hl-primary); color: var(--hl-on-primary); border-color: transparent; font-weight: 500; }
+  .btn.geist { background: transparent; color: var(--text-2); }
+  .quick { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; color: var(--text-3); }
+  .quick .qin {
+    flex: 1; min-width: 0; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-1);
+    border-radius: var(--r-m); padding: 8px 11px; font-size: 12.5px;
+  }
+  .quick .qin:focus { border-color: var(--hl-primary); outline: none; }
+  .qfehler { color: var(--gefahr); font-size: 12px; margin: 0 0 8px; }
+  .qok { color: var(--ok); font-size: 12px; margin: 0 0 8px; }
+  .qvor {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    background: var(--hl-primary-weich); border: 1px solid var(--hl-primary);
+    border-radius: var(--r-m); padding: 9px 12px; font-size: 12.5px; color: var(--text-1); margin-bottom: 12px;
+  }
+  .qvor .ql { color: var(--hl-primary-text); font-weight: 600; }
+  .qvor .qd { color: var(--text-2); }
+  .qvor .qbtns { margin-left: auto; display: flex; gap: 7px; }
 </style>

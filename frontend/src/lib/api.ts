@@ -62,6 +62,18 @@ export const aktualisiereDokument = (id: string, daten: { titel?: string; inhalt
 
 export const loescheDokument = (id: string): Promise<void> =>
   hole(`/api/kanban/dokumente/${id}`, { method: 'DELETE' })
+
+// --- Schnell-Erfassung (natuersprachliche Zeitbuchung mit Vorschau) ---
+export interface ErfassenErgebnis {
+  vorschau: boolean
+  aktion: string
+  karte?: { id: string; schluessel?: string | null; titel: string }
+  sekunden?: number
+  datum?: string | null
+  kommentar?: string | null
+}
+export const schnellErfassen = (text: string, dryRun: boolean): Promise<ErfassenErgebnis> =>
+  hole('/api/kanban/schnell-erfassen', { method: 'POST', body: JSON.stringify({ text, dry_run: dryRun }) })
 export const ladeBoard = (boardId: string): Promise<BoardDetail> => hole(`/api/kanban/boards/${boardId}`)
 
 export interface HeuteEintrag {

@@ -111,6 +111,11 @@ class DokumentUpdate(BaseModel):
     inhalt: str | None = None
 
 
+class SchnellErfassen(BaseModel):
+    text: str
+    dry_run: bool = False
+
+
 class KarteCreate(BaseModel):
     board_id: str
     spalte: str

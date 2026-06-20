@@ -23,6 +23,7 @@ from .models import (
     MappeCreate,
     MappeUpdate,
     Projektmappe,
+    SchnellErfassen,
     Spalte,
     SpalteCreate,
     SpalteMove,
@@ -153,6 +154,25 @@ def dokument_loeschen(dokument_id: str) -> None:
         raise HTTPException(status_code=404, detail="Dokument nicht gefunden")
     if vorher and vorher.kontext == "karte":
         _index(vorher.kontext_id)
+
+
+# -- Schnell-Erfassung (natuersprachlich, lokal, mit Vorschau) ------------
+
+@router.post("/schnell-erfassen")
+def schnell_erfassen(e: SchnellErfassen) -> dict:
+    """Deutet einen Freitext (z.B. 'R3-130 1:30 Doku geschrieben') und bucht Zeit.
+
+    Mit dry_run nur Vorschau (deterministische Deutung), ohne dry_run wird gebucht.
+    Lokaler UI-Endpunkt ohne Token (die App ist lokal); die Logik teilt sich mit der Agenten-API.
+    """
+    from module.agent_api.aktionen import Aktionen, AktionsFehler
+    try:
+        ergebnis = Aktionen("ui").erfasse_freitext(e.text, dry_run=e.dry_run)
+    except AktionsFehler as ex:
+        raise HTTPException(status_code=getattr(ex, "status", 400), detail=str(ex))
+    if not e.dry_run and ergebnis.get("karte", {}).get("id"):
+        _index(ergebnis["karte"]["id"])
+    return ergebnis
 
 
 # -- Karten ---------------------------------------------------------------

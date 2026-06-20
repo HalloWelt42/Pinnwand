@@ -467,7 +467,13 @@
     display: none;
   }
   .rail.zu .marke {
+    flex-direction: column;
     justify-content: center;
+    gap: 8px;
+    padding: 4px 0 12px;
+  }
+  .rail.zu .railtog {
+    margin-left: 0;
   }
   .rail.zu :global(.dienste) {
     display: none;

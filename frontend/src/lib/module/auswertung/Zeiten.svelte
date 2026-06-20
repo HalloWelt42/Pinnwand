@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { BoardDetail, Zeiteintrag } from '../../types'
-  import { ladeBoard, ladeZeiteintraege, erstelleZeiteintrag, aktualisiereZeiteintrag, loescheZeiteintrag } from '../../api'
+  import { ladeBoard, ladeZeiteintraege, erstelleZeiteintrag, aktualisiereZeiteintrag, loescheZeiteintrag, ladeTerminInstanzen, type TerminInstanz } from '../../api'
   import { ymd, addTage, montagDer, isoWoche, formatStd, stdDezimal, wochentag, tagKurz } from '../../zeit'
 
   let { boardId }: { boardId: string } = $props()
@@ -8,6 +8,7 @@
   let anker = $state(new Date())
   let board = $state<BoardDetail | null>(null)
   let eintraege = $state<Zeiteintrag[]>([])
+  let termine = $state<TerminInstanz[]>([])
 
   let nKarte = $state('')
   let nDatum = $state(ymd(new Date()))
@@ -19,11 +20,18 @@
   const bis = $derived(ymd(addTage(montag, 6)))
   const kw = $derived(isoWoche(montag))
   const tage = $derived(Array.from({ length: 7 }, (_, i) => addTage(montag, i)))
-  const wocheSumme = $derived(eintraege.reduce((s, e) => s + e.sekunden, 0))
+  const wocheSumme = $derived(
+    eintraege.reduce((s, e) => s + e.sekunden, 0) + termine.reduce((s, t) => s + (t.effektiv_min ?? 0) * 60, 0),
+  )
 
   async function laden() {
     board = await ladeBoard(boardId)
     eintraege = await ladeZeiteintraege(von, bis)
+    try {
+      termine = (await ladeTerminInstanzen({ status: 'bestaetigt', von, bis })) ?? []
+    } catch {
+      termine = []
+    }
   }
   $effect(() => {
     void von
@@ -35,8 +43,13 @@
     const key = ymd(tag)
     return eintraege.filter((e) => e.datum === key).sort((a, b) => (a.start ?? '').localeCompare(b.start ?? ''))
   }
+  function termineAm(tag: Date): TerminInstanz[] {
+    const key = ymd(tag)
+    return termine.filter((t) => t.datum === key)
+  }
   function tagSumme(tag: Date): number {
     return eintraegeAm(tag).reduce((s, e) => s + e.sekunden, 0)
+      + termineAm(tag).reduce((s, t) => s + (t.effektiv_min ?? 0) * 60, 0)
   }
 
   function parseDauer(s: string): number | null {
@@ -134,26 +147,32 @@
   <section class="block">
     {#each tage as tag (ymd(tag))}
       {@const liste = eintraegeAm(tag)}
+      {@const tliste = termineAm(tag)}
       <div class="tag">
         <div class="tagkopf">
           <span class="wd">{wochentag(tag)}</span>
           <span class="dt">{tagKurz(tag)}</span>
           <span class="tsum">{formatStd(tagSumme(tag))} h</span>
         </div>
-        {#if liste.length}
-          {#each liste as e (e.id)}
-            <div class="eintrag">
-              <span class="key">{e.karte_schluessel ?? ''}</span>
-              <span class="etitel">{e.karte_titel ?? e.karte_id}</span>
-              <input class="edauer" value={formatStd(e.sekunden)} aria-label="Dauer" onchange={(ev) => dauerAendern(e, ev.currentTarget.value)} />
-              <input class="ekomm" value={e.kommentar ?? ''} placeholder="Kommentar ..." aria-label="Kommentar" onblur={(ev) => kommentarAendern(e, ev.currentTarget.value)} />
-              {#if !e.manuell}<span class="auto" title="Automatisch erfasst"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i></span>{/if}
-              <button class="del" aria-label="Eintrag löschen" onclick={() => loeschen(e)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
-            </div>
-          {/each}
-        {:else}
-          <div class="leer">keine Zeiten</div>
-        {/if}
+        {#each liste as e (e.id)}
+          <div class="eintrag">
+            <span class="key">{e.karte_schluessel ?? ''}</span>
+            <span class="etitel">{e.karte_titel ?? e.karte_id}</span>
+            <input class="edauer" value={formatStd(e.sekunden)} aria-label="Dauer" onchange={(ev) => dauerAendern(e, ev.currentTarget.value)} />
+            <input class="ekomm" value={e.kommentar ?? ''} placeholder="Kommentar ..." aria-label="Kommentar" onblur={(ev) => kommentarAendern(e, ev.currentTarget.value)} />
+            {#if !e.manuell}<span class="auto" title="Automatisch erfasst"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i></span>{/if}
+            <button class="del" aria-label="Eintrag löschen" onclick={() => loeschen(e)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+          </div>
+        {/each}
+        {#each tliste as t (t.id)}
+          <div class="tzeile" title="Bestätigter Termin (in Termine änderbar)">
+            <span class="ticon"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i></span>
+            <span class="etitel">{t.uhrzeit ? t.uhrzeit + ' ' : ''}{t.titel}{#if t.kuerzel} <span class="tk">{t.kuerzel}</span>{/if}</span>
+            <span class="tdauer">{formatStd((t.effektiv_min ?? 0) * 60)} h</span>
+            <span class="tlabel">Termin</span>
+          </div>
+        {/each}
+        {#if !liste.length && !tliste.length}<div class="leer">keine Zeiten</div>{/if}
       </div>
     {/each}
   </section>
@@ -410,5 +429,37 @@
     font-size: 12px;
     color: var(--text-3);
     padding: 2px 0 4px;
+  }
+  .tzeile {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 4px 0;
+    font-size: 12px;
+    color: var(--text-2);
+  }
+  .tzeile .ticon {
+    color: var(--hl-primary-text);
+    font-size: 11px;
+    width: 60px;
+  }
+  .tzeile .etitel {
+    flex: 1;
+  }
+  .tzeile .tk {
+    color: var(--text-3);
+    font-size: 11px;
+  }
+  .tzeile .tdauer {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-2);
+  }
+  .tzeile .tlabel {
+    font-size: 10px;
+    color: var(--hl-primary-text);
+    background: var(--hl-primary-weich);
+    border-radius: 999px;
+    padding: 1px 7px;
   }
 </style>

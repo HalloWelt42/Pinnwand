@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { ladeHeute, schnellErfassen, type HeuteUebersicht, type HeuteEintrag, type ErfassenErgebnis } from '../../api'
+  import { ladeHeute, schnellErfassen, ladeTerminInstanzen, bestaetigeTermin, lehneTerminAb, type HeuteUebersicht, type HeuteEintrag, type ErfassenErgebnis, type TerminInstanz } from '../../api'
   import { oeffneKarte } from '../../navigation.svelte'
   import { tts, vorlesen, stoppeVorlesen } from '../../tts.svelte'
-  import { isoKurz, isoGesprochen, formatStd } from '../../zeit'
+  import { isoKurz, isoGesprochen, formatStd, ymd } from '../../zeit'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
@@ -44,6 +44,29 @@
   $effect(() => {
     ladeHeute().then((x) => (d = x)).catch(() => {})
   })
+
+  // Zu bestaetigende Termine (Folgetag-Bestaetigung, niederschwellig in Heute)
+  let offeneTermine = $state<TerminInstanz[]>([])
+  let tdauer = $state<Record<string, number>>({})
+  async function ladeOffene(): Promise<void> {
+    try {
+      offeneTermine = (await ladeTerminInstanzen({ status: 'schwebend', bis: ymd(new Date()) })) ?? []
+    } catch {
+      offeneTermine = []
+    }
+  }
+  $effect(() => { ladeOffene() })
+  function tdauerVon(i: TerminInstanz): number {
+    return tdauer[i.id] ?? i.geplant_min
+  }
+  async function tBestaetigen(i: TerminInstanz): Promise<void> {
+    await bestaetigeTermin(i.id, tdauerVon(i))
+    await ladeOffene()
+  }
+  async function tAblehnen(i: TerminInstanz): Promise<void> {
+    await lehneTerminAb(i.id)
+    await ladeOffene()
+  }
 
   const gruppen = $derived(
     d
@@ -106,6 +129,22 @@
       </span>
     </div>
   {/if}
+  {#if offeneTermine.length}
+    <section class="bestaetigen">
+      <div class="bkopf"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Zu bestätigen <span class="bz">{offeneTermine.length}</span></div>
+      {#each offeneTermine as i (i.id)}
+        <div class="bzeile">
+          <span class="bd">{isoKurz(i.datum)}</span>
+          <span class="bt">{i.uhrzeit ? i.uhrzeit + ' ' : ''}{i.titel}{#if i.kuerzel} <span class="bk">{i.kuerzel}</span>{/if}</span>
+          <input class="bdauer" type="number" min="0" step="5" value={tdauerVon(i)} onchange={(e) => (tdauer[i.id] = parseInt(e.currentTarget.value) || 0)} />
+          <span class="bme">min</span>
+          <button class="btn klein" onclick={() => tBestaetigen(i)}>Fand statt</button>
+          <button class="btn klein geist" onclick={() => tAblehnen(i)}>Nein</button>
+        </div>
+      {/each}
+    </section>
+  {/if}
+
   <div class="gitter">
     {#each gruppen as g (g.titel)}
       <section class="karte {g.klasse}">
@@ -169,4 +208,15 @@
   .qvor .ql { color: var(--hl-primary-text); font-weight: 600; }
   .qvor .qd { color: var(--text-2); }
   .qvor .qbtns { margin-left: auto; display: flex; gap: 7px; }
+  .bestaetigen { border: 1px solid var(--hl-primary); background: color-mix(in srgb, var(--hl-primary) 8%, transparent); border-radius: var(--r-m); padding: 10px 12px; margin-bottom: 14px; }
+  .bkopf { font-family: var(--font-display); font-size: 12px; color: var(--hl-primary-text); display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .bkopf .bz { background: var(--hl-primary); color: var(--hl-on-primary); border-radius: 999px; font-size: 11px; padding: 1px 8px; }
+  .bzeile { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 12.5px; border-top: 1px solid var(--border); }
+  .bzeile:first-of-type { border-top: none; }
+  .bd { flex: 0 0 56px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .bt { flex: 1; min-width: 0; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bt .bk { color: var(--text-3); font-size: 11px; }
+  .bdauer { width: 58px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-1); border-radius: var(--r-s); padding: 4px 6px; font-size: 12px; }
+  .bme { color: var(--text-3); font-size: 11px; }
+  .btn.klein { padding: 5px 10px; font-size: 11.5px; }
 </style>

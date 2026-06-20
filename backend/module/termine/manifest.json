@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "extends": {
     "views": [
-      { "id": "termine", "titel": "Termine", "icon": "fa-solid fa-calendar-check" }
+      { "id": "wiederkehrendes", "titel": "Wiederkehrendes", "icon": "fa-solid fa-repeat" }
     ],
     "cardFields": [],
     "mappeTabs": [],

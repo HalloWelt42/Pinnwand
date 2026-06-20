@@ -25,12 +25,13 @@
   --border-2: rgba(255, 255, 255, 0.13);
   --text-1: #eceef1;
   --text-2: #aab0b8;
-  --text-3: #6c727b;
+  --text-3: #8b919b;
 
   --hl-primary: #4f9be8;
   --hl-primary-text: #7cb6ee;
   --hl-primary-weich: rgba(79, 155, 232, 0.16);
-  --hl-on-primary: #ffffff;
+  /* Dunkles Theme: dunkler Text auf dem hellen Akzent (hoher Kontrast statt Weiss 2.9). */
+  --hl-on-primary: #0c2336;
 
   --prio-hoch: #ef5350;
   --prio-mittel: #ffb300;
@@ -59,9 +60,9 @@
   --border-2: rgba(18, 20, 24, 0.17);
   --text-1: #181b20;
   --text-2: #474d56;
-  --text-3: #7a818b;
+  --text-3: #646b75;
 
-  --hl-primary: #1e88e5;
+  --hl-primary: #1976d2;
   --hl-primary-text: #1565c0;
   --hl-primary-weich: #e3f2fd;
   --hl-on-primary: #ffffff;

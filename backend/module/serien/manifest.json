@@ -3,9 +3,7 @@
   "name": "Serien",
   "version": "0.1.0",
   "extends": {
-    "views": [
-      { "id": "serien", "titel": "Serien", "icon": "fa-solid fa-repeat" }
-    ],
+    "views": [],
     "cardFields": [],
     "mappeTabs": [],
     "commands": []

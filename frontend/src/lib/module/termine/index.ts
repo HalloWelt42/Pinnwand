@@ -1,8 +1,9 @@
-// Termine-Modul: meldet die globale Ansicht "Termine" an (Meeting-Zeiterfassung).
+// Termine-Modul: meldet die globale Ansicht "Wiederkehrendes" an (Serien + Termine
+// unter einem Dach, Modus je Eintrag).
 
 import { registriereAnsicht } from '../registry'
-import Termine from './Termine.svelte'
+import Wiederkehrendes from './Wiederkehrendes.svelte'
 
 export function registriere(): void {
-  registriereAnsicht({ id: 'termine', titel: 'Termine', icon: 'fa-solid fa-calendar-check', komponente: Termine })
+  registriereAnsicht({ id: 'wiederkehrendes', titel: 'Wiederkehrendes', icon: 'fa-solid fa-repeat', komponente: Wiederkehrendes })
 }

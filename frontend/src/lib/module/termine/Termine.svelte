@@ -152,12 +152,12 @@
           <span class="t">{s.uhrzeit ? s.uhrzeit + ' ' : ''}{s.titel}</span>
           <span class="meta">{s.kuerzel ?? '-'} &middot; {rhythmus(s)} &middot; {s.dauer_min} min</span>
           <span class="aktionen">
-            <button class="mini geist" onclick={() => aktivToggle(s)}>{s.aktiv ? 'Pausieren' : 'Aktivieren'}</button>
+            <button class="tbtn geist" onclick={() => aktivToggle(s)}>{s.aktiv ? 'Pausieren' : 'Aktivieren'}</button>
             {#if loeschId === s.id}
-              <button class="mini rot" onclick={() => loeschenBestaetigt(s)}>Wirklich löschen</button>
-              <button class="mini geist" onclick={() => (loeschId = null)}>Abbrechen</button>
+              <button class="tbtn rot" onclick={() => loeschenBestaetigt(s)}>Wirklich löschen</button>
+              <button class="tbtn geist" onclick={() => (loeschId = null)}>Abbrechen</button>
             {:else}
-              <button class="mini geist" onclick={() => (loeschId = s.id)} aria-label="Löschen"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+              <button class="tbtn geist" onclick={() => (loeschId = s.id)} aria-label="Löschen"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
             {/if}
           </span>
         </div>
@@ -176,8 +176,8 @@
         <span class="iakt">
           <input class="dauer" type="number" min="0" step="5" value={dauerVon(i)} onchange={(e) => (dauerEntwurf[i.id] = parseInt(e.currentTarget.value) || 0)} />
           <span class="me">min</span>
-          <button class="mini" onclick={() => bestaetigen(i)}>{i.status === 'bestaetigt' ? 'Aendern' : 'Bestätigen'}</button>
-          {#if i.status !== 'abgelehnt'}<button class="mini geist" onclick={() => ablehnen(i)}>Fand nicht statt</button>{/if}
+          <button class="tbtn" onclick={() => bestaetigen(i)}>{i.status === 'bestaetigt' ? 'Aendern' : 'Bestätigen'}</button>
+          {#if i.status !== 'abgelehnt'}<button class="tbtn geist" onclick={() => ablehnen(i)}>Fand nicht statt</button>{/if}
         </span>
       </div>
     {/each}
@@ -208,9 +208,9 @@
   .kopf .t { font-size: 13px; color: var(--text-1); font-weight: 500; }
   .kopf .meta { font-size: 11.5px; color: var(--text-3); }
   .kopf .aktionen { margin-left: auto; display: flex; gap: 6px; }
-  .mini { border: 1px solid var(--hl-primary); background: var(--hl-primary); color: var(--hl-on-primary); border-radius: var(--r-s); padding: 4px 9px; font-size: 11.5px; white-space: nowrap; }
-  .mini.geist { background: transparent; color: var(--text-2); border-color: var(--border-2); }
-  .mini.rot { background: transparent; color: var(--gefahr); border-color: var(--gefahr); }
+  .tbtn { border: 1px solid var(--hl-primary); background: var(--hl-primary); color: var(--hl-on-primary); border-radius: var(--r-s); padding: 4px 9px; font-size: 11.5px; white-space: nowrap; }
+  .tbtn.geist { background: transparent; color: var(--text-2); border-color: var(--border-2); }
+  .tbtn.rot { background: transparent; color: var(--gefahr); border-color: var(--gefahr); }
   .inst { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
   .inst:last-child { border-bottom: none; }
   .inst.abgelehnt { opacity: 0.5; }

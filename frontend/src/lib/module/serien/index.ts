@@ -1,8 +1,7 @@
-// Serien-Modul: meldet die Ansicht "Serien" an (boardgebunden).
-
-import { registriereAnsicht } from '../registry'
-import Serien from './Serien.svelte'
+// Serien-Modul: keine eigene Ansicht mehr. Die Serien-Verwaltung erscheint unter
+// "Wiederkehrendes" (Modus "Aufgaben-Serie"); die Serien.svelte-Komponente wird
+// dort direkt eingebunden.
 
 export function registriere(): void {
-  registriereAnsicht({ id: 'serien', titel: 'Serien', icon: 'fa-solid fa-repeat', komponente: Serien })
+  /* keine eigenstaendige Ansicht */
 }

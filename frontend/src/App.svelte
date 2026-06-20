@@ -66,6 +66,7 @@
   let aktiveMappe = $state<Projektmappe | null>(null)
   let boards = $state<Board[]>([])
   let aktivesBoard = $state<Board | null>(null)
+  let boardsGeladen = $state(false)
   let fehler = $state<string | null>(null)
 
   let ansichtsListe = $state<Ansicht[]>([])
@@ -130,7 +131,17 @@
   })
 
   async function ladeBoardListe() {
-    if (aktiveMappe) boards = await ladeBoards(aktiveMappe.id)
+    if (aktiveMappe) {
+      boardsGeladen = false
+      boards = await ladeBoards(aktiveMappe.id)
+      boardsGeladen = true
+    }
+  }
+  async function erstesBoardAnlegen() {
+    if (!aktiveMappe) return
+    const neu = await erstelleBoard(aktiveMappe.id, 'Aufgaben')
+    await ladeBoardListe()
+    aktivesBoard = boards.find((b) => b.id === neu.id) ?? aktivesBoard
   }
   async function waehleMappe(m: Projektmappe) {
     aktiveMappe = m
@@ -363,6 +374,15 @@
       {:else if aktuelleKomponente && (!boardgebunden || aktivesBoard)}
         {@const Ansicht = aktuelleKomponente}
         <Ansicht boardId={aktivesBoard?.id ?? ''} />
+      {:else if boardgebunden && aktiveMappe && boardsGeladen && boards.length === 0}
+        <div class="leer">
+          <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
+          <h2>Noch kein Board in "{aktiveMappe.titel}"</h2>
+          <p>Lege ein Board an, um Aufgaben in Spalten zu planen.</p>
+          <button class="cta" onclick={erstesBoardAnlegen}>
+            <i class="fa-solid fa-plus" aria-hidden="true"></i> Board anlegen
+          </button>
+        </div>
       {:else}
         <p class="hinweis">Lädt ...</p>
       {/if}
@@ -686,5 +706,50 @@
   .hinweis {
     color: var(--text-2);
     padding: 24px;
+  }
+  .leer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+    padding: 32px;
+    color: var(--text-2);
+  }
+  .leer > i {
+    font-size: 34px;
+    color: var(--text-3);
+    margin-bottom: 4px;
+  }
+  .leer h2 {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-1);
+    margin: 0;
+  }
+  .leer p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-3);
+  }
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    border: none;
+    border-radius: var(--r-m);
+    background: var(--hl-primary);
+    color: var(--hl-on-primary);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 16px;
+    cursor: pointer;
+  }
+  .cta:hover {
+    filter: brightness(1.08);
   }
 </style>

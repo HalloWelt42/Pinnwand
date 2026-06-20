@@ -1,5 +1,6 @@
 <script lang="ts">
   import { setzeUrlaub, leereTag, type AbwesenheitTyp } from '../../api'
+  import { isoLang } from '../../zeit'
 
   interface PersonMini { id: string; name: string; kuerzel: string | null }
   let {
@@ -70,7 +71,7 @@
 <div class="overlay" role="presentation" onclick={onSchliessen}>
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div class="modal" role="dialog" aria-label="Eintrag" tabindex="-1" onclick={(e) => e.stopPropagation()}>
-    <h3>Eintrag {von}{bis && bis !== von ? ' bis ' + bis : ''}</h3>
+    <h3>Eintrag {isoLang(von)}{bis && bis !== von ? ' bis ' + isoLang(bis) : ''}</h3>
     <label>Person
       <select bind:value={personId}>
         {#each personen as p (p.id)}<option value={p.id}>{p.name}</option>{/each}

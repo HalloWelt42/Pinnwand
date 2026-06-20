@@ -7,7 +7,7 @@
   import { theme, wechsleTheme } from './lib/theme/theme.svelte'
   import { VERSION } from './lib/version'
   import { aktualisiereLaufend } from './lib/timer.svelte'
-  import { nav, transkriptNav } from './lib/navigation.svelte'
+  import { nav, transkriptNav, kartenZeiger, oeffneKarte } from './lib/navigation.svelte'
   import Toast from './lib/Toast.svelte'
   import LaufBar from './lib/LaufBar.svelte'
   import DiensteStatus from './lib/DiensteStatus.svelte'
@@ -123,14 +123,19 @@
   // Routing ohne Hashes: echte Pfade /ansicht bzw. /ansicht/boardId.
   function pfadAusZustand(): string {
     if (!aktiveAnsicht) return '/'
-    return boardgebunden && aktivesBoard ? `/${aktiveAnsicht}/${aktivesBoard.id}` : `/${aktiveAnsicht}`
+    if (!boardgebunden || !aktivesBoard) return `/${aktiveAnsicht}`
+    const k = kartenZeiger.offen
+    const kartenTeil = k && k.boardId === aktivesBoard.id ? `/${encodeURIComponent(k.schluessel)}` : ''
+    return `/${aktiveAnsicht}/${aktivesBoard.id}${kartenTeil}`
   }
   function wendePfadAn(pfad: string): void {
-    const [ans, bId] = pfad.split('/').filter(Boolean)
+    const [ans, bId, kSchluessel] = pfad.split('/').filter(Boolean)
     if (ans && ansichtsListe.some((a) => a.id === ans)) aktiveAnsicht = ans
     if (bId) {
       const b = boards.find((x) => x.id === bId)
       if (b) aktivesBoard = b
+      // Deep-Link auf eine Karte: das Board oeffnet sie anhand des Schluessels.
+      if (kSchluessel) oeffneKarte(bId, undefined, decodeURIComponent(kSchluessel))
     }
   }
   $effect(() => {

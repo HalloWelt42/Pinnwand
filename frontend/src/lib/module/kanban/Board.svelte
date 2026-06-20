@@ -18,7 +18,7 @@
   } from '../../api'
   import { zeigeToast } from '../../toaster.svelte'
   import { timer } from '../../timer.svelte'
-  import { nav } from '../../navigation.svelte'
+  import { nav, setzeOffeneKarte } from '../../navigation.svelte'
   import { neuKarteAus } from '../../restore'
   import Column from './Column.svelte'
   import Toolbar from './Toolbar.svelte'
@@ -54,16 +54,27 @@
   const alleLabels = $derived([...new Set((board?.karten ?? []).flatMap((k) => k.labels))].sort())
   const mitglieder = $derived([...new Set((board?.karten ?? []).map((k) => k.zustaendig).filter((z): z is string => !!z))])
 
-  // Aus der Suche angesteuerte Karte öffnen, sobald dieses Board geladen ist.
+  // Aus der Suche/Deep-Link angesteuerte Karte öffnen, sobald dieses Board geladen ist
+  // (über interne ID oder über den Karten-Schlüssel aus der URL).
   $effect(() => {
     const ziel = nav.ziel
-    if (ziel?.karteId && ziel.boardId === boardId && board) {
-      const k = board.karten.find((x) => x.id === ziel.karteId)
+    if (ziel && ziel.boardId === boardId && board) {
+      const k = ziel.karteId
+        ? board.karten.find((x) => x.id === ziel.karteId)
+        : ziel.schluessel
+          ? board.karten.find((x) => x.schluessel === ziel.schluessel)
+          : null
       if (k) {
         ausgewaehlt = k
         nav.ziel = { boardId }
       }
     }
+  })
+
+  // Offene Karte für tief verlinkbare URLs spiegeln; beim Verlassen wieder abräumen.
+  $effect(() => {
+    setzeOffeneKarte(ausgewaehlt ? boardId : null, ausgewaehlt?.schluessel ?? null)
+    return () => setzeOffeneKarte(null)
   })
 
   function baueAnsicht() {

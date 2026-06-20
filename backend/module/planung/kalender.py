@@ -35,6 +35,13 @@ def _ist_sek_je_tag(von: str, bis: str) -> dict[tuple[str, str], int]:
     for r in rows:
         if r["kuerzel"]:
             out[(r["kuerzel"], r["datum"])] = int(r["sek"] or 0)
+    # Bestaetigte Termine sind eine zweite Ist-Quelle (Modul optional -> defensiv).
+    try:
+        from module.termine import dienst as _td
+        for (kuerzel, datum), minuten in _td.ist_minuten_je_tag_person(von, bis).items():
+            out[(kuerzel, datum)] = out.get((kuerzel, datum), 0) + int(minuten) * 60
+    except Exception:
+        pass
     return out
 
 

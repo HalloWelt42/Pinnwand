@@ -1,0 +1,19 @@
+{
+  "id": "termine",
+  "name": "Termine",
+  "version": "0.1.0",
+  "extends": {
+    "views": [
+      { "id": "termine", "titel": "Termine", "icon": "fa-solid fa-calendar-check" }
+    ],
+    "cardFields": [],
+    "mappeTabs": [],
+    "commands": []
+  },
+  "backend": {
+    "router": "module.termine.api:router",
+    "init": "module.termine.dienst:init"
+  },
+  "permissions": [],
+  "requires": ["kanban-kern"]
+}

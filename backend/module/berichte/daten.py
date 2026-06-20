@@ -93,7 +93,16 @@ def _ist_je_person(conn, von: str, bis: str) -> dict[str, int]:
         "WHERE z.datum >= ? AND z.datum <= ? GROUP BY k.zustaendig",
         (von, bis),
     ).fetchall()
-    return {r["p"]: int(r["s"]) for r in rows if r["p"]}
+    out = {r["p"]: int(r["s"]) for r in rows if r["p"]}
+    # Bestaetigte Termine als zweite Ist-Quelle hinzurechnen (Modul optional -> defensiv).
+    try:
+        from module.termine import dienst as _td
+        for (kuerzel, _d), minuten in _td.ist_minuten_je_tag_person(von, bis).items():
+            if kuerzel:
+                out[kuerzel] = out.get(kuerzel, 0) + int(minuten) * 60
+    except Exception:
+        pass
+    return out
 
 
 def kapazitaet_auslastung(von: str, bis: str) -> dict:

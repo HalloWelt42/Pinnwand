@@ -367,6 +367,7 @@ def _leeren() -> None:
     daten_tabellen = (
         "karte", "zeiteintrag", "urlaub", "feiertag", "serie",
         "person", "bericht_archiv", "agent_audit", "agent_idempotenz",
+        "dokument", "wochen_override", "termin_serie", "termin_instanz",
     )
     with verbindung() as conn:
         vorhanden = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}

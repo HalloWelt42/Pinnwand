@@ -36,6 +36,25 @@ from .models import (
 router = APIRouter(prefix="/api/kanban", tags=["kanban"])
 
 
+def _index(karte_id: str | None) -> None:
+    """Best-effort: Suchindex einer Karte aktualisieren (no-op ohne KI-Dienste)."""
+    if not karte_id:
+        return
+    try:
+        from module.suche import indexer
+        indexer.index_eine(karte_id)
+    except Exception:
+        pass
+
+
+def _index_weg(karte_id: str) -> None:
+    try:
+        from module.suche import indexer
+        indexer.entferne(karte_id)
+    except Exception:
+        pass
+
+
 @router.get("/mappen", response_model=list[Projektmappe])
 def mappen() -> list[Projektmappe]:
     return db.liste_mappen()
@@ -100,7 +119,10 @@ def dokument_anlegen(eingabe: DokumentCreate) -> Dokument:
     titel = eingabe.titel.strip()
     if not titel:
         raise HTTPException(status_code=400, detail="Titel darf nicht leer sein")
-    return db.erstelle_dokument(f"d_{uuid4().hex[:8]}", eingabe.kontext, eingabe.kontext_id, titel)
+    d = db.erstelle_dokument(f"d_{uuid4().hex[:8]}", eingabe.kontext, eingabe.kontext_id, titel)
+    if d.kontext == "karte":
+        _index(d.kontext_id)
+    return d
 
 
 @router.get("/dokumente/{dokument_id}", response_model=Dokument)
@@ -119,20 +141,25 @@ def dokument_aendern(dokument_id: str, eingabe: DokumentUpdate) -> Dokument:
     d = db.aktualisiere_dokument(dokument_id, felder)
     if d is None:
         raise HTTPException(status_code=404, detail="Dokument nicht gefunden")
+    if d.kontext == "karte":
+        _index(d.kontext_id)
     return d
 
 
 @router.delete("/dokumente/{dokument_id}", status_code=204)
 def dokument_loeschen(dokument_id: str) -> None:
+    vorher = db.hole_dokument(dokument_id)
     if not db.loesche_dokument(dokument_id):
         raise HTTPException(status_code=404, detail="Dokument nicht gefunden")
+    if vorher and vorher.kontext == "karte":
+        _index(vorher.kontext_id)
 
 
 # -- Karten ---------------------------------------------------------------
 
 @router.post("/karten", response_model=Karte, status_code=201)
 def karte_anlegen(eingabe: KarteCreate) -> Karte:
-    return db.erstelle_karte(
+    karte = db.erstelle_karte(
         karte_id=f"k_{uuid4().hex[:8]}",
         board_id=eingabe.board_id,
         spalte=eingabe.spalte,
@@ -145,6 +172,8 @@ def karte_anlegen(eingabe: KarteCreate) -> Karte:
         faellig=eingabe.faellig.isoformat() if eingabe.faellig else None,
         zustaendig=eingabe.zustaendig,
     )
+    _index(karte.id)
+    return karte
 
 
 @router.patch("/karten/{karte_id}", response_model=Karte)
@@ -152,6 +181,7 @@ def karte_aendern(karte_id: str, eingabe: KarteUpdate) -> Karte:
     karte = db.aktualisiere_karte(karte_id, eingabe.model_dump(exclude_unset=True, mode="json"))
     if karte is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    _index(karte_id)
     return karte
 
 
@@ -168,12 +198,14 @@ def kommentar_anlegen(karte_id: str, eingabe: KommentarCreate) -> Karte:
     karte = db.kommentar_anhaengen(karte_id, eingabe.autor, eingabe.text, datetime.now().isoformat(timespec="minutes"))
     if karte is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    _index(karte_id)
     return karte
 
 
 @router.delete("/karten/{karte_id}", status_code=204)
 def karte_loeschen(karte_id: str) -> None:
     db.loesche_karte(karte_id)
+    _index_weg(karte_id)
 
 
 # -- Zeiterfassung --------------------------------------------------------

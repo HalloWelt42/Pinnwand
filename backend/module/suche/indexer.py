@@ -20,8 +20,20 @@ def _punkt_id(karte_id: str) -> str:
     return str(uuid.uuid5(_NS, karte_id))
 
 
+def _spalten_namen(row) -> set:
+    try:
+        return set(row.keys())
+    except Exception:
+        return set()
+
+
 def _text_einer(row) -> str:
+    sp = _spalten_namen(row)
     teile = [row["titel"] or "", row["beschreibung"] or "", row["schluessel"] or ""]
+    if "notizen" in sp:
+        teile.append(row["notizen"] or "")
+    if "transkript_name" in sp:
+        teile.append(row["transkript_name"] or "")
     try:
         teile += json.loads(row["labels"] or "[]")
     except Exception:
@@ -45,6 +57,18 @@ def _zeitkommentare(conn, karte_id: str) -> str:
     return "\n".join(r["kommentar"] for r in rows)
 
 
+def _dokumente_text(conn, karte_id: str) -> str:
+    """Titel und Inhalt der an die Karte angehaengten Dokumente (fuer den Index)."""
+    try:
+        rows = conn.execute(
+            "SELECT titel, inhalt FROM dokument WHERE kontext = 'karte' AND kontext_id = ?",
+            (karte_id,),
+        ).fetchall()
+    except Exception:
+        return ""
+    return "\n".join(f"{r['titel']}\n{r['inhalt']}".strip() for r in rows)
+
+
 def _karten_dokumente(karte_id: str | None = None) -> list[dict]:
     with verbindung() as conn:
         if karte_id:
@@ -57,6 +81,9 @@ def _karten_dokumente(karte_id: str | None = None) -> list[dict]:
             zk = _zeitkommentare(conn, r["id"])
             if zk:
                 text = f"{text}\n{zk}".strip()
+            dk = _dokumente_text(conn, r["id"])
+            if dk:
+                text = f"{text}\n{dk}".strip()
             if not text:
                 continue
             docs.append({
@@ -106,3 +133,10 @@ def index_eine(karte_id: str) -> bool:
     if not vektor.sicherstellen_collection(len(vektoren[0])):
         return False
     return vektor.upsert([{"id": _punkt_id(karte_id), "vector": vektoren[0], "payload": docs[0]["payload"]}])
+
+
+def entferne(karte_id: str) -> bool:
+    """Entfernt eine Karte aus dem Index. Still, wenn die Vektor-DB fehlt."""
+    if not vektor.verfuegbar():
+        return False
+    return vektor.entferne([_punkt_id(karte_id)])

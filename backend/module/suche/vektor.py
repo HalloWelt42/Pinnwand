@@ -61,6 +61,18 @@ def upsert(punkte: list[dict], name: str = COLLECTION) -> bool:
         return False
 
 
+def entferne(ids: list[str], name: str = COLLECTION) -> bool:
+    """Loescht Punkte aus der Collection. Still bei Ausfall."""
+    basis = _basis()
+    if not basis or not ids:
+        return False
+    try:
+        r = httpx.post(f"{basis}/collections/{name}/points/delete", json={"points": ids}, timeout=10.0)
+        return r.status_code < 400
+    except Exception:
+        return False
+
+
 def suche(vektor: list[float], limit: int = 10, name: str = COLLECTION) -> list[dict]:
     """Gibt Treffer als [{score, payload}] zurück, leer bei Ausfall."""
     basis = _basis()

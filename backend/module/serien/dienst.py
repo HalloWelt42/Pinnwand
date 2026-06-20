@@ -25,6 +25,19 @@ def _zielspalte(serie: dict) -> str | None:
     return r["id"] if r else None
 
 
+def _feiertage(von: date, bis: date) -> set[str]:
+    """Feiertags-Datumswerte im Bereich (zum Ueberspringen in Serien)."""
+    with verbindung() as conn:
+        try:
+            rows = conn.execute(
+                "SELECT DISTINCT datum FROM feiertag WHERE datum >= ? AND datum <= ?",
+                (von.isoformat(), bis.isoformat()),
+            ).fetchall()
+        except Exception:
+            return set()
+    return {r["datum"] for r in rows}
+
+
 def materialisiere(serie: dict, heute: date | None = None) -> int:
     """Legt fehlende Instanzen der Serie im Vorlauf-Zeitraum an. Gibt die Anzahl zurück."""
     if not serie.get("aktiv"):
@@ -34,8 +47,9 @@ def materialisiere(serie: dict, heute: date | None = None) -> int:
     spalte = _zielspalte(serie)
     if not spalte:
         return 0
+    feiertage = _feiertage(heute, bis) if serie.get("feiertage_ueberspringen") else None
     erzeugt = 0
-    for d in wiederholung.termine(serie, heute, bis):
+    for d in wiederholung.termine(serie, heute, bis, feiertage):
         iso = d.isoformat()
         if k.serien_instanz_existiert(serie["id"], iso):
             continue

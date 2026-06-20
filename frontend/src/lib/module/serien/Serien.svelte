@@ -18,11 +18,13 @@
   let intervall = $state(1)
   let wochentage = $state<number[]>([])
   let monatstag = $state(1)
+  let monatsregel = $state<'tag' | 'erster_werktag' | 'letzter_werktag'>('tag')
   let uhrzeit = $state('')
   let dauerMin = $state(30)
   let spalteId = $state('')
   let vorlaufTage = $state(21)
   let wochenendenUeberspringen = $state(false)
+  let feiertageUeberspringen = $state(false)
 
   async function laden(): Promise<void> {
     serien = await ladeSerien(boardId)
@@ -48,11 +50,13 @@
       typ,
       intervall,
       wochentage: typ === 'woechentlich' ? wochentage : [],
-      monatstag: typ === 'monatlich' ? monatstag : null,
+      monatstag: typ === 'monatlich' && monatsregel === 'tag' ? monatstag : null,
+      monatsregel: typ === 'monatlich' ? monatsregel : 'tag',
       uhrzeit: uhrzeit || null,
       dauer_min: dauerMin || null,
       vorlauf_tage: vorlaufTage,
       wochenenden_ueberspringen: wochenendenUeberspringen,
+      feiertage_ueberspringen: feiertageUeberspringen,
     })
     titel = ''
     uhrzeit = ''
@@ -80,7 +84,10 @@
   function rhythmus(s: Serie): string {
     const iv = s.intervall > 1 ? `alle ${s.intervall} ` : ''
     if (s.typ === 'taeglich') return `${iv}Tage`.trim()
-    if (s.typ === 'monatlich') return `${iv}Monate, Tag ${s.monatstag ?? '-'}`.trim()
+    if (s.typ === 'monatlich') {
+      const wann = s.monatsregel === 'erster_werktag' ? 'erster Werktag' : s.monatsregel === 'letzter_werktag' ? 'letzter Werktag' : `Tag ${s.monatstag ?? '-'}`
+      return `${iv}Monate, ${wann}`.trim()
+    }
     const tage = s.wochentage.length ? s.wochentage.map((i) => WD[i]).join(', ') : 'wie Start'
     return `${iv}Wochen (${tage})`.trim()
   }
@@ -105,7 +112,14 @@
         </div>
       {/if}
       {#if typ === 'monatlich'}
-        <label class="f mini">Monatstag <input type="number" min="1" max="31" bind:value={monatstag} /></label>
+        <select class="f" bind:value={monatsregel}>
+          <option value="tag">an festem Tag</option>
+          <option value="erster_werktag">erster Werktag</option>
+          <option value="letzter_werktag">letzter Werktag</option>
+        </select>
+        {#if monatsregel === 'tag'}
+          <label class="f mini">Monatstag <input type="number" min="1" max="31" bind:value={monatstag} /></label>
+        {/if}
       {/if}
       <label class="f mini">Uhrzeit <input type="time" bind:value={uhrzeit} /></label>
       <label class="f mini">Dauer (min) <input type="number" min="0" bind:value={dauerMin} /></label>
@@ -114,6 +128,7 @@
       </select>
       <label class="f mini">Vorlauf (Tage) <input type="number" min="0" bind:value={vorlaufTage} /></label>
       <label class="f chk"><input type="checkbox" bind:checked={wochenendenUeberspringen} /> Wochenenden überspringen</label>
+      <label class="f chk"><input type="checkbox" bind:checked={feiertageUeberspringen} /> Feiertage überspringen</label>
       <button class="btn primaer" onclick={anlegen}>Anlegen + vorbuchen</button>
     </div>
     {#if meldung}<p class="meldung">{meldung}</p>{/if}

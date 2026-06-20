@@ -45,7 +45,9 @@ def vorschau(sid: str, tage: int = Query(default=30)) -> dict:
     if serie is None:
         raise HTTPException(status_code=404, detail="Serie nicht gefunden")
     heute = date.today()
-    termine = wiederholung.termine(serie, heute, heute + timedelta(days=max(1, min(tage, 365))))
+    bis = heute + timedelta(days=max(1, min(tage, 365)))
+    feiertage = dienst._feiertage(heute, bis) if serie.get("feiertage_ueberspringen") else None
+    termine = wiederholung.termine(serie, heute, bis, feiertage)
     return {"termine": [d.isoformat() for d in termine]}
 
 

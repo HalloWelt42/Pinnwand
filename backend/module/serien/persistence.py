@@ -21,9 +21,11 @@ CREATE TABLE IF NOT EXISTS serie (
     intervall INTEGER NOT NULL DEFAULT 1,
     wochentage TEXT NOT NULL DEFAULT '',
     monatstag INTEGER,
+    monatsregel TEXT NOT NULL DEFAULT 'tag',
     uhrzeit TEXT,
     dauer_min INTEGER,
     wochenenden_ueberspringen INTEGER NOT NULL DEFAULT 0,
+    feiertage_ueberspringen INTEGER NOT NULL DEFAULT 0,
     vorlauf_tage INTEGER NOT NULL DEFAULT 14,
     start TEXT,
     ende TEXT,
@@ -36,6 +38,11 @@ CREATE TABLE IF NOT EXISTS serie (
 def init_db() -> None:
     with verbindung() as conn:
         conn.executescript(SCHEMA)
+        spalten = {r["name"] for r in conn.execute("PRAGMA table_info(serie)").fetchall()}
+        if "monatsregel" not in spalten:
+            conn.execute("ALTER TABLE serie ADD COLUMN monatsregel TEXT NOT NULL DEFAULT 'tag'")
+        if "feiertage_ueberspringen" not in spalten:
+            conn.execute("ALTER TABLE serie ADD COLUMN feiertage_ueberspringen INTEGER NOT NULL DEFAULT 0")
 
 
 def _row(r: sqlite3.Row) -> dict:
@@ -45,8 +52,10 @@ def _row(r: sqlite3.Row) -> dict:
         "labels": json.loads(r["labels"] or "[]"), "zustaendig": r["zustaendig"],
         "typ": r["typ"], "intervall": r["intervall"],
         "wochentage": [int(x) for x in (r["wochentage"] or "").split(",") if x != ""],
-        "monatstag": r["monatstag"], "uhrzeit": r["uhrzeit"], "dauer_min": r["dauer_min"],
+        "monatstag": r["monatstag"], "monatsregel": r["monatsregel"],
+        "uhrzeit": r["uhrzeit"], "dauer_min": r["dauer_min"],
         "wochenenden_ueberspringen": bool(r["wochenenden_ueberspringen"]),
+        "feiertage_ueberspringen": bool(r["feiertage_ueberspringen"]),
         "vorlauf_tage": r["vorlauf_tage"], "start": r["start"], "ende": r["ende"],
         "aktiv": bool(r["aktiv"]),
     }
@@ -72,16 +81,18 @@ def erstelle(daten: dict) -> dict:
     with verbindung() as conn:
         conn.execute(
             "INSERT INTO serie (id, board_id, spalte_id, titel, beschreibung, labels, zustaendig, typ,"
-            " intervall, wochentage, monatstag, uhrzeit, dauer_min, wochenenden_ueberspringen, vorlauf_tage,"
-            " start, ende, aktiv, erstellt_am)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " intervall, wochentage, monatstag, monatsregel, uhrzeit, dauer_min, wochenenden_ueberspringen,"
+            " feiertage_ueberspringen, vorlauf_tage, start, ende, aktiv, erstellt_am)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 sid, daten["board_id"], daten.get("spalte_id"), daten["titel"], daten.get("beschreibung"),
                 json.dumps(daten.get("labels") or [], ensure_ascii=False), daten.get("zustaendig"),
                 daten.get("typ", "woechentlich"), int(daten.get("intervall") or 1),
                 ",".join(str(x) for x in (daten.get("wochentage") or [])), daten.get("monatstag"),
+                daten.get("monatsregel", "tag"),
                 daten.get("uhrzeit"), daten.get("dauer_min"),
-                1 if daten.get("wochenenden_ueberspringen") else 0, int(daten.get("vorlauf_tage") or 14),
+                1 if daten.get("wochenenden_ueberspringen") else 0,
+                1 if daten.get("feiertage_ueberspringen") else 0, int(daten.get("vorlauf_tage") or 14),
                 daten.get("start"), daten.get("ende"), 1 if daten.get("aktiv", True) else 0,
                 datetime.now().isoformat(timespec="seconds"),
             ),
@@ -92,8 +103,8 @@ def erstelle(daten: dict) -> dict:
 def aktualisiere(sid: str, aenderungen: dict) -> dict | None:
     erlaubt = {
         "titel", "beschreibung", "labels", "zustaendig", "spalte_id", "typ", "intervall",
-        "wochentage", "monatstag", "uhrzeit", "dauer_min", "wochenenden_ueberspringen",
-        "vorlauf_tage", "start", "ende", "aktiv",
+        "wochentage", "monatstag", "monatsregel", "uhrzeit", "dauer_min", "wochenenden_ueberspringen",
+        "feiertage_ueberspringen", "vorlauf_tage", "start", "ende", "aktiv",
     }
     f = {k: v for k, v in aenderungen.items() if k in erlaubt}
     if not f:
@@ -102,10 +113,9 @@ def aktualisiere(sid: str, aenderungen: dict) -> dict | None:
         f["labels"] = json.dumps(f["labels"] or [], ensure_ascii=False)
     if "wochentage" in f:
         f["wochentage"] = ",".join(str(x) for x in (f["wochentage"] or []))
-    if "wochenenden_ueberspringen" in f:
-        f["wochenenden_ueberspringen"] = 1 if f["wochenenden_ueberspringen"] else 0
-    if "aktiv" in f:
-        f["aktiv"] = 1 if f["aktiv"] else 0
+    for b in ("wochenenden_ueberspringen", "feiertage_ueberspringen", "aktiv"):
+        if b in f:
+            f[b] = 1 if f[b] else 0
     zuweisung = ", ".join(f"{k} = ?" for k in f)
     with verbindung() as conn:
         conn.execute(f"UPDATE serie SET {zuweisung} WHERE id = ?", (*f.values(), sid))

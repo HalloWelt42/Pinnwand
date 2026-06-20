@@ -273,9 +273,11 @@ export interface Serie {
   intervall: number
   wochentage: number[]
   monatstag?: number | null
+  monatsregel?: 'tag' | 'erster_werktag' | 'letzter_werktag'
   uhrzeit?: string | null
   dauer_min?: number | null
   wochenenden_ueberspringen: boolean
+  feiertage_ueberspringen?: boolean
   vorlauf_tage: number
   start?: string | null
   ende?: string | null

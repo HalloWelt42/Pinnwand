@@ -20,6 +20,7 @@ export interface Karte {
   titel: string
   schluessel?: string | null
   beschreibung?: string | null
+  notizen?: string | null
   labels: string[]
   prioritaet?: Prioritaet | null
   checkliste: ChecklistPunkt[]

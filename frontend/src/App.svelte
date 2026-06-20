@@ -13,6 +13,7 @@
   import DiensteStatus from './lib/DiensteStatus.svelte'
   import Hilfe from './lib/Hilfe.svelte'
   import Onboarding from './lib/Onboarding.svelte'
+  import DokumentVerwaltung from './lib/DokumentVerwaltung.svelte'
 
   interface Ansicht {
     id: string
@@ -43,6 +44,7 @@
 
   // Hilfe + Einrichtungs-Assistent.
   let hilfeOffen = $state(false)
+  let mappeDokOffen = $state(false)
   let onboardingOffen = $state((() => {
     try {
       return localStorage.getItem('pw_onboarding_done') !== '1'
@@ -343,6 +345,7 @@
           <button class="add" onclick={() => (neuesBoard = true)}><i class="fa-solid fa-plus" aria-hidden="true"></i> Board</button>
         {/if}
       </nav>
+      <button class="add dokbtn" onclick={() => (mappeDokOffen = true)} title="Dokumente dieser Mappe"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> Dokumente</button>
     {/if}
     {/if}
 
@@ -394,6 +397,19 @@
 <Toast />
 {#if hilfeOffen}<Hilfe onSchliessen={() => (hilfeOffen = false)} />{/if}
 {#if onboardingOffen}<Onboarding onFertig={onboardingFertig} onGeheZu={geheZuAnsicht} />{/if}
+{#if mappeDokOffen && aktiveMappe}
+  <div class="dokback" role="presentation" onclick={() => (mappeDokOffen = false)}></div>
+  <aside class="dokdrawer" aria-label="Mappen-Dokumente">
+    <header class="dokkopf">
+      <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+      <span class="dtit">Dokumente &middot; {aktiveMappe.titel}</span>
+      <button class="dokx" aria-label="Schließen" onclick={() => (mappeDokOffen = false)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </header>
+    <div class="dokbody">
+      <DokumentVerwaltung kontext="mappe" kontextId={aktiveMappe.id} />
+    </div>
+  </aside>
+{/if}
 
 <style>
   .wurzel {
@@ -757,5 +773,63 @@
   }
   .cta:hover {
     filter: brightness(1.08);
+  }
+  .dokbtn {
+    width: 100%;
+    margin-top: 3px;
+    justify-content: flex-start;
+  }
+  .dokback {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 40;
+  }
+  .dokdrawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 560px;
+    max-width: 94vw;
+    z-index: 41;
+    background: var(--surface-col);
+    border-left: 1px solid var(--border-2);
+    box-shadow: var(--schatten-pop);
+    display: flex;
+    flex-direction: column;
+  }
+  .dokkopf {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-2);
+  }
+  .dokkopf .dtit {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--text-1);
+    font-size: 14px;
+  }
+  .dokx {
+    margin-left: auto;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--r-s);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .dokx:hover {
+    color: var(--text-1);
+  }
+  .dokbody {
+    padding: 14px;
+    overflow-y: auto;
   }
 </style>

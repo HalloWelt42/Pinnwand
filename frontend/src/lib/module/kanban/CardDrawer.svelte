@@ -6,6 +6,7 @@
   import { isoLang, isoDatumZeit } from '../../zeit'
   import { timer, timerStarten, timerPausieren, erfassteSekunden, formatDauer, formatPlan } from '../../timer.svelte'
   import Markdown from '../../Markdown.svelte'
+  import DokumentVerwaltung from '../../DokumentVerwaltung.svelte'
   import { tts, vorlesen, stoppeVorlesen } from '../../tts.svelte'
 
   let {
@@ -35,6 +36,20 @@
   let gespeichert = $state(false)
   let spTimer: ReturnType<typeof setTimeout> | null = null
 
+  let notiz = $state('')
+  let notizVollbild = $state(false)
+  let notizGespeichert = $state(false)
+  let notizTimer: ReturnType<typeof setTimeout> | null = null
+
+  function notizAuto() {
+    if (notizTimer) clearTimeout(notizTimer)
+    notizGespeichert = false
+    notizTimer = setTimeout(() => {
+      onAendern({ notizen: notiz || null })
+      notizGespeichert = true
+    }, 600)
+  }
+
   function autoSpeichern() {
     if (spTimer) clearTimeout(spTimer)
     gespeichert = false
@@ -60,6 +75,9 @@
     if (karte.id !== zuletzt) {
       zuletzt = karte.id
       beschr = karte.beschreibung ?? ''
+      notiz = karte.notizen ?? ''
+      notizVollbild = false
+      notizGespeichert = false
     }
   })
 
@@ -164,6 +182,23 @@
       <button class="leer-hinweis" onclick={() => (bearbeiten = true)}>Keine Beschreibung. Klicken zum Bearbeiten.</button>
     {/if}
 
+    <div class="sec-reihe">
+      <p class="sec">Notizen</p>
+      <span class="md-werkzeuge">
+        {#if notizGespeichert}<span class="gesp">gespeichert</span>{/if}
+        <button class="mini geist" onclick={() => (notizVollbild = !notizVollbild)}><i class="fa-solid {notizVollbild ? 'fa-compress' : 'fa-expand'}" aria-hidden="true"></i> {notizVollbild ? 'Verkleinern' : 'Vollbild'}</button>
+      </span>
+    </div>
+    <div class="md-editor" class:vollbild={notizVollbild}>
+      {#if notizVollbild}
+        <div class="vb-kopf"><b>Notizen</b><button class="mini" onclick={() => (notizVollbild = false)}>Fertig</button></div>
+      {/if}
+      <div class="md-split">
+        <textarea class="desc" placeholder="Notizen (Markdown) ..." bind:value={notiz} oninput={notizAuto}></textarea>
+        <div class="md-vorschau"><Markdown md={notiz || '*Vorschau*'} /></div>
+      </div>
+    </div>
+
     <div class="zeile"><span class="lbl"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Status</span>
       <select value={karte.spalte} onchange={(e) => onAendern({ spalte: e.currentTarget.value })}>
         {#each spalten as s (s.id)}<option value={s.id}>{s.titel}</option>{/each}
@@ -233,6 +268,9 @@
       </div>
     {/each}
     <input class="feld" placeholder="+ Punkt hinzufügen" bind:value={neuerPunkt} onkeydown={(e) => { if (e.key === 'Enter') punktHinzufuegen() }} />
+
+    <p class="sec">Dokumente</p>
+    <DokumentVerwaltung kontext="karte" kontextId={karte.id} />
 
     <p class="sec">Aktivität</p>
     {#each karte.kommentare as k (k.zeit + k.autor)}

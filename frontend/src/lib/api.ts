@@ -38,6 +38,30 @@ export const benenneMappe = (mappeId: string, titel: string): Promise<Projektmap
 
 export const loescheMappe = (mappeId: string): Promise<void> =>
   hole(`/api/kanban/mappen/${mappeId}`, { method: 'DELETE' })
+
+// --- Dokumente (Karten- und Mappen-Dokumente) ---
+export type DokumentKontext = 'karte' | 'mappe'
+export interface Dokument {
+  id: string
+  kontext: DokumentKontext
+  kontext_id: string
+  titel: string
+  inhalt: string
+  erstellt_am?: string | null
+  bewegt_am?: string | null
+}
+
+export const ladeDokumente = (kontext: DokumentKontext, kontextId: string): Promise<Dokument[]> =>
+  hole(`/api/kanban/dokumente?kontext=${kontext}&kontext_id=${encodeURIComponent(kontextId)}`)
+
+export const erstelleDokument = (kontext: DokumentKontext, kontextId: string, titel: string): Promise<Dokument> =>
+  hole('/api/kanban/dokumente', { method: 'POST', body: JSON.stringify({ kontext, kontext_id: kontextId, titel }) })
+
+export const aktualisiereDokument = (id: string, daten: { titel?: string; inhalt?: string }): Promise<Dokument> =>
+  hole(`/api/kanban/dokumente/${id}`, { method: 'PATCH', body: JSON.stringify(daten) })
+
+export const loescheDokument = (id: string): Promise<void> =>
+  hole(`/api/kanban/dokumente/${id}`, { method: 'DELETE' })
 export const ladeBoard = (boardId: string): Promise<BoardDetail> => hole(`/api/kanban/boards/${boardId}`)
 
 export interface HeuteEintrag {
@@ -78,6 +102,7 @@ export const erstelleKarte = (eingabe: KarteEingabe): Promise<Karte> =>
 export interface KarteAenderung {
   titel?: string
   beschreibung?: string | null
+  notizen?: string | null
   labels?: string[]
   prioritaet?: Prioritaet | null
   checkliste?: ChecklistPunkt[]

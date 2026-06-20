@@ -76,22 +76,71 @@ def _snippet(text: str, q: str, laenge: int = 180) -> str:
     return ("..." if a > 0 else "") + teil + ("..." if a + laenge < len(text) else "")
 
 
+def _basisname(name: str) -> str:
+    """Dateiname ohne Endung, normalisiert (Join FTS-Titel <-> Transkript-Name)."""
+    return (name or "").rsplit(".", 1)[0].strip().lower()
+
+
+def _ohne_mark(s: str) -> str:
+    return (s or "").replace("<mark>", "").replace("</mark>", "")
+
+
+def _fts(q: str, limit: int) -> list[dict] | None:
+    """Volltextsuche ueber die FTS5-API des Dienstes (Trefferausschnitt + Segment-Zeitstempel).
+
+    Gibt None zurueck, wenn der Dienst nicht erreichbar ist (dann lokaler Fallback).
+    """
+    b = _basis()
+    if not b:
+        return None
+    try:
+        r = httpx.get(b + "/api/search", params={"q": q, "limit": limit}, timeout=10.0)
+        if r.status_code >= 400:
+            return None
+        treffer = r.json().get("results") or []
+    except Exception:
+        return None
+    nach_name = {_basisname(t["name"]): t for t in _liste()}
+    out: list[dict] = []
+    for hit in treffer:
+        titel = hit.get("title") or ""
+        if not titel.lower().endswith(".transcript"):
+            continue
+        t = nach_name.get(_basisname(titel))
+        if not t:
+            continue
+        segmente = hit.get("match_segments") or []
+        start = segmente[0].get("start") if segmente and isinstance(segmente[0], dict) else None
+        out.append({
+            "id": t["id"], "name": t["name"], "snippet": _ohne_mark(hit.get("snippet") or ""),
+            "speaker_names": t["speaker_names"], "language": t["language"],
+            "start": float(start) if start is not None else None,
+        })
+        if len(out) >= limit:
+            break
+    return out
+
+
 def suche(q: str, limit: int = 30) -> list[dict]:
     liste = _liste()
     q = (q or "").strip()
     if not q:
         return [
             {"id": t["id"], "name": t["name"], "snippet": t["full_text"][:140],
-             "speaker_names": t["speaker_names"], "language": t["language"]}
+             "speaker_names": t["speaker_names"], "language": t["language"], "start": None}
             for t in liste[:limit]
         ]
+    # Bevorzugt die FTS5-Suche des Dienstes; faellt bei Ausfall auf lokale Suche zurueck.
+    ueber_fts = _fts(q, limit)
+    if ueber_fts is not None:
+        return ueber_fts
     ql = q.lower()
     out: list[dict] = []
     for t in liste:
         if ql in (t["name"] or "").lower() or ql in t["full_text"].lower():
             out.append({
                 "id": t["id"], "name": t["name"], "snippet": _snippet(t["full_text"], q),
-                "speaker_names": t["speaker_names"], "language": t["language"],
+                "speaker_names": t["speaker_names"], "language": t["language"], "start": None,
             })
         if len(out) >= limit:
             break

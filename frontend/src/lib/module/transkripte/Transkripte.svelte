@@ -111,7 +111,10 @@
               <button class="eintrag" class:on={aktiv?.id === t.id} onclick={() => oeffne(t)}>
                 <span class="nm">{t.name}</span>
                 {#if t.snippet}<span class="snip">{@html hervor(t.snippet, frage)}</span>{/if}
-                {#if t.speaker_names.length}<span class="spk">{t.speaker_names.length} Sprecher</span>{/if}
+                <span class="treffmeta">
+                  {#if t.start != null}<span class="tzeit"><i class="fa-solid fa-clock" aria-hidden="true"></i> {mmss(t.start)}</span>{/if}
+                  {#if t.speaker_names.length}<span class="spk">{t.speaker_names.length} Sprecher</span>{/if}
+                </span>
               </button>
             </li>
           {/each}
@@ -254,6 +257,19 @@
   .spk {
     font-size: 10px;
     color: var(--text-3);
+  }
+  .treffmeta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .tzeit {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--hl-primary-text);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
   }
   .leer,
   .leer-d {

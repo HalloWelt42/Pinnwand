@@ -244,6 +244,7 @@ export interface TranskriptTreffer {
   snippet: string
   speaker_names: string[]
   language?: string
+  start?: number | null
 }
 export interface TranskriptDetail {
   id: string

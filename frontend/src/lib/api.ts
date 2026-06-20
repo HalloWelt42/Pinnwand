@@ -29,6 +29,15 @@ export interface Erweiterungen {
 export const ladeErweiterungen = (): Promise<Erweiterungen> => hole('/api/erweiterungen')
 export const ladeMappen = (): Promise<Projektmappe[]> => hole('/api/kanban/mappen')
 export const ladeBoards = (mappeId: string): Promise<Board[]> => hole(`/api/kanban/mappen/${mappeId}/boards`)
+
+export const erstelleMappe = (titel: string, beschreibung?: string): Promise<Projektmappe> =>
+  hole('/api/kanban/mappen', { method: 'POST', body: JSON.stringify({ titel, beschreibung }) })
+
+export const benenneMappe = (mappeId: string, titel: string): Promise<Projektmappe> =>
+  hole(`/api/kanban/mappen/${mappeId}`, { method: 'PATCH', body: JSON.stringify({ titel }) })
+
+export const loescheMappe = (mappeId: string): Promise<void> =>
+  hole(`/api/kanban/mappen/${mappeId}`, { method: 'DELETE' })
 export const ladeBoard = (boardId: string): Promise<BoardDetail> => hole(`/api/kanban/boards/${boardId}`)
 
 export interface HeuteEintrag {

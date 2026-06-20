@@ -2,7 +2,7 @@
   import { onMount } from 'svelte'
   import type { Component } from 'svelte'
   import type { Board, Projektmappe } from './lib/types'
-  import { ladeMappen, ladeBoards, ladeErweiterungen, erstelleBoard, benenneBoard, loescheBoard } from './lib/api'
+  import { ladeMappen, ladeBoards, ladeErweiterungen, erstelleBoard, benenneBoard, loescheBoard, erstelleMappe, benenneMappe, loescheMappe } from './lib/api'
   import { ansichten, komponenteFuer } from './lib/module/registry'
   import { theme, wechsleTheme } from './lib/theme/theme.svelte'
   import { VERSION } from './lib/version'
@@ -93,6 +93,11 @@
   let boardEntwurf = $state('')
   let neuesBoard = $state(false)
   let neuerBoardTitel = $state('')
+  let bearbeiteMappeId = $state<string | null>(null)
+  let loescheMappeId = $state<string | null>(null)
+  let mappeEntwurf = $state('')
+  let neueMappe = $state(false)
+  let neuerMappeTitel = $state('')
   let railEin = $state(_ui.rail !== false)
 
   // Änderungen am UI-Zustand merken.
@@ -134,6 +139,35 @@
     neuesBoard = false
     await ladeBoardListe()
     aktivesBoard = boards.find((b) => b.id === _ui.board) ?? boards[0] ?? null
+  }
+  async function neueMappeErstellen() {
+    const t = neuerMappeTitel.trim()
+    if (!t) return
+    const neu = await erstelleMappe(t)
+    mappen = await ladeMappen()
+    neuerMappeTitel = ''
+    neueMappe = false
+    const ziel = mappen.find((m) => m.id === neu.id) ?? neu
+    await waehleMappe(ziel)
+  }
+  async function mappeSpeichern(id: string) {
+    const t = mappeEntwurf.trim()
+    if (t) {
+      await benenneMappe(id, t)
+      mappen = await ladeMappen()
+      if (aktiveMappe?.id === id) aktiveMappe = mappen.find((m) => m.id === id) ?? aktiveMappe
+    }
+    bearbeiteMappeId = null
+  }
+  async function mappeLoeschenBestaetigt(id: string) {
+    await loescheMappe(id)
+    loescheMappeId = null
+    mappen = await ladeMappen()
+    if (aktiveMappe?.id === id) {
+      const ziel = mappen[0] ?? null
+      if (ziel) await waehleMappe(ziel)
+      else { aktiveMappe = null; boards = []; aktivesBoard = null }
+    }
   }
   async function neuesBoardErstellen() {
     const t = neuerBoardTitel.trim()
@@ -223,10 +257,41 @@
     <p class="rubrik">Projektmappen</p>
     <nav>
       {#each mappen as m (m.id)}
-        <button class="zeile mappe" class:aktiv={aktiveMappe?.id === m.id} onclick={() => waehleMappe(m)}>
-          <i class="fa-solid fa-folder" aria-hidden="true"></i><span>{m.titel}</span>
-        </button>
+        {#if bearbeiteMappeId === m.id}
+          <!-- svelte-ignore a11y_autofocus -->
+          <input class="feld" bind:value={mappeEntwurf} aria-label="Mappe umbenennen" autofocus
+            onkeydown={(e) => { if (e.key === 'Enter') mappeSpeichern(m.id); if (e.key === 'Escape') (bearbeiteMappeId = null) }}
+            onblur={() => mappeSpeichern(m.id)} />
+        {:else if loescheMappeId === m.id}
+          <div class="confirm">
+            <span>Mappe samt allen Boards und Karten löschen?</span>
+            <div class="reihe">
+              <button class="mini gefahr" onclick={() => mappeLoeschenBestaetigt(m.id)}>Löschen</button>
+              <button class="mini geist" onclick={() => (loescheMappeId = null)}>Abbrechen</button>
+            </div>
+          </div>
+        {:else}
+          <div class="zeile board" class:aktiv={aktiveMappe?.id === m.id}>
+            <button class="bname" onclick={() => waehleMappe(m)} title={m.titel}>
+              <i class="fa-solid fa-folder" aria-hidden="true"></i><span>{m.titel}</span>
+            </button>
+            <div class="aktionen">
+              <button class="ic" aria-label="Mappe umbenennen" onclick={() => { bearbeiteMappeId = m.id; mappeEntwurf = m.titel }}><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+              {#if mappen.length > 1}
+                <button class="ic" aria-label="Mappe löschen" onclick={() => (loescheMappeId = m.id)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+              {/if}
+            </div>
+          </div>
+        {/if}
       {/each}
+
+      {#if neueMappe}
+        <!-- svelte-ignore a11y_autofocus -->
+        <input class="feld" placeholder="Mappen-Name" bind:value={neuerMappeTitel} aria-label="Neue Mappe" autofocus
+          onkeydown={(e) => { if (e.key === 'Enter') neueMappeErstellen(); if (e.key === 'Escape') { neueMappe = false; neuerMappeTitel = '' } }} />
+      {:else}
+        <button class="add" onclick={() => (neueMappe = true)}><i class="fa-solid fa-plus" aria-hidden="true"></i> Mappe</button>
+      {/if}
     </nav>
 
     {#if aktiveMappe}
@@ -375,7 +440,6 @@
   .rail.zu .rubrik,
   .rail.zu .marke .name,
   .rail.zu .add,
-  .rail.zu .mappe span,
   .rail.zu .menu span,
   .rail.zu .bname span,
   .rail.zu .aktionen,
@@ -388,7 +452,6 @@
   .rail.zu :global(.dienste) {
     display: none;
   }
-  .rail.zu .mappe,
   .rail.zu .menu,
   .rail.zu .bname,
   .rail.zu .thema {
@@ -412,7 +475,6 @@
     align-items: center;
     border-radius: var(--r-m);
   }
-  .mappe,
   .menu,
   .bname {
     display: flex;
@@ -427,23 +489,19 @@
     width: 100%;
     min-width: 0;
   }
-  .mappe,
   .menu {
     border-radius: var(--r-m);
   }
   .bname span,
-  .menu span,
-  .mappe span {
+  .menu span {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .mappe:hover,
   .menu:hover {
     background: var(--surface-3);
     color: var(--text-1);
   }
-  .mappe.aktiv,
   .menu.aktiv {
     background: var(--hl-primary-weich);
     color: var(--hl-primary-text);

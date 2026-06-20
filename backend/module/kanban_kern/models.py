@@ -74,6 +74,16 @@ class Projektmappe(BaseModel):
     beschreibung: str | None = None
 
 
+class MappeCreate(BaseModel):
+    titel: str
+    beschreibung: str | None = None
+
+
+class MappeUpdate(BaseModel):
+    titel: str | None = None
+    beschreibung: str | None = None
+
+
 class KarteCreate(BaseModel):
     board_id: str
     spalte: str

@@ -17,6 +17,8 @@ from .models import (
     KarteMove,
     KarteUpdate,
     KommentarCreate,
+    MappeCreate,
+    MappeUpdate,
     Projektmappe,
     Spalte,
     SpalteCreate,
@@ -39,6 +41,31 @@ def mappen() -> list[Projektmappe]:
 @router.get("/mappen/{mappe_id}/boards", response_model=list[Board])
 def boards(mappe_id: str) -> list[Board]:
     return db.liste_boards(mappe_id)
+
+
+@router.post("/mappen", response_model=Projektmappe, status_code=201)
+def mappe_anlegen(eingabe: MappeCreate) -> Projektmappe:
+    titel = eingabe.titel.strip()
+    if not titel:
+        raise HTTPException(status_code=400, detail="Titel darf nicht leer sein")
+    return db.erstelle_mappe(f"m_{uuid4().hex[:8]}", titel, eingabe.beschreibung)
+
+
+@router.patch("/mappen/{mappe_id}", response_model=Projektmappe)
+def mappe_aendern(mappe_id: str, eingabe: MappeUpdate) -> Projektmappe:
+    felder = eingabe.model_dump(exclude_unset=True)
+    if "titel" in felder and not (felder["titel"] or "").strip():
+        raise HTTPException(status_code=400, detail="Titel darf nicht leer sein")
+    mappe = db.aktualisiere_mappe(mappe_id, felder)
+    if mappe is None:
+        raise HTTPException(status_code=404, detail="Mappe nicht gefunden")
+    return mappe
+
+
+@router.delete("/mappen/{mappe_id}", status_code=204)
+def mappe_loeschen(mappe_id: str) -> None:
+    if not db.loesche_mappe(mappe_id):
+        raise HTTPException(status_code=400, detail="Die letzte Mappe kann nicht geloescht werden")
 
 
 @router.get("/boards/{board_id}", response_model=BoardDetail)

@@ -147,6 +147,49 @@ def liste_mappen() -> list[Projektmappe]:
     return [Projektmappe(**dict(r)) for r in rows]
 
 
+def zaehle_mappen() -> int:
+    with _verb() as conn:
+        return int(conn.execute("SELECT COUNT(*) FROM mappe").fetchone()[0])
+
+
+def erstelle_mappe(mappe_id: str, titel: str, beschreibung: str | None = None) -> Projektmappe:
+    """Legt eine Projektmappe an und gibt ihr direkt ein erstes nutzbares Board mit."""
+    with _verb() as conn:
+        conn.execute("INSERT INTO mappe (id, titel, beschreibung) VALUES (?, ?, ?)",
+                     (mappe_id, titel, beschreibung))
+    erstelle_board(f"b_{uuid4().hex[:8]}", mappe_id, "Aufgaben")
+    return Projektmappe(id=mappe_id, titel=titel, beschreibung=beschreibung)
+
+
+def aktualisiere_mappe(mappe_id: str, felder: dict) -> Projektmappe | None:
+    erlaubt = {k: v for k, v in felder.items() if k in ("titel", "beschreibung")}
+    with _verb() as conn:
+        if erlaubt:
+            sql = ", ".join(f"{k} = ?" for k in erlaubt)
+            conn.execute(f"UPDATE mappe SET {sql} WHERE id = ?", (*erlaubt.values(), mappe_id))
+        r = conn.execute("SELECT * FROM mappe WHERE id = ?", (mappe_id,)).fetchone()
+    return Projektmappe(**dict(r)) if r else None
+
+
+def loesche_mappe(mappe_id: str) -> bool:
+    """Loescht die Mappe samt aller Boards, Spalten, Karten und Zeiteintraege.
+
+    Die letzte verbliebene Mappe bleibt erhalten, damit die Anwendung immer eine
+    nutzbare Mappe hat.
+    """
+    with _verb() as conn:
+        if conn.execute("SELECT COUNT(*) FROM mappe").fetchone()[0] <= 1:
+            return False
+        board_ids = [r[0] for r in conn.execute("SELECT id FROM board WHERE mappe_id = ?", (mappe_id,)).fetchall()]
+        for bid in board_ids:
+            conn.execute("DELETE FROM karte WHERE board_id = ?", (bid,))
+            conn.execute("DELETE FROM spalte WHERE board_id = ?", (bid,))
+        conn.execute("DELETE FROM zeiteintrag WHERE mappe_id = ?", (mappe_id,))
+        conn.execute("DELETE FROM board WHERE mappe_id = ?", (mappe_id,))
+        conn.execute("DELETE FROM mappe WHERE id = ?", (mappe_id,))
+    return True
+
+
 def liste_boards(mappe_id: str) -> list[Board]:
     with _verb() as conn:
         rows = conn.execute("SELECT * FROM board WHERE mappe_id = ? ORDER BY titel", (mappe_id,)).fetchall()

@@ -3,7 +3,7 @@
     ladeBerichtTypen, ladeArchiv, erzeugeBericht, archivDownloadUrl, ladePersonen,
     type BerichtTyp, type ArchivEintrag, type Person,
   } from '../../api'
-  import { ymd, montagDer, addTage } from '../../zeit'
+  import { ymd, montagDer, addTage, isoDatumZeit } from '../../zeit'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
@@ -98,7 +98,7 @@
         <span class="bt">{b.titel}</span>
         <span class="bz">{b.zeitraum}</span>
         <span class="bf">{b.format.toUpperCase()}</span>
-        <span class="bd">{b.erstellt_am.replace('T', ' ').slice(0, 16)}</span>
+        <span class="bd">{isoDatumZeit(b.erstellt_am)}</span>
         <span class="bg">{groesse(b.groesse)}</span>
         <i class="fa-solid fa-download" aria-hidden="true"></i>
       </a>

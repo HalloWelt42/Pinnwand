@@ -15,6 +15,14 @@ def std(sekunden: int | float) -> str:
     return f"{sek // 3600}:{(sek % 3600) // 60:02d}"
 
 
+def _dt(iso: str) -> str:
+    """ISO-Datum '2026-06-20' -> deutsches '20.06.2026'."""
+    if not iso or len(iso) < 10:
+        return iso or ""
+    j, m, t = iso[:10].split("-")
+    return f"{t}.{m}.{j}"
+
+
 def _personen_namen() -> dict[str, str]:
     with verbindung() as conn:
         try:
@@ -42,7 +50,7 @@ def stundenzettel(von: str, bis: str, person: str | None = None) -> dict:
     abschnitte = []
     for kuerzel, eintraege in sorted(gruppen.items()):
         zeilen = [
-            [r["datum"], f'{r["schluessel"] or ""} {r["titel"] or ""}'.strip(), std(r["sekunden"]), r["kommentar"] or ""]
+            [_dt(r["datum"]), f'{r["schluessel"] or ""} {r["titel"] or ""}'.strip(), std(r["sekunden"]), r["kommentar"] or ""]
             for r in eintraege
         ]
         summe = sum(int(r["sekunden"] or 0) for r in eintraege)
@@ -52,7 +60,7 @@ def stundenzettel(von: str, bis: str, person: str | None = None) -> dict:
             "zeilen": zeilen, "summe": ["", "Summe", std(summe), ""],
         })
     return {
-        "titel": "Wochen-Stundenzettel", "zeitraum": f"{von} bis {bis}", "abschnitte": abschnitte,
+        "titel": "Wochen-Stundenzettel", "zeitraum": f"{_dt(von)} bis {_dt(bis)}", "abschnitte": abschnitte,
     }
 
 
@@ -103,7 +111,7 @@ def kapazitaet_auslastung(von: str, bis: str) -> dict:
         pz = f"{round(ist_sek / kap_sek * 100)}%" if kap_sek else "-"
         zeilen.append([p["name"], std(kap_sek), std(ist_sek), pz])
     return {
-        "titel": "Kapazität und Auslastung", "zeitraum": f"{von} bis {bis}",
+        "titel": "Kapazität und Auslastung", "zeitraum": f"{_dt(von)} bis {_dt(bis)}",
         "abschnitte": [{"titel": "Personen", "spalten": ["Person", "Kapazität", "Ist", "Auslastung"], "zeilen": zeilen, "summe": None}],
     }
 
@@ -115,7 +123,7 @@ def zeit_je_person(von: str, bis: str) -> dict:
     zeilen = [[namen.get(p, p), std(s)] for p, s in sorted(ist.items(), key=lambda x: -x[1])]
     summe = sum(ist.values())
     return {
-        "titel": "Zeit je Person", "zeitraum": f"{von} bis {bis}",
+        "titel": "Zeit je Person", "zeitraum": f"{_dt(von)} bis {_dt(bis)}",
         "abschnitte": [{"titel": "Personen", "spalten": ["Person", "Stunden"], "zeilen": zeilen, "summe": ["Summe", std(summe)]}],
     }
 
@@ -131,7 +139,7 @@ def zeit_je_karte(von: str, bis: str) -> dict:
     zeilen = [[r["schluessel"] or "", r["titel"] or "", std(r["s"])] for r in rows]
     summe = sum(int(r["s"]) for r in rows)
     return {
-        "titel": "Zeit je Karte", "zeitraum": f"{von} bis {bis}",
+        "titel": "Zeit je Karte", "zeitraum": f"{_dt(von)} bis {_dt(bis)}",
         "abschnitte": [{"titel": "Karten", "spalten": ["Schlüssel", "Titel", "Stunden"], "zeilen": zeilen, "summe": ["", "Summe", std(summe)]}],
     }
 

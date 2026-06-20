@@ -2,6 +2,7 @@
   import { ladeHeute, type HeuteUebersicht, type HeuteEintrag } from '../../api'
   import { oeffneKarte } from '../../navigation.svelte'
   import { tts, vorlesen, stoppeVorlesen } from '../../tts.svelte'
+  import { isoKurz, isoGesprochen } from '../../zeit'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
@@ -30,7 +31,7 @@
 
   function briefing(): string {
     if (!d) return ''
-    const teile = [`Was steht an am ${d.datum}.`]
+    const teile = [`Was steht an am ${isoGesprochen(d.datum)}.`]
     if (d.ueberfaellig.length) teile.push(`${d.ueberfaellig.length} überfällig: ${d.ueberfaellig.map((x) => x.titel).join(', ')}.`)
     if (d.heute.length) teile.push(`Heute fällig: ${d.heute.map((x) => x.titel).join(', ')}.`)
     if (d.diese_woche.length) teile.push(`Diese Woche: ${d.diese_woche.map((x) => x.titel).join(', ')}.`)
@@ -63,7 +64,7 @@
                 <button class="eintrag" onclick={() => oeffne(e)}>
                   {#if e.schluessel}<span class="key">{e.schluessel}</span>{/if}
                   <span class="ti">{e.titel}</span>
-                  {#if e.faellig}<span class="fa">{e.faellig.slice(5)}</span>{/if}
+                  {#if e.faellig}<span class="fa">{isoKurz(e.faellig)}</span>{/if}
                 </button>
               </li>
             {/each}

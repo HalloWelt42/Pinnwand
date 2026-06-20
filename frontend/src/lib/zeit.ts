@@ -55,3 +55,33 @@ export function wochentag(d: Date): string {
 export function tagKurz(d: Date): string {
   return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.`
 }
+
+const MONATE_LANG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
+
+// Deutsche Datumsformate aus einem ISO-String ("2026-06-20" oder "2026-06-20T14:30:00").
+// Eine Quelle der Wahrheit, damit Datumsangaben ueberall einheitlich deutsch erscheinen.
+
+// -> "20.06."
+export function isoKurz(iso: string): string {
+  const [, m, t] = iso.slice(0, 10).split('-')
+  return `${t}.${m}.`
+}
+
+// -> "20.06.2026"
+export function isoLang(iso: string): string {
+  const [j, m, t] = iso.slice(0, 10).split('-')
+  return `${t}.${m}.${j}`
+}
+
+// -> "20.06.2026 14:30" (Uhrzeit nur, wenn im String vorhanden)
+export function isoDatumZeit(iso: string): string {
+  const tag = isoLang(iso)
+  const zeit = iso.slice(11, 16)
+  return zeit ? `${tag} ${zeit}` : tag
+}
+
+// -> "20. Juni 2026" (ausgeschrieben, z.B. zum Vorlesen)
+export function isoGesprochen(iso: string): string {
+  const [j, m, t] = iso.slice(0, 10).split('-')
+  return `${Number(t)}. ${MONATE_LANG[Number(m) - 1]} ${j}`
+}

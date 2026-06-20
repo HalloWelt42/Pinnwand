@@ -3,6 +3,7 @@
   import type { KarteAenderung } from '../../api'
   import { labelFarbe } from '../../labels'
   import { theme } from '../../theme/theme.svelte'
+  import { isoLang, isoDatumZeit } from '../../zeit'
   import { timer, timerStarten, timerPausieren, erfassteSekunden, formatDauer, formatPlan } from '../../timer.svelte'
   import Markdown from '../../Markdown.svelte'
   import { tts, vorlesen, stoppeVorlesen } from '../../tts.svelte'
@@ -96,7 +97,7 @@
     kommentar = ''
   }
   function zeitKurz(iso: string): string {
-    return iso.replace('T', ' ').slice(0, 16)
+    return isoDatumZeit(iso)
   }
   function initialen(name: string): string {
     const teile = name.trim().split(/\s+/)
@@ -110,9 +111,7 @@
     return Math.floor((Date.now() - t) / 86400000)
   }
   function datum(iso?: string | null): string {
-    if (!iso) return '-'
-    const [j, m, t] = iso.slice(0, 10).split('-')
-    return `${t}.${m}.${j}`
+    return iso ? isoLang(iso) : '-'
   }
 
   const imStatus = $derived(tage(karte.bewegt_am) ?? 0)

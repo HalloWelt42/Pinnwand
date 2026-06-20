@@ -5,6 +5,7 @@
     ladeAgentTokens, erstelleAgentToken, widerrufeAgentToken, AuthFehler,
     type SnapshotInfo, type BackupZustand, type BackupVorschau, type AgentToken,
   } from '../../api'
+  import { isoDatumZeit } from '../../zeit'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
@@ -39,7 +40,7 @@
   }
 
   function datum(s: string): string {
-    return s.replace('T', ' ').slice(0, 16)
+    return isoDatumZeit(s)
   }
   function groesse(b: number): string {
     return b > 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : b > 1024 ? `${Math.round(b / 1024)} KB` : `${b} B`

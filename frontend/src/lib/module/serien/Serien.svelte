@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ladeBoard, ladeSerien, erstelleSerie, aktualisiereSerie, loescheSerie, serieVorschau, serieVorbuchen, type Serie } from '../../api'
   import type { Spalte } from '../../types'
+  import { isoKurz } from '../../zeit'
 
   let { boardId }: { boardId: string } = $props()
 
@@ -134,7 +135,7 @@
           </span>
         </div>
         {#if vorschau[s.id]}
-          <div class="vs">{vorschau[s.id].slice(0, 8).join(' · ') || 'keine kommenden Termine'}</div>
+          <div class="vs">{vorschau[s.id].slice(0, 8).map(isoKurz).join(' · ') || 'keine kommenden Termine'}</div>
         {/if}
       </div>
     {/each}

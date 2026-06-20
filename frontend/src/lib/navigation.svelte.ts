@@ -1,5 +1,5 @@
 // Geteilter Navigationswunsch: erlaubt z.B. der Suche, gezielt eine Karte zu
-// oeffnen. App wechselt zum Board, Board oeffnet die Karte und raeumt den
+// öffnen. App wechselt zum Board, Board öffnet die Karte und räumt den
 // Karten-Teil des Wunsches wieder ab.
 
 export interface NavZiel {

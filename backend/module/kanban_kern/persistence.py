@@ -1,7 +1,7 @@
 """SQLite-Persistenz des Kanban-Moduls.
 
-Nutzt die generische Verbindung des Kerns. Schema und Seed gehoeren dem Modul.
-Reihenfolge-Werte werden bei jedem Verschieben luecklos neu vergeben.
+Nutzt die generische Verbindung des Kerns. Schema und Seed gehören dem Modul.
+Reihenfolge-Werte werden bei jedem Verschieben lückenlos neu vergeben.
 """
 from __future__ import annotations
 
@@ -88,7 +88,7 @@ def _verb() -> sqlite3.Connection:
 
 
 def _migriere(conn: sqlite3.Connection) -> None:
-    """Sanfte Schema-Migrationen fuer bestehende Datenbanken."""
+    """Sanfte Schema-Migrationen für bestehende Datenbanken."""
     spalten = {r["name"] for r in conn.execute("PRAGMA table_info(spalte)").fetchall()}
     if "erledigt" not in spalten:
         conn.execute("ALTER TABLE spalte ADD COLUMN erledigt INTEGER NOT NULL DEFAULT 0")
@@ -235,7 +235,7 @@ def verschiebe_karte(karte_id: str, ziel_spalte: str, ziel_reihenfolge: int) -> 
             (board_id, ziel_spalte, ziel_reihenfolge, karte_id),
         )
         conn.execute("UPDATE karte SET spalte = ?, reihenfolge = ? WHERE id = ?", (ziel_spalte, ziel_reihenfolge, karte_id))
-        # Wechsel der Spalte setzt die Verweildauer (Card-Aging) zurueck.
+        # Wechsel der Spalte setzt die Verweildauer (Card-Aging) zurück.
         if quelle != ziel_spalte:
             conn.execute("UPDATE karte SET bewegt_am = ? WHERE id = ?", (_jetzt(), karte_id))
         for spalte in {quelle, ziel_spalte}:
@@ -286,7 +286,7 @@ def _mappe_fuer_board(conn: sqlite3.Connection, board_id: str | None) -> str | N
 
 
 def _recompute_erfasst(conn: sqlite3.Connection, karte_id: str) -> None:
-    """erfasst_sek einer Karte = Summe ihrer Zeiteintraege (Single Source of Truth)."""
+    """erfasst_sek einer Karte = Summe ihrer Zeiteinträge (Single Source of Truth)."""
     r = conn.execute("SELECT COALESCE(SUM(sekunden), 0) AS s FROM zeiteintrag WHERE karte_id = ?", (karte_id,)).fetchone()
     conn.execute("UPDATE karte SET erfasst_sek = ? WHERE id = ?", (int(r["s"]), karte_id))
 
@@ -338,7 +338,7 @@ def laufende_karte() -> Karte | None:
     return _karte_aus_row(row) if row else None
 
 
-# -- Zeiteintraege (Auswertung / Korrektur) -------------------------------
+# -- Zeiteinträge (Auswertung / Korrektur) -------------------------------
 
 _ZE_SELECT = (
     "SELECT z.*, k.titel AS karte_titel, k.schluessel AS karte_schluessel "
@@ -454,7 +454,7 @@ def setze_erledigt_spalte(spalte_id: str) -> Spalte | None:
 
 
 def done_spalte_id(board_id: str) -> str | None:
-    """Id der als Erledigt markierten Spalte, sonst die letzte Spalte als Rueckfall."""
+    """Id der als Erledigt markierten Spalte, sonst die letzte Spalte als Rückfall."""
     with _verb() as conn:
         r = conn.execute(
             "SELECT id FROM spalte WHERE board_id = ? AND erledigt = 1 ORDER BY reihenfolge LIMIT 1",
@@ -470,10 +470,10 @@ def done_spalte_id(board_id: str) -> str | None:
 
 
 def finde_karte_per_text(text: str, board_id: str | None = None) -> Karte | None:
-    """Loest eine Karte ueber ihren Schluessel (z.B. R3-130) oder per Titel auf.
+    """Löst eine Karte über ihren Schlüssel (z.B. R3-130) oder per Titel auf.
 
-    Reihenfolge: exakter Schluessel, dann Titel-Gleichheit, dann Titel enthaelt.
-    Ohne board_id wird ueber alle Boards gesucht.
+    Reihenfolge: exakter Schlüssel, dann Titel-Gleichheit, dann Titel enthält.
+    Ohne board_id wird über alle Boards gesucht.
     """
     suchtext = (text or "").strip()
     if not suchtext:
@@ -499,9 +499,9 @@ def finde_karte_per_text(text: str, board_id: str | None = None) -> Karte | None
 
 
 def was_steht_an(heute: str) -> dict:
-    """Handlungsorientierte Uebersicht: ueberfaellig, heute, diese Woche, laufend, liegengeblieben.
+    """Handlungsorientierte Übersicht: überfällig, heute, diese Woche, laufend, liegengeblieben.
 
-    Wiederkehrende Termine erscheinen automatisch ueber ihre Faelligkeit.
+    Wiederkehrende Termine erscheinen automatisch über ihre Fälligkeit.
     """
     from datetime import date, timedelta
 
@@ -543,7 +543,7 @@ def was_steht_an(heute: str) -> dict:
 
 
 def markiere_serie(karte_id: str, serie_id: str, datum: str) -> None:
-    """Verknuepft eine Karte mit einer Serie und ihrem Termin-Datum (fuer Vorbuchung/Dedup)."""
+    """Verknüpft eine Karte mit einer Serie und ihrem Termin-Datum (für Vorbuchung/Dedup)."""
     with _verb() as conn:
         conn.execute("UPDATE karte SET serie_id = ?, serie_datum = ? WHERE id = ?", (serie_id, datum, karte_id))
 
@@ -584,7 +584,7 @@ def setze_spalten_reihenfolge(board_id: str, spalten_ids: list[str]) -> bool:
 
 
 def loesche_spalte(spalte_id: str) -> str:
-    """Loescht eine Spalte samt ihrer Karten. 'ok' | 'letzte' | 'fehlt'."""
+    """Löscht eine Spalte samt ihrer Karten. 'ok' | 'letzte' | 'fehlt'."""
     with _verb() as conn:
         r = conn.execute("SELECT board_id FROM spalte WHERE id = ?", (spalte_id,)).fetchone()
         if r is None:
@@ -694,10 +694,10 @@ def _seed(conn: sqlite3.Connection) -> None:
              json.dumps(cl, ensure_ascii=False), json.dumps(km, ensure_ascii=False), cover, ordnung, start, faellig, zust, erstellt, bewegt),
         )
 
-    # Beispiel-Zeiteintraege (zwei Arbeitswochen) fuer Auswertung/Heatmap/Kalender.
+    # Beispiel-Zeiteinträge (zwei Arbeitswochen) für Auswertung/Heatmap/Kalender.
     eintraege = [
         # karte, datum, sekunden, kommentar
-        ("k4", "2026-06-09", 7200, "Erste Layout-Entwuerfe"),
+        ("k4", "2026-06-09", 7200, "Erste Layout-Entwürfe"),
         ("k5", "2026-06-10", 5400, "Vorrichtung skizziert"),
         ("k4", "2026-06-11", 9000, "Bedienelemente angeordnet"),
         ("k6", "2026-06-12", 3600, "Referenz vermessen"),
@@ -705,8 +705,8 @@ def _seed(conn: sqlite3.Connection) -> None:
         ("k3", "2026-06-16", 7200, "Flash-Skript geschrieben"),
         ("k6", "2026-06-16", 4500, "Kalibrierkurve aufgenommen"),
         ("k1", "2026-06-17", 2700, "Toleranzen gemessen"),
-        ("k3", "2026-06-18", 3600, "Pruefsumme verifiziert"),
-        ("k1", "2026-06-19", 1800, "Nacharbeit Gehaeuse"),
+        ("k3", "2026-06-18", 3600, "Prüfsumme verifiziert"),
+        ("k1", "2026-06-19", 1800, "Nacharbeit Gehäuse"),
     ]
     betroffen = set()
     for kid, datum, sek, komm in eintraege:
@@ -718,6 +718,6 @@ def _seed(conn: sqlite3.Connection) -> None:
         betroffen.add(kid)
     for kid in betroffen:
         _recompute_erfasst(conn, kid)
-    # Schaetzungen (Soll) fuer einige Karten, damit Soll/Ist gleich aussagekraeftig ist.
+    # Schätzungen (Soll) für einige Karten, damit Soll/Ist gleich aussagekräftig ist.
     for kid, mins in [("k3", 300), ("k4", 240), ("k6", 180), ("k1", 120), ("k5", 150)]:
         conn.execute("UPDATE karte SET schaetzung_min = ? WHERE id = ?", (mins, kid))

@@ -7,19 +7,19 @@
   }
 
   const THEMEN: Thema[] = [
-    { titel: 'Heute (Was steht an)', text: 'Startansicht mit ueberfaelligen, heute und diese Woche faelligen, laufenden und liegengebliebenen Aufgaben. Klick oeffnet die Karte. Vorlesen liest den Tagesueberblick.' },
-    { titel: 'Board', text: 'Kanban mit Spalten und Karten. Karten per Drag-and-drop verschieben, Spalten einklappen. Eine Spalte kann als Erledigt-Spalte markiert werden (Kebab-Menue).' },
-    { titel: 'Karte bearbeiten', text: 'Karte anklicken oeffnet die Detailansicht. Beschreibung ganz oben als Markdown (Split-Editor, Vollbild, Auto-Speichern). Zeiterfassung mit Start/Pause, Schaetzung als Soll. Labels, Checkliste, Kommentare.' },
+    { titel: 'Heute (Was steht an)', text: 'Startansicht mit überfälligen, heute und diese Woche fälligen, laufenden und liegengebliebenen Aufgaben. Klick öffnet die Karte. Vorlesen liest den Tagesüberblick.' },
+    { titel: 'Board', text: 'Kanban mit Spalten und Karten. Karten per Drag-and-drop verschieben, Spalten einklappen. Eine Spalte kann als Erledigt-Spalte markiert werden (Kebab-Menü).' },
+    { titel: 'Karte bearbeiten', text: 'Karte anklicken öffnet die Detailansicht. Beschreibung ganz oben als Markdown (Split-Editor, Vollbild, Auto-Speichern). Zeiterfassung mit Start/Pause, Schätzung als Soll. Labels, Checkliste, Kommentare.' },
     { titel: 'Zeiten', text: 'Wochen-Stundenzettel mit Soll/Ist je Karte. Zeiten nachtragen und korrigieren (Dauer als 1:30 oder 1,5).' },
-    { titel: 'Kalender', text: 'Jahres-Heatmap und Monat. Wochenenden, Feiertage (rot) und Urlaub (amber, Person waehlbar) sind eingefaerbt.' },
-    { titel: 'Serien', text: 'Wiederkehrende Termine/Aufgaben (taeglich/woechentlich/monatlich, Wochentage, Uhrzeit, Dauer). Werden automatisch als Karten vorgebucht.' },
-    { titel: 'Suche', text: 'Freitextsuche ueber alle Karteninhalte. Mit lokalem Whisper auch per Mikrofon. Mit Qdrant + Embeddings zusaetzlich semantisch.' },
+    { titel: 'Kalender', text: 'Jahres-Heatmap und Monat. Wochenenden, Feiertage (rot) und Urlaub (amber, Person wählbar) sind eingefärbt.' },
+    { titel: 'Serien', text: 'Wiederkehrende Termine/Aufgaben (täglich/wöchentlich/monatlich, Wochentage, Uhrzeit, Dauer). Werden automatisch als Karten vorgebucht.' },
+    { titel: 'Suche', text: 'Freitextsuche über alle Karteninhalte. Mit lokalem Whisper auch per Mikrofon. Mit Qdrant + Embeddings zusätzlich semantisch.' },
     { titel: 'Transkripte', text: 'Transkriptionen aus dem Sprachdienst durchsuchen, anzeigen, vorlesen und das Original-Audio abspielen.' },
-    { titel: 'Planung', text: 'Personen mit Wochen-Soll je Wochentag, Urlaub (auch halbe Tage) und Feiertags-Import (Land/Region) mit Vorschau vor Uebernahme.' },
-    { titel: 'Berichte', text: 'Stundenzettel, Soll/Ist, Kapazitaet und Zeit je Person/Karte als PDF, CSV oder Markdown. Erzeugte Berichte landen unveraenderlich im Archiv.' },
-    { titel: 'Einstellungen und Sicherung', text: 'Unter Einstellungen erstellst du Snapshots (Datenbank, Berichts-Archiv, Konfigurationsvorlage). Beim Start wird hoechstens taeglich automatisch gesichert. Vor jeder Wiederherstellung wird der aktuelle Stand gesichert; die Wiederherstellung zeigt vorher eine Vorschau mit den Unterschieden.' },
-    { titel: 'KI ist optional', text: 'LLM, Vorlesen, Spracheingabe und semantische Suche sind optional. Ohne die Dienste laeuft alles weiter; der Dienste-Status unten in der Seitenleiste zeigt, was erreichbar ist.' },
-    { titel: 'Agenten-API', text: 'Unter /api/agent koennen KI-Werkzeuge Zeiten buchen, Aufgaben anlegen/erledigen und suchen (Token mit Scopes, Audit-Log, Trockenlauf). Zusaetzlich MCP-Server und OpenAI-Tools.' },
+    { titel: 'Planung', text: 'Personen mit Wochen-Soll je Wochentag, Urlaub (auch halbe Tage) und Feiertags-Import (Land/Region) mit Vorschau vor Übernahme.' },
+    { titel: 'Berichte', text: 'Stundenzettel, Soll/Ist, Kapazität und Zeit je Person/Karte als PDF, CSV oder Markdown. Erzeugte Berichte landen unveränderlich im Archiv.' },
+    { titel: 'Einstellungen und Sicherung', text: 'Unter Einstellungen erstellst du Snapshots (Datenbank, Berichts-Archiv, Konfigurationsvorlage). Beim Start wird höchstens täglich automatisch gesichert. Vor jeder Wiederherstellung wird der aktuelle Stand gesichert; die Wiederherstellung zeigt vorher eine Vorschau mit den Unterschieden.' },
+    { titel: 'KI ist optional', text: 'LLM, Vorlesen, Spracheingabe und semantische Suche sind optional. Ohne die Dienste läuft alles weiter; der Dienste-Status unten in der Seitenleiste zeigt, was erreichbar ist.' },
+    { titel: 'Agenten-API', text: 'Unter /api/agent können KI-Werkzeuge Zeiten buchen, Aufgaben anlegen/erledigen und suchen (Token mit Scopes, Audit-Log, Trockenlauf). Zusätzlich MCP-Server und OpenAI-Tools.' },
   ]
 
   let frage = $state('')
@@ -38,7 +38,7 @@
   <div class="panel" role="dialog" aria-label="Hilfe" tabindex="-1" onclick={(e) => e.stopPropagation()}>
     <header>
       <h2><i class="fa-solid fa-circle-question" aria-hidden="true"></i> Hilfe</h2>
-      <button class="x" aria-label="Schliessen" onclick={onSchliessen}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+      <button class="x" aria-label="Schließen" onclick={onSchliessen}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     </header>
     <input class="suche" placeholder="Hilfe durchsuchen ..." bind:value={frage} aria-label="Hilfe durchsuchen" />
     <div class="liste">

@@ -53,7 +53,7 @@
     else vorlesen(beschr)
   }
 
-  // Beschreibungs-Entwurf folgt der Karte (auch beim ersten Oeffnen).
+  // Beschreibungs-Entwurf folgt der Karte (auch beim ersten Öffnen).
   let zuletzt = $state<string | null>(null)
   $effect(() => {
     if (karte.id !== zuletzt) {
@@ -155,7 +155,7 @@
           <div class="vb-kopf"><b>Beschreibung bearbeiten</b><button class="mini" onclick={bearbeitenFertig}>Fertig</button></div>
         {/if}
         <div class="md-split">
-          <textarea class="desc" placeholder="Markdown ... (Ueberschriften, Listen, Code, Tabellen, $Mathe$, Mermaid)" bind:value={beschr} oninput={autoSpeichern}></textarea>
+          <textarea class="desc" placeholder="Markdown ... (Überschriften, Listen, Code, Tabellen, $Mathe$, Mermaid)" bind:value={beschr} oninput={autoSpeichern}></textarea>
           <div class="md-vorschau"><Markdown md={beschr || '*Vorschau*'} /></div>
         </div>
       </div>

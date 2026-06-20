@@ -1,4 +1,4 @@
-"""HTTP-Schnittstelle der Planung (Personen, Urlaub, Feiertage, Kapazitaet)."""
+"""HTTP-Schnittstelle der Planung (Personen, Urlaub, Feiertage, Kapazität)."""
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -88,7 +88,7 @@ def urlaub_setzen(e: UrlaubSetzen) -> dict:
     while cur <= ende:
         iso = cur.isoformat()
         wd = cur.weekday()
-        # Arbeitstag = die Person hat an diesem Wochentag ueberhaupt Soll-Stunden.
+        # Arbeitstag = die Person hat an diesem Wochentag überhaupt Soll-Stunden.
         arbeitstag = wd < len(ws) and float(ws[wd]) > 0
         kein_arbeitstag = e.wochenenden_ueberspringen and not arbeitstag
         ist_feiertag = e.feiertage_ueberspringen and iso in feier
@@ -128,8 +128,8 @@ def feiertage_vorschau(land: str = Query("DE"), region: str | None = Query(defau
 def feiertage_uebernehmen(e: FeiertageUebernehmen) -> dict:
     eintraege = feiertage.vorschau(e.land, e.region, e.jahr)
     if not eintraege:
-        raise HTTPException(status_code=400, detail="Keine Feiertage fuer diese Auswahl gefunden")
-    # Jeder Eintrag traegt bereits seine korrekte Region (None = bundesweit, sonst Code).
+        raise HTTPException(status_code=400, detail="Keine Feiertage für diese Auswahl gefunden")
+    # Jeder Eintrag trägt bereits seine korrekte Region (None = bundesweit, sonst Code).
     return {"uebernommen": db.uebernehme_feiertage(eintraege)}
 
 
@@ -138,7 +138,7 @@ def feiertage_loeschen(jahr: int = Query(...), region: str | None = Query(defaul
     return {"geloescht": db.loesche_feiertage(jahr, region)}
 
 
-# -- Kapazitaet / Kalender-Overlay ---------------------------------------
+# -- Kapazität / Kalender-Overlay ---------------------------------------
 
 @router.get("/kapazitaet")
 def kapazitaet_abruf(person: str = Query(...), von: str = Query(...), bis: str = Query(...)) -> dict:
@@ -153,7 +153,7 @@ def tage(von: str = Query(...), bis: str = Query(...), person: str | None = Quer
     return kapazitaet.tage_overlay(von, bis, person)
 
 
-# -- Jahreskalender (Aggregation ueber alle Personen) --------------------
+# -- Jahreskalender (Aggregation über alle Personen) --------------------
 
 @router.get("/kalender")
 def kalender_abruf(jahr: int = Query(...)) -> dict:

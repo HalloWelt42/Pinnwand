@@ -1,7 +1,7 @@
 """Anbindung an den Transkriptions-Dienst (txt2voice), optional.
 
-Holt die Transkriptions-Liste, duennt sie aus (Embeddings und Roh-Segmente raus)
-und durchsucht sie zuverlaessig in Pinnwand (Wort/Phrase, mit Trefferausschnitt).
+Holt die Transkriptions-Liste, dünnt sie aus (Embeddings und Roh-Segmente raus)
+und durchsucht sie zuverlässig in Pinnwand (Wort/Phrase, mit Trefferausschnitt).
 Das Original-Audio spielt der Browser direkt vom Dienst. Ohne erreichbaren Dienst
 liefert alles leere Ergebnisse - die Ansicht zeigt dann einen Hinweis.
 """

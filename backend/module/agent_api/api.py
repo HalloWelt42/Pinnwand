@@ -1,7 +1,7 @@
 """REST-Adapter der Agenten-API.
 
-Duenne Huelle ueber der Aktionsschicht. Jede Schreibaktion laeuft ueber einen
-gemeinsamen Pfad mit Scope-Pruefung, Idempotenz, Trockenlauf und Audit-Log.
+Dünne Hülle über der Aktionsschicht. Jede Schreibaktion läuft über einen
+gemeinsamen Pfad mit Scope-Prüfung, Idempotenz, Trockenlauf und Audit-Log.
 """
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ def _ziel(ergebnis: dict) -> str | None:
 
 
 def _schreibe(akteur: Akteur, aktion_name: str, idem: str | None, dry_run: bool, fn: Callable[[], dict]) -> dict:
-    """Gemeinsamer Pfad fuer Schreibaktionen: Idempotenz, Trockenlauf, Audit."""
+    """Gemeinsamer Pfad für Schreibaktionen: Idempotenz, Trockenlauf, Audit."""
     if not dry_run:
         treffer = db.idempotenz_treffer(akteur.name, idem)
         if treffer is not None:
@@ -120,7 +120,7 @@ def tools(akteur: Akteur = Depends(erfordere("read"))) -> dict:
 
 @router.post("/tools/execute")
 def tools_execute(eingabe: WerkzeugAufruf, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
-    """Fuehrt ein Werkzeug generisch aus (Scope wird je Werkzeug geprueft)."""
+    """Führt ein Werkzeug generisch aus (Scope wird je Werkzeug geprüft)."""
     try:
         return werkzeuge.fuehre_aus(
             eingabe.name, eingabe.arguments, akteur, eingabe.dry_run, eingabe.idempotenz_schluessel

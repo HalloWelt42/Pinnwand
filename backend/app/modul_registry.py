@@ -1,9 +1,9 @@
 """Modul-Registry des Backends.
 
-Module liegen unter ``backend/module/<id>/`` und beschreiben sich ueber eine
+Module liegen unter ``backend/module/<id>/`` und beschreiben sich über eine
 ``manifest.json``. Die Registry findet sie per Verzeichnis-Scan, ruft ihren
-Schema-Init-Hook auf, laedt ihren Router und aggregiert ihre
-Erweiterungspunkte. So kommt neue Funktionalitaet ohne Aenderung am Kern dazu.
+Schema-Init-Hook auf, lädt ihren Router und aggregiert ihre
+Erweiterungspunkte. So kommt neue Funktionalität ohne Änderung am Kern dazu.
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ def lade_manifeste() -> list[dict[str, Any]]:
 
 
 def _aufgeloest(spezifikation: str | None) -> Any | None:
-    """Loest einen Eintrag der Form ``modul.pfad:objekt`` zu Python-Objekt auf."""
+    """Löst einen Eintrag der Form ``modul.pfad:objekt`` zu Python-Objekt auf."""
     if not spezifikation:
         return None
     modulpfad, _, attribut = spezifikation.partition(":")
@@ -47,10 +47,10 @@ def init_fuer(manifest: dict[str, Any]) -> None:
 
 
 def mount_fuer(manifest: dict[str, Any]) -> tuple[str, Any] | None:
-    """Liefert (Pfad, ASGI-App) eines Moduls, das eine Sub-App einhaengen will.
+    """Liefert (Pfad, ASGI-App) eines Moduls, das eine Sub-App einhängen will.
 
     Erlaubt z.B. einen MCP-Server. Ist die App None (Feature abgeschaltet),
-    wird nichts eingehaengt - so bleiben solche Dienste optional.
+    wird nichts eingehängt - so bleiben solche Dienste optional.
     """
     spez = manifest.get("backend", {}).get("mount")
     if not isinstance(spez, dict):
@@ -63,7 +63,7 @@ def mount_fuer(manifest: dict[str, Any]) -> tuple[str, Any] | None:
 
 
 def lifespan_fuer(manifest: dict[str, Any]):
-    """Liefert einen async-Kontextmanager eines Moduls fuer Start/Stopp, falls deklariert."""
+    """Liefert einen async-Kontextmanager eines Moduls für Start/Stopp, falls deklariert."""
     fabrik = _aufgeloest(manifest.get("backend", {}).get("lifespan"))
     if callable(fabrik):
         return fabrik()

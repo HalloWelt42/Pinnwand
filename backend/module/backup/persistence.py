@@ -24,13 +24,13 @@ def init_db() -> None:
     DATEN.mkdir(parents=True, exist_ok=True)
     with verbindung() as conn:
         conn.executescript(SCHEMA)
-    # Verzoegerter Import vermeidet einen Ringschluss mit dem Dienst.
+    # Verzögerter Import vermeidet einen Ringschluss mit dem Dienst.
     from . import dienst
 
     # Nur den Index mit den vorhandenen Dateien abgleichen. Die automatische
-    # Sicherung laeuft bewusst NICHT hier, sondern im Lebenszyklus - sonst
-    # entstuende sie, bevor die anderen Module (kanban_kern, planung, ...) ihre
-    # Tabellen und Seed-Daten angelegt haben, und der Snapshot waere leer.
+    # Sicherung läuft bewusst NICHT hier, sondern im Lebenszyklus - sonst
+    # entstünde sie, bevor die anderen Module (kanban_kern, planung, ...) ihre
+    # Tabellen und Seed-Daten angelegt haben, und der Snapshot wäre leer.
     dienst.synchronisiere_index()
 
 
@@ -73,7 +73,7 @@ def letzter_automatischer() -> dict | None:
 
 
 def automatische_aelter_als(behalten: int) -> list[dict]:
-    """Automatische Snapshots, die ueber die Aufbewahrungsgrenze hinausgehen (aelteste zuerst zum Loeschen)."""
+    """Automatische Snapshots, die über die Aufbewahrungsgrenze hinausgehen (älteste zuerst zum Löschen)."""
     with verbindung() as conn:
         rows = conn.execute(
             "SELECT * FROM backup_archiv WHERE art = 'automatisch' ORDER BY erstellt_am DESC, rowid DESC"

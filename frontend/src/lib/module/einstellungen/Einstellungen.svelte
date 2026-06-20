@@ -19,9 +19,9 @@
   let offen = $state<string | null>(null)
   let vorschau = $state<BackupVorschau | null>(null)
   let vorschauLaedt = $state(false)
-  // Bestaetigung des Loeschens (kein Browser-Dialog).
+  // Bestätigung des Löschens (kein Browser-Dialog).
   let loeschBestaetigung = $state<string | null>(null)
-  // Daten-Reset: Bestaetigung je Modus.
+  // Daten-Reset: Bestätigung je Modus.
   let resetBestaetigung = $state<'beispiel' | 'leer' | null>(null)
   let resetMeldung = $state('')
 
@@ -70,10 +70,10 @@
     try {
       await datenZuruecksetzen(modus)
       resetBestaetigung = null
-      resetMeldung = 'Daten zurueckgesetzt. Seite wird neu geladen ...'
+      resetMeldung = 'Daten zurückgesetzt. Seite wird neu geladen ...'
       setTimeout(() => location.reload(), 800)
     } catch {
-      resetMeldung = 'Zuruecksetzen fehlgeschlagen.'
+      resetMeldung = 'Zurücksetzen fehlgeschlagen.'
     } finally {
       arbeitet = false
     }
@@ -119,7 +119,7 @@
       if (offen === id) { offen = null; vorschau = null }
       await neuLaden()
     } catch {
-      meldung = 'Snapshot konnte nicht geloescht werden.'
+      meldung = 'Snapshot konnte nicht gelöscht werden.'
     } finally {
       arbeitet = false
     }
@@ -157,7 +157,7 @@
     try {
       const t = await erstelleAgentToken(adminToken.trim(), neuName.trim(), scopes)
       neuName = ''
-      // Erst die Liste auffrischen (setzt das Geheimnis zurueck), dann das neue Geheimnis anzeigen.
+      // Erst die Liste auffrischen (setzt das Geheimnis zurück), dann das neue Geheimnis anzeigen.
       await tokensLaden()
       neuesGeheimnis = { name: t.name, token: t.token }
     } catch (e) {
@@ -174,7 +174,7 @@
     }
   }
 
-  // Tabellen-Zaehler aus Snapshot und aktuellem Stand fuer die Vorschau zusammenfuehren.
+  // Tabellen-Zähler aus Snapshot und aktuellem Stand für die Vorschau zusammenführen.
   function zeilen(v: BackupVorschau): { name: string; snap: number; akt: number }[] {
     const keys = new Set<string>([...Object.keys(v.snapshot.zaehler), ...Object.keys(v.aktuell.zaehler)])
     return [...keys].sort().map((name) => ({
@@ -190,12 +190,12 @@
     <p class="sec">Datensicherung</p>
     <p class="hint">
       Ein Snapshot sichert Datenbank, Berichts-Archiv und Konfigurationsvorlage in einer Datei.
-      Beim Start wird hoechstens einmal taeglich automatisch gesichert; die letzten automatischen Snapshots bleiben erhalten.
+      Beim Start wird höchstens einmal täglich automatisch gesichert; die letzten automatischen Snapshots bleiben erhalten.
       Vor jeder Wiederherstellung wird der aktuelle Stand automatisch gesichert.
     </p>
     {#if zustand}
       <p class="stand">
-        Aktueller Stand: Version {zustand.version} - {summe(zustand.zaehler)} Datensaetze, {zustand.berichte} Berichte im Archiv.
+        Aktueller Stand: Version {zustand.version} - {summe(zustand.zaehler)} Datensätze, {zustand.berichte} Berichte im Archiv.
       </p>
     {/if}
     <div class="form">
@@ -225,7 +225,7 @@
             <a class="ibtn" href={snapshotDownloadUrl(s.id)} download title="Herunterladen" aria-label="Herunterladen">
               <i class="fa-solid fa-download" aria-hidden="true"></i>
             </a>
-            <button class="ibtn gefahr" title="Loeschen" aria-label="Loeschen" onclick={() => (loeschBestaetigung = loeschBestaetigung === s.id ? null : s.id)}>
+            <button class="ibtn gefahr" title="Löschen" aria-label="Löschen" onclick={() => (loeschBestaetigung = loeschBestaetigung === s.id ? null : s.id)}>
               <i class="fa-solid fa-trash" aria-hidden="true"></i>
             </button>
           </div>
@@ -233,8 +233,8 @@
 
         {#if loeschBestaetigung === s.id}
           <div class="bestaetigung">
-            <span>Diesen Snapshot dauerhaft loeschen?</span>
-            <button class="btn klein gefahr" onclick={() => loeschen(s.id)} disabled={arbeitet}>Loeschen</button>
+            <span>Diesen Snapshot dauerhaft löschen?</span>
+            <button class="btn klein gefahr" onclick={() => loeschen(s.id)} disabled={arbeitet}>Löschen</button>
             <button class="btn klein" onclick={() => (loeschBestaetigung = null)}>Abbrechen</button>
           </div>
         {/if}
@@ -271,7 +271,7 @@
                 <button class="btn primaer" onclick={() => wiederherstellen(s.id)} disabled={arbeitet}>
                   <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Diesen Stand wiederherstellen
                 </button>
-                <button class="btn" onclick={() => vorschauOeffnen(s.id)}>Schliessen</button>
+                <button class="btn" onclick={() => vorschauOeffnen(s.id)}>Schließen</button>
               </div>
             {/if}
           </div>
@@ -281,23 +281,23 @@
   </section>
 
   <section class="block">
-    <p class="sec">Daten zuruecksetzen</p>
+    <p class="sec">Daten zurücksetzen</p>
     <p class="hint">
-      Entfernt angesammelte Daten und schafft einen sauberen Stand. Vor dem Zuruecksetzen wird
+      Entfernt angesammelte Daten und schafft einen sauberen Stand. Vor dem Zurücksetzen wird
       automatisch ein Sicherheits-Snapshot erstellt, sodass nichts unwiederbringlich verloren geht.
     </p>
     <div class="resetreihe">
       <div class="resetopt">
-        <div class="resettitel">Auf Beispieldaten zuruecksetzen</div>
-        <div class="resetdez">Alles loeschen und den Auslieferungszustand (Beispiel-Board, Personen) neu anlegen.</div>
+        <div class="resettitel">Auf Beispieldaten zurücksetzen</div>
+        <div class="resetdez">Alles löschen und den Auslieferungszustand (Beispiel-Board, Personen) neu anlegen.</div>
         {#if resetBestaetigung === 'beispiel'}
           <div class="bestaetigung">
-            <span>Wirklich alles zuruecksetzen?</span>
-            <button class="btn klein gefahr" onclick={() => zuruecksetzen('beispiel')} disabled={arbeitet}>Zuruecksetzen</button>
+            <span>Wirklich alles zurücksetzen?</span>
+            <button class="btn klein gefahr" onclick={() => zuruecksetzen('beispiel')} disabled={arbeitet}>Zurücksetzen</button>
             <button class="btn klein" onclick={() => (resetBestaetigung = null)}>Abbrechen</button>
           </div>
         {:else}
-          <button class="btn" onclick={() => (resetBestaetigung = 'beispiel')} disabled={arbeitet}>Zuruecksetzen</button>
+          <button class="btn" onclick={() => (resetBestaetigung = 'beispiel')} disabled={arbeitet}>Zurücksetzen</button>
         {/if}
       </div>
       <div class="resetopt">
@@ -320,7 +320,7 @@
   <section class="block">
     <p class="sec">Agenten-Zugriff (API-Token)</p>
     <p class="hint">
-      KI-Werkzeuge koennen ueber die Agenten-API Aufgaben anlegen, Zeiten buchen und suchen.
+      KI-Werkzeuge können über die Agenten-API Aufgaben anlegen, Zeiten buchen und suchen.
       Die Verwaltung erfordert ein Token mit Admin-Recht. Das einfachste ist das in der Konfiguration
       gesetzte Verwaltungs-Token (PINNWAND_AGENT_TOKEN aus der .env). Das Token wird nur lokal in diesem
       Browser gespeichert.
@@ -344,7 +344,7 @@
 
       {#if neuesGeheimnis}
         <div class="geheimnis">
-          <p><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Neues Token fuer "{neuesGeheimnis.name}" - jetzt kopieren, es wird nicht erneut angezeigt:</p>
+          <p><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Neues Token für "{neuesGeheimnis.name}" - jetzt kopieren, es wird nicht erneut angezeigt:</p>
           <code>{neuesGeheimnis.token}</code>
         </div>
       {/if}

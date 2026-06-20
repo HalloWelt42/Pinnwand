@@ -127,7 +127,7 @@ def timer_pause(karte_id: str) -> Karte:
     return karte
 
 
-# -- Zeiteintraege (Auswertung / Korrektur) -------------------------------
+# -- Zeiteinträge (Auswertung / Korrektur) -------------------------------
 
 @router.get("/zeiteintraege", response_model=list[Zeiteintrag])
 def zeiteintraege(von: str, bis: str) -> list[Zeiteintrag]:
@@ -227,4 +227,4 @@ def spalte_loeschen(spalte_id: str) -> None:
     if ergebnis == "fehlt":
         raise HTTPException(status_code=404, detail="Spalte nicht gefunden")
     if ergebnis == "letzte":
-        raise HTTPException(status_code=409, detail="Die letzte Spalte kann nicht geloescht werden")
+        raise HTTPException(status_code=409, detail="Die letzte Spalte kann nicht gelöscht werden")

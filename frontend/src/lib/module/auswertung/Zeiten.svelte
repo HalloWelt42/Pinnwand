@@ -94,7 +94,7 @@
         <span class="kw">KW {kw}</span>
         <span class="spanne">{tagKurz(montag)} - {tagKurz(addTage(montag, 6))}</span>
       </div>
-      <button class="ib" aria-label="Naechste Woche" onclick={() => (anker = addTage(montag, 7))}><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+      <button class="ib" aria-label="Nächste Woche" onclick={() => (anker = addTage(montag, 7))}><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
       <button class="heute" onclick={() => (anker = new Date())}>Heute</button>
     </div>
     <div class="summe"><span class="s-label">Woche</span><span class="s-wert">{formatStd(wocheSumme)} h</span></div>

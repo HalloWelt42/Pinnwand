@@ -115,12 +115,12 @@
     await setzeTagesregel({ ...r, aktiv: !r.aktiv })
     await ladenKonfig()
   }
-  const MON = ['', 'Jan', 'Feb', 'Maer', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
+  const MON = ['', 'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
   const WDV = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
   function regelText(r: Tagesregel): string {
-    if (r.art === 'jahrestag') return `${r.tag}. ${MON[r.monat ?? 0]} (jaehrlich)`
+    if (r.art === 'jahrestag') return `${r.tag}. ${MON[r.monat ?? 0]} (jährlich)`
     if (r.art === 'wochentag') return `jeden ${WDV[r.wochentag ?? 0]}`
-    return 'Brueckentage'
+    return 'Brückentage'
   }
 
   const regionen = $derived(laender[ftLand] ?? [])
@@ -158,7 +158,7 @@
   async function urlaubEintragen(): Promise<void> {
     if (!urlaubPerson || !uVon) return
     const { gesetzt, uebersprungen } = await setzeUrlaub({ person_id: urlaubPerson, von: uVon, bis: uBis || uVon, anteil: uAnteil })
-    meldung = `${gesetzt} Urlaubstage eingetragen` + (uebersprungen ? `, ${uebersprungen} freie Tage/Feiertage uebersprungen.` : '.')
+    meldung = `${gesetzt} Urlaubstage eingetragen` + (uebersprungen ? `, ${uebersprungen} freie Tage/Feiertage übersprungen.` : '.')
     urlaub = await ladeUrlaub(urlaubPerson, `${jahr}-01-01`, `${jahr}-12-31`)
     await ladenKonten()
   }
@@ -173,7 +173,7 @@
   }
   async function ftUebernehmen(): Promise<void> {
     const { uebernommen } = await feiertageUebernehmen(ftLand, ftRegion || null, ftJahr)
-    meldung = `${uebernommen} Feiertage uebernommen.`
+    meldung = `${uebernommen} Feiertage übernommen.`
     vorschau = []
     feiertage = await ladeFeiertage(`${jahr}-01-01`, `${jahr}-12-31`)
   }
@@ -196,14 +196,14 @@
           {#each p.wochenstunden as h, i (i)}
             <input class="hw" type="number" min="0" max="24" step="0.5" value={h} onchange={(e) => stundeAendern(p, i, parseFloat(e.currentTarget.value) || 0)} />
           {/each}
-          <span class="pw"><button class="del" aria-label="Person loeschen" onclick={() => personEntfernen(p)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button></span>
+          <span class="pw"><button class="del" aria-label="Person löschen" onclick={() => personEntfernen(p)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button></span>
         </div>
       {/each}
     </div>
     <div class="neu">
       <input placeholder="Name" bind:value={neuerName} />
-      <input class="kz" placeholder="Kuerzel" bind:value={neuesKuerzel} />
-      <button class="btn primaer" onclick={personAnlegen}>Person hinzufuegen</button>
+      <input class="kz" placeholder="Kürzel" bind:value={neuesKuerzel} />
+      <button class="btn primaer" onclick={personAnlegen}>Person hinzufügen</button>
     </div>
   </section>
 
@@ -228,7 +228,7 @@
       {/each}
       {#if !personen.length}<div class="uzeile leerz">Noch keine Personen.</div>{/if}
     </div>
-    <p class="hinweis">Verbleibend = Anspruch + Resturlaub Vorjahr − die {jahr} genommenen Urlaubstage (halbe Tage zaehlen 0,5). Das Bundesland ist je Person hinterlegt und dient als Grundlage fuer die regionalen Feiertage (Import unten).</p>
+    <p class="hinweis">Verbleibend = Anspruch + Resturlaub Vorjahr − die {jahr} genommenen Urlaubstage (halbe Tage zählen 0,5). Das Bundesland ist je Person hinterlegt und dient als Grundlage für die regionalen Feiertage (Import unten).</p>
   </section>
 
   <section class="block">
@@ -262,12 +262,12 @@
       </select>
       <label class="mini">Jahr <input type="number" min="2000" max="2100" bind:value={ftJahr} /></label>
       <button class="btn" onclick={ftVorschau}>Vorschau</button>
-      {#if vorschau.length}<button class="btn primaer" onclick={ftUebernehmen}>{vorschau.length} uebernehmen</button>{/if}
+      {#if vorschau.length}<button class="btn primaer" onclick={ftUebernehmen}>{vorschau.length} übernehmen</button>{/if}
       {#if feiertage.length}<button class="btn geist" onclick={ftLoeschen}>{jahr} entfernen</button>{/if}
     </div>
     {#if vorschau.length}
       <div class="ftbox">
-        <p class="ftkopf"><i class="fa-solid fa-eye" aria-hidden="true"></i> Vorschau: {vorschau.length} Feiertage gefunden (noch nicht uebernommen)</p>
+        <p class="ftkopf"><i class="fa-solid fa-eye" aria-hidden="true"></i> Vorschau: {vorschau.length} Feiertage gefunden (noch nicht übernommen)</p>
         <div class="ftliste">
           {#each vorschau as f (f.datum + (f.region ?? ''))}
             <div class="ftz vs">
@@ -281,8 +281,8 @@
       </div>
     {/if}
     <div class="ftbox">
-      <p class="ftkopf">Uebernommene Feiertage {jahr} ({feiertage.length})</p>
-      {#if !feiertage.length}<p class="leer">Noch keine Feiertage uebernommen.</p>{/if}
+      <p class="ftkopf">Übernommene Feiertage {jahr} ({feiertage.length})</p>
+      {#if !feiertage.length}<p class="leer">Noch keine Feiertage übernommen.</p>{/if}
       {#if feiertage.length}
         <div class="ftliste">
           {#each feiertage as f (f.datum + (f.region ?? ''))}
@@ -306,7 +306,7 @@
           <input class="cfarbe" type="color" value={t.farbe} onchange={(e) => farbeAendern(t, e.currentTarget.value)} aria-label="Farbe" />
           <span class="aname">{t.name}</span>
           <span class="adez">{t.anwesend ? 'gilt als anwesend' : t.reduziert_soll ? 'reduziert Soll' : ''}</span>
-          <label class="chk"><input type="checkbox" checked={t.anrechnen} onchange={(e) => anrechnenAendern(t, e.currentTarget.checked)} /> zaehlt gegen Urlaubsanspruch</label>
+          <label class="chk"><input type="checkbox" checked={t.anrechnen} onchange={(e) => anrechnenAendern(t, e.currentTarget.checked)} /> zählt gegen Urlaubsanspruch</label>
         </div>
       {/each}
     </div>
@@ -314,15 +314,15 @@
 
   <section class="block">
     <p class="sec">Halbtags- und Sonderregeln</p>
-    <p class="hinweis">Gelten global fuer alle. Anteil 0,5 = halber Tag, 0 = frei.</p>
+    <p class="hinweis">Gelten global für alle. Anteil 0,5 = halber Tag, 0 = frei.</p>
     <div class="rliste">
       {#each regeln as r (r.id)}
         <div class="rzeile">
           {#if r.art === 'brueckentag'}
-            <label class="chk"><input type="checkbox" checked={r.aktiv} onchange={() => brueckeUmschalten(r)} /> Brueckentage automatisch frei</label>
+            <label class="chk"><input type="checkbox" checked={r.aktiv} onchange={() => brueckeUmschalten(r)} /> Brückentage automatisch frei</label>
           {:else}
             <span class="rtext">{regelText(r)} - {r.anteil === 0 ? 'frei' : 'halber Tag'}{r.notiz ? ' (' + r.notiz + ')' : ''}</span>
-            <button class="del" aria-label="Regel loeschen" onclick={() => regelLoeschen(r.id)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            <button class="del" aria-label="Regel löschen" onclick={() => regelLoeschen(r.id)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
           {/if}
         </div>
       {/each}
@@ -340,7 +340,7 @@
       {/if}
       <select bind:value={rAnteil}><option value={0.5}>halber Tag</option><option value={0}>frei</option></select>
       <input placeholder="Notiz" bind:value={rNotiz} />
-      <button class="btn primaer" onclick={regelHinzufuegen}>Regel hinzufuegen</button>
+      <button class="btn primaer" onclick={regelHinzufuegen}>Regel hinzufügen</button>
     </div>
   </section>
 </div>

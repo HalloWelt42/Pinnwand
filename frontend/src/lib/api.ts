@@ -102,7 +102,7 @@ export const timerStart = (id: string): Promise<Karte> =>
 export const timerPause = (id: string): Promise<Karte> =>
   hole(`/api/kanban/karten/${id}/timer/pause`, { method: 'POST' })
 
-// --- Zeiteintraege (Auswertung) ---
+// --- Zeiteinträge (Auswertung) ---
 
 export const ladeZeiteintraege = (von: string, bis: string): Promise<Zeiteintrag[]> =>
   hole(`/api/kanban/zeiteintraege?von=${von}&bis=${bis}`)
@@ -177,7 +177,7 @@ export async function transkribiere(audio: Blob): Promise<{ text: string }> {
   const daten = new FormData()
   daten.append('datei', audio, 'aufnahme.webm')
   const antwort = await fetch(`${BASIS}/api/suche/sprache`, { method: 'POST', body: daten })
-  if (!antwort.ok) throw new Error('Spracheingabe nicht verfuegbar')
+  if (!antwort.ok) throw new Error('Spracheingabe nicht verfügbar')
   return antwort.json()
 }
 
@@ -493,7 +493,7 @@ async function adminHole<T>(pfad: string, adminToken: string, init?: RequestInit
     ...init,
   })
   if (antwort.status === 401 || antwort.status === 403) {
-    throw new AuthFehler('Verwaltungs-Token ungueltig oder ohne Admin-Recht')
+    throw new AuthFehler('Verwaltungs-Token ungültig oder ohne Admin-Recht')
   }
   if (!antwort.ok) throw new Error(`Anfrage fehlgeschlagen: ${antwort.status}`)
   if (antwort.status === 204) return undefined as T
@@ -515,6 +515,6 @@ export async function vorleseAudio(text: string, stimme?: string): Promise<Blob>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, stimme }),
   })
-  if (!antwort.ok) throw new Error('Vorlesen nicht verfuegbar')
+  if (!antwort.ok) throw new Error('Vorlesen nicht verfügbar')
   return antwort.blob()
 }

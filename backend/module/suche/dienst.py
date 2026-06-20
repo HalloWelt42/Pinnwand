@@ -1,7 +1,7 @@
 """Such-Dienst: hybride Suche und optionale Sprach-Transkription.
 
-Hybrid = semantische Treffer (Vektor) plus Stichworttreffer, zusammengefuehrt.
-Sind die KI-Dienste nicht verfuegbar, bleibt reine Stichwortsuche. Die
+Hybrid = semantische Treffer (Vektor) plus Stichworttreffer, zusammengeführt.
+Sind die KI-Dienste nicht verfügbar, bleibt reine Stichwortsuche. Die
 Sprach-Transkription leitet Audio an einen lokalen Whisper-Dienst weiter.
 """
 from __future__ import annotations

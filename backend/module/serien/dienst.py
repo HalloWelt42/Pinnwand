@@ -1,8 +1,8 @@
 """Vorbuchung: erzeugt aus Serien die kommenden Karten-Instanzen.
 
-Idempotent: pro Serie und Datum entsteht hoechstens eine Karte (Markierung an
-der Karte). Die Instanzen sind normale Karten - mit Faelligkeit, geplanter Zeit
-(Soll) und damit Timer-faehig.
+Idempotent: pro Serie und Datum entsteht höchstens eine Karte (Markierung an
+der Karte). Die Instanzen sind normale Karten - mit Fälligkeit, geplanter Zeit
+(Soll) und damit Timer-fähig.
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def _zielspalte(serie: dict) -> str | None:
 
 
 def materialisiere(serie: dict, heute: date | None = None) -> int:
-    """Legt fehlende Instanzen der Serie im Vorlauf-Zeitraum an. Gibt die Anzahl zurueck."""
+    """Legt fehlende Instanzen der Serie im Vorlauf-Zeitraum an. Gibt die Anzahl zurück."""
     if not serie.get("aktiv"):
         return 0
     heute = heute or date.today()

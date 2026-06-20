@@ -1,8 +1,8 @@
 """Embedding-Adapter (optional).
 
 Spricht einen OpenAI-kompatiblen Endpunkt (z.B. lokaler Modell-Host) an. Ohne
-Konfiguration oder bei Ausfall liefert er None - die Suche faellt dann auf
-Stichwortsuche zurueck. KI bleibt optional.
+Konfiguration oder bei Ausfall liefert er None - die Suche fällt dann auf
+Stichwortsuche zurück. KI bleibt optional.
 """
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ def _ermittle_modell() -> str | None:
 
 
 def einbetten(texte: list[str]) -> tuple[list[list[float]], str] | None:
-    """Bettet Texte ein. Gibt (Vektoren, Modellname) zurueck oder None."""
+    """Bettet Texte ein. Gibt (Vektoren, Modellname) zurück oder None."""
     if not einstellungen.llm_url or not texte:
         return None
     modell = _ermittle_modell()

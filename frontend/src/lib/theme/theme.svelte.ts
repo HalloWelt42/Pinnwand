@@ -1,5 +1,5 @@
 // Theme-Engine: hell/dunkel gleichwertig, Auswahl wird gemerkt.
-// Reaktiver Zustand via Svelte-5-Runes, ueber Module-Import geteilt.
+// Reaktiver Zustand via Svelte-5-Runes, über Module-Import geteilt.
 
 export type Modus = 'hell' | 'dunkel'
 

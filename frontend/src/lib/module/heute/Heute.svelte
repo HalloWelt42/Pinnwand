@@ -15,10 +15,10 @@
   const gruppen = $derived(
     d
       ? [
-          { titel: 'Ueberfaellig', icon: 'fa-triangle-exclamation', klasse: 'rot', items: d.ueberfaellig },
-          { titel: 'Heute faellig', icon: 'fa-calendar-day', klasse: '', items: d.heute },
+          { titel: 'Überfällig', icon: 'fa-triangle-exclamation', klasse: 'rot', items: d.ueberfaellig },
+          { titel: 'Heute fällig', icon: 'fa-calendar-day', klasse: '', items: d.heute },
           { titel: 'Diese Woche', icon: 'fa-calendar-week', klasse: '', items: d.diese_woche },
-          { titel: 'Laeuft gerade', icon: 'fa-play', klasse: 'gruen', items: d.laufend },
+          { titel: 'Läuft gerade', icon: 'fa-play', klasse: 'gruen', items: d.laufend },
           { titel: 'Liegengeblieben', icon: 'fa-hourglass-half', klasse: 'amber', items: d.liegengeblieben },
         ]
       : [],
@@ -31,10 +31,10 @@
   function briefing(): string {
     if (!d) return ''
     const teile = [`Was steht an am ${d.datum}.`]
-    if (d.ueberfaellig.length) teile.push(`${d.ueberfaellig.length} ueberfaellig: ${d.ueberfaellig.map((x) => x.titel).join(', ')}.`)
-    if (d.heute.length) teile.push(`Heute faellig: ${d.heute.map((x) => x.titel).join(', ')}.`)
+    if (d.ueberfaellig.length) teile.push(`${d.ueberfaellig.length} überfällig: ${d.ueberfaellig.map((x) => x.titel).join(', ')}.`)
+    if (d.heute.length) teile.push(`Heute fällig: ${d.heute.map((x) => x.titel).join(', ')}.`)
     if (d.diese_woche.length) teile.push(`Diese Woche: ${d.diese_woche.map((x) => x.titel).join(', ')}.`)
-    if (d.laufend.length) teile.push(`Es laeuft: ${d.laufend.map((x) => x.titel).join(', ')}.`)
+    if (d.laufend.length) teile.push(`Es läuft: ${d.laufend.map((x) => x.titel).join(', ')}.`)
     if (teile.length === 1) teile.push('Nichts Dringendes.')
     return teile.join(' ')
   }

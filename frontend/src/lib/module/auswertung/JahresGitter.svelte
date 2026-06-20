@@ -4,7 +4,7 @@
 
   let { daten, ebenen, onTag }: { daten: KalenderAntwort; ebenen: Ebenen; onTag: (iso: string) => void } = $props()
 
-  const MONATE = ['Januar', 'Februar', 'Maerz', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
+  const MONATE = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
   const WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
   const heuteD = new Date()
   const HEUTE = `${heuteD.getFullYear()}-${String(heuteD.getMonth() + 1).padStart(2, '0')}-${String(heuteD.getDate()).padStart(2, '0')}`
@@ -19,7 +19,7 @@
   })
 
   function zelleen(monat: number): { iso: string | null }[] {
-    // monat 0..11; baut Zellen inkl. fuehrender Leerfelder (Mo-Start)
+    // monat 0..11; baut Zellen inkl. führender Leerfelder (Mo-Start)
     const erster = new Date(daten.jahr, monat, 1)
     const start = (erster.getDay() + 6) % 7 // Mo=0
     const tage = new Date(daten.jahr, monat + 1, 0).getDate()

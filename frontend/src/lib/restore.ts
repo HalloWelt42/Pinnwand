@@ -1,4 +1,4 @@
-// Stellt eine geloeschte Karte aus einem Snapshot wieder her (fuer Rückgängig).
+// Stellt eine gelöschte Karte aus einem Snapshot wieder her (für Rückgängig).
 
 import { erstelleKarte, aktualisiereKarte, anhaengenKommentar } from './api'
 import type { Karte } from './types'

@@ -1,4 +1,4 @@
-"""Datenvertraege der Planung."""
+"""Datenverträge der Planung."""
 from __future__ import annotations
 
 from pydantic import BaseModel, Field

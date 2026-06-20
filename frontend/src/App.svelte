@@ -33,11 +33,11 @@
     try {
       localStorage.setItem('pw_ui', JSON.stringify({ rail: railEin, ansicht: aktiveAnsicht, board: aktivesBoard?.id ?? null }))
     } catch {
-      /* localStorage nicht verfuegbar */
+      /* localStorage nicht verfügbar */
     }
   }
 
-  // Startpfad fruehzeitig sichern (bevor Effekte die URL anfassen koennen).
+  // Startpfad frühzeitig sichern (bevor Effekte die URL anfassen können).
   const _startPfad = typeof window !== 'undefined' ? window.location.pathname : '/'
   let routingBereit = $state(false)
 
@@ -77,7 +77,7 @@
   const boardgebunden = $derived(!GLOBALE_ANSICHTEN.has(aktiveAnsicht))
   const aktuelleAnsichtMeta = $derived(ansichtsListe.find((a) => a.id === aktiveAnsicht))
 
-  // Navigationswunsch (z.B. aus der Suche): zum Board wechseln; Board oeffnet die Karte.
+  // Navigationswunsch (z.B. aus der Suche): zum Board wechseln; Board öffnet die Karte.
   $effect(() => {
     const ziel = nav.ziel
     if (!ziel) return
@@ -95,7 +95,7 @@
   let neuerBoardTitel = $state('')
   let railEin = $state(_ui.rail !== false)
 
-  // Aenderungen am UI-Zustand merken.
+  // Änderungen am UI-Zustand merken.
   $effect(() => {
     void railEin
     void aktiveAnsicht
@@ -189,7 +189,7 @@
     } catch (e) {
       fehler = e instanceof Error ? e.message : 'unbekannter Fehler'
     }
-    // Deep-Link aus dem (frueh gesicherten) Startpfad anwenden, dann Routing scharf schalten.
+    // Deep-Link aus dem (früh gesicherten) Startpfad anwenden, dann Routing scharf schalten.
     if (_startPfad && _startPfad !== '/') {
       wendePfadAn(_startPfad)
     }

@@ -1,4 +1,4 @@
-"""Datenvertraege des Kanban-Moduls.
+"""Datenverträge des Kanban-Moduls.
 
 Liegen bewusst im Modul, nicht im Kern - so kann ein anderes Modul ein
 eigenes Datenmodell mitbringen, ohne den Kern anzufassen.

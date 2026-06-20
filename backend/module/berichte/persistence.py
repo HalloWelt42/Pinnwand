@@ -1,4 +1,4 @@
-"""Berichts-Archiv: speichert erzeugte Berichte unveraenderlich als Nachweis.
+"""Berichts-Archiv: speichert erzeugte Berichte unveränderlich als Nachweis.
 
 Die Datei liegt unter backend/data/berichte, die Metadaten in der DB.
 """

@@ -103,7 +103,7 @@
     {/if}
     <span class="rechts">
       {#if karte.prioritaet}
-        <span class="prio" style="background:{prioFarbe[karte.prioritaet]}" title="Prioritaet: {karte.prioritaet}"></span>
+        <span class="prio" style="background:{prioFarbe[karte.prioritaet]}" title="Priorität: {karte.prioritaet}"></span>
       {/if}
       {#if karte.zustaendig}
         <span class="av" title={karte.zustaendig}>{karte.zustaendig}</span>

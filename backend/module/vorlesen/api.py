@@ -28,5 +28,5 @@ def stimmen() -> dict:
 def vorlesen(eingabe: TtsEingabe) -> Response:
     audio = dienst.synthese(eingabe.text, eingabe.stimme)
     if audio is None:
-        raise HTTPException(status_code=503, detail="Vorlesen nicht verfuegbar (kein TTS-Dienst konfiguriert)")
+        raise HTTPException(status_code=503, detail="Vorlesen nicht verfügbar (kein TTS-Dienst konfiguriert)")
     return Response(content=audio, media_type="audio/wav")

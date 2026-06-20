@@ -1,8 +1,8 @@
 """Persistenz der Planung: Personen, Urlaub, Feiertage.
 
 Personen tragen ihr Wochen-Soll je Wochentag (Mo..So in Stunden). Urlaub wird
-taggenau gefuehrt (Anteil 1.0 oder 0.5). Feiertage werden importiert (mit
-Region-Kennung) und in die Kapazitaet eingerechnet.
+taggenau geführt (Anteil 1.0 oder 0.5). Feiertage werden importiert (mit
+Region-Kennung) und in die Kapazität eingerechnet.
 """
 from __future__ import annotations
 
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS tagesregel (
 _STD_WOCHE = [8, 8, 8, 8, 8, 0, 0]
 
 # Abwesenheits-Arten (Seed). Farben aus der Material-Palette. reduziert_soll:
-# senkt das Tages-Soll; anrechnen: zaehlt gegen den Urlaubsanspruch; anwesend:
+# senkt das Tages-Soll; anrechnen: zählt gegen den Urlaubsanspruch; anwesend:
 # gilt trotzdem als anwesend (Homeoffice/Dienstreise).
 _ABW_SEED = [
     ("urlaub", "Urlaub", "#4CAF50", 1, 1, 0, 1),
@@ -75,7 +75,7 @@ _ABW_SEED = [
 
 
 def _migriere(conn: sqlite3.Connection) -> None:
-    """Ergaenzt neue Personen-Spalten in einer bestehenden Datenbank."""
+    """Ergänzt neue Personen-Spalten in einer bestehenden Datenbank."""
     spalten = {r["name"] for r in conn.execute("PRAGMA table_info(person)").fetchall()}
     if "bundesland" not in spalten:
         conn.execute("ALTER TABLE person ADD COLUMN bundesland TEXT")
@@ -109,13 +109,13 @@ def init_db() -> None:
                     " VALUES (?, NULL, 'jahrestag', ?, ?, 0.5, ?, 1)",
                     ("r_" + uuid4().hex[:8], monat, tag, notiz),
                 )
-            # Brueckentage als globaler Schalter (Standard: aus).
+            # Brückentage als globaler Schalter (Standard: aus).
             conn.execute(
                 "INSERT INTO tagesregel (id, person_id, art, anteil, notiz, aktiv)"
-                " VALUES (?, NULL, 'brueckentag', 0.0, 'Brueckentage automatisch', 0)",
+                " VALUES (?, NULL, 'brueckentag', 0.0, 'Brückentage automatisch', 0)",
                 ("r_" + uuid4().hex[:8],),
             )
-    # Bundesweite Feiertage fuer das laufende und naechste Jahr sicherstellen.
+    # Bundesweite Feiertage für das laufende und nächste Jahr sicherstellen.
     from datetime import date
     jetzt = date.today().year
     for j in (jetzt, jetzt + 1):
@@ -273,7 +273,7 @@ def liste_feiertage(von: str, bis: str) -> list[dict]:
 
 
 def feiertage_relevant(von: str, bis: str, bundesland: str | None) -> list[dict]:
-    """Feiertage, die fuer ein Bundesland gelten: bundesweite (Region NULL) plus die
+    """Feiertage, die für ein Bundesland gelten: bundesweite (Region NULL) plus die
     des eigenen Bundeslands. Ohne Bundesland nur die bundesweiten."""
     return [f for f in liste_feiertage(von, bis) if f["region"] is None or f["region"] == bundesland]
 
@@ -282,7 +282,7 @@ def uebernehme_feiertage(eintraege: list[dict]) -> int:
     """Speichert Feiertage mit ihrer jeweiligen Region (None = bundesweit).
 
     Vorher denselben Tag/dieselbe Region entfernen - das dedupliziert auch
-    bundesweite Eintraege (Region NULL gilt im Primaerschluessel als verschieden).
+    bundesweite Einträge (Region NULL gilt im Primärschlüssel als verschieden).
     """
     n = 0
     with verbindung() as conn:
@@ -301,11 +301,11 @@ def uebernehme_feiertage(eintraege: list[dict]) -> int:
 
 
 def stelle_feiertage_sicher(jahr: int, land: str = "DE") -> int:
-    """Sorgt dafuer, dass fuer ein Jahr Feiertage vorhanden sind.
+    """Sorgt dafür, dass für ein Jahr Feiertage vorhanden sind.
 
-    Sind fuer das Jahr noch gar keine Feiertage hinterlegt, werden die bundesweiten
+    Sind für das Jahr noch gar keine Feiertage hinterlegt, werden die bundesweiten
     (Region NULL) automatisch importiert, damit der Kalender sofort stimmt. Sobald
-    der Nutzer eigene (auch landesspezifische) Feiertage fuer das Jahr hat, passiert
+    der Nutzer eigene (auch landesspezifische) Feiertage für das Jahr hat, passiert
     nichts mehr.
     """
     with verbindung() as conn:
@@ -362,7 +362,7 @@ def aktualisiere_abwesenheitstyp(code: str, aenderungen: dict) -> dict | None:
 
 
 def _anrechenbare_codes() -> set[str]:
-    """Codes der Abwesenheits-Arten, die gegen den Urlaubsanspruch zaehlen."""
+    """Codes der Abwesenheits-Arten, die gegen den Urlaubsanspruch zählen."""
     with verbindung() as conn:
         rows = conn.execute("SELECT code FROM abwesenheit_typ WHERE anrechnen = 1").fetchall()
     codes = {r["code"] for r in rows}

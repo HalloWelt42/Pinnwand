@@ -1,7 +1,7 @@
 """Persistenz der Agenten-API: Token, Audit-Log und Idempotenz.
 
-Eigene Tabellen ueber die generische Verbindung des Kerns. Token werden nur
-gehasht gespeichert; der Klartext ist ausschliesslich einmal bei der Erstellung
+Eigene Tabellen über die generische Verbindung des Kerns. Token werden nur
+gehasht gespeichert; der Klartext ist ausschließlich einmal bei der Erstellung
 sichtbar. Jede schreibende Agenten-Aktion wird im Audit-Log festgehalten.
 """
 from __future__ import annotations
@@ -58,7 +58,7 @@ def _hash(token: str) -> str:
 # -- Token ----------------------------------------------------------------
 
 def erstelle_token(name: str, scopes: list[str]) -> dict:
-    """Legt ein Token an und gibt den Klartext genau einmal zurueck."""
+    """Legt ein Token an und gibt den Klartext genau einmal zurück."""
     token = "pw_" + secrets.token_urlsafe(32)
     tid = "t_" + uuid4().hex[:8]
     with verbindung() as conn:
@@ -95,7 +95,7 @@ def widerrufe_token(tid: str) -> bool:
 
 
 def pruefe_token(token: str) -> tuple[str, set[str]] | None:
-    """Gibt (Name, Scopes) eines gueltigen, aktiven Tokens zurueck, sonst None."""
+    """Gibt (Name, Scopes) eines gültigen, aktiven Tokens zurück, sonst None."""
     with verbindung() as conn:
         r = conn.execute(
             "SELECT id, name, scopes, aktiv FROM agent_token WHERE token_hash = ?", (_hash(token),)
@@ -146,10 +146,10 @@ def liste_audit(limit: int = 100) -> list[dict]:
 # -- Idempotenz -----------------------------------------------------------
 
 def _idem_schluessel(akteur: str, schluessel: str) -> str:
-    """Bindet den Idempotenz-Schluessel an den Akteur.
+    """Bindet den Idempotenz-Schlüssel an den Akteur.
 
-    Sonst koennte ein Akteur mit dem Schluessel eines anderen dessen Ergebnis
-    erhalten oder dessen Schreibaktion unterdruecken.
+    Sonst könnte ein Akteur mit dem Schlüssel eines anderen dessen Ergebnis
+    erhalten oder dessen Schreibaktion unterdrücken.
     """
     return f"{akteur}:{schluessel}"
 

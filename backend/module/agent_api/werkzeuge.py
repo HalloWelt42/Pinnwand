@@ -1,7 +1,7 @@
 """Werkzeug-Registry der Agenten-API.
 
 Eine einzige Definition aller Agenten-Werkzeuge (Name, Beschreibung, Scope,
-Parameter-Schema, Aufruf). Darueber setzen mehrere duenne Adapter auf:
+Parameter-Schema, Aufruf). Darüber setzen mehrere dünne Adapter auf:
 die OpenAI-Function-Schemas, der Execute-Endpunkt und der MCP-Server. So bleibt
 die Wahrheit an einer Stelle.
 """
@@ -27,10 +27,10 @@ class Werkzeug:
 
 WERKZEUGE: list[Werkzeug] = [
     Werkzeug(
-        "zeit_buchen", "Bucht Arbeitszeit auf eine Karte (per Schluessel wie R3-130, Titel oder ID).",
+        "zeit_buchen", "Bucht Arbeitszeit auf eine Karte (per Schlüssel wie R3-130, Titel oder ID).",
         "write",
         {
-            "karte": {"type": "string", "description": "Kartenschluessel, Titel oder ID"},
+            "karte": {"type": "string", "description": "Kartenschlüssel, Titel oder ID"},
             "dauer": {"type": "string", "description": "Dauer, z.B. '1:30', '90min', '1,5h', '2 Std'"},
             "datum": {"type": "string", "description": "Datum, z.B. 'heute', 'gestern', '2026-06-19'"},
             "kommentar": {"type": "string", "description": "Was wurde gemacht"},
@@ -42,15 +42,15 @@ WERKZEUGE: list[Werkzeug] = [
         "karte_anlegen", "Legt eine neue Karte/Aufgabe auf einem Board an.",
         "write",
         {
-            "board": {"type": "string", "description": "Board-Kuerzel (z.B. R3), Titel oder ID"},
+            "board": {"type": "string", "description": "Board-Kürzel (z.B. R3), Titel oder ID"},
             "titel": {"type": "string"},
             "spalte": {"type": "string", "description": "Spaltentitel oder ID; sonst erste Spalte"},
             "beschreibung": {"type": "string"},
             "labels": {"type": "array", "items": {"type": "string"}},
             "prioritaet": {"type": "string", "enum": ["hoch", "mittel", "niedrig"]},
-            "faellig": {"type": "string", "description": "Faelligkeit JJJJ-MM-TT"},
+            "faellig": {"type": "string", "description": "Fälligkeit JJJJ-MM-TT"},
             "zustaendig": {"type": "string"},
-            "schaetzung_min": {"type": "integer", "description": "Schaetzung in Minuten"},
+            "schaetzung_min": {"type": "integer", "description": "Schätzung in Minuten"},
         },
         ["board", "titel"],
         lambda a, x, dry: a.karte_anlegen(
@@ -69,14 +69,14 @@ WERKZEUGE: list[Werkzeug] = [
         lambda a, x, dry: a.erledigen(x["karte"], x.get("dauer"), x.get("kommentar"), dry),
     ),
     Werkzeug(
-        "kommentieren", "Haengt einen Kommentar an eine Karte.",
+        "kommentieren", "Hängt einen Kommentar an eine Karte.",
         "write",
         {"karte": {"type": "string"}, "text": {"type": "string"}},
         ["karte", "text"],
         lambda a, x, dry: a.kommentieren(x["karte"], x["text"], dry),
     ),
     Werkzeug(
-        "erfassen", "Erfasst eine Zeitbuchung aus freiem Text (z.B. '2 Std an R3-130, Toleranzen geprueft').",
+        "erfassen", "Erfasst eine Zeitbuchung aus freiem Text (z.B. '2 Std an R3-130, Toleranzen geprüft').",
         "write",
         {"text": {"type": "string"}},
         ["text"],
@@ -90,7 +90,7 @@ WERKZEUGE: list[Werkzeug] = [
         lambda a, x, dry: a.suchen(x["q"], int(x.get("limit", 10))),
     ),
     Werkzeug(
-        "briefing", "Was steht an: ueberfaellige, heute/diese Woche faellige und laufende Aufgaben.",
+        "briefing", "Was steht an: überfällige, heute/diese Woche fällige und laufende Aufgaben.",
         "read",
         {"datum": {"type": "string", "description": "Bezugsdatum, Standard heute"}},
         [],
@@ -129,7 +129,7 @@ def _ziel(ergebnis: dict) -> str | None:
 
 def fuehre_aus(name: str, argumente: dict, akteur: Akteur,
                dry_run: bool = False, idempotenz_schluessel: str | None = None) -> dict:
-    """Fuehrt ein Werkzeug aus: Scope-Pruefung, Idempotenz, Trockenlauf, Audit."""
+    """Führt ein Werkzeug aus: Scope-Prüfung, Idempotenz, Trockenlauf, Audit."""
     w = _NACH_NAME.get(name)
     if w is None:
         raise AktionsFehler(f"Unbekanntes Werkzeug '{name}'", status=404)

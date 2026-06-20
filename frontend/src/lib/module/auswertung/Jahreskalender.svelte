@@ -69,7 +69,7 @@
     <div class="jahrnav">
       <button class="ib" aria-label="Vorheriges Jahr" onclick={() => (jahr -= 1)}><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
       <span class="jahr">{jahr}</span>
-      <button class="ib" aria-label="Naechstes Jahr" onclick={() => (jahr += 1)}><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+      <button class="ib" aria-label="Nächstes Jahr" onclick={() => (jahr += 1)}><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
     </div>
 
     <div class="seg">

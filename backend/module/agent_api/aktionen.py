@@ -1,9 +1,9 @@
 """Aktionsschicht der Agenten-API.
 
-Eine objektorientierte Schicht, die alle Operationen buendelt (Zeit buchen,
+Eine objektorientierte Schicht, die alle Operationen bündelt (Zeit buchen,
 Karte anlegen, erledigen, kommentieren, suchen, Briefing). Die Protokoll-Adapter
 (REST, MCP, OpenAI-Tools) rufen nur diese Schicht auf - sie ist die einzige
-Wahrheit. Schreibaktionen unterstuetzen einen Trockenlauf (Vorschau).
+Wahrheit. Schreibaktionen unterstützen einen Trockenlauf (Vorschau).
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from . import nlp
 
 
 class AktionsFehler(Exception):
-    """Fachlicher Fehler einer Aktion (vom Adapter in einen 4xx-Status uebersetzt)."""
+    """Fachlicher Fehler einer Aktion (vom Adapter in einen 4xx-Status übersetzt)."""
 
     def __init__(self, nachricht: str, status: int = 400) -> None:
         super().__init__(nachricht)
@@ -34,7 +34,7 @@ class Aktionen:
     def __init__(self, akteur: str = "unbekannt") -> None:
         self.akteur = akteur
 
-    # -- Aufloesung ------------------------------------------------------
+    # -- Auflösung ------------------------------------------------------
 
     def _board_id(self, ref: str | None) -> str | None:
         if not ref:
@@ -116,7 +116,7 @@ class Aktionen:
         kt = self._karte_oder_fehler(karte_ref)
         ziel = k.done_spalte_id(kt.board_id)
         if not ziel:
-            raise AktionsFehler("Keine Erledigt-Spalte fuer das Board gefunden", status=409)
+            raise AktionsFehler("Keine Erledigt-Spalte für das Board gefunden", status=409)
         sek = None
         if dauer is not None:
             sek = dauer if isinstance(dauer, int) else nlp.parse_dauer(str(dauer))
@@ -146,10 +146,10 @@ class Aktionen:
         return {"vorschau": False, **vorschau}
 
     def erfasse_freitext(self, text: str, dry_run: bool = False) -> dict:
-        """Natuerlichsprachige Zeitbuchung: erst interpretieren, dann (optional) buchen."""
+        """Natürlichsprachige Zeitbuchung: erst interpretieren, dann (optional) buchen."""
         deutung = nlp.erfasse(text)
         if not deutung.get("karte"):
-            raise AktionsFehler("Keine Karte erkannt - bitte Schluessel (z.B. R3-130) oder Titel nennen")
+            raise AktionsFehler("Keine Karte erkannt - bitte Schlüssel (z.B. R3-130) oder Titel nennen")
         if not deutung.get("dauer_sek"):
             raise AktionsFehler("Keine Dauer erkannt - z.B. '1:30', '90min', '2 Std'")
         ergebnis = self.zeit_buchen(
@@ -162,7 +162,7 @@ class Aktionen:
     # -- Leseaktionen ----------------------------------------------------
 
     def suchen(self, query: str, limit: int = 10) -> dict:
-        """Stichwort-Suche ueber Karteninhalte (semantische Suche folgt in Phase 3)."""
+        """Stichwort-Suche über Karteninhalte (semantische Suche folgt in Phase 3)."""
         begriff = (query or "").strip()
         if not begriff:
             return {"treffer": [], "anzahl": 0, "modus": "stichwort"}
@@ -182,7 +182,7 @@ class Aktionen:
         return {"treffer": treffer, "anzahl": len(treffer), "modus": "stichwort"}
 
     def briefing(self, heute: str | None = None) -> dict:
-        """Was steht an: ueberfaellig, heute, diese Woche, laufend."""
+        """Was steht an: überfällig, heute, diese Woche, laufend."""
         heute_iso = heute or date.today().isoformat()
         heute_d = date.fromisoformat(heute_iso)
         woche = (heute_d + timedelta(days=7)).isoformat()

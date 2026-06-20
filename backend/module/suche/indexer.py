@@ -1,7 +1,7 @@
 """Aufbau des semantischen Index aus dem Kartenbestand.
 
 Indiziert pro Karte: Titel, Beschreibung, Labels, Checklistentexte, Kommentare
-und die Kommentare der Zeiteintraege. Voll neu aufbaubar (reindex) und einzeln
+und die Kommentare der Zeiteinträge. Voll neu aufbaubar (reindex) und einzeln
 aktualisierbar (index_eine). Ohne Embeddings/Vektor-DB tut es nichts (no-op).
 """
 from __future__ import annotations
@@ -93,7 +93,7 @@ def reindex() -> dict:
 
 
 def index_eine(karte_id: str) -> bool:
-    """Aktualisiert den Index fuer eine Karte. Still, wenn KI-Dienste fehlen."""
+    """Aktualisiert den Index für eine Karte. Still, wenn KI-Dienste fehlen."""
     if not embeddings.verfuegbar() or not vektor.verfuegbar():
         return False
     docs = _karten_dokumente(karte_id)

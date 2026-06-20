@@ -2,8 +2,8 @@
 
 Ein Bericht besteht aus Abschnitten mit Spalten, Zeilen und optionaler
 Summenzeile - so kann er einheitlich als PDF, CSV oder Markdown gerendert werden.
-Zeiten werden ueber die Zeiteintraege gerechnet (Single Source of Truth); die
-Zuordnung zu Personen laeuft ueber das Feld 'zustaendig' der Karte.
+Zeiten werden über die Zeiteinträge gerechnet (Single Source of Truth); die
+Zuordnung zu Personen läuft über das Feld 'zustaendig' der Karte.
 """
 from __future__ import annotations
 
@@ -74,7 +74,7 @@ def soll_ist(board_id: str | None = None) -> dict:
         zeilen.append([r["schluessel"] or "", r["titel"] or "", std(soll), std(ist), pz])
     return {
         "titel": "Soll / Ist", "zeitraum": "Gesamtbestand",
-        "abschnitte": [{"titel": "Karten", "spalten": ["Schluessel", "Titel", "Soll", "Ist", "Auslastung"], "zeilen": zeilen, "summe": None}],
+        "abschnitte": [{"titel": "Karten", "spalten": ["Schlüssel", "Titel", "Soll", "Ist", "Auslastung"], "zeilen": zeilen, "summe": None}],
     }
 
 
@@ -103,8 +103,8 @@ def kapazitaet_auslastung(von: str, bis: str) -> dict:
         pz = f"{round(ist_sek / kap_sek * 100)}%" if kap_sek else "-"
         zeilen.append([p["name"], std(kap_sek), std(ist_sek), pz])
     return {
-        "titel": "Kapazitaet und Auslastung", "zeitraum": f"{von} bis {bis}",
-        "abschnitte": [{"titel": "Personen", "spalten": ["Person", "Kapazitaet", "Ist", "Auslastung"], "zeilen": zeilen, "summe": None}],
+        "titel": "Kapazität und Auslastung", "zeitraum": f"{von} bis {bis}",
+        "abschnitte": [{"titel": "Personen", "spalten": ["Person", "Kapazität", "Ist", "Auslastung"], "zeilen": zeilen, "summe": None}],
     }
 
 
@@ -132,14 +132,14 @@ def zeit_je_karte(von: str, bis: str) -> dict:
     summe = sum(int(r["s"]) for r in rows)
     return {
         "titel": "Zeit je Karte", "zeitraum": f"{von} bis {bis}",
-        "abschnitte": [{"titel": "Karten", "spalten": ["Schluessel", "Titel", "Stunden"], "zeilen": zeilen, "summe": ["", "Summe", std(summe)]}],
+        "abschnitte": [{"titel": "Karten", "spalten": ["Schlüssel", "Titel", "Stunden"], "zeilen": zeilen, "summe": ["", "Summe", std(summe)]}],
     }
 
 
 TYPEN = {
     "stundenzettel": "Wochen-Stundenzettel",
     "soll_ist": "Soll / Ist",
-    "kapazitaet": "Kapazitaet und Auslastung",
+    "kapazitaet": "Kapazität und Auslastung",
     "zeit_person": "Zeit je Person",
     "zeit_karte": "Zeit je Karte",
 }

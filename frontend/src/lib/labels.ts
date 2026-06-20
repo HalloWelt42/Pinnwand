@@ -1,8 +1,8 @@
 // Label-Farben aus der Material-Palette.
 // Bekannte Bezeichnungen haben eine feste (semantische) Farbe; alle anderen
-// bekommen ueber einen Hash eine stabile, eindeutige Farbe - kein Zufall, kein Grau.
+// bekommen über einen Hash eine stabile, eindeutige Farbe - kein Zufall, kein Grau.
 // Hell: Stufe 100 Hintergrund + dunkelste lesbare Stufe als Text (Kontrast >= 4.5:1).
-// Dunkel: getoenter Hintergrund aus Stufe 200 + Stufe 200 als Text.
+// Dunkel: getönter Hintergrund aus Stufe 200 + Stufe 200 als Text.
 
 import { material, type Familie } from './theme/palette'
 

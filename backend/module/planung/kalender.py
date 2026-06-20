@@ -1,12 +1,12 @@
-"""Kalender-Engine: Soll je Tag und Jahres-Aggregation ueber alle Personen.
+"""Kalender-Engine: Soll je Tag und Jahres-Aggregation über alle Personen.
 
-Zentrale, testbare Logik fuer den Jahreskalender. Das Tages-Soll einer Person
+Zentrale, testbare Logik für den Jahreskalender. Das Tages-Soll einer Person
 ergibt sich aus den Wochenstunden, reduziert in klarer Reihenfolge:
 
   1. Nicht-Arbeitstag (Wochenstunden am Wochentag = 0)  -> Soll 0, frei
-  2. Feiertag (fuer das Bundesland der Person)           -> Soll 0, feiertag
+  2. Feiertag (für das Bundesland der Person)           -> Soll 0, feiertag
   3. Sonderregel (Tagesregel: Jahrestag/Wochentag/       -> Soll * anteil
-     Brueckentag; personenbezogen schlaegt global)
+     Brückentag; personenbezogen schlägt global)
   4. Abwesenheit (Urlaub/Krankheit/...; nur wenn die     -> Soll * (1 - anteil)
      Art das Soll reduziert; Homeoffice bleibt anwesend)
 
@@ -23,7 +23,7 @@ from . import persistence as db
 
 
 def _ist_sek_je_tag(von: str, bis: str) -> dict[tuple[str, str], int]:
-    """Geleistete Sekunden je (Person-Kuerzel, Datum). Person ueber karte.zustaendig."""
+    """Geleistete Sekunden je (Person-Kürzel, Datum). Person über karte.zustaendig."""
     with verbindung() as conn:
         rows = conn.execute(
             "SELECT z.datum AS datum, k.zustaendig AS kuerzel, COALESCE(SUM(z.sekunden), 0) AS sek "
@@ -100,7 +100,7 @@ def _person_kontext(person: dict, all_feier: list[dict], regelinfo: dict, urlaub
 
 
 def _regel_anteil(d: date, ctx: dict) -> float | None:
-    """Wirksamer Sonderregel-Anteil fuer den Tag (None = keine Regel). Person schlaegt global, Jahrestag schlaegt Wochentag."""
+    """Wirksamer Sonderregel-Anteil für den Tag (None = keine Regel). Person schlägt global, Jahrestag schlägt Wochentag."""
     key = (d.month, d.day)
     wd = d.weekday()
     if key in ctx["jt"]:
@@ -164,14 +164,14 @@ def _urlaub_je_person(von: str, bis: str) -> dict[str, dict[str, tuple[str, floa
 
 
 def _feiertage_gepuffert(von: str, bis: str) -> list[dict]:
-    """Feiertage inkl. je einem Tag davor/danach - noetig fuer die Brueckentag-Nachbarpruefung am Rand."""
+    """Feiertage inkl. je einem Tag davor/danach - nötig für die Brückentag-Nachbarprüfung am Rand."""
     v = (date.fromisoformat(von) - timedelta(days=1)).isoformat()
     b = (date.fromisoformat(bis) + timedelta(days=1)).isoformat()
     return db.liste_feiertage(v, b)
 
 
 def tageszellen(person: dict, von: str, bis: str) -> list[dict]:
-    """Tageszellen einer Person ueber einen Zeitraum (fuer Kapazitaet/Overlay)."""
+    """Tageszellen einer Person über einen Zeitraum (für Kapazität/Overlay)."""
     all_feier = _feiertage_gepuffert(von, bis)
     regelinfo = _regeln_aufbereiten(db.liste_tagesregeln())
     typ_map = {t["code"]: t for t in db.liste_abwesenheitstypen()}
@@ -188,7 +188,7 @@ def tageszellen(person: dict, von: str, bis: str) -> list[dict]:
 
 
 def kalender(jahr: int) -> dict:
-    """Jahresaggregation ueber alle aktiven Personen je Tag (fuer den Jahreskalender)."""
+    """Jahresaggregation über alle aktiven Personen je Tag (für den Jahreskalender)."""
     von, bis = f"{jahr}-01-01", f"{jahr}-12-31"
     db.stelle_feiertage_sicher(jahr)  # bundesweite Feiertage bei Bedarf automatisch laden
     personen = [p for p in db.liste_personen() if p["aktiv"]]

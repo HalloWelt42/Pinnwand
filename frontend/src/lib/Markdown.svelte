@@ -13,7 +13,7 @@
 
   let { md = '' }: { md?: string } = $props()
 
-  // Reihenfolge wie im bewaehrten Vorbild: Umbrueche vor Mathe.
+  // Reihenfolge wie im bewährten Vorbild: Umbrüche vor Mathe.
   const plugins: Plugin[] = [
     gfmPlugin(),
     { remarkPlugin: remarkBreaks },
@@ -48,7 +48,7 @@
   let zaehler = 0
 
   async function nachbearbeiten(el: HTMLElement): Promise<void> {
-    // 1) Mermaid-Codebloecke rendern.
+    // 1) Mermaid-Codeblöcke rendern.
     const mermaidBloecke = el.querySelectorAll<HTMLElement>('code.language-mermaid')
     if (mermaidBloecke.length) {
       initMermaid()
@@ -63,11 +63,11 @@
           huelle.innerHTML = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } })
           pre.replaceWith(huelle)
         } catch {
-          /* ungueltiges Diagramm bleibt als Codeblock stehen */
+          /* ungültiges Diagramm bleibt als Codeblock stehen */
         }
       }
     }
-    // 2) Kopierknopf an Codebloecke.
+    // 2) Kopierknopf an Codeblöcke.
     el.querySelectorAll<HTMLElement>('pre > code').forEach((code) => {
       const pre = code.parentElement as HTMLElement
       if (!pre || pre.dataset.kopf === '1') return
@@ -83,7 +83,7 @@
       }
       pre.appendChild(knopf)
     })
-    // 3) Externe Links sicher oeffnen.
+    // 3) Externe Links sicher öffnen.
     el.querySelectorAll('a[href]').forEach((a) => {
       a.setAttribute('target', '_blank')
       a.setAttribute('rel', 'noopener noreferrer')

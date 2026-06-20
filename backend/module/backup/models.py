@@ -2,7 +2,7 @@
 
 Ein Snapshot ist eine in sich geschlossene ZIP-Datei mit der Datenbank, dem
 Berichts-Archiv, einer Kopie der Konfigurationsvorlage und einem Manifest, das
-Version, Schema und Datensatz-Zaehler festhaelt.
+Version, Schema und Datensatz-Zähler festhält.
 """
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 
 class SnapshotInfo(BaseModel):
-    """Kurzbeschreibung eines Snapshots fuer die Liste."""
+    """Kurzbeschreibung eines Snapshots für die Liste."""
 
     id: str
     dateiname: str
@@ -35,7 +35,7 @@ class SchemaTabelle(BaseModel):
 
 
 class Zustand(BaseModel):
-    """Inhaltlicher Umfang: Version, Zaehler je Tabelle, Anzahl Berichte."""
+    """Inhaltlicher Umfang: Version, Zähler je Tabelle, Anzahl Berichte."""
 
     version: str
     zaehler: dict[str, int]
@@ -43,7 +43,7 @@ class Zustand(BaseModel):
 
 
 class Vorschau(BaseModel):
-    """Was eine Wiederherstellung bedeuten wuerde: Snapshot gegen aktuellen Stand."""
+    """Was eine Wiederherstellung bedeuten würde: Snapshot gegen aktuellen Stand."""
 
     info: SnapshotInfo
     snapshot: Zustand

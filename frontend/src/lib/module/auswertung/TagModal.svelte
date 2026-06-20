@@ -38,7 +38,7 @@
   })
 
   async function eintragen(): Promise<void> {
-    if (!personId || !von) { fehler = 'Person und Datum noetig.'; return }
+    if (!personId || !von) { fehler = 'Person und Datum nötig.'; return }
     arbeitet = true
     fehler = ''
     try {

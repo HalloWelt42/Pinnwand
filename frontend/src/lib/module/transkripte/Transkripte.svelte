@@ -22,7 +22,7 @@
     transkripteStatus().then((s) => (status = s)).catch(() => (status = { erreichbar: false, konfiguriert: false }))
   })
 
-  // Erstbefuellung (leere Suche zeigt die neuesten) und entprellte Suche.
+  // Erstbefüllung (leere Suche zeigt die neuesten) und entprellte Suche.
   $effect(() => {
     const q = frage
     if (timer) clearTimeout(timer)
@@ -68,7 +68,7 @@
   {#if status && !status.konfiguriert}
     <p class="hinweis">Kein Transkriptions-Dienst konfiguriert.</p>
   {:else if status && !status.erreichbar}
-    <p class="hinweis">Transkriptions-Dienst nicht erreichbar. Laeuft er?</p>
+    <p class="hinweis">Transkriptions-Dienst nicht erreichbar. Läuft er?</p>
   {:else}
     <div class="spalten">
       <aside class="liste">
@@ -112,7 +112,7 @@
           </header>
           <div class="text">{@html hervor(aktiv.full_text, frage)}</div>
         {:else}
-          <p class="leer-d">Links ein Transkript waehlen.</p>
+          <p class="leer-d">Links ein Transkript wählen.</p>
         {/if}
       </section>
     </div>

@@ -1,6 +1,6 @@
-// Vorlese-Adapter: nutzt den lokalen TTS-Dienst (ueber das Backend) und faellt
-// auf die Browser-Sprachausgabe zurueck. Vorlesen ist optional - ohne Dienst
-// und ohne Browser-Unterstuetzung passiert nichts.
+// Vorlese-Adapter: nutzt den lokalen TTS-Dienst (über das Backend) und fällt
+// auf die Browser-Sprachausgabe zurück. Vorlesen ist optional - ohne Dienst
+// und ohne Browser-Unterstützung passiert nichts.
 
 import { vorleseAudio } from './api'
 
@@ -9,7 +9,7 @@ export const tts = $state<{ laeuft: boolean; stimme: string }>({ laeuft: false, 
 try {
   tts.stimme = localStorage.getItem('pw_tts_stimme') ?? ''
 } catch {
-  /* localStorage nicht verfuegbar */
+  /* localStorage nicht verfügbar */
 }
 
 export function setzeStimme(stimme: string): void {

@@ -45,7 +45,7 @@ def _html_doc(bericht: dict) -> str:
 
 
 def pdf(bericht: dict) -> bytes:
-    from weasyprint import HTML  # spaeter Import: Start auch ohne WeasyPrint moeglich
+    from weasyprint import HTML  # später Import: Start auch ohne WeasyPrint möglich
 
     return HTML(string=_html_doc(bericht)).write_pdf()
 
@@ -81,7 +81,7 @@ def markdown_text(bericht: dict) -> str:
 
 
 def rendere(bericht: dict, fmt: str) -> tuple[bytes, str]:
-    """Gibt (Inhalt, MIME) zurueck."""
+    """Gibt (Inhalt, MIME) zurück."""
     if fmt == "pdf":
         return pdf(bericht), "application/pdf"
     if fmt == "csv":

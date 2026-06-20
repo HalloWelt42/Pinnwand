@@ -1,6 +1,6 @@
 // Material-Design-Farbpalette (2014) - echte, offizielle 1:1 Hex-Werte.
-// Quelle gegengeprueft an m2.material.io, durch Mehrfacherfassung verifiziert.
-// Diese Datei ist die Single Source of Truth fuer alle Highlight-Farben.
+// Quelle gegengeprüft an m2.material.io, durch Mehrfacherfassung verifiziert.
+// Diese Datei ist die Single Source of Truth für alle Highlight-Farben.
 
 export const material = {
   red: { 50: '#FFEBEE', 100: '#FFCDD2', 200: '#EF9A9A', 300: '#E57373', 400: '#EF5350', 500: '#F44336', 600: '#E53935', 700: '#D32F2F', 800: '#C62828', 900: '#B71C1C', a100: '#FF8A80', a200: '#FF5252', a400: '#FF1744', a700: '#D50000' },

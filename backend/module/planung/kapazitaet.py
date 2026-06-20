@@ -1,4 +1,4 @@
-"""Kapazitaetsberechnung: Wochen-Soll je Person abzueglich Wochenende, Feiertag,
+"""Kapazitätsberechnung: Wochen-Soll je Person abzüglich Wochenende, Feiertag,
 Sonderregeln (halbe Tage) und Abwesenheit. Nutzt die gemeinsame Tageslogik aus
 kalender.py, damit Auswertung und Kalenderanzeige konsistent sind."""
 from __future__ import annotations
@@ -10,7 +10,7 @@ from . import persistence as db
 
 
 def _grund(z: dict) -> str | None:
-    """Leitet den dominanten Grund der Soll-Reduktion aus einer Tageszelle ab (fuer Berichte)."""
+    """Leitet den dominanten Grund der Soll-Reduktion aus einer Tageszelle ab (für Berichte)."""
     if z["feiertag"] is not None:
         return "feiertag"
     if z["abw"]:
@@ -33,7 +33,7 @@ def kapazitaet(person_id: str, von: str, bis: str) -> dict | None:
 
 
 def tage_overlay(von: str, bis: str, person_id: str | None = None) -> list[dict]:
-    """Pro Tag: Wochenende, Feiertagsname, Urlaubsanteil - fuer die Kalender-Einfaerbung.
+    """Pro Tag: Wochenende, Feiertagsname, Urlaubsanteil - für die Kalender-Einfärbung.
 
     Mit Person werden nur deren Feiertage (bundesweit + eigenes Bundesland) sowie
     deren Abwesenheit gezeigt, ohne Person alle hinterlegten Feiertage.

@@ -1,6 +1,6 @@
 // Frontend-Modul-Registry.
 // Module werden beim Start automatisch entdeckt (siehe main.ts) und melden
-// hier ihre Ansichten an. Welche Ansichten tatsaechlich erscheinen, steuert
+// hier ihre Ansichten an. Welche Ansichten tatsächlich erscheinen, steuert
 // das Backend-Manifest (/api/erweiterungen); diese Registry liefert die
 // passende Komponente je Ansichts-ID.
 

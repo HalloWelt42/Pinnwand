@@ -1,8 +1,8 @@
 """Berechnung der Termine einer Serie in einem Datumsbereich.
 
-Unterstuetzt taeglich/woechentlich/monatlich mit Intervall, ausgewaehlten
-Wochentagen (z.B. Mo und Mi), Monatstag und optionalem Ueberspringen von
-Wochenenden. Feiertage/Urlaub werden spaeter (Phase Planung) zusaetzlich
+Unterstützt täglich/wöchentlich/monatlich mit Intervall, ausgewählten
+Wochentagen (z.B. Mo und Mi), Monatstag und optionalem Überspringen von
+Wochenenden. Feiertage/Urlaub werden später (Phase Planung) zusätzlich
 ausgenommen.
 """
 from __future__ import annotations

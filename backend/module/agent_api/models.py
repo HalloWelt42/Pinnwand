@@ -1,11 +1,11 @@
-"""Datenvertraege der Agenten-API."""
+"""Datenverträge der Agenten-API."""
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
 
 class ZeitBuchung(BaseModel):
-    karte: str  # Schluessel (R3-130), Titel oder ID
+    karte: str  # Schlüssel (R3-130), Titel oder ID
     dauer: str  # "1:30", "90min", "1,5h", "2 Std"
     datum: str | None = None  # "heute", "gestern", "2026-06-19", "Montag"
     kommentar: str | None = None
@@ -22,7 +22,7 @@ class Erledigung(BaseModel):
 
 
 class KartenAnlage(BaseModel):
-    board: str  # Kuerzel (R3), Titel oder ID
+    board: str  # Kürzel (R3), Titel oder ID
     titel: str
     spalte: str | None = None
     beschreibung: str | None = None

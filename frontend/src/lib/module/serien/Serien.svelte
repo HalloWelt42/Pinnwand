@@ -91,8 +91,8 @@
     <div class="form">
       <input class="f titel" placeholder="Titel (z.B. REKO-Telko)" bind:value={titel} />
       <select class="f" bind:value={typ}>
-        <option value="taeglich">taeglich</option>
-        <option value="woechentlich">woechentlich</option>
+        <option value="taeglich">täglich</option>
+        <option value="woechentlich">wöchentlich</option>
         <option value="monatlich">monatlich</option>
       </select>
       <label class="f mini">Intervall <input type="number" min="1" bind:value={intervall} /></label>
@@ -112,7 +112,7 @@
         {#each spalten as s (s.id)}<option value={s.id}>{s.titel}</option>{/each}
       </select>
       <label class="f mini">Vorlauf (Tage) <input type="number" min="0" bind:value={vorlaufTage} /></label>
-      <label class="f chk"><input type="checkbox" bind:checked={wochenendenUeberspringen} /> Wochenenden ueberspringen</label>
+      <label class="f chk"><input type="checkbox" bind:checked={wochenendenUeberspringen} /> Wochenenden überspringen</label>
       <button class="btn primaer" onclick={anlegen}>Anlegen + vorbuchen</button>
     </div>
     {#if meldung}<p class="meldung">{meldung}</p>{/if}
@@ -130,7 +130,7 @@
             <button class="ic" title="Vorschau" onclick={() => zeigeVorschau(s)}><i class="fa-solid fa-calendar-day" aria-hidden="true"></i></button>
             <button class="ic" title="Jetzt vorbuchen" onclick={() => vorbuchen(s)}><i class="fa-solid fa-bolt" aria-hidden="true"></i></button>
             <button class="ic" title={s.aktiv ? 'Pausieren' : 'Aktivieren'} onclick={() => umschaltenAktiv(s)}><i class="fa-solid {s.aktiv ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i></button>
-            <button class="ic rot" title="Loeschen" onclick={() => entfernen(s)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+            <button class="ic rot" title="Löschen" onclick={() => entfernen(s)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
           </span>
         </div>
         {#if vorschau[s.id]}

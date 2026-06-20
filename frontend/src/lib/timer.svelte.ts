@@ -1,5 +1,5 @@
-// Geteilter Zeiterfassungs-Zustand: aktive Aufgabe (laeuft ODER pausiert) + Live-Uhr.
-// Die Leiste oben zeigt die aktive Aufgabe; Pause haelt an (Leiste bleibt, Play moeglich),
+// Geteilter Zeiterfassungs-Zustand: aktive Aufgabe (läuft ODER pausiert) + Live-Uhr.
+// Die Leiste oben zeigt die aktive Aufgabe; Pause hält an (Leiste bleibt, Play möglich),
 // Stopp beendet die Sitzung und blendet die Leiste aus.
 
 import type { Karte } from './types'
@@ -22,7 +22,7 @@ export function startUhr(): void {
 }
 
 export async function aktualisiereLaufend(): Promise<void> {
-  // Beim Start: eine tatsaechlich laufende Karte als aktiv uebernehmen.
+  // Beim Start: eine tatsächlich laufende Karte als aktiv übernehmen.
   const l = await ladeLaufend()
   if (l) timer.aktiv = l
 }
@@ -33,7 +33,7 @@ export async function timerStarten(id: string): Promise<void> {
 }
 
 export async function timerPausieren(id: string): Promise<void> {
-  // Pausiert, aber bleibt aktiv -> Leiste bleibt sichtbar, Fortsetzen moeglich.
+  // Pausiert, aber bleibt aktiv -> Leiste bleibt sichtbar, Fortsetzen möglich.
   timer.aktiv = await timerPause(id)
   timer.stand++
 }

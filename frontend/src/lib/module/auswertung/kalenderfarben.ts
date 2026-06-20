@@ -1,4 +1,4 @@
-// Gemeinsame Farb- und Aggregationslogik fuer den Jahreskalender (Gitter + Matrix).
+// Gemeinsame Farb- und Aggregationslogik für den Jahreskalender (Gitter + Matrix).
 
 import { formatStd } from '../../zeit'
 import type { AbwesenheitTyp, KalenderZelle } from '../../api'
@@ -12,12 +12,12 @@ export interface Ebenen {
 
 export type TypMap = Record<string, AbwesenheitTyp>
 
-const TAG_REF_SEK = 8 * 3600 // Referenz fuer die Stunden-Heatmap (ein voller Arbeitstag)
+const TAG_REF_SEK = 8 * 3600 // Referenz für die Stunden-Heatmap (ein voller Arbeitstag)
 
 /** Hintergrundfarbe einer Zelle (Matrix) je nach aktiven Ebenen. */
 export function zellHintergrund(z: KalenderZelle, e: Ebenen, typen: TypMap): string {
   if (e.feiertage && z.feiertag) return 'var(--due-rot-bg)'
-  // Feiertag und freier Tag gelten nie als anwesend (keine gruene Faerbung).
+  // Feiertag und freier Tag gelten nie als anwesend (keine grüne Färbung).
   if (z.status === 'frei' || z.status === 'feiertag') return 'var(--surface-2)'
   if (e.anwesenheit && z.status === 'abwesend' && z.abw) {
     return typen[z.abw.typ]?.farbe ?? 'var(--due-rot-bg)'
@@ -42,7 +42,7 @@ export function zellMarker(z: KalenderZelle, e: Ebenen, typen: TypMap): string |
   return null
 }
 
-/** Halber Tag (Abwesenheit oder Regel anteilig)? Fuer eine diagonale Markierung. */
+/** Halber Tag (Abwesenheit oder Regel anteilig)? Für eine diagonale Markierung. */
 export function zellHalb(z: KalenderZelle): boolean {
   if (z.abw && z.abw.anteil > 0 && z.abw.anteil < 1) return true
   return z.regel !== null && z.regel > 0 && z.regel < 1

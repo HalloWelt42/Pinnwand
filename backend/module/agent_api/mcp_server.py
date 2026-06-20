@@ -1,8 +1,8 @@
 """Optionaler MCP-Server der Agenten-API.
 
-Stellt dieselben Werkzeuge wie die REST-/OpenAI-Schicht ueber das MCP-Protokoll
-bereit (Streamable HTTP, eingehaengt unter /mcp). Strikt optional: nur aktiv,
-wenn das mcp-Paket vorhanden ist UND PINNWAND_MCP gesetzt ist. Laeuft als
+Stellt dieselben Werkzeuge wie die REST-/OpenAI-Schicht über das MCP-Protokoll
+bereit (Streamable HTTP, eingehängt unter /mcp). Strikt optional: nur aktiv,
+wenn das mcp-Paket vorhanden ist UND PINNWAND_MCP gesetzt ist. Läuft als
 Dienst-Akteur 'mcp' (read+write); jeder Aufruf wird im Audit-Log festgehalten.
 Die Erreichbarkeit folgt der Server-Bindung (Standard: nur localhost).
 """
@@ -33,7 +33,7 @@ def _akteur() -> Akteur:
 
 
 def _ruf(name: str, argumente: dict) -> dict:
-    """Fuehrt ein Werkzeug aus und gibt fachliche Fehler als Feld zurueck (statt Exception)."""
+    """Führt ein Werkzeug aus und gibt fachliche Fehler als Feld zurück (statt Exception)."""
     try:
         return werkzeuge.fuehre_aus(name, argumente, _akteur())
     except AktionsFehler as e:
@@ -42,12 +42,12 @@ def _ruf(name: str, argumente: dict) -> dict:
 
 def _baue() -> "FastMCP":
     # streamable_http_path='/' -> Endpunkt liegt direkt unter dem Mount-Pfad (/mcp),
-    # sonst entstuende /mcp/mcp.
+    # sonst entstünde /mcp/mcp.
     mcp = FastMCP("Pinnwand", streamable_http_path="/")
 
     @mcp.tool()
     def zeit_buchen(karte: str, dauer: str, datum: str = "", kommentar: str = "") -> dict:
-        """Bucht Arbeitszeit auf eine Karte (Schluessel wie R3-130, Titel oder ID)."""
+        """Bucht Arbeitszeit auf eine Karte (Schlüssel wie R3-130, Titel oder ID)."""
         return _ruf("zeit_buchen", {"karte": karte, "dauer": dauer, "datum": datum or None, "kommentar": kommentar or None})
 
     @mcp.tool()
@@ -67,12 +67,12 @@ def _baue() -> "FastMCP":
 
     @mcp.tool()
     def kommentieren(karte: str, text: str) -> dict:
-        """Haengt einen Kommentar an eine Karte."""
+        """Hängt einen Kommentar an eine Karte."""
         return _ruf("kommentieren", {"karte": karte, "text": text})
 
     @mcp.tool()
     def erfassen(text: str) -> dict:
-        """Erfasst eine Zeitbuchung aus freiem Text (z.B. '2 Std an R3-130, Toleranzen geprueft')."""
+        """Erfasst eine Zeitbuchung aus freiem Text (z.B. '2 Std an R3-130, Toleranzen geprüft')."""
         return _ruf("erfassen", {"text": text})
 
     @mcp.tool()
@@ -82,7 +82,7 @@ def _baue() -> "FastMCP":
 
     @mcp.tool()
     def briefing(datum: str = "") -> dict:
-        """Was steht an: ueberfaellige, heute/diese Woche faellige und laufende Aufgaben."""
+        """Was steht an: überfällige, heute/diese Woche fällige und laufende Aufgaben."""
         return _ruf("briefing", {"datum": datum or None})
 
     return mcp

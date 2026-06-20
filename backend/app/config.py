@@ -3,8 +3,8 @@
 Leitprinzip: KI- und Integrationsdienste sind optional. Diese Schicht liest die
 Konfiguration (Umgebungsvariablen, optional eine .env im Projektwurzelverzeichnis)
 und stellt fest, welche optionalen Dienste konfiguriert und erreichbar sind. Ein
-nicht erreichbarer Dienst fuehrt nie zu einem Fehler, sondern nur zum dezenten
-Abschalten der zugehoerigen Funktion in der Oberflaeche.
+nicht erreichbarer Dienst führt nie zu einem Fehler, sondern nur zum dezenten
+Abschalten der zugehörigen Funktion in der Oberfläche.
 """
 from __future__ import annotations
 
@@ -16,14 +16,14 @@ from pathlib import Path
 import httpx
 
 # Zentrale Versionsangabe der Anwendung (Backend + Snapshots beziehen sich hierauf).
-VERSION = "0.20.0"
+VERSION = "0.20.1"
 
 # backend/app/config.py -> Projektwurzel (Pinnwand/)
 _PROJEKT_WURZEL = Path(__file__).resolve().parents[2]
 
 
 def _lade_dotenv() -> None:
-    """Liest eine .env im Projektwurzelverzeichnis, ohne bereits gesetzte Variablen zu ueberschreiben."""
+    """Liest eine .env im Projektwurzelverzeichnis, ohne bereits gesetzte Variablen zu überschreiben."""
     pfad = _PROJEKT_WURZEL / ".env"
     if not pfad.is_file():
         return
@@ -55,7 +55,7 @@ def _port(name: str, standard: int) -> int:
 
 @dataclass(frozen=True)
 class Einstellungen:
-    """Aufgeloeste Konfiguration. Leere Dienst-URLs bedeuten: Dienst ist abgeschaltet."""
+    """Aufgelöste Konfiguration. Leere Dienst-URLs bedeuten: Dienst ist abgeschaltet."""
 
     bind: str
     backend_port: int
@@ -94,12 +94,12 @@ einstellungen = _lese_einstellungen()
 
 
 def cors_origins() -> list[str]:
-    """Erlaubte Browser-Herkuenfte fuer die API.
+    """Erlaubte Browser-Herkünfte für die API.
 
-    Die API ist unauthentifiziert und lokal gedacht. Ein offenes '*' wuerde es
+    Die API ist unauthentifiziert und lokal gedacht. Ein offenes '*' würde es
     beliebigen Webseiten erlauben, im Browser des Nutzers auf die lokale API
-    zuzugreifen. Deshalb sind nur die bekannte Oberflaeche (localhost auf dem
-    Frontend-Port) und ausdruecklich gesetzte Herkuenfte erlaubt.
+    zuzugreifen. Deshalb sind nur die bekannte Oberfläche (localhost auf dem
+    Frontend-Port) und ausdrücklich gesetzte Herkünfte erlaubt.
     """
     roh = _env("PINNWAND_CORS_ORIGINS")
     if roh:
@@ -112,7 +112,7 @@ def cors_origins() -> list[str]:
     return herkuenfte
 
 
-# --- Optionale Dienste: Beschreibung + Erreichbarkeitspruefung mit kurzem Cache ---
+# --- Optionale Dienste: Beschreibung + Erreichbarkeitsprüfung mit kurzem Cache ---
 
 
 @dataclass(frozen=True)
@@ -139,7 +139,7 @@ _CACHE_TTL = 10.0
 
 
 def erreichbar(url: str, pfad: str = "/") -> bool:
-    """Prueft, ob ein Dienst antwortet. Ergebnis wird kurz zwischengespeichert."""
+    """Prüft, ob ein Dienst antwortet. Ergebnis wird kurz zwischengespeichert."""
     if not url:
         return False
     schluessel = url + pfad

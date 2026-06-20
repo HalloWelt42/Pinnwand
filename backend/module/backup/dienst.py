@@ -1,12 +1,12 @@
 """Snapshot-Erzeugung, Vorschau und Wiederherstellung.
 
 Ein Snapshot ist eine ZIP-Datei mit fester Struktur:
-  manifest.json          - Version, Zeit, Art, Schema, Zaehler
+  manifest.json          - Version, Zeit, Art, Schema, Zähler
   db/pinnwand.db         - konsistente Online-Kopie der Datenbank
-  berichte/<dateien>     - das unveraenderliche Berichts-Archiv
+  berichte/<dateien>     - das unveränderliche Berichts-Archiv
   konfig/<dateien>       - Konfigurationsvorlage (und vorhandene .env)
 
-Die Datenbank wird ueber die SQLite-Online-Backup-Schnittstelle kopiert, damit
+Die Datenbank wird über die SQLite-Online-Backup-Schnittstelle kopiert, damit
 der Snapshot auch bei parallelen Schreibzugriffen in sich konsistent ist. Beim
 Wiederherstellen wird zuerst automatisch ein Sicherheits-Snapshot des aktuellen
 Standes erzeugt, dann werden Datenbank und Archiv ersetzt.
@@ -84,7 +84,7 @@ def aktuelles_schema() -> list[dict]:
 
 
 def _kopiere_db(ziel: Path) -> None:
-    """Konsistente Kopie der Datenbank ueber die Online-Backup-Schnittstelle."""
+    """Konsistente Kopie der Datenbank über die Online-Backup-Schnittstelle."""
     quelle = sqlite3.connect(DB_PFAD)
     senke = sqlite3.connect(ziel)
     try:
@@ -98,7 +98,7 @@ def _konfig_dateien() -> list[tuple[Path, str]]:
     """Nur die Konfigurationsvorlage sichern, niemals die echte .env.
 
     Ein Snapshot kann heruntergeladen und weitergegeben werden; Geheimnisse
-    (Token, Schluessel) gehoeren daher bewusst nicht hinein. Die Datei .env bleibt
+    (Token, Schlüssel) gehören daher bewusst nicht hinein. Die Datei .env bleibt
     ohnehin lokal im Projekt und wird nicht versioniert.
     """
     paare: list[tuple[Path, str]] = []
@@ -109,11 +109,11 @@ def _konfig_dateien() -> list[tuple[Path, str]]:
 
 
 def erzeuge(art: str = "manuell", notiz: str = "") -> dict:
-    """Erzeugt einen Snapshot und gibt dessen Metadaten zurueck."""
+    """Erzeugt einen Snapshot und gibt dessen Metadaten zurück."""
     sid = "s_" + uuid4().hex[:10]
     jetzt = datetime.now()
     stempel = jetzt.strftime("%Y%m%d_%H%M%S")
-    # Die ID gehoert in den Dateinamen, sonst kollidieren mehrere Snapshots derselben Sekunde.
+    # Die ID gehört in den Dateinamen, sonst kollidieren mehrere Snapshots derselben Sekunde.
     dateiname = f"pinnwand_{stempel}_{art}_{sid}.zip"
     db.DATEN.mkdir(parents=True, exist_ok=True)
     ziel = db.DATEN / dateiname
@@ -167,10 +167,10 @@ def _raeume_automatische_auf() -> None:
 
 
 def synchronisiere_index() -> None:
-    """Gleicht die Metadaten-Tabelle mit den tatsaechlich vorhandenen Snapshot-Dateien ab.
+    """Gleicht die Metadaten-Tabelle mit den tatsächlich vorhandenen Snapshot-Dateien ab.
 
-    Noetig, weil eine Wiederherstellung die Datenbank (und damit auch diese Tabelle)
-    zuruecksetzt: Snapshots, die nach dem wiederhergestellten Stand entstanden sind
+    Nötig, weil eine Wiederherstellung die Datenbank (und damit auch diese Tabelle)
+    zurücksetzt: Snapshots, die nach dem wiederhergestellten Stand entstanden sind
     (etwa der Sicherheits-Snapshot), liegen dann zwar als Datei vor, haben aber keinen
     Eintrag mehr. Der Abgleich liest jede Datei aus ihrem Manifest neu ein.
     """
@@ -196,7 +196,7 @@ def synchronisiere_index() -> None:
                 "notiz": m.get("notiz", ""),
             }
         )
-    # Verwaiste Eintraege (Datei fehlt) entfernen.
+    # Verwaiste Einträge (Datei fehlt) entfernen.
     for sid, r in bekannt.items():
         if not (db.DATEN / r["dateiname"]).is_file():
             db.loesche_meta(sid)
@@ -206,7 +206,7 @@ def _bereit_fuer_snapshot() -> bool:
     """Sicherung: erst sichern, wenn die Kerntabellen wirklich existieren.
 
     Verhindert einen leeren automatischen Snapshot, falls die Funktion je vor der
-    Initialisierung der anderen Module aufgerufen wuerde.
+    Initialisierung der anderen Module aufgerufen würde.
     """
     with verbindung() as conn:
         tabellen = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
@@ -214,7 +214,7 @@ def _bereit_fuer_snapshot() -> bool:
 
 
 def auto_wenn_faellig() -> None:
-    """Erzeugt beim Start einen automatischen Snapshot, falls aktiviert und der letzte aelter als 24 Stunden ist."""
+    """Erzeugt beim Start einen automatischen Snapshot, falls aktiviert und der letzte älter als 24 Stunden ist."""
     if not einstellungen.backup_auto:
         return
     if not _bereit_fuer_snapshot():
@@ -314,7 +314,7 @@ def _pruefe_db(pfad: Path) -> None:
     try:
         ergebnis = conn.execute("PRAGMA integrity_check").fetchone()
         if not ergebnis or ergebnis[0] != "ok":
-            raise ValueError("Datenbank im Snapshot ist beschaedigt.")
+            raise ValueError("Datenbank im Snapshot ist beschädigt.")
     finally:
         conn.close()
 
@@ -333,7 +333,7 @@ def wiederherstellen(sid: str) -> dict | None:
     with zipfile.ZipFile(pfad, "r") as zf:
         namen = set(zf.namelist())
         if "db/pinnwand.db" not in namen:
-            raise ValueError("Snapshot enthaelt keine Datenbank.")
+            raise ValueError("Snapshot enthält keine Datenbank.")
         with tempfile.TemporaryDirectory() as tmp:
             tmp_db = Path(tmp) / "pinnwand.db"
             tmp_db.write_bytes(zf.read("db/pinnwand.db"))
@@ -356,8 +356,8 @@ def wiederherstellen(sid: str) -> dict | None:
                     ziel = _BERICHTE / Path(name).name
                     ziel.write_bytes(zf.read(name))
 
-    # Die wiederhergestellte DB hat die Snapshot-Liste mit zurueckgesetzt; aus den
-    # vorhandenen Dateien wieder vervollstaendigen (inklusive Sicherheits-Snapshot).
+    # Die wiederhergestellte DB hat die Snapshot-Liste mit zurückgesetzt; aus den
+    # vorhandenen Dateien wieder vervollständigen (inklusive Sicherheits-Snapshot).
     synchronisiere_index()
     return {"ok": True, "vorher_gesichert": sicherung["id"], "wiederhergestellt": aktueller_zustand()}
 
@@ -380,12 +380,12 @@ def _leeren() -> None:
 
 
 def zuruecksetzen(modus: str = "beispiel") -> dict:
-    """Setzt die Daten zurueck. Vorher wird automatisch ein Sicherheits-Snapshot erstellt.
+    """Setzt die Daten zurück. Vorher wird automatisch ein Sicherheits-Snapshot erstellt.
 
-    modus 'beispiel': alle Daten loeschen und die Beispieldaten neu anlegen (Auslieferungszustand).
-    modus 'leer': zusaetzlich die Beispiel-Inhalte entfernen (leeres Board, keine Personen/Karten).
+    modus 'beispiel': alle Daten löschen und die Beispieldaten neu anlegen (Auslieferungszustand).
+    modus 'leer': zusätzlich die Beispiel-Inhalte entfernen (leeres Board, keine Personen/Karten).
     """
-    sicherung = erzeuge(art="vor_reset", notiz="automatisch vor Zuruecksetzen")
+    sicherung = erzeuge(art="vor_reset", notiz="automatisch vor Zurücksetzen")
     from app.modul_registry import init_fuer, lade_manifeste
 
     with verbindung() as conn:
@@ -407,9 +407,9 @@ def zuruecksetzen(modus: str = "beispiel") -> dict:
 
 @asynccontextmanager
 async def lebenszyklus():
-    """Laeuft erst, nachdem alle Module initialisiert und geseedet sind.
+    """Läuft erst, nachdem alle Module initialisiert und geseedet sind.
 
-    Erst dann ist ein automatischer Snapshot vollstaendig (alle Tabellen + Daten).
+    Erst dann ist ein automatischer Snapshot vollständig (alle Tabellen + Daten).
     """
     auto_wenn_faellig()
     yield

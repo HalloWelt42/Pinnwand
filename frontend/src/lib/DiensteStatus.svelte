@@ -18,7 +18,7 @@
     } catch {
       stimmen = {}
     }
-    // Standard: erste eigene Stimme, falls noch keine gewaehlt ist.
+    // Standard: erste eigene Stimme, falls noch keine gewählt ist.
     if (!tts.stimme && stimmen.custom && stimmen.custom.length) {
       setzeStimme(stimmen.custom[0].name)
     }

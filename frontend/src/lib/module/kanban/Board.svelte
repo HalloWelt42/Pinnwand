@@ -54,7 +54,7 @@
   const alleLabels = $derived([...new Set((board?.karten ?? []).flatMap((k) => k.labels))].sort())
   const mitglieder = $derived([...new Set((board?.karten ?? []).map((k) => k.zustaendig).filter((z): z is string => !!z))])
 
-  // Aus der Suche angesteuerte Karte oeffnen, sobald dieses Board geladen ist.
+  // Aus der Suche angesteuerte Karte öffnen, sobald dieses Board geladen ist.
   $effect(() => {
     const ziel = nav.ziel
     if (ziel?.karteId && ziel.boardId === boardId && board) {
@@ -94,7 +94,7 @@
         suche, sortModus, filterPrio, filterLabels, eingeklappt: Array.from(eingeklappt),
       }))
     } catch {
-      /* localStorage nicht verfuegbar */
+      /* localStorage nicht verfügbar */
     }
   }
 
@@ -119,7 +119,7 @@
     _merkeBoardUi()
   })
 
-  // Timer-Aenderungen (Start/Pause irgendwo) -> Board neu laden, damit der Lauf-Status stimmt.
+  // Timer-Änderungen (Start/Pause irgendwo) -> Board neu laden, damit der Lauf-Status stimmt.
   let letzterStand = 0
   $effect(() => {
     if (timer.stand !== letzterStand) {
@@ -149,7 +149,7 @@
     if (filterLabels.length && !filterLabels.some((l) => k.labels.includes(l))) return false
     const q = suche.trim().toLowerCase()
     if (q) {
-      // Tiefensuche ueber alle Inhalte; jedes Wort muss vorkommen (Wort- und Satzsuche).
+      // Tiefensuche über alle Inhalte; jedes Wort muss vorkommen (Wort- und Satzsuche).
       const text = volltext(k)
       if (!q.split(/\s+/).every((w) => text.includes(w))) return false
     }
@@ -200,7 +200,7 @@
     setzeSpaltenReihenfolge(boardId, ids).catch(() => laden())
   }
 
-  // -- Karte oeffnen / bearbeiten --
+  // -- Karte öffnen / bearbeiten --
   function oeffnen(id: string) {
     if (Date.now() - zuletztGezogen < 160) return
     ausgewaehlt = board?.karten.find((k) => k.id === id) ?? null
@@ -270,7 +270,7 @@
     try {
       await loescheSpalte(id)
     } catch {
-      /* letzte Spalte geschuetzt */
+      /* letzte Spalte geschützt */
     }
     await laden()
     zeigeToast(`Spalte "${snap.titel}" gelöscht`, async () => {

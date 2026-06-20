@@ -1,4 +1,4 @@
-// Datums-/Zeit-Hilfsfunktionen fuer die Auswertung (lokale Zeit, ISO-Wochen).
+// Datums-/Zeit-Hilfsfunktionen für die Auswertung (lokale Zeit, ISO-Wochen).
 
 export function ymd(d: Date): string {
   const y = d.getFullYear()

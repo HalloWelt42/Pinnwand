@@ -1,7 +1,7 @@
 """Generischer Datenbankzugang des Kerns.
 
-Der Kern kennt keine Domaene - er stellt nur die SQLite-Verbindung bereit.
-Tabellen, Modelle und Seed gehoeren in die jeweiligen Module.
+Der Kern kennt keine Domäne - er stellt nur die SQLite-Verbindung bereit.
+Tabellen, Modelle und Seed gehören in die jeweiligen Module.
 """
 from __future__ import annotations
 

@@ -19,7 +19,7 @@
   {/if}
   {#if ebenen.auslastung}
     <span class="eintrag"><span class="punkt" style="background:color-mix(in srgb, var(--ok) 42%, transparent)"></span>im Soll</span>
-    <span class="eintrag"><span class="punkt" style="background:color-mix(in srgb, var(--gefahr) 38%, transparent)"></span>ueber Soll</span>
+    <span class="eintrag"><span class="punkt" style="background:color-mix(in srgb, var(--gefahr) 38%, transparent)"></span>über Soll</span>
   {/if}
   <span class="eintrag"><span class="punkt" style="background:var(--surface-2)"></span>frei/Wochenende</span>
 </div>

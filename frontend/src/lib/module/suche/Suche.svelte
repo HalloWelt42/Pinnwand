@@ -2,7 +2,7 @@
   import { sucheInhalte, sucheStatus, transkribiere, type SuchTreffer, type SuchStatus } from '../../api'
   import { oeffneKarte } from '../../navigation.svelte'
 
-  // Suche ist global; boardId wird hier nicht benoetigt (Pflichtprop der Ansichts-Schnittstelle).
+  // Suche ist global; boardId wird hier nicht benötigt (Pflichtprop der Ansichts-Schnittstelle).
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
 
@@ -23,7 +23,7 @@
     sucheStatus().then((s) => (status = s)).catch(() => {})
   })
 
-  // Reaktiv auf die Eingabe: entprellt suchen (liest frage zuverlaessig ueber das Binding).
+  // Reaktiv auf die Eingabe: entprellt suchen (liest frage zuverlässig über das Binding).
   $effect(() => {
     const q = frage
     if (timer) clearTimeout(timer)
@@ -69,7 +69,7 @@
             starteSuche(text)
           }
         } catch {
-          mikroFehler = 'Spracheingabe nicht verfuegbar.'
+          mikroFehler = 'Spracheingabe nicht verfügbar.'
         }
       }
       recorder.start()
@@ -90,7 +90,7 @@
       <i class="fa-solid fa-magnifying-glass lupe" aria-hidden="true"></i>
       <input
         class="frage"
-        placeholder="Frag nach allem - z.B. 'Qualitaet vor Auslieferung' oder 'R3-130'"
+        placeholder="Frag nach allem - z.B. 'Qualität vor Auslieferung' oder 'R3-130'"
         bind:value={frage}
         aria-label="Suche"
       />

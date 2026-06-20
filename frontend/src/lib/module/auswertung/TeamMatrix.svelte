@@ -16,7 +16,7 @@
 
   const CW = 18
   const NAME_B = 150
-  const MONATE = ['Jan', 'Feb', 'Maer', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
+  const MONATE = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
   const monate = $derived(
     MONATE.map((name, m) => ({ name, tage: new Date(daten.jahr, m + 1, 0).getDate() })),
   )
@@ -27,7 +27,7 @@
     return (new Date(iso + 'T00:00:00').getDay() + 6) % 7 >= 5
   }
 
-  // Beim Oeffnen den heutigen Tag in den sichtbaren Bereich ruecken (einmalig je Jahr).
+  // Beim Öffnen den heutigen Tag in den sichtbaren Bereich rücken (einmalig je Jahr).
   let wrapEl: HTMLDivElement | undefined = $state()
   let zentriertesJahr = $state<number | null>(null)
   $effect(() => {

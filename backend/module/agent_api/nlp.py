@@ -1,8 +1,8 @@
-"""Natuerlichsprachige Erfassung - hybrid und KI-optional.
+"""Natürlichsprachige Erfassung - hybrid und KI-optional.
 
 Die deterministische Auswertung (Dauer, Datum, Kartenbezug) funktioniert immer.
-Ist ein LLM konfiguriert, darf es zusaetzlich Felder vorschlagen; das Ergebnis
-wird anschliessend deterministisch validiert. Faellt das LLM aus, bleibt die
+Ist ein LLM konfiguriert, darf es zusätzlich Felder vorschlagen; das Ergebnis
+wird anschließend deterministisch validiert. Fällt das LLM aus, bleibt die
 regelbasierte Auswertung bestehen.
 """
 from __future__ import annotations
@@ -25,7 +25,7 @@ _WOCHENTAGE = {
     "sonntag": 6, "so": 6,
 }
 
-# Kartenschluessel wie R3-130, ABC-7
+# Kartenschlüssel wie R3-130, ABC-7
 _SCHLUESSEL = re.compile(r"\b([A-Za-z][A-Za-z0-9]*-\d+)\b")
 
 
@@ -143,8 +143,8 @@ def _llm_extraktion(text: str) -> dict | None:
     if not einstellungen.llm_url:
         return None
     system = (
-        "Extrahiere aus der Notiz strukturierte Felder fuer eine Zeitbuchung. "
-        "Antworte ausschliesslich mit JSON: {\"karte\": string|null, \"dauer\": string|null, "
+        "Extrahiere aus der Notiz strukturierte Felder für eine Zeitbuchung. "
+        "Antworte ausschließlich mit JSON: {\"karte\": string|null, \"dauer\": string|null, "
         "\"datum\": string|null, \"kommentar\": string|null}. dauer als '1:30' oder '90min'."
     )
     try:
@@ -179,7 +179,7 @@ def erfasse(text: str, heute: date | None = None) -> dict:
     if not vorschlag:
         return basis
 
-    # LLM-Felder uebernehmen, aber deterministisch validieren/normalisieren.
+    # LLM-Felder übernehmen, aber deterministisch validieren/normalisieren.
     ergebnis = dict(basis)
     ergebnis["quelle"] = "hybrid"
     if vorschlag.get("karte"):

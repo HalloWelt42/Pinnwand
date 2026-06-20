@@ -1,7 +1,7 @@
-"""Feiertags-Vorschau aus der gebuendelten Offline-Bibliothek.
+"""Feiertags-Vorschau aus der gebündelten Offline-Bibliothek.
 
 Liefert Feiertage zu Land/Region/Jahr als Vorschau (nicht gespeichert). Die
-Uebernahme erfolgt bewusst in einem zweiten Schritt (Vorschau vor Anwenden).
+Übernahme erfolgt bewusst in einem zweiten Schritt (Vorschau vor Anwenden).
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ def verfuegbar() -> bool:
     return _OK
 
 
-# Lesbare Namen der deutschen Bundeslaender (die Bibliothek liefert nur Codes).
+# Lesbare Namen der deutschen Bundesländer (die Bibliothek liefert nur Codes).
 _DE_NAMEN = {
     "BW": "Baden-Württemberg", "BY": "Bayern", "BE": "Berlin", "BB": "Brandenburg",
     "HB": "Bremen", "HH": "Hamburg", "HE": "Hessen", "MV": "Mecklenburg-Vorpommern",
@@ -34,10 +34,10 @@ def _region_name(land: str, code: str) -> str:
 
 
 def laender() -> dict:
-    """Unterstuetzte Laender mit ihren Regionen als {code, name}.
+    """Unterstützte Länder mit ihren Regionen als {code, name}.
 
-    Fuer Deutschland werden die ausgeschriebenen Bundesland-Namen geliefert; fuer
-    andere Laender bleibt der Code als Name stehen.
+    Für Deutschland werden die ausgeschriebenen Bundesland-Namen geliefert; für
+    andere Länder bleibt der Code als Name stehen.
     """
     if not _OK:
         return {}
@@ -48,9 +48,9 @@ def laender() -> dict:
 
 
 def vorschau(land: str, region: str | None, jahr: int) -> list[dict]:
-    """Feiertage als Vorschau. Jeder Eintrag traegt seine tatsaechliche Region:
-    None = bundesweit, sonst der Subdivisions-Code (z.B. 'BY'). So koennen Personen
-    spaeter nur die fuer ihr Bundesland geltenden Feiertage angerechnet bekommen.
+    """Feiertage als Vorschau. Jeder Eintrag trägt seine tatsächliche Region:
+    None = bundesweit, sonst der Subdivisions-Code (z.B. 'BY'). So können Personen
+    später nur die für ihr Bundesland geltenden Feiertage angerechnet bekommen.
     """
     if not _OK:
         return []

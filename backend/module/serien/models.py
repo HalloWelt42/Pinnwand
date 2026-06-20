@@ -1,4 +1,4 @@
-"""Datenvertraege fuer wiederkehrende Termine/Aufgaben (Serien)."""
+"""Datenverträge für wiederkehrende Termine/Aufgaben (Serien)."""
 from __future__ import annotations
 
 from typing import Literal

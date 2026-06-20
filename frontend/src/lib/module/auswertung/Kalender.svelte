@@ -61,7 +61,7 @@
   function tipp(key: string, sek: number): string {
     return `${key}: ${sek ? formatStd(sek) + ' h' : 'keine Zeit'}`
   }
-  // Kraeftig gefuellte Zellen (Intensitaet >= 68%) brauchen Text in der Auf-Primaer-Farbe fuer Kontrast.
+  // Kräftig gefüllte Zellen (Intensität >= 68%) brauchen Text in der Auf-Primär-Farbe für Kontrast.
   function kraeftig(sek: number): boolean {
     if (!sek || maxSek <= 0) return false
     return sek / maxSek >= 0.5
@@ -179,7 +179,7 @@
         <span class="titel">{MONATE[monat]} {jahr}</span>
         <button class="ib" aria-label="Monat vor" onclick={monatVor}><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
         <span class="ges">{formatStd(monatSumme)} h</span>
-        <select class="psel" bind:value={person} aria-label="Person fuer Urlaub">
+        <select class="psel" bind:value={person} aria-label="Person für Urlaub">
           <option value="">Urlaub: -</option>
           {#each personen as p (p.id)}<option value={p.id}>{p.kuerzel ?? p.name}</option>{/each}
         </select>

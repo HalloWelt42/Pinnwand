@@ -1,8 +1,8 @@
-"""Vektor-Speicher-Adapter (optional) ueber die Qdrant-REST-API.
+"""Vektor-Speicher-Adapter (optional) über die Qdrant-REST-API.
 
-Bewusst ohne zusaetzliche Client-Bibliothek - reines HTTP. Ohne konfigurierte
+Bewusst ohne zusätzliche Client-Bibliothek - reines HTTP. Ohne konfigurierte
 oder erreichbare Qdrant-Instanz liefern alle Funktionen leere/negative Ergebnisse,
-sodass die Suche sauber auf Stichwortsuche zurueckfaellt.
+sodass die Suche sauber auf Stichwortsuche zurückfällt.
 """
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ def upsert(punkte: list[dict], name: str = COLLECTION) -> bool:
 
 
 def suche(vektor: list[float], limit: int = 10, name: str = COLLECTION) -> list[dict]:
-    """Gibt Treffer als [{score, payload}] zurueck, leer bei Ausfall."""
+    """Gibt Treffer als [{score, payload}] zurück, leer bei Ausfall."""
     basis = _basis()
     if not basis:
         return []

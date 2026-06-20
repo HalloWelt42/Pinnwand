@@ -1,8 +1,8 @@
 """Pinnwand - Host-Anwendung.
 
-Der Kern ist bewusst duenn und domaenenneutral: Module entdecken, ihre
+Der Kern ist bewusst dünn und domänenneutral: Module entdecken, ihre
 Schemata initialisieren, ihre Router einbinden und ihre Erweiterungspunkte
-bereitstellen. Die eigentliche Funktionalitaet liefern die Module.
+bereitstellen. Die eigentliche Funktionalität liefern die Module.
 """
 from __future__ import annotations
 
@@ -66,7 +66,7 @@ def health() -> dict:
 def dienste() -> dict:
     """Status der optionalen KI-/Integrationsdienste.
 
-    Dient der Oberflaeche dazu, KI-Funktionen nur anzubieten, wenn der jeweilige
+    Dient der Oberfläche dazu, KI-Funktionen nur anzubieten, wenn der jeweilige
     Dienst konfiguriert und erreichbar ist. KI bleibt damit optional.
     """
     return {"bind": einstellungen.bind, "dienste": dienste_status()}
@@ -77,7 +77,7 @@ for _manifest in lade_manifeste():
     if _router is not None:
         app.include_router(_router)
 
-# Optionale Sub-Apps einhaengen (z.B. MCP-Server unter /mcp).
+# Optionale Sub-Apps einhängen (z.B. MCP-Server unter /mcp).
 for _manifest in lade_manifeste():
     _mount = mount_fuer(_manifest)
     if _mount is not None:

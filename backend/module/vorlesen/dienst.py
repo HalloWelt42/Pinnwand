@@ -2,7 +2,7 @@
 
 Holt vom TTS-Dienst einen rohen PCM-Strom (16-Bit, mono, 24 kHz) und verpackt
 ihn in eine WAV-Datei, damit der Browser ihn direkt abspielen kann. Ohne
-konfigurierten Dienst liefert alles None - die Oberflaeche nutzt dann die
+konfigurierten Dienst liefert alles None - die Oberfläche nutzt dann die
 Browser-Sprachausgabe oder blendet das Vorlesen aus.
 """
 from __future__ import annotations
@@ -23,7 +23,7 @@ def verfuegbar() -> bool:
 
 
 def erreichbar() -> bool:
-    """Prueft, ob der TTS-Dienst (pappagei) tatsaechlich antwortet."""
+    """Prüft, ob der TTS-Dienst (pappagei) tatsächlich antwortet."""
     if not einstellungen.tts_url:
         return False
     try:

@@ -41,13 +41,13 @@ def aktueller_akteur(authorization: str | None = Header(default=None)) -> Akteur
         return Akteur("konfig", {"admin"})
     treffer = db.pruefe_token(token)
     if treffer is None:
-        raise HTTPException(status_code=401, detail="Token ungueltig oder widerrufen")
+        raise HTTPException(status_code=401, detail="Token ungültig oder widerrufen")
     name, scopes = treffer
     return Akteur(name, scopes)
 
 
 def erfordere(scope: str):
-    """FastAPI-Abhaengigkeit, die einen bestimmten Scope verlangt."""
+    """FastAPI-Abhängigkeit, die einen bestimmten Scope verlangt."""
 
     def pruefer(akteur: Akteur = Depends(aktueller_akteur)) -> Akteur:
         if not akteur.hat(scope):

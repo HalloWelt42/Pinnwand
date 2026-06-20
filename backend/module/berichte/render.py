@@ -26,6 +26,55 @@ def _esc(s: object) -> str:
     return _html.escape(str(s))
 
 
+def _zahl(s: object) -> float | None:
+    """Deutet einen Tabellenwert als Zahl: Prozent, H:MM (Minuten) oder Dezimal."""
+    t = str(s).strip()
+    if not t:
+        return None
+    if t.endswith("%"):
+        try:
+            return float(t[:-1].strip().replace(",", "."))
+        except ValueError:
+            return None
+    teile = t.split(":")
+    if len(teile) == 2 and all(p.strip().isdigit() for p in teile):
+        return int(teile[0]) * 60 + int(teile[1])
+    try:
+        return float(t.replace(",", "."))
+    except ValueError:
+        return None
+
+
+def _balken_svg(ab: dict) -> str:
+    """Server-seitig gerendertes horizontales Balkendiagramm aus der letzten Wertspalte."""
+    paare: list[tuple[str, float, str]] = []
+    for z in ab.get("zeilen", []):
+        if len(z) < 2:
+            continue
+        wert = _zahl(z[-1])
+        if wert is None:
+            continue
+        paare.append((str(z[0]), wert, str(z[-1])))
+    if len(paare) < 2:
+        return ""
+    paare = paare[:14]
+    mx = max(w for _, w, _ in paare) or 1.0
+    zh, lb, bw, pad = 18, 150, 300, 6
+    hoehe = len(paare) * (zh + pad) + pad
+    breite = lb + bw + 60
+    teile = [f"<svg viewBox='0 0 {breite} {hoehe}' width='100%' style='max-width:{breite}px;margin:2pt 0 10pt'>"]
+    y = pad
+    for label, wert, anzeige in paare:
+        w = max(1, round(bw * (wert / mx)))
+        kurz = label if len(label) <= 22 else label[:21] + "…"
+        teile.append(f"<text x='0' y='{y + zh - 5}' font-size='9' fill='#333'>{_esc(kurz)}</text>")
+        teile.append(f"<rect x='{lb}' y='{y}' width='{w}' height='{zh}' rx='2' fill='#4f9be8'/>")
+        teile.append(f"<text x='{lb + w + 5}' y='{y + zh - 5}' font-size='9' fill='#555'>{_esc(anzeige)}</text>")
+        y += zh + pad
+    teile.append("</svg>")
+    return "".join(teile)
+
+
 def _html_doc(bericht: dict) -> str:
     teile = [
         f"<h1>{_esc(bericht['titel'])}</h1>",
@@ -41,6 +90,7 @@ def _html_doc(bericht: dict) -> str:
         if ab.get("summe"):
             teile.append("<tr class='summe'>" + "".join(f"<td>{_esc(c)}</td>" for c in ab["summe"]) + "</tr>")
         teile.append("</tbody></table>")
+        teile.append(_balken_svg(ab))
     return f"<!doctype html><html><head><meta charset='utf-8'><style>{_CSS}</style></head><body>{''.join(teile)}</body></html>"
 
 

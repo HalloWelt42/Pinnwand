@@ -79,3 +79,45 @@ select {
   cursor: grabbing !important;
   opacity: 0.97;
 }
+
+/* Druck: jede Ansicht sauber ausdruckbar. Bedienelemente und Seitenleiste raus,
+   Buehne ueber die volle Breite, helle Druckpalette ueber die Theme-Variablen. */
+@media print {
+  :root,
+  body {
+    --surface-page: #fff;
+    --surface-col: #fff;
+    --surface-1: #fff;
+    --surface-2: #fff;
+    --surface-3: #f4f4f6;
+    --text-1: #000;
+    --text-2: #222;
+    --text-3: #555;
+    --border: #ccc;
+    --border-2: #bbb;
+    background: #fff !important;
+  }
+  .rail,
+  .vl,
+  .backdrop,
+  .dokback,
+  .dokdrawer,
+  .railtog,
+  .fussbereich {
+    display: none !important;
+  }
+  .app,
+  .haupt,
+  .buehne,
+  .wurzel {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .topbar {
+    border: none !important;
+  }
+  * {
+    box-shadow: none !important;
+  }
+}

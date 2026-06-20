@@ -362,6 +362,49 @@ def wiederherstellen(sid: str) -> dict | None:
     return {"ok": True, "vorher_gesichert": sicherung["id"], "wiederhergestellt": aktueller_zustand()}
 
 
+def _leeren() -> None:
+    """Entfernt die Inhaltsdaten. Konfiguration, ein leeres Board und die Snapshots bleiben."""
+    daten_tabellen = (
+        "karte", "zeiteintrag", "urlaub", "feiertag", "serie",
+        "person", "bericht_archiv", "agent_audit", "agent_idempotenz",
+    )
+    with verbindung() as conn:
+        vorhanden = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+        for t in daten_tabellen:
+            if t in vorhanden:
+                conn.execute(f"DELETE FROM {t}")
+    if _BERICHTE.is_dir():
+        for p in _BERICHTE.glob("*"):
+            if p.is_file():
+                p.unlink()
+
+
+def zuruecksetzen(modus: str = "beispiel") -> dict:
+    """Setzt die Daten zurueck. Vorher wird automatisch ein Sicherheits-Snapshot erstellt.
+
+    modus 'beispiel': alle Daten loeschen und die Beispieldaten neu anlegen (Auslieferungszustand).
+    modus 'leer': zusaetzlich die Beispiel-Inhalte entfernen (leeres Board, keine Personen/Karten).
+    """
+    sicherung = erzeuge(art="vor_reset", notiz="automatisch vor Zuruecksetzen")
+    from app.modul_registry import init_fuer, lade_manifeste
+
+    with verbindung() as conn:
+        tabellen = [
+            r[0] for r in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            ).fetchall()
+        ]
+        for t in tabellen:
+            conn.execute(f'DROP TABLE IF EXISTS "{t}"')
+    # Alle Module neu initialisieren (Schema + Seed). backup baut dabei seinen
+    # Snapshot-Index aus den vorhandenen Dateien neu auf, der Sicherheits-Snapshot bleibt erhalten.
+    for manifest in lade_manifeste():
+        init_fuer(manifest)
+    if modus == "leer":
+        _leeren()
+    return {"ok": True, "modus": modus, "vorher_gesichert": sicherung["id"], "zustand": aktueller_zustand()}
+
+
 @asynccontextmanager
 async def lebenszyklus():
     """Laeuft erst, nachdem alle Module initialisiert und geseedet sind.

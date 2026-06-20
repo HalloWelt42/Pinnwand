@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from . import dienst
 from .models import (
     ErzeugeAnfrage,
+    ResetAnfrage,
     SnapshotInfo,
     Vorschau,
     WiederherstellenErgebnis,
@@ -60,6 +61,13 @@ def wiederherstellen(sid: str) -> WiederherstellenErgebnis:
     if ergebnis is None:
         raise HTTPException(status_code=404, detail="Snapshot nicht gefunden")
     return WiederherstellenErgebnis.model_validate(ergebnis)
+
+
+@router.post("/zuruecksetzen")
+def zuruecksetzen(e: ResetAnfrage) -> dict:
+    if e.modus not in ("beispiel", "leer"):
+        raise HTTPException(status_code=400, detail="Unbekannter Modus")
+    return dienst.zuruecksetzen(e.modus)
 
 
 @router.delete("/{sid}")

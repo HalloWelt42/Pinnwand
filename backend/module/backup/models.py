@@ -25,6 +25,10 @@ class ErzeugeAnfrage(BaseModel):
     notiz: str = Field(default="", max_length=200)
 
 
+class ResetAnfrage(BaseModel):
+    modus: str = "beispiel"  # 'beispiel' = neu seeden, 'leer' = ohne Beispieldaten
+
+
 class SchemaTabelle(BaseModel):
     tabelle: str
     spalten: list[str]

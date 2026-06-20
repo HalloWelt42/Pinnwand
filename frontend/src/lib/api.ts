@@ -471,6 +471,8 @@ export const stelleSnapshotWiederHer = (id: string): Promise<WiederherstellenErg
   hole(`/api/backup/${id}/wiederherstellen`, { method: 'POST' })
 export const loescheSnapshot = (id: string): Promise<void> =>
   hole(`/api/backup/${id}`, { method: 'DELETE' })
+export const datenZuruecksetzen = (modus: 'beispiel' | 'leer'): Promise<{ ok: boolean; modus: string; vorher_gesichert: string }> =>
+  hole('/api/backup/zuruecksetzen', { method: 'POST', body: JSON.stringify({ modus }) })
 
 // --- Agenten-Zugriff (Token-Verwaltung, Scope admin) ---
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     ladeSnapshots, backupZustand, erzeugeSnapshot, snapshotVorschau,
-    snapshotDownloadUrl, stelleSnapshotWiederHer, loescheSnapshot,
+    snapshotDownloadUrl, stelleSnapshotWiederHer, loescheSnapshot, datenZuruecksetzen,
     ladeAgentTokens, erstelleAgentToken, widerrufeAgentToken, AuthFehler,
     type SnapshotInfo, type BackupZustand, type BackupVorschau, type AgentToken,
   } from '../../api'
@@ -21,6 +21,9 @@
   let vorschauLaedt = $state(false)
   // Bestaetigung des Loeschens (kein Browser-Dialog).
   let loeschBestaetigung = $state<string | null>(null)
+  // Daten-Reset: Bestaetigung je Modus.
+  let resetBestaetigung = $state<'beispiel' | 'leer' | null>(null)
+  let resetMeldung = $state('')
 
   const ART_LABEL: Record<string, string> = {
     manuell: 'Manuell',
@@ -56,6 +59,21 @@
       await neuLaden()
     } catch {
       meldung = 'Snapshot konnte nicht erstellt werden.'
+    } finally {
+      arbeitet = false
+    }
+  }
+
+  async function zuruecksetzen(modus: 'beispiel' | 'leer'): Promise<void> {
+    arbeitet = true
+    resetMeldung = ''
+    try {
+      await datenZuruecksetzen(modus)
+      resetBestaetigung = null
+      resetMeldung = 'Daten zurueckgesetzt. Seite wird neu geladen ...'
+      setTimeout(() => location.reload(), 800)
+    } catch {
+      resetMeldung = 'Zuruecksetzen fehlgeschlagen.'
     } finally {
       arbeitet = false
     }
@@ -263,6 +281,43 @@
   </section>
 
   <section class="block">
+    <p class="sec">Daten zuruecksetzen</p>
+    <p class="hint">
+      Entfernt angesammelte Daten und schafft einen sauberen Stand. Vor dem Zuruecksetzen wird
+      automatisch ein Sicherheits-Snapshot erstellt, sodass nichts unwiederbringlich verloren geht.
+    </p>
+    <div class="resetreihe">
+      <div class="resetopt">
+        <div class="resettitel">Auf Beispieldaten zuruecksetzen</div>
+        <div class="resetdez">Alles loeschen und den Auslieferungszustand (Beispiel-Board, Personen) neu anlegen.</div>
+        {#if resetBestaetigung === 'beispiel'}
+          <div class="bestaetigung">
+            <span>Wirklich alles zuruecksetzen?</span>
+            <button class="btn klein gefahr" onclick={() => zuruecksetzen('beispiel')} disabled={arbeitet}>Zuruecksetzen</button>
+            <button class="btn klein" onclick={() => (resetBestaetigung = null)}>Abbrechen</button>
+          </div>
+        {:else}
+          <button class="btn" onclick={() => (resetBestaetigung = 'beispiel')} disabled={arbeitet}>Zuruecksetzen</button>
+        {/if}
+      </div>
+      <div class="resetopt">
+        <div class="resettitel">Alle Daten leeren</div>
+        <div class="resetdez">Karten, Zeiten, Personen, Urlaub, Feiertage, Serien und Berichte entfernen; ein leeres Board bleibt.</div>
+        {#if resetBestaetigung === 'leer'}
+          <div class="bestaetigung">
+            <span>Wirklich alle Daten leeren?</span>
+            <button class="btn klein gefahr" onclick={() => zuruecksetzen('leer')} disabled={arbeitet}>Leeren</button>
+            <button class="btn klein" onclick={() => (resetBestaetigung = null)}>Abbrechen</button>
+          </div>
+        {:else}
+          <button class="btn gefahr" onclick={() => (resetBestaetigung = 'leer')} disabled={arbeitet}>Leeren</button>
+        {/if}
+      </div>
+    </div>
+    {#if resetMeldung}<p class="meldung">{resetMeldung}</p>{/if}
+  </section>
+
+  <section class="block">
     <p class="sec">Agenten-Zugriff (API-Token)</p>
     <p class="hint">
       KI-Werkzeuge koennen ueber die Agenten-API Aufgaben anlegen, Zeiten buchen und suchen.
@@ -366,4 +421,10 @@
   .tn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ts { color: var(--hl-primary-text); font-size: 11.5px; }
   .td, .tstatus { color: var(--text-3); font-size: 11.5px; }
+
+  .resetreihe { display: flex; gap: 12px; flex-wrap: wrap; }
+  .resetopt { flex: 1; min-width: 260px; border: 1px solid var(--border); background: var(--surface-col); border-radius: var(--r-m); padding: 12px; }
+  .resettitel { font-size: 13px; color: var(--text-1); margin-bottom: 3px; }
+  .resetdez { font-size: 11.5px; color: var(--text-3); line-height: 1.5; margin-bottom: 10px; }
+  .resetopt .bestaetigung { border-top: none; padding: 0; flex-wrap: wrap; }
 </style>

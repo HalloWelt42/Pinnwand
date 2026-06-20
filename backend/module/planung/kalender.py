@@ -82,11 +82,12 @@ def _ist_brueckentag(d: date, ws: list, feier_set: set[str]) -> bool:
     return _ist_nicht_arbeit(d - timedelta(days=1), ws, feier_set) and _ist_nicht_arbeit(d + timedelta(days=1), ws, feier_set)
 
 
-def _person_kontext(person: dict, all_feier: list[dict], regelinfo: dict, urlaub_je_person: dict) -> dict:
+def _person_kontext(person: dict, all_feier: list[dict], regelinfo: dict, urlaub_je_person: dict, overrides_je_person: dict | None = None) -> dict:
     bl = person.get("bundesland")
     feier = [f for f in all_feier if f["region"] is None or f["region"] == bl]
     return {
         "ws": person["wochenstunden"],
+        "overrides": (overrides_je_person or {}).get(person["id"], {}),
         "feier_set": {f["datum"] for f in feier},
         "feier_name": {f["datum"]: f["name"] for f in feier},
         "jt": regelinfo["jt_person"].get(person["id"], {}),
@@ -120,7 +121,8 @@ def zelle(d: date, ctx: dict, typ_map: dict, ist_sek: int) -> dict:
     """Berechnet eine Tageszelle einer Person."""
     iso = d.isoformat()
     wd = d.weekday()
-    ws = ctx["ws"]
+    iy, iw, _ = d.isocalendar()
+    ws = ctx["overrides"].get((iy, iw), ctx["ws"])  # Wochen-Override schlaegt die Standard-Wochenstunden
     basis = float(ws[wd]) if wd < len(ws) else 0.0
     feier_name = ctx["feier_name"].get(iso)
     abw = ctx["urlaub"].get(iso)  # (typ, anteil) oder None
@@ -175,7 +177,7 @@ def tageszellen(person: dict, von: str, bis: str) -> list[dict]:
     all_feier = _feiertage_gepuffert(von, bis)
     regelinfo = _regeln_aufbereiten(db.liste_tagesregeln())
     typ_map = {t["code"]: t for t in db.liste_abwesenheitstypen()}
-    ctx = _person_kontext(person, all_feier, regelinfo, _urlaub_je_person(von, bis))
+    ctx = _person_kontext(person, all_feier, regelinfo, _urlaub_je_person(von, bis), db.overrides_je_person())
     ist = _ist_sek_je_tag(von, bis)
     kuerzel = person.get("kuerzel")
     out: list[dict] = []
@@ -196,6 +198,7 @@ def kalender(jahr: int) -> dict:
     regelinfo = _regeln_aufbereiten(db.liste_tagesregeln())
     typ_map = {t["code"]: t for t in db.liste_abwesenheitstypen()}
     urlaub = _urlaub_je_person(von, bis)
+    overrides = db.overrides_je_person()
     ist = _ist_sek_je_tag(von, bis)
 
     tage: list[str] = []
@@ -207,7 +210,7 @@ def kalender(jahr: int) -> dict:
 
     zellen: dict[str, dict[str, dict]] = {}
     for p in personen:
-        ctx = _person_kontext(p, all_feier, regelinfo, urlaub)
+        ctx = _person_kontext(p, all_feier, regelinfo, urlaub, overrides)
         kuerzel = p.get("kuerzel")
         prow: dict[str, dict] = {}
         for iso in tage:

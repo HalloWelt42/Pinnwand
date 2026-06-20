@@ -111,3 +111,15 @@ class TagesregelCreate(BaseModel):
 class TagLeeren(BaseModel):
     person_id: str
     datum: str
+
+
+class WochenOverride(BaseModel):
+    jahr: int
+    kw: int
+    wochenstunden: list[float]
+
+
+class WochenOverrideSetzen(BaseModel):
+    jahr: int
+    kw: int
+    wochenstunden: list[float]

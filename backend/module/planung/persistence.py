@@ -58,6 +58,13 @@ CREATE TABLE IF NOT EXISTS tagesregel (
     notiz TEXT,
     aktiv INTEGER NOT NULL DEFAULT 1
 );
+CREATE TABLE IF NOT EXISTS wochen_override (
+    person_id TEXT NOT NULL,
+    jahr INTEGER NOT NULL,
+    kw INTEGER NOT NULL,
+    wochenstunden TEXT NOT NULL,
+    PRIMARY KEY (person_id, jahr, kw)
+);
 """
 
 _STD_WOCHE = [8, 8, 8, 8, 8, 0, 0]
@@ -120,6 +127,46 @@ def init_db() -> None:
     jetzt = date.today().year
     for j in (jetzt, jetzt + 1):
         stelle_feiertage_sicher(j)
+
+
+# -- Wochen-Override (abweichende Wochenstunden einzelner Wochen) ----------
+
+def liste_wochen_override(person_id: str) -> list[dict]:
+    with verbindung() as conn:
+        rows = conn.execute(
+            "SELECT jahr, kw, wochenstunden FROM wochen_override WHERE person_id = ? ORDER BY jahr, kw",
+            (person_id,),
+        ).fetchall()
+    return [{"jahr": r["jahr"], "kw": r["kw"], "wochenstunden": json.loads(r["wochenstunden"])} for r in rows]
+
+
+def setze_wochen_override(person_id: str, jahr: int, kw: int, wochenstunden: list) -> dict:
+    with verbindung() as conn:
+        conn.execute(
+            "INSERT INTO wochen_override (person_id, jahr, kw, wochenstunden) VALUES (?, ?, ?, ?)"
+            " ON CONFLICT(person_id, jahr, kw) DO UPDATE SET wochenstunden = excluded.wochenstunden",
+            (person_id, jahr, kw, json.dumps(wochenstunden)),
+        )
+    return {"jahr": jahr, "kw": kw, "wochenstunden": wochenstunden}
+
+
+def loesche_wochen_override(person_id: str, jahr: int, kw: int) -> bool:
+    with verbindung() as conn:
+        cur = conn.execute(
+            "DELETE FROM wochen_override WHERE person_id = ? AND jahr = ? AND kw = ?",
+            (person_id, jahr, kw),
+        )
+    return cur.rowcount > 0
+
+
+def overrides_je_person() -> dict[str, dict[tuple[int, int], list]]:
+    """Alle Wochen-Overrides als person_id -> {(jahr, kw): wochenstunden}."""
+    with verbindung() as conn:
+        rows = conn.execute("SELECT person_id, jahr, kw, wochenstunden FROM wochen_override").fetchall()
+    out: dict[str, dict[tuple[int, int], list]] = {}
+    for r in rows:
+        out.setdefault(r["person_id"], {})[(r["jahr"], r["kw"])] = json.loads(r["wochenstunden"])
+    return out
 
 
 # -- Personen -------------------------------------------------------------

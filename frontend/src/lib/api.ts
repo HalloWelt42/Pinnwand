@@ -348,6 +348,14 @@ export const aktualisierePerson = (id: string, d: Partial<Person>): Promise<Pers
 export const loeschePerson = (id: string): Promise<void> =>
   hole(`/api/planung/personen/${id}`, { method: 'DELETE' })
 
+export interface WochenOverride { jahr: number; kw: number; wochenstunden: number[] }
+export const ladeWochenOverride = (personId: string): Promise<WochenOverride[]> =>
+  hole(`/api/planung/personen/${personId}/wochen-override`)
+export const setzeWochenOverride = (personId: string, jahr: number, kw: number, wochenstunden: number[]): Promise<WochenOverride> =>
+  hole(`/api/planung/personen/${personId}/wochen-override`, { method: 'POST', body: JSON.stringify({ jahr, kw, wochenstunden }) })
+export const loescheWochenOverride = (personId: string, jahr: number, kw: number): Promise<void> =>
+  hole(`/api/planung/personen/${personId}/wochen-override/${jahr}/${kw}`, { method: 'DELETE' })
+
 export const ladeUrlaub = (person: string, von: string, bis: string): Promise<Urlaubstag[]> =>
   hole(`/api/planung/urlaub?person=${person}&von=${von}&bis=${bis}`)
 export const setzeUrlaub = (d: { person_id: string; von: string; bis?: string; anteil?: number; typ?: string; notiz?: string; wochenenden_ueberspringen?: boolean; feiertage_ueberspringen?: boolean }): Promise<{ gesetzt: number; uebersprungen: number }> =>

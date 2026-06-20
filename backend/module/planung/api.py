@@ -19,6 +19,8 @@ from .models import (
     TagLeeren,
     Urlaubskonto,
     UrlaubSetzen,
+    WochenOverride,
+    WochenOverrideSetzen,
 )
 
 router = APIRouter(prefix="/api/planung", tags=["planung"])
@@ -202,3 +204,25 @@ def tag_leeren(e: TagLeeren) -> dict:
         if db.loesche_urlaub(u["id"]):
             geloescht += 1
     return {"geloescht": geloescht}
+
+
+# -- Wochen-Override (abweichende Wochenstunden einzelner Wochen) ----------
+
+@router.get("/personen/{person_id}/wochen-override", response_model=list[WochenOverride])
+def wochen_override(person_id: str) -> list[dict]:
+    return db.liste_wochen_override(person_id)
+
+
+@router.post("/personen/{person_id}/wochen-override", response_model=WochenOverride)
+def wochen_override_setzen(person_id: str, e: WochenOverrideSetzen) -> dict:
+    if len(e.wochenstunden) != 7:
+        raise HTTPException(status_code=400, detail="Sieben Werte (Mo-So) noetig")
+    if not (1 <= e.kw <= 53):
+        raise HTTPException(status_code=400, detail="Kalenderwoche ausserhalb 1-53")
+    return db.setze_wochen_override(person_id, e.jahr, e.kw, [float(x) for x in e.wochenstunden])
+
+
+@router.delete("/personen/{person_id}/wochen-override/{jahr}/{kw}", status_code=204)
+def wochen_override_loeschen(person_id: str, jahr: int, kw: int) -> None:
+    if not db.loesche_wochen_override(person_id, jahr, kw):
+        raise HTTPException(status_code=404, detail="Kein Override fuer diese Woche")

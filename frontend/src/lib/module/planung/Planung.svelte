@@ -4,8 +4,9 @@
     ladeUrlaub, setzeUrlaub, loescheUrlaub, ladeUrlaubskonten,
     ladeLaender, feiertageVorschau, feiertageUebernehmen, ladeFeiertage, loescheFeiertage,
     ladeAbwesenheitstypen, aktualisiereAbwesenheitstyp, ladeTagesregeln, setzeTagesregel, loescheTagesregel,
+    ladeWochenOverride, setzeWochenOverride, loescheWochenOverride,
     type Person, type Urlaubstag, type Feiertag, type Urlaubskonto, type Region,
-    type AbwesenheitTyp, type Tagesregel,
+    type AbwesenheitTyp, type Tagesregel, type WochenOverride,
   } from '../../api'
 
   let { boardId }: { boardId: string } = $props()
@@ -44,6 +45,30 @@
   let rWochentag = $state(4)
   let rAnteil = $state(0.5)
   let rNotiz = $state('')
+
+  // Wochen-Override (abweichende Wochenstunden einzelner Wochen)
+  let ovPerson = $state('')
+  let ovJahr = $state(jahr)
+  let ovKw = $state(1)
+  let ovStunden = $state<number[]>([8, 8, 8, 8, 8, 0, 0])
+  let ovListe = $state<WochenOverride[]>([])
+
+  async function ladenOv(): Promise<void> {
+    if (!ovPerson) { ovListe = []; return }
+    ovListe = await ladeWochenOverride(ovPerson)
+    const p = personen.find((x) => x.id === ovPerson)
+    if (p) ovStunden = [...p.wochenstunden]
+  }
+  async function ovSpeichern(): Promise<void> {
+    if (!ovPerson) return
+    await setzeWochenOverride(ovPerson, ovJahr, ovKw, ovStunden.map((x) => Number(x) || 0))
+    meldung = `Wochen-Override KW ${ovKw}/${ovJahr} gespeichert.`
+    await ladenOv()
+  }
+  async function ovLoeschenF(o: WochenOverride): Promise<void> {
+    await loescheWochenOverride(ovPerson, o.jahr, o.kw)
+    await ladenOv()
+  }
 
   async function ladenPersonen(): Promise<void> {
     personen = await ladePersonen()
@@ -84,6 +109,10 @@
   $effect(() => {
     if (urlaubPerson) ladeUrlaub(urlaubPerson, `${jahr}-01-01`, `${jahr}-12-31`).then((u) => (urlaub = u)).catch(() => {})
   })
+  $effect(() => {
+    if (!ovPerson && personen[0]) ovPerson = personen[0].id
+  })
+  $effect(() => { void ovPerson; void personen.length; ladenOv() })
   $effect(() => { ladenKonfig() })
 
   async function ladenKonfig(): Promise<void> {
@@ -205,6 +234,39 @@
       <input class="kz" placeholder="Kürzel" bind:value={neuesKuerzel} />
       <button class="btn primaer" onclick={personAnlegen}>Person hinzufügen</button>
     </div>
+  </section>
+
+  <section class="block">
+    <p class="sec">Wochen-Override (einzelne Woche abweichend vom Wochen-Soll)</p>
+    <div class="neu">
+      <select bind:value={ovPerson}>{#each personen as p (p.id)}<option value={p.id}>{p.name}</option>{/each}</select>
+      <label class="ovk">Jahr <input class="hw" type="number" min="2000" max="2100" bind:value={ovJahr} /></label>
+      <label class="ovk">KW <input class="hw" type="number" min="1" max="53" bind:value={ovKw} /></label>
+    </div>
+    <div class="tab">
+      <div class="kopf"><span class="pn">Stunden</span>{#each WD as w (w)}<span class="wd">{w}</span>{/each}<span class="pw"></span></div>
+      <div class="zeile">
+        <span class="pn">KW {ovKw}/{ovJahr}</span>
+        {#each ovStunden as _h, i (i)}
+          <input class="hw" type="number" min="0" max="24" step="0.5" bind:value={ovStunden[i]} />
+        {/each}
+        <span class="pw"><button class="btn primaer" onclick={ovSpeichern}>Speichern</button></span>
+      </div>
+    </div>
+    {#if ovListe.length}
+      <div class="tab">
+        <div class="kopf"><span class="pn">Gespeichert</span>{#each WD as w (w)}<span class="wd">{w}</span>{/each}<span class="pw"></span></div>
+        {#each ovListe as o (o.jahr + '-' + o.kw)}
+          <div class="zeile">
+            <span class="pn">KW {o.kw}/{o.jahr}</span>
+            {#each o.wochenstunden as h, i (i)}<span class="wd">{h}</span>{/each}
+            <span class="pw"><button class="del" aria-label="Override löschen" onclick={() => ovLoeschenF(o)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button></span>
+          </div>
+        {/each}
+      </div>
+    {:else}
+      <p class="leer">Keine Overrides fuer diese Person.</p>
+    {/if}
   </section>
 
   <section class="block">

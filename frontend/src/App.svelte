@@ -7,7 +7,7 @@
   import { theme, wechsleTheme } from './lib/theme/theme.svelte'
   import { VERSION } from './lib/version'
   import { aktualisiereLaufend } from './lib/timer.svelte'
-  import { nav } from './lib/navigation.svelte'
+  import { nav, transkriptNav } from './lib/navigation.svelte'
   import Toast from './lib/Toast.svelte'
   import LaufBar from './lib/LaufBar.svelte'
   import DiensteStatus from './lib/DiensteStatus.svelte'
@@ -89,6 +89,14 @@
     if (b) {
       if (ansichtsListe.some((a) => a.id === 'board')) aktiveAnsicht = 'board'
       aktivesBoard = b
+    }
+  })
+
+  // Wunsch, ein verknuepftes Transkript zu oeffnen: zur Transkripte-Ansicht wechseln
+  // (die Ansicht liest den Wunsch selbst aus und oeffnet das Transkript).
+  $effect(() => {
+    if (transkriptNav.id && ansichtsListe.some((a) => a.id === 'transkripte')) {
+      aktiveAnsicht = 'transkripte'
     }
   })
 

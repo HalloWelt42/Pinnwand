@@ -7,6 +7,7 @@ liefert alles leere Ergebnisse - die Ansicht zeigt dann einen Hinweis.
 """
 from __future__ import annotations
 
+import json
 import time
 
 import httpx
@@ -97,12 +98,55 @@ def suche(q: str, limit: int = 30) -> list[dict]:
     return out
 
 
+def _segmente(roh: dict) -> list[dict]:
+    """Normalisiert die Segmente eines Transkripts auf {start, text, speaker}."""
+    rohsegmente = roh.get("segments") or roh.get("segmente") or []
+    if isinstance(rohsegmente, str):
+        # Manche Dienste liefern die Segmente als JSON-String.
+        try:
+            rohsegmente = json.loads(rohsegmente)
+        except (ValueError, TypeError):
+            return []
+    if not isinstance(rohsegmente, list):
+        return []
+    out: list[dict] = []
+    for s in rohsegmente:
+        if not isinstance(s, dict):
+            continue
+        start = s.get("start", s.get("begin", s.get("start_time", s.get("offset", 0))))
+        try:
+            start_f = float(start or 0)
+        except (TypeError, ValueError):
+            start_f = 0.0
+        text = (s.get("text") or s.get("content") or "").strip()
+        if not text:
+            continue
+        out.append({"start": round(start_f, 2), "text": text, "speaker": s.get("speaker") or s.get("speaker_name")})
+    return out
+
+
 def detail(tid: str) -> dict | None:
-    for t in _liste():
-        if t["id"] == tid:
-            audio = None
-            b = _basis()
-            if b:
-                audio = f"{b}/api/transcribe/{tid}/audio"
-            return {**t, "audio_url": audio}
-    return None
+    b = _basis()
+    grund = next((t for t in _liste() if t["id"] == tid), None)
+    if grund is None and b is None:
+        return None
+    audio = f"{b}/api/transcribe/{tid}/audio" if b else None
+    segmente: list[dict] = []
+    if b:
+        # Volltext-Detail (inkl. Segmente) direkt vom Dienst holen.
+        try:
+            r = httpx.get(f"{b}/api/transcribe/{tid}", timeout=25.0)
+            if r.status_code < 400:
+                roh = r.json()
+                segmente = _segmente(roh if isinstance(roh, dict) else {})
+                if grund is None and isinstance(roh, dict):
+                    grund = {
+                        "id": tid, "name": roh.get("name"), "language": roh.get("language"),
+                        "full_text": roh.get("full_text") or "", "speaker_names": roh.get("speaker_names") or [],
+                        "segment_count": roh.get("segment_count"),
+                    }
+        except Exception:
+            segmente = []
+    if grund is None:
+        return None
+    return {**grund, "audio_url": audio, "segmente": segmente}

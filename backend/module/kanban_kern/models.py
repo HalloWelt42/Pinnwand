@@ -47,6 +47,8 @@ class Karte(BaseModel):
     schaetzung_min: int | None = None
     erfasst_sek: int = 0
     laeuft_seit: str | None = None
+    transkript_id: str | None = None
+    transkript_name: str | None = None
 
 
 class Spalte(BaseModel):
@@ -136,6 +138,8 @@ class KarteUpdate(BaseModel):
     faellig: date | None = None
     zustaendig: str | None = None
     schaetzung_min: int | None = None
+    transkript_id: str | None = None
+    transkript_name: str | None = None
 
 
 class KarteMove(BaseModel):

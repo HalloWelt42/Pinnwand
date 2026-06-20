@@ -12,3 +12,10 @@ export const nav = $state<{ ziel: NavZiel | null }>({ ziel: null })
 export function oeffneKarte(boardId: string, karteId?: string): void {
   nav.ziel = { boardId, karteId }
 }
+
+// Wunsch, ein bestimmtes Transkript zu oeffnen (z.B. aus einer verknuepften Karte).
+export const transkriptNav = $state<{ id: string | null }>({ id: null })
+
+export function oeffneTranskript(id: string): void {
+  transkriptNav.id = id
+}

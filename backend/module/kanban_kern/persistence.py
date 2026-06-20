@@ -67,7 +67,9 @@ CREATE TABLE IF NOT EXISTS karte (
     erfasst_sek INTEGER NOT NULL DEFAULT 0,
     laeuft_seit TEXT,
     serie_id TEXT,
-    serie_datum TEXT
+    serie_datum TEXT,
+    transkript_id TEXT,
+    transkript_name TEXT
 );
 CREATE TABLE IF NOT EXISTS zeiteintrag (
     id TEXT PRIMARY KEY,
@@ -109,6 +111,10 @@ def _migriere(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE karte ADD COLUMN serie_datum TEXT")
     if "notizen" not in kspalten:
         conn.execute("ALTER TABLE karte ADD COLUMN notizen TEXT")
+    if "transkript_id" not in kspalten:
+        conn.execute("ALTER TABLE karte ADD COLUMN transkript_id TEXT")
+    if "transkript_name" not in kspalten:
+        conn.execute("ALTER TABLE karte ADD COLUMN transkript_name TEXT")
 
 
 def init_db() -> None:
@@ -144,6 +150,8 @@ def _karte_aus_row(row: sqlite3.Row) -> Karte:
         schaetzung_min=row["schaetzung_min"],
         erfasst_sek=row["erfasst_sek"],
         laeuft_seit=row["laeuft_seit"],
+        transkript_id=row["transkript_id"],
+        transkript_name=row["transkript_name"],
     )
 
 
@@ -304,7 +312,7 @@ def verschiebe_karte(karte_id: str, ziel_spalte: str, ziel_reihenfolge: int) -> 
 
 
 def aktualisiere_karte(karte_id: str, aenderungen: dict) -> Karte | None:
-    erlaubt = {"titel", "beschreibung", "notizen", "labels", "prioritaet", "checkliste", "cover", "spalte", "reihenfolge", "start", "faellig", "zustaendig", "schaetzung_min"}
+    erlaubt = {"titel", "beschreibung", "notizen", "labels", "prioritaet", "checkliste", "cover", "spalte", "reihenfolge", "start", "faellig", "zustaendig", "schaetzung_min", "transkript_id", "transkript_name"}
     felder = {k: v for k, v in aenderungen.items() if k in erlaubt}
     if not felder:
         return hole_karte(karte_id)

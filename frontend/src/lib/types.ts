@@ -35,6 +35,8 @@ export interface Karte {
   schaetzung_min?: number | null
   erfasst_sek?: number
   laeuft_seit?: string | null
+  transkript_id?: string | null
+  transkript_name?: string | null
 }
 
 export interface Spalte {

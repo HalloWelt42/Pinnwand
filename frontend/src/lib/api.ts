@@ -112,6 +112,8 @@ export interface KarteAenderung {
   faellig?: string | null
   zustaendig?: string | null
   schaetzung_min?: number | null
+  transkript_id?: string | null
+  transkript_name?: string | null
 }
 
 export const aktualisiereKarte = (id: string, daten: KarteAenderung): Promise<Karte> =>
@@ -251,6 +253,12 @@ export interface TranskriptDetail {
   language?: string
   audio_url?: string | null
   segment_count?: number
+  segmente?: TranskriptSegment[]
+}
+export interface TranskriptSegment {
+  start: number
+  text: string
+  speaker?: string | null
 }
 export const transkripteStatus = (): Promise<{ erreichbar: boolean; konfiguriert: boolean }> =>
   hole('/api/transkripte/status')

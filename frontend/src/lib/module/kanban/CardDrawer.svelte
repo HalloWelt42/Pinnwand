@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Karte, Prioritaet, Spalte } from '../../types'
-  import type { KarteAenderung } from '../../api'
+  import type { KarteAenderung, TranskriptTreffer } from '../../api'
+  import { transkripteSuche } from '../../api'
+  import { oeffneTranskript } from '../../navigation.svelte'
   import { labelFarbe } from '../../labels'
   import { theme } from '../../theme/theme.svelte'
   import { isoLang, isoDatumZeit } from '../../zeit'
@@ -48,6 +50,26 @@
       onAendern({ notizen: notiz || null })
       notizGespeichert = true
     }, 600)
+  }
+
+  // Transkript-Verknuepfung
+  let tSuche = $state('')
+  let tTreffer = $state<TranskriptTreffer[]>([])
+  let tTimer: ReturnType<typeof setTimeout> | null = null
+  function tSuchen() {
+    if (tTimer) clearTimeout(tTimer)
+    const q = tSuche
+    tTimer = setTimeout(async () => {
+      try { tTreffer = (await transkripteSuche(q, 12)).treffer } catch { tTreffer = [] }
+    }, 220)
+  }
+  function transkriptVerknuepfen(t: TranskriptTreffer) {
+    onAendern({ transkript_id: t.id, transkript_name: t.name })
+    tSuche = ''
+    tTreffer = []
+  }
+  function transkriptEntfernen() {
+    onAendern({ transkript_id: null, transkript_name: null })
   }
 
   function autoSpeichern() {
@@ -271,6 +293,25 @@
 
     <p class="sec">Dokumente</p>
     <DokumentVerwaltung kontext="karte" kontextId={karte.id} />
+
+    <p class="sec">Transkript</p>
+    {#if karte.transkript_id}
+      <div class="tlink">
+        <i class="fa-solid fa-headphones" aria-hidden="true"></i>
+        <span class="tname">{karte.transkript_name ?? 'Verknüpftes Transkript'}</span>
+        <button class="mini geist" onclick={() => oeffneTranskript(karte.transkript_id!)}>Öffnen</button>
+        <button class="ic" aria-label="Verknüpfung entfernen" onclick={transkriptEntfernen}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+      </div>
+    {:else}
+      <input class="feld" placeholder="Transkript suchen und verknüpfen ..." bind:value={tSuche} oninput={tSuchen} />
+      {#if tTreffer.length}
+        <div class="ttreffer">
+          {#each tTreffer as t (t.id)}
+            <button class="ttr" onclick={() => transkriptVerknuepfen(t)}><i class="fa-regular fa-file-audio" aria-hidden="true"></i> <span>{t.name}</span></button>
+          {/each}
+        </div>
+      {/if}
+    {/if}
 
     <p class="sec">Aktivität</p>
     {#each karte.kommentare as k (k.zeit + k.autor)}
@@ -635,6 +676,50 @@
   }
   .cmt-vor:hover {
     color: var(--hl-primary-text);
+  }
+  .tlink {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    border-radius: var(--r-m);
+    padding: 8px 10px;
+    font-size: 12.5px;
+    color: var(--text-1);
+  }
+  .tlink .tname {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ttreffer {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 5px;
+  }
+  .ttr {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-1);
+    border-radius: var(--r-m);
+    padding: 7px 10px;
+    font-size: 12.5px;
+  }
+  .ttr span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ttr:hover {
+    border-color: var(--hl-primary);
   }
   .ct .cmt-md {
     margin: 3px 0 0;

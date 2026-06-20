@@ -7,6 +7,7 @@
     type TranskriptDetail,
   } from '../../api'
   import { tts, vorlesen, stoppeVorlesen } from '../../tts.svelte'
+  import { transkriptNav } from '../../navigation.svelte'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
@@ -17,6 +18,33 @@
   let status = $state<{ erreichbar: boolean; konfiguriert: boolean } | null>(null)
   let laeuft = $state(false)
   let timer: ReturnType<typeof setTimeout> | null = null
+  let audioEl = $state<HTMLAudioElement | null>(null)
+
+  function mmss(s: number): string {
+    const t = Math.max(0, Math.floor(s))
+    return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`
+  }
+  function springe(start: number): void {
+    if (!audioEl) return
+    audioEl.currentTime = start
+    void audioEl.play()
+  }
+  async function oeffneById(id: string): Promise<void> {
+    stoppeVorlesen()
+    try {
+      aktiv = await transkriptDetail(id)
+    } catch {
+      aktiv = null
+    }
+  }
+  // Wunsch aus einer verknuepften Karte: dieses Transkript oeffnen.
+  $effect(() => {
+    const id = transkriptNav.id
+    if (id) {
+      transkriptNav.id = null
+      oeffneById(id)
+    }
+  })
 
   $effect(() => {
     transkripteStatus().then((s) => (status = s)).catch(() => (status = { erreichbar: false, konfiguriert: false }))
@@ -107,10 +135,22 @@
               </button>
             </div>
             {#if aktiv.audio_url}
-              <audio class="player" controls src={aktiv.audio_url}></audio>
+              <audio class="player" controls src={aktiv.audio_url} bind:this={audioEl}></audio>
             {/if}
           </header>
-          <div class="text">{@html hervor(aktiv.full_text, frage)}</div>
+          {#if aktiv.segmente && aktiv.segmente.length}
+            <div class="segmente">
+              {#each aktiv.segmente as s, i (i)}
+                <button class="seg" onclick={() => springe(s.start)} title="Zum Segment springen">
+                  <span class="szeit">{mmss(s.start)}</span>
+                  {#if s.speaker}<span class="sspk">{s.speaker}</span>{/if}
+                  <span class="stext">{@html hervor(s.text, frage)}</span>
+                </button>
+              {/each}
+            </div>
+          {:else}
+            <div class="text">{@html hervor(aktiv.full_text, frage)}</div>
+          {/if}
         {:else}
           <p class="leer-d">Links ein Transkript wählen.</p>
         {/if}
@@ -273,9 +313,51 @@
     white-space: pre-wrap;
   }
   .text :global(mark),
+  .stext :global(mark),
   .snip :global(mark) {
     background: var(--hl-primary-weich);
     color: var(--hl-primary-text);
     border-radius: 2px;
+  }
+  .segmente {
+    padding: 10px 12px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .seg {
+    display: grid;
+    grid-template-columns: 48px auto 1fr;
+    gap: 9px;
+    align-items: baseline;
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--r-m);
+    padding: 6px 9px;
+    color: var(--text-1);
+    font-size: 13px;
+    line-height: 1.55;
+    cursor: pointer;
+  }
+  .seg:hover {
+    background: var(--surface-2);
+    border-color: var(--border);
+  }
+  .szeit {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--hl-primary-text);
+    font-variant-numeric: tabular-nums;
+  }
+  .sspk {
+    font-size: 11px;
+    color: var(--text-3);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .stext {
+    min-width: 0;
   }
 </style>

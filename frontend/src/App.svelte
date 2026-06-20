@@ -14,6 +14,7 @@
   import Hilfe from './lib/Hilfe.svelte'
   import Onboarding from './lib/Onboarding.svelte'
   import DokumentVerwaltung from './lib/DokumentVerwaltung.svelte'
+  import VorleseLeiste from './lib/VorleseLeiste.svelte'
 
   interface Ansicht {
     id: string
@@ -395,6 +396,7 @@
 </div>
 
 <Toast />
+<VorleseLeiste />
 {#if hilfeOffen}<Hilfe onSchliessen={() => (hilfeOffen = false)} />{/if}
 {#if onboardingOffen}<Onboarding onFertig={onboardingFertig} onGeheZu={geheZuAnsicht} />{/if}
 {#if mappeDokOffen && aktiveMappe}

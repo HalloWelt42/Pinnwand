@@ -274,7 +274,7 @@
 
     <p class="sec">Aktivität</p>
     {#each karte.kommentare as k (k.zeit + k.autor)}
-      <div class="cmt"><span class="av">{initialen(k.autor)}</span><div class="ct"><b>{k.autor}</b> <span class="zeit">{zeitKurz(k.zeit)}</span><div class="cmt-md"><Markdown md={k.text} /></div></div></div>
+      <div class="cmt"><span class="av">{initialen(k.autor)}</span><div class="ct"><b>{k.autor}</b> <span class="zeit">{zeitKurz(k.zeit)}</span><button class="cmt-vor" aria-label="Kommentar vorlesen" title="Vorlesen" onclick={() => vorlesen(k.text)}><i class="fa-solid fa-volume-high" aria-hidden="true"></i></button><div class="cmt-md"><Markdown md={k.text} /></div></div></div>
     {/each}
     <div class="cmtinput">
       <input placeholder="Kommentar schreiben ..." bind:value={kommentar} onkeydown={(e) => { if (e.key === 'Enter') kommentarSenden() }} />
@@ -624,6 +624,17 @@
     color: var(--text-3);
     font-size: 10.5px;
     margin-left: 6px;
+  }
+  .cmt-vor {
+    border: none;
+    background: transparent;
+    color: var(--text-3);
+    font-size: 10.5px;
+    padding: 0 4px;
+    margin-left: 4px;
+  }
+  .cmt-vor:hover {
+    color: var(--hl-primary-text);
   }
   .ct .cmt-md {
     margin: 3px 0 0;

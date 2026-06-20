@@ -239,33 +239,33 @@
   <section class="block">
     <p class="sec">Wochen-Override (einzelne Woche abweichend vom Wochen-Soll)</p>
     <div class="neu">
-      <select bind:value={ovPerson}>{#each personen as p (p.id)}<option value={p.id}>{p.name}</option>{/each}</select>
-      <label class="ovk">Jahr <input class="hw" type="number" min="2000" max="2100" bind:value={ovJahr} /></label>
-      <label class="ovk">KW <input class="hw" type="number" min="1" max="53" bind:value={ovKw} /></label>
+      <select class="ovsel" bind:value={ovPerson} aria-label="Person">{#each personen as p (p.id)}<option value={p.id}>{p.name}</option>{/each}</select>
+      <label class="ovk">Jahr <input class="ovnum jahr" type="number" min="2000" max="2100" bind:value={ovJahr} /></label>
+      <label class="ovk">KW <input class="ovnum" type="number" min="1" max="53" bind:value={ovKw} /></label>
     </div>
-    <div class="tab">
-      <div class="kopf"><span class="pn">Stunden</span>{#each WD as w (w)}<span class="wd">{w}</span>{/each}<span class="pw"></span></div>
+    <div class="tab ovin">
+      <div class="kopf"><span class="pn">Stunden</span>{#each WD as w (w)}<span class="wd">{w}</span>{/each}</div>
       <div class="zeile">
         <span class="pn">KW {ovKw}/{ovJahr}</span>
         {#each ovStunden as _h, i (i)}
           <input class="hw" type="number" min="0" max="24" step="0.5" bind:value={ovStunden[i]} />
         {/each}
-        <span class="pw"><button class="btn primaer" onclick={ovSpeichern}>Speichern</button></span>
       </div>
     </div>
+    <div class="ovaktion"><button class="btn primaer" onclick={ovSpeichern}>Woche speichern</button></div>
     {#if ovListe.length}
-      <div class="tab">
-        <div class="kopf"><span class="pn">Gespeichert</span>{#each WD as w (w)}<span class="wd">{w}</span>{/each}<span class="pw"></span></div>
+      <div class="tab ovsaved">
+        <div class="kopf"><span class="pn">Gespeichert</span>{#each WD as w (w)}<span class="wd">{w}</span>{/each}<span></span></div>
         {#each ovListe as o (o.jahr + '-' + o.kw)}
           <div class="zeile">
             <span class="pn">KW {o.kw}/{o.jahr}</span>
-            {#each o.wochenstunden as h, i (i)}<span class="wd">{h}</span>{/each}
-            <span class="pw"><button class="del" aria-label="Override löschen" onclick={() => ovLoeschenF(o)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button></span>
+            {#each o.wochenstunden as h, i (i)}<span class="ovw">{h}</span>{/each}
+            <button class="del" aria-label="Override löschen" onclick={() => ovLoeschenF(o)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
           </div>
         {/each}
       </div>
     {:else}
-      <p class="leer">Keine Overrides fuer diese Person.</p>
+      <p class="leer">Keine Overrides für diese Person.</p>
     {/if}
   </section>
 
@@ -285,7 +285,7 @@
           <input class="uz" type="number" min="0" step="0.5" value={p.resturlaub_vorjahr} onchange={(e) => restAendern(p, parseFloat(e.currentTarget.value) || 0)} aria-label="Resturlaub Vorjahr" />
           <span class="uw">{k ? k.genommen : 0}</span>
           <span class="uw" class:knapp={k ? k.verbleibend < 0 : false}>{k ? k.verbleibend : '-'}</span>
-          <button class="mini geist" title="Resturlaub aus dem Vorjahr berechnen (Anspruch minus im Vorjahr genommen)" onclick={() => restAusVorjahr(p)}>aus Vorjahr</button>
+          <button class="minibtn geist" title="Resturlaub aus dem Vorjahr berechnen (Anspruch minus im Vorjahr genommen)" onclick={() => restAusVorjahr(p)}>aus Vorjahr</button>
         </div>
       {/each}
       {#if !personen.length}<div class="uzeile leerz">Noch keine Personen.</div>{/if}
@@ -422,8 +422,20 @@
   .del { border: none; background: transparent; color: var(--text-3); font-size: 11px; }
   .del:hover { color: var(--gefahr); }
   .neu { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-  .neu input, .reihe input, .reihe select { border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-1); border-radius: var(--r-m); padding: 7px 9px; font-size: 12.5px; }
+  .neu input, .neu select, .reihe input, .reihe select { border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-1); border-radius: var(--r-m); padding: 7px 9px; font-size: 12.5px; }
   .neu .kz { width: 90px; }
+  /* Wochen-Override: eigene Raster, schmalere Spalten, Speichern auf eigener Zeile (nicht abgeschnitten). */
+  .ovin .kopf, .ovin .zeile { grid-template-columns: 1fr repeat(7, 48px); gap: 5px; }
+  .ovsaved .kopf, .ovsaved .zeile { grid-template-columns: 1fr repeat(7, 48px) 34px; gap: 5px; }
+  .ovin .hw { width: 100%; }
+  .ovsaved .del { justify-self: end; border: none; background: transparent; color: var(--text-3); font-size: 11px; }
+  .ovsaved .del:hover { color: var(--gefahr); }
+  .ovaktion { display: flex; justify-content: flex-end; margin-top: 8px; }
+  .ovw { text-align: center; font-family: var(--font-mono); font-size: 12px; color: var(--text-2); }
+  .ovsel { min-width: 150px; }
+  .ovk { display: inline-flex; align-items: center; gap: 6px; color: var(--text-3); font-size: 12px; }
+  .ovnum { width: 54px; border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-1); border-radius: var(--r-s); padding: 6px 8px; font-size: 12.5px; }
+  .ovnum.jahr { width: 68px; }
   .reihe { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .mini { display: inline-flex; align-items: center; gap: 6px; color: var(--text-3); font-size: 11.5px; }
   .mini input { width: 130px; }
@@ -445,9 +457,9 @@
   .uw { text-align: right; font-family: var(--font-mono); font-size: 12px; color: var(--text-2); }
   .uw.knapp { color: var(--gefahr); }
   .leerz { padding: 10px; color: var(--text-3); font-size: 12px; }
-  .mini { border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-2); border-radius: var(--r-s); padding: 4px 6px; font-size: 10.5px; }
-  .mini.geist { background: transparent; }
-  .mini:hover { border-color: var(--hl-primary); color: var(--hl-primary-text); }
+  .minibtn { border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-2); border-radius: var(--r-s); padding: 4px 8px; font-size: 10.5px; }
+  .minibtn.geist { background: transparent; }
+  .minibtn:hover { border-color: var(--hl-primary); color: var(--hl-primary-text); }
   .hinweis { font-size: 11.5px; color: var(--text-3); line-height: 1.55; margin: 8px 0 0; max-width: 80ch; }
 
   .ftbox { margin-top: 12px; }

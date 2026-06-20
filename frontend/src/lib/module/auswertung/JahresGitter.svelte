@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { KalenderAntwort, KalenderZelle } from '../../api'
   import { tagAggregat, type Ebenen } from './kalenderfarben'
+  import { isoLang } from '../../zeit'
 
   let { daten, ebenen, onTag }: { daten: KalenderAntwort; ebenen: Ebenen; onTag: (iso: string) => void } = $props()
 
@@ -44,7 +45,7 @@
             {@const agg = tagAggregat(proTag[z.iso] ?? [], ebenen)}
             {@const tag = Number(z.iso.slice(8, 10))}
             <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-            <div class="tag" class:heute={z.iso === HEUTE} style="background:{agg.bg}" role="button" tabindex="-1" title={z.iso + ' - ' + agg.titel} onclick={() => onTag(z.iso!)}>
+            <div class="tag" class:heute={z.iso === HEUTE} style="background:{agg.bg}" role="button" tabindex="-1" title={isoLang(z.iso) + ' - ' + agg.titel} onclick={() => onTag(z.iso!)}>
               <span class="nr">{tag}</span>
               {#if agg.zahl}<span class="zahl">{agg.zahl}</span>{/if}
             </div>

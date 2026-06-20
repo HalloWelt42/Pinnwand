@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { KalenderAntwort } from '../../api'
   import { zellHintergrund, zellMarker, zellHalb, type Ebenen, type TypMap } from './kalenderfarben'
+  import { isoLang } from '../../zeit'
 
   let {
     daten,
@@ -95,7 +96,7 @@
                 class:halb={zellHalb(z)}
                 class:heute={iso === HEUTE}
                 style="background:{zellHintergrund(z, ebenen, typen)}; {mark ? `box-shadow: inset 0 0 0 2px ${mark}` : ''}"
-                title={`${p.name} ${iso}: ${z.status}${z.abw ? ' (' + z.abw.typ + ')' : ''}${z.feiertag ? ' - ' + z.feiertag : ''}`}
+                title={`${p.name} ${isoLang(iso)}: ${z.status}${z.abw ? ' (' + z.abw.typ + ')' : ''}${z.feiertag ? ' - ' + z.feiertag : ''}`}
                 onpointerdown={() => start(p.id, iso)}
                 onpointerenter={() => ueber(p.id, iso)}
               ></div>

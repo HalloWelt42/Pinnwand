@@ -244,7 +244,7 @@
     </div>
     <div class="chips">
       {#each urlaub as u (u.id)}
-        <span class="chip">{u.datum}{#if u.anteil < 1} (halb){/if}<button aria-label="Entfernen" onclick={() => urlaubLoeschen(u)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></span>
+        <span class="chip">{dmy(u.datum)}{#if u.anteil < 1} (halb){/if}<button aria-label="Entfernen" onclick={() => urlaubLoeschen(u)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></span>
       {/each}
       {#if !urlaub.length}<span class="leer">Kein Urlaub {jahr}.</span>{/if}
     </div>

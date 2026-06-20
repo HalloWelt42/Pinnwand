@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ladeZeiteintraege, ladePlanungsTage, ladePersonen, type PlanTag, type Person } from '../../api'
-  import { ymd, formatStd } from '../../zeit'
+  import { ymd, formatStd, isoLang } from '../../zeit'
 
   let { boardId }: { boardId: string } = $props()
 
@@ -59,7 +59,7 @@
     return `color-mix(in srgb, var(--hl-primary) ${pct}%, transparent)`
   }
   function tipp(key: string, sek: number): string {
-    return `${key}: ${sek ? formatStd(sek) + ' h' : 'keine Zeit'}`
+    return `${isoLang(key)}: ${sek ? formatStd(sek) + ' h' : 'keine Zeit'}`
   }
   // Kräftig gefüllte Zellen (Intensität >= 68%) brauchen Text in der Auf-Primär-Farbe für Kontrast.
   function kraeftig(sek: number): boolean {

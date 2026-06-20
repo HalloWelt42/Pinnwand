@@ -32,6 +32,7 @@ class Karte(BaseModel):
     titel: str
     schluessel: str | None = None
     beschreibung: str | None = None
+    notizen: str | None = None
     labels: list[str] = Field(default_factory=list)
     prioritaet: Prioritaet | None = None
     checkliste: list[ChecklistPunkt] = Field(default_factory=list)
@@ -84,6 +85,30 @@ class MappeUpdate(BaseModel):
     beschreibung: str | None = None
 
 
+KontextTyp = Literal["karte", "mappe"]
+
+
+class Dokument(BaseModel):
+    id: str
+    kontext: KontextTyp
+    kontext_id: str
+    titel: str
+    inhalt: str = ""
+    erstellt_am: str | None = None
+    bewegt_am: str | None = None
+
+
+class DokumentCreate(BaseModel):
+    kontext: KontextTyp
+    kontext_id: str
+    titel: str
+
+
+class DokumentUpdate(BaseModel):
+    titel: str | None = None
+    inhalt: str | None = None
+
+
 class KarteCreate(BaseModel):
     board_id: str
     spalte: str
@@ -100,6 +125,7 @@ class KarteCreate(BaseModel):
 class KarteUpdate(BaseModel):
     titel: str | None = None
     beschreibung: str | None = None
+    notizen: str | None = None
     labels: list[str] | None = None
     prioritaet: Prioritaet | None = None
     checkliste: list[ChecklistPunkt] | None = None

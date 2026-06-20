@@ -21,7 +21,7 @@ def _jetzt() -> str:
 def _jetzt_genau() -> str:
     return datetime.now().isoformat(timespec="seconds")
 
-from .models import Board, BoardDetail, Karte, Projektmappe, Spalte, Zeiteintrag
+from .models import Board, BoardDetail, Dokument, Karte, Projektmappe, Spalte, Zeiteintrag
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS mappe (
@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS karte (
     titel TEXT NOT NULL,
     schluessel TEXT,
     beschreibung TEXT,
+    notizen TEXT,
     labels TEXT NOT NULL DEFAULT '[]',
     prioritaet TEXT,
     checkliste TEXT NOT NULL DEFAULT '[]',
@@ -80,6 +81,15 @@ CREATE TABLE IF NOT EXISTS zeiteintrag (
     kommentar TEXT,
     manuell INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS dokument (
+    id TEXT PRIMARY KEY,
+    kontext TEXT NOT NULL,
+    kontext_id TEXT NOT NULL,
+    titel TEXT NOT NULL,
+    inhalt TEXT NOT NULL DEFAULT '',
+    erstellt_am TEXT,
+    bewegt_am TEXT
+);
 """
 
 
@@ -97,6 +107,8 @@ def _migriere(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE karte ADD COLUMN serie_id TEXT")
     if "serie_datum" not in kspalten:
         conn.execute("ALTER TABLE karte ADD COLUMN serie_datum TEXT")
+    if "notizen" not in kspalten:
+        conn.execute("ALTER TABLE karte ADD COLUMN notizen TEXT")
 
 
 def init_db() -> None:
@@ -117,6 +129,7 @@ def _karte_aus_row(row: sqlite3.Row) -> Karte:
         titel=row["titel"],
         schluessel=row["schluessel"],
         beschreibung=row["beschreibung"],
+        notizen=row["notizen"],
         labels=json.loads(row["labels"]),
         prioritaet=row["prioritaet"],
         checkliste=json.loads(row["checkliste"]),
@@ -182,8 +195,12 @@ def loesche_mappe(mappe_id: str) -> bool:
             return False
         board_ids = [r[0] for r in conn.execute("SELECT id FROM board WHERE mappe_id = ?", (mappe_id,)).fetchall()]
         for bid in board_ids:
+            karten = [r[0] for r in conn.execute("SELECT id FROM karte WHERE board_id = ?", (bid,)).fetchall()]
+            for kid in karten:
+                conn.execute("DELETE FROM dokument WHERE kontext = 'karte' AND kontext_id = ?", (kid,))
             conn.execute("DELETE FROM karte WHERE board_id = ?", (bid,))
             conn.execute("DELETE FROM spalte WHERE board_id = ?", (bid,))
+        conn.execute("DELETE FROM dokument WHERE kontext = 'mappe' AND kontext_id = ?", (mappe_id,))
         conn.execute("DELETE FROM zeiteintrag WHERE mappe_id = ?", (mappe_id,))
         conn.execute("DELETE FROM board WHERE mappe_id = ?", (mappe_id,))
         conn.execute("DELETE FROM mappe WHERE id = ?", (mappe_id,))
@@ -287,7 +304,7 @@ def verschiebe_karte(karte_id: str, ziel_spalte: str, ziel_reihenfolge: int) -> 
 
 
 def aktualisiere_karte(karte_id: str, aenderungen: dict) -> Karte | None:
-    erlaubt = {"titel", "beschreibung", "labels", "prioritaet", "checkliste", "cover", "spalte", "reihenfolge", "start", "faellig", "zustaendig", "schaetzung_min"}
+    erlaubt = {"titel", "beschreibung", "notizen", "labels", "prioritaet", "checkliste", "cover", "spalte", "reihenfolge", "start", "faellig", "zustaendig", "schaetzung_min"}
     felder = {k: v for k, v in aenderungen.items() if k in erlaubt}
     if not felder:
         return hole_karte(karte_id)
@@ -315,8 +332,63 @@ def loesche_karte(karte_id: str) -> None:
     with _verb() as conn:
         row = conn.execute("SELECT board_id, spalte FROM karte WHERE id = ?", (karte_id,)).fetchone()
         conn.execute("DELETE FROM karte WHERE id = ?", (karte_id,))
+        conn.execute("DELETE FROM dokument WHERE kontext = 'karte' AND kontext_id = ?", (karte_id,))
         if row is not None:
             _kompaktiere(conn, row["board_id"], row["spalte"])
+
+
+# -- Dokumente (Karten- und Mappen-Dokumente) -----------------------------
+
+def _dokument_aus_row(r: sqlite3.Row) -> Dokument:
+    return Dokument(
+        id=r["id"], kontext=r["kontext"], kontext_id=r["kontext_id"],
+        titel=r["titel"], inhalt=r["inhalt"], erstellt_am=r["erstellt_am"], bewegt_am=r["bewegt_am"],
+    )
+
+
+def liste_dokumente(kontext: str, kontext_id: str) -> list[Dokument]:
+    with _verb() as conn:
+        rows = conn.execute(
+            "SELECT * FROM dokument WHERE kontext = ? AND kontext_id = ? ORDER BY titel",
+            (kontext, kontext_id),
+        ).fetchall()
+    return [_dokument_aus_row(r) for r in rows]
+
+
+def hole_dokument(dokument_id: str) -> Dokument | None:
+    with _verb() as conn:
+        r = conn.execute("SELECT * FROM dokument WHERE id = ?", (dokument_id,)).fetchone()
+    return _dokument_aus_row(r) if r else None
+
+
+def erstelle_dokument(dokument_id: str, kontext: str, kontext_id: str, titel: str) -> Dokument:
+    jetzt = _jetzt_genau()
+    with _verb() as conn:
+        conn.execute(
+            "INSERT INTO dokument (id, kontext, kontext_id, titel, inhalt, erstellt_am, bewegt_am)"
+            " VALUES (?, ?, ?, ?, '', ?, ?)",
+            (dokument_id, kontext, kontext_id, titel, jetzt, jetzt),
+        )
+    return Dokument(id=dokument_id, kontext=kontext, kontext_id=kontext_id, titel=titel, inhalt="", erstellt_am=jetzt, bewegt_am=jetzt)
+
+
+def aktualisiere_dokument(dokument_id: str, felder: dict) -> Dokument | None:
+    erlaubt = {k: v for k, v in felder.items() if k in ("titel", "inhalt")}
+    with _verb() as conn:
+        if erlaubt:
+            sql = ", ".join(f"{k} = ?" for k in erlaubt)
+            conn.execute(
+                f"UPDATE dokument SET {sql}, bewegt_am = ? WHERE id = ?",
+                (*erlaubt.values(), _jetzt_genau(), dokument_id),
+            )
+        r = conn.execute("SELECT * FROM dokument WHERE id = ?", (dokument_id,)).fetchone()
+    return _dokument_aus_row(r) if r else None
+
+
+def loesche_dokument(dokument_id: str) -> bool:
+    with _verb() as conn:
+        cur = conn.execute("DELETE FROM dokument WHERE id = ?", (dokument_id,))
+    return cur.rowcount > 0
 
 
 # -- Zeiterfassung --------------------------------------------------------
@@ -679,6 +751,9 @@ def aktualisiere_board(board_id: str, titel: str) -> Board | None:
 
 def loesche_board(board_id: str) -> None:
     with _verb() as conn:
+        karten = [r[0] for r in conn.execute("SELECT id FROM karte WHERE board_id = ?", (board_id,)).fetchall()]
+        for kid in karten:
+            conn.execute("DELETE FROM dokument WHERE kontext = 'karte' AND kontext_id = ?", (kid,))
         conn.execute("DELETE FROM karte WHERE board_id = ?", (board_id,))
         conn.execute("DELETE FROM spalte WHERE board_id = ?", (board_id,))
         conn.execute("DELETE FROM board WHERE id = ?", (board_id,))

@@ -12,6 +12,9 @@ from .models import (
     BoardCreate,
     BoardDetail,
     BoardUpdate,
+    Dokument,
+    DokumentCreate,
+    DokumentUpdate,
     Karte,
     KarteCreate,
     KarteMove,
@@ -81,6 +84,48 @@ def heute(datum: str | None = None) -> dict:
     from datetime import date
 
     return db.was_steht_an(datum or date.today().isoformat())
+
+
+# -- Dokumente (Karten- und Mappen-Dokumente) -----------------------------
+
+@router.get("/dokumente", response_model=list[Dokument])
+def dokumente(kontext: str, kontext_id: str) -> list[Dokument]:
+    if kontext not in ("karte", "mappe"):
+        raise HTTPException(status_code=400, detail="Unbekannter Kontext")
+    return db.liste_dokumente(kontext, kontext_id)
+
+
+@router.post("/dokumente", response_model=Dokument, status_code=201)
+def dokument_anlegen(eingabe: DokumentCreate) -> Dokument:
+    titel = eingabe.titel.strip()
+    if not titel:
+        raise HTTPException(status_code=400, detail="Titel darf nicht leer sein")
+    return db.erstelle_dokument(f"d_{uuid4().hex[:8]}", eingabe.kontext, eingabe.kontext_id, titel)
+
+
+@router.get("/dokumente/{dokument_id}", response_model=Dokument)
+def dokument(dokument_id: str) -> Dokument:
+    d = db.hole_dokument(dokument_id)
+    if d is None:
+        raise HTTPException(status_code=404, detail="Dokument nicht gefunden")
+    return d
+
+
+@router.patch("/dokumente/{dokument_id}", response_model=Dokument)
+def dokument_aendern(dokument_id: str, eingabe: DokumentUpdate) -> Dokument:
+    felder = eingabe.model_dump(exclude_unset=True)
+    if "titel" in felder and not (felder["titel"] or "").strip():
+        raise HTTPException(status_code=400, detail="Titel darf nicht leer sein")
+    d = db.aktualisiere_dokument(dokument_id, felder)
+    if d is None:
+        raise HTTPException(status_code=404, detail="Dokument nicht gefunden")
+    return d
+
+
+@router.delete("/dokumente/{dokument_id}", status_code=204)
+def dokument_loeschen(dokument_id: str) -> None:
+    if not db.loesche_dokument(dokument_id):
+        raise HTTPException(status_code=404, detail="Dokument nicht gefunden")
 
 
 # -- Karten ---------------------------------------------------------------

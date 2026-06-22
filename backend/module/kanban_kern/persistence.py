@@ -341,6 +341,8 @@ def loesche_karte(karte_id: str) -> None:
         row = conn.execute("SELECT board_id, spalte FROM karte WHERE id = ?", (karte_id,)).fetchone()
         conn.execute("DELETE FROM karte WHERE id = ?", (karte_id,))
         conn.execute("DELETE FROM dokument WHERE kontext = 'karte' AND kontext_id = ?", (karte_id,))
+        # Zeiteintraege der Karte mitloeschen, sonst verfaelschen Waisen die Ist-Summen.
+        conn.execute("DELETE FROM zeiteintrag WHERE karte_id = ?", (karte_id,))
         if row is not None:
             _kompaktiere(conn, row["board_id"], row["spalte"])
 
@@ -767,6 +769,10 @@ def loesche_spalte(spalte_id: str) -> str:
         anzahl = conn.execute("SELECT COUNT(*) AS n FROM spalte WHERE board_id = ?", (board_id,)).fetchone()["n"]
         if anzahl <= 1:
             return "letzte"
+        conn.execute(
+            "DELETE FROM zeiteintrag WHERE karte_id IN (SELECT id FROM karte WHERE board_id = ? AND spalte = ?)",
+            (board_id, spalte_id),
+        )
         conn.execute("DELETE FROM karte WHERE board_id = ? AND spalte = ?", (board_id, spalte_id))
         conn.execute("DELETE FROM spalte WHERE id = ?", (spalte_id,))
         _kompaktiere_spalten(conn, board_id)
@@ -813,6 +819,7 @@ def loesche_board(board_id: str) -> None:
         karten = [r[0] for r in conn.execute("SELECT id FROM karte WHERE board_id = ?", (board_id,)).fetchall()]
         for kid in karten:
             conn.execute("DELETE FROM dokument WHERE kontext = 'karte' AND kontext_id = ?", (kid,))
+        conn.execute("DELETE FROM zeiteintrag WHERE board_id = ?", (board_id,))
         conn.execute("DELETE FROM karte WHERE board_id = ?", (board_id,))
         conn.execute("DELETE FROM spalte WHERE board_id = ?", (board_id,))
         conn.execute("DELETE FROM board WHERE id = ?", (board_id,))

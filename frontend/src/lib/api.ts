@@ -469,8 +469,8 @@ export interface StundenUebersicht {
   monat: StundenSumme
   jahr: StundenSumme
 }
-export const ladeStundenUebersicht = (): Promise<StundenUebersicht> =>
-  hole('/api/planung/stunden-uebersicht')
+export const ladeStundenUebersicht = (personId?: string): Promise<StundenUebersicht> =>
+  hole(`/api/planung/stunden-uebersicht${personId ? `?person=${encodeURIComponent(personId)}` : ''}`)
 export const ladeAbwesenheitstypen = (): Promise<AbwesenheitTyp[]> =>
   hole('/api/planung/abwesenheitstypen')
 export const aktualisiereAbwesenheitstyp = (code: string, d: Partial<AbwesenheitTyp>): Promise<AbwesenheitTyp> =>

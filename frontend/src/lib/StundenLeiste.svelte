@@ -2,12 +2,22 @@
   // Dauerhaft sichtbare Stunden-Uebersicht: geleistete Zeit (Ist) gegen Soll
   // fuer Heute, aktuelle Woche, Monat und Jahr. Ist gruen fett, Soll blau duenn.
   // Einklappbar; der Zustand wird im Browser gemerkt.
-  import { ladeStundenUebersicht, type StundenUebersicht } from './api'
+  import { ladeStundenUebersicht, ladePersonen, type StundenUebersicht, type Person } from './api'
+  import { personSicht, setzePersonSicht } from './personSicht.svelte'
   import { formatStd } from './zeit'
   import { timer, formatDauerVoll } from './timer.svelte'
 
   let daten = $state<StundenUebersicht | null>(null)
+  let personen = $state<Person[]>([])
   let offen = $state(ladeOffen())
+
+  const aktivKuerzel = $derived(
+    personSicht.id ? (personen.find((p) => p.id === personSicht.id)?.kuerzel ?? null) : null,
+  )
+
+  $effect(() => {
+    ladePersonen().then((p) => (personen = p.filter((x) => x.aktiv))).catch(() => {})
+  })
 
   function ladeOffen(): boolean {
     try {
@@ -26,17 +36,19 @@
 
   async function laden(): Promise<void> {
     try {
-      daten = await ladeStundenUebersicht()
+      daten = await ladeStundenUebersicht(personSicht.id || undefined)
     } catch {
       /* Planung evtl. nicht erreichbar - alten Stand behalten */
     }
   }
 
-  // Erstmals laden + nach jeder Timer-Aktion (Start/Pause/Stopp) aktualisieren.
+  // Erstmals laden + nach jeder Timer-Aktion (Start/Pause/Stopp) + bei Personenwechsel.
   let letzterStand = -1
+  let letzteId: string | null = null
   $effect(() => {
-    if (timer.stand !== letzterStand) {
+    if (timer.stand !== letzterStand || personSicht.id !== letzteId) {
       letzterStand = timer.stand
+      letzteId = personSicht.id
       laden()
     }
   })
@@ -66,7 +78,10 @@
     let ist = h.ist_sek
     const a = timer.aktiv
     const laeuft = !!a?.laeuft_seit
-    if (a?.laeuft_seit && a.laeuft_seit.slice(0, 10) === heuteIso()) {
+    // Laufendes Segment nur dazurechnen, wenn es zur aktuellen Sicht passt
+    // (Alle, oder die laufende Karte gehoert der gewaehlten Person).
+    const zaehltFuerSicht = !personSicht.id || a?.zustaendig === aktivKuerzel
+    if (a?.laeuft_seit && a.laeuft_seit.slice(0, 10) === heuteIso() && zaehltFuerSicht) {
       // Noch nicht gebuchtes, laufendes Segment von heute dazurechnen.
       ist += Math.max(0, Math.floor((timer.jetzt - new Date(a.laeuft_seit).getTime()) / 1000))
     }
@@ -101,6 +116,13 @@
         </span>
       {/each}
     </div>
+    {#if personen.length}
+      <select class="psel" value={personSicht.id} onchange={(e) => setzePersonSicht(e.currentTarget.value)}
+        title="Sicht auf eine Person (Alle = Team-Gesamt)">
+        <option value="">Alle</option>
+        {#each personen as p (p.id)}<option value={p.id}>{p.kuerzel ?? p.name}</option>{/each}
+      </select>
+    {/if}
   {/if}
 </div>
 
@@ -161,5 +183,14 @@
     color: var(--hl-primary-text);
     font-weight: 400;
     font-variant-numeric: tabular-nums;
+  }
+  .psel {
+    margin-left: auto;
+    border: 1px solid var(--border-2);
+    background: var(--surface-2);
+    color: var(--text-2);
+    border-radius: var(--r-s);
+    padding: 3px 6px;
+    font-size: 11.5px;
   }
 </style>

@@ -237,3 +237,22 @@ Hinweis: Diese Befunde sind eine Bestandsaufnahme, keine akute Störung - in den
 aktuellen Echtdaten (eine Person, keine Termine, kein Override) ist der Betrieb
 stimmig. Sie werden relevant, sobald mehrere Nutzer arbeiten oder die genannten
 Funktionen aktiv genutzt werden.
+
+## 5. Umgesetzt (Stand 2026-06-22)
+
+- T1 + A1 (v0.44.0): Optionaler Zugangsschutz per UI-Token (PINNWAND_UI_TOKEN).
+  Ist er gesetzt, verlangt die Haupt-API (außer /api/health) und /mcp den Header
+  X-Pinnwand-Token; ohne Token bleibt der lokale Standard offen.
+- T2 + Z1 + Z2 (v0.43.0): Personen-Sicht - ein "aktive Person"-Schalter filtert
+  Stunden-Leiste und Tab-Titel; der Ist-Wert je Person stimmt dann mit
+  Jahreskalender/Berichten überein, "Alle" zeigt weiter das Team-Gesamt.
+- K1 (v0.42.0): Karten-Anlage prüft Board und Spalte (404/400 statt Waisen-Karte).
+- Z4 (v0.42.0): Stundenzettel-Dauerfeld sekundengenau, kein Sekundenverlust beim
+  Bearbeiten.
+- R1 (v0.42.0): Reset löscht die Berichtsdateien in beiden Modi mit.
+- S2 (v0.42.0): UNIQUE-Teilindex gegen Serien-Doppelkarten + robuste Materialisierung.
+- P3 (v0.42.0): Gesamt-Soll nur über aktive Personen.
+
+Offen (bewusst, bzw. bei Bedarf): Z3, Z5, S1, S3, S4, S5, S6, P1, P2, P4, P5, P6,
+R2, R3, A2, A3, A4, A5 - überwiegend latent; anzugehen, sobald das jeweilige
+Feature bzw. der Mehrbenutzer-Betrieb es erfordert.

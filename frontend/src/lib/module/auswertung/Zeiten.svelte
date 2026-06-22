@@ -87,15 +87,23 @@
     await laden()
   }
 
+  // Zeit der angezeigten Woche je Karte (aus den datierten Eintraegen) - so wird
+  // unterschieden, was IN DIESER WOCHE lief, auch wenn sich eine Aufgabe weit streckt.
+  const istWocheJeKarte = $derived.by(() => {
+    const m: Record<string, number> = {}
+    for (const e of eintraege) m[e.karte_id] = (m[e.karte_id] ?? 0) + e.sekunden
+    return m
+  })
   const sollIst = $derived(
     (board?.karten ?? [])
-      .filter((k) => (k.schaetzung_min ?? 0) > 0 || (k.erfasst_sek ?? 0) > 0)
       .map((k) => {
         const soll = (k.schaetzung_min ?? 0) * 60
         const ist = k.erfasst_sek ?? 0
-        return { k, soll, ist, prozent: soll > 0 ? (ist / soll) * 100 : null }
+        const woche = istWocheJeKarte[k.id] ?? 0
+        return { k, soll, ist, woche, prozent: soll > 0 ? (ist / soll) * 100 : null }
       })
-      .sort((a, b) => b.ist - a.ist),
+      .filter((r) => r.soll > 0 || r.ist > 0 || r.woche > 0)
+      .sort((a, b) => b.woche - a.woche || b.ist - a.ist),
   )
 </script>
 
@@ -115,12 +123,21 @@
 
   {#if sollIst.length}
     <section class="block">
-      <p class="sec">Ist / Soll (erfasste Zeit gegen Schätzung)</p>
+      <p class="sec">Aufwand je Karte (diese Woche / gesamt gegen Schätzung)</p>
       <div class="tabelle">
+        <div class="zeile kopfz">
+          <span class="key"></span>
+          <span class="titel">Karte</span>
+          <span class="wwert">Diese Woche</span>
+          <span class="werte">Gesamt / Soll</span>
+          <span class="bar"></span>
+          <span class="pz">%</span>
+        </div>
         {#each sollIst as r (r.k.id)}
           <div class="zeile">
             <span class="key">{r.k.schluessel}</span>
             <span class="titel">{r.k.titel}</span>
+            <span class="wwert" class:null={r.woche === 0}>{r.woche ? formatStd(r.woche) + ' h' : '-'}</span>
             <span class="werte">{formatStd(r.ist)} / {r.soll ? formatStd(r.soll) : '-'} h</span>
             <span class="bar"><span class:ueber={r.prozent != null && r.prozent > 100} style="width:{r.prozent != null ? Math.min(r.prozent, 100) : 0}%"></span></span>
             <span class="pz" class:ueber={r.prozent != null && r.prozent > 100}>{r.prozent != null ? Math.round(r.prozent) + '%' : '-'}</span>
@@ -268,7 +285,7 @@
   }
   .tabelle .zeile {
     display: grid;
-    grid-template-columns: 64px 1fr 120px 160px 48px;
+    grid-template-columns: 64px 1fr 92px 120px 130px 44px;
     align-items: center;
     gap: 10px;
     padding: 8px 12px;
@@ -277,6 +294,31 @@
   }
   .tabelle .zeile:first-child {
     border-top: none;
+  }
+  .kopfz {
+    background: var(--surface-2);
+  }
+  .kopfz span {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-3);
+  }
+  .wwert {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-1);
+    font-weight: 600;
+    text-align: right;
+  }
+  .wwert.null {
+    color: var(--text-3);
+    font-weight: 400;
+  }
+  .kopfz .wwert,
+  .kopfz .werte,
+  .kopfz .pz {
+    text-align: right;
   }
   .key {
     font-family: var(--font-mono);

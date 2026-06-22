@@ -374,6 +374,10 @@ def _leeren() -> None:
         for t in daten_tabellen:
             if t in vorhanden:
                 conn.execute(f"DELETE FROM {t}")
+        # Personenspezifische Tagesregeln sind an geloeschte Personen gebunden -> mitloeschen;
+        # globale Regeln (person_id NULL, Konfig-Seeds) bleiben erhalten.
+        if "tagesregel" in vorhanden:
+            conn.execute("DELETE FROM tagesregel WHERE person_id IS NOT NULL")
     _loesche_berichtsdateien()
 
 

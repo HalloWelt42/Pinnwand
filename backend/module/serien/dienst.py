@@ -158,16 +158,15 @@ def nachtragen(karte_id: str, dauer_min: int | None = None) -> "object | None":
         if dauer_min is None and row["serie_id"]:
             s = conn.execute("SELECT dauer_min FROM serie WHERE id = ?", (row["serie_id"],)).fetchone()
             dauer_min = (s["dauer_min"] if s else None) or 60
-        done = conn.execute(
-            "SELECT id FROM spalte WHERE board_id = ? AND erledigt = 1 ORDER BY reihenfolge LIMIT 1",
-            (row["board_id"],),
-        ).fetchone()
     datum = row["faellig"] or date.today().isoformat()
     sek = max(0, int(dauer_min or 0)) * 60
     if sek > 0:
         k.erstelle_zeiteintrag("z_" + uuid4().hex[:8], karte_id, datum, sek, "Nachgetragen")
-    if done is not None:
-        k.verschiebe_karte(karte_id, done["id"], 1_000_000)
+    # Erledigt-Spalte mit Rueckfall auf die letzte Spalte - so bleibt die Karte
+    # auch auf Boards ohne explizite Erledigt-Spalte nicht in einer aktiven Spalte stehen.
+    done = k.done_spalte_id(row["board_id"])
+    if done:
+        k.verschiebe_karte(karte_id, done, 1_000_000)
     return k.hole_karte(karte_id)
 
 

@@ -74,19 +74,32 @@ def _regeln_aufbereiten(regeln: list[dict]) -> dict:
     }
 
 
-def _ist_nicht_arbeit(d: date, ws: list, feier_set: set[str]) -> bool:
+def _ws_fuer(d: date, ctx: dict) -> list:
+    """Wirksame Wochenstunden fuer das Datum - mit Wochen-Override der jeweiligen ISO-Woche.
+
+    Wichtig, weil Nachbartage (Brueckentag-Pruefung) in einer anderen ISO-Woche und
+    damit unter einem anderen Override liegen koennen."""
+    iy, iw, _ = d.isocalendar()
+    return ctx["overrides"].get((iy, iw), ctx["ws"])
+
+
+def _ist_nicht_arbeit(d: date, ctx: dict, feier_set: set[str]) -> bool:
+    ws = _ws_fuer(d, ctx)
     wd = d.weekday()
     if wd >= len(ws) or float(ws[wd]) == 0:
         return True
     return d.isoformat() in feier_set
 
 
-def _ist_brueckentag(d: date, ws: list, feier_set: set[str]) -> bool:
-    """Arbeitstag, dessen beide Nachbartage nicht gearbeitet wird (zwischen Feiertag/Wochenende)."""
+def _ist_brueckentag(d: date, ctx: dict, feier_set: set[str]) -> bool:
+    """Arbeitstag, dessen beide Nachbartage nicht gearbeitet wird (zwischen Feiertag/Wochenende).
+
+    Beruecksichtigt je Tag den Wochen-Override (auch fuer die Nachbartage)."""
+    ws = _ws_fuer(d, ctx)
     wd = d.weekday()
     if wd >= len(ws) or float(ws[wd]) == 0 or d.isoformat() in feier_set:
         return False
-    return _ist_nicht_arbeit(d - timedelta(days=1), ws, feier_set) and _ist_nicht_arbeit(d + timedelta(days=1), ws, feier_set)
+    return _ist_nicht_arbeit(d - timedelta(days=1), ctx, feier_set) and _ist_nicht_arbeit(d + timedelta(days=1), ctx, feier_set)
 
 
 def _person_kontext(person: dict, all_feier: list[dict], regelinfo: dict, urlaub_je_person: dict, overrides_je_person: dict | None = None) -> dict:
@@ -119,7 +132,7 @@ def _regel_anteil(d: date, ctx: dict) -> float | None:
         return ctx["wt"][wd]
     if wd in ctx["wt_global"]:
         return ctx["wt_global"][wd]
-    if ctx["brueck_aktiv"] and _ist_brueckentag(d, ctx["ws"], ctx["feier_set"]):
+    if ctx["brueck_aktiv"] and _ist_brueckentag(d, ctx, ctx["feier_set"]):
         return ctx["brueck_anteil"]
     return None
 

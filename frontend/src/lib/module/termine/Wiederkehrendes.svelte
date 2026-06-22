@@ -58,6 +58,8 @@
     </div>
   </div>
 
+  <p class="hinweis"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Ein Thema entweder als Aufgabe ODER als Termin führen - nicht beides. Sonst wird die Zeit in den Auswertungen doppelt gezählt.</p>
+
   {#if modus === 'aufgabe'}
     <p class="erkl">Wiederkehrende Aufgabe als Board-Karte (mit Soll und Timer). Wird auf dem gewählten Board vorgebucht.</p>
     <div class="boardwahl">
@@ -93,6 +95,8 @@
   .seg button:hover { color: var(--text-1); }
   .seg button.an { background: var(--hl-primary); color: var(--hl-on-primary); }
   .erkl { color: var(--text-3); font-size: 12.5px; margin: 12px 16px 0; }
+  .hinweis { color: var(--text-2); font-size: 12px; margin: 10px 16px 0; display: flex; align-items: center; gap: 7px; }
+  .hinweis i { color: var(--hl-primary-text); }
   .boardwahl { display: flex; align-items: center; gap: 8px; padding: 10px 16px 0; }
   .boardwahl .lbl { color: var(--text-3); font-size: 12px; }
   .boardwahl select {

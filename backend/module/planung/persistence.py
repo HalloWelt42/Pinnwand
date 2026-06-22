@@ -205,6 +205,8 @@ def erstelle_person(name: str, kuerzel: str | None, wochenstunden: list | None, 
             " VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)",
             (pid, name, kuerzel, farbe, json.dumps(wochenstunden or _STD_WOCHE), bundesland, urlaubsanspruch, resturlaub_vorjahr),
         )
+    if bundesland:
+        _feiertage_nachladen()
     return hole_person(pid)  # type: ignore[return-value]
 
 
@@ -220,6 +222,8 @@ def aktualisiere_person(pid: str, aenderungen: dict) -> dict | None:
     zuweisung = ", ".join(f"{k} = ?" for k in f)
     with verbindung() as conn:
         conn.execute(f"UPDATE person SET {zuweisung} WHERE id = ?", (*f.values(), pid))
+    if f.get("bundesland"):
+        _feiertage_nachladen()
     return hole_person(pid)
 
 
@@ -348,20 +352,43 @@ def uebernehme_feiertage(eintraege: list[dict]) -> int:
 
 
 def stelle_feiertage_sicher(jahr: int, land: str = "DE") -> int:
-    """Sorgt dafür, dass für ein Jahr Feiertage vorhanden sind.
-
-    Sind für das Jahr noch gar keine Feiertage hinterlegt, werden die bundesweiten
-    (Region NULL) automatisch importiert, damit der Kalender sofort stimmt. Sobald
-    der Nutzer eigene (auch landesspezifische) Feiertage für das Jahr hat, passiert
-    nichts mehr.
+    """Sorgt dafür, dass für ein Jahr die nötigen Feiertage vorhanden sind:
+    die bundesweiten und - je nach hinterlegten Personen-Bundesländern - die
+    regionalen. Pro Region wird nur geladen, wenn sie für das Jahr noch ganz fehlt;
+    eigene Anpassungen einer bereits vorhandenen Region bleiben unberührt.
     """
-    with verbindung() as conn:
-        n = conn.execute("SELECT COUNT(*) AS n FROM feiertag WHERE datum LIKE ?", (f"{jahr}-%",)).fetchone()["n"]
-    if n:
-        return 0
     from . import feiertage
-    eintraege = feiertage.vorschau(land, None, jahr)
-    return uebernehme_feiertage(eintraege) if eintraege else 0
+    with verbindung() as conn:
+        vorhanden = {
+            r["region"]
+            for r in conn.execute("SELECT DISTINCT region FROM feiertag WHERE datum LIKE ?", (f"{jahr}-%",)).fetchall()
+        }
+    erzeugt = 0
+    # Bundesweite sicherstellen (Region NULL).
+    if None not in vorhanden:
+        bund = [e for e in feiertage.vorschau(land, None, jahr) if e.get("region") is None]
+        erzeugt += uebernehme_feiertage(bund)
+        vorhanden.add(None)
+    # Regionale je hinterlegtem Bundesland sicherstellen.
+    for region in {p["bundesland"] for p in liste_personen() if p.get("bundesland")}:
+        if region in vorhanden:
+            continue
+        regional = [e for e in feiertage.vorschau(land, region, jahr) if e.get("region") == region]
+        erzeugt += uebernehme_feiertage(regional)
+        vorhanden.add(region)
+    return erzeugt
+
+
+def _feiertage_nachladen() -> None:
+    """Stellt nach einer Bundesland-Aenderung die regionalen Feiertage fuer dieses und
+    das naechste Jahr sicher (defensiv - darf nie einen Personen-Schreibvorgang stoeren)."""
+    try:
+        from datetime import date
+        j = date.today().year
+        stelle_feiertage_sicher(j)
+        stelle_feiertage_sicher(j + 1)
+    except Exception:
+        pass
 
 
 def loesche_feiertage(jahr: int, region: str | None) -> int:

@@ -30,6 +30,8 @@
       const iso = `${daten.jahr}-${String(monat + 1).padStart(2, '0')}-${String(t).padStart(2, '0')}`
       out.push({ iso })
     }
+    // Auf volle 6 Wochen (42 Zellen) auffuellen, damit alle Monatskacheln gleich hoch sind.
+    while (out.length < 42) out.push({ iso: null })
     return out
   }
 </script>

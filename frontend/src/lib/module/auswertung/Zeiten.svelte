@@ -1,10 +1,23 @@
 <script lang="ts">
   import type { BoardDetail, Zeiteintrag } from '../../types'
-  import { ladeBoard, ladeZeiteintraege, erstelleZeiteintrag, aktualisiereZeiteintrag, loescheZeiteintrag, ladeTerminInstanzen, type TerminInstanz } from '../../api'
+  import { ladeBoard, ladeZeiteintraege, erstelleZeiteintrag, aktualisiereZeiteintrag, loescheZeiteintrag, ladeTerminInstanzen, ladePersonen, type TerminInstanz, type Person } from '../../api'
   import { ymd, addTage, montagDer, isoWoche, formatStd, stdDezimal, wochentag, tagKurz } from '../../zeit'
   import { formatDauerVoll } from '../../timer.svelte'
+  import { personSicht } from '../../personSicht.svelte'
 
   let { boardId }: { boardId: string } = $props()
+
+  // Eigentum: der Zeiteintrag gehoert der Person, der die Karte zugewiesen ist
+  // (konsistent zur Stunden-Sicht). Bei aktiver Personen-Sicht sind fremde
+  // Eintraege nur lesbar; bei "Alle" (Team) ist alles editierbar.
+  let personen = $state<Person[]>([])
+  $effect(() => { ladePersonen().then((p) => (personen = p)).catch(() => {}) })
+  const aktivKuerzel = $derived(
+    personSicht.id ? (personen.find((p) => p.id === personSicht.id)?.kuerzel ?? null) : null,
+  )
+  function istFremd(e: Zeiteintrag): boolean {
+    return !!personSicht.id && (e.karte_zustaendig ?? null) !== aktivKuerzel
+  }
 
   let anker = $state(new Date())
   let board = $state<BoardDetail | null>(null)
@@ -173,13 +186,19 @@
           <span class="tsum">{formatStd(tagSumme(tag))} h</span>
         </div>
         {#each liste as e (e.id)}
-          <div class="eintrag">
+          {@const fremd = istFremd(e)}
+          <div class="eintrag" class:fremd>
             <span class="key">{e.karte_schluessel ?? ''}</span>
             <span class="etitel">{e.karte_titel ?? e.karte_id}</span>
-            <input class="edauer" value={formatDauerVoll(e.sekunden)} aria-label="Dauer (h:mm:ss)" title="h:mm:ss, h:mm oder Dezimalstunden (1,5)" onchange={(ev) => dauerAendern(e, ev.currentTarget.value)} />
-            <input class="ekomm" value={e.kommentar ?? ''} placeholder="Kommentar ..." aria-label="Kommentar" onblur={(ev) => kommentarAendern(e, ev.currentTarget.value)} />
-            {#if !e.manuell}<span class="auto" title="Automatisch erfasst"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i></span>{/if}
-            <button class="del" aria-label="Eintrag löschen" onclick={() => loeschen(e)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+            {#if fremd}
+              <span class="edauer ro">{formatDauerVoll(e.sekunden)}</span>
+              <span class="rofremd" title={`Zeiteintrag von ${e.karte_zustaendig} - nur lesbar`}><i class="fa-solid fa-lock" aria-hidden="true"></i> {e.kommentar || e.karte_zustaendig}</span>
+            {:else}
+              <input class="edauer" value={formatDauerVoll(e.sekunden)} aria-label="Dauer (h:mm:ss)" title="h:mm:ss, h:mm oder Dezimalstunden (1,5)" onchange={(ev) => dauerAendern(e, ev.currentTarget.value)} />
+              <input class="ekomm" value={e.kommentar ?? ''} placeholder="Kommentar ..." aria-label="Kommentar" onblur={(ev) => kommentarAendern(e, ev.currentTarget.value)} />
+              {#if !e.manuell}<span class="auto" title="Automatisch erfasst"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i></span>{/if}
+              <button class="del" aria-label="Eintrag löschen" onclick={() => loeschen(e)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+            {/if}
           </div>
         {/each}
         {#each tliste as t (t.id)}
@@ -467,6 +486,29 @@
   }
   .del:hover {
     color: var(--gefahr);
+  }
+  .eintrag.fremd {
+    opacity: 0.9;
+  }
+  .edauer.ro {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-2);
+    cursor: default;
+  }
+  .rofremd {
+    grid-column: 4 / -1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-3);
+    font-size: 11.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rofremd i {
+    font-size: 10px;
   }
   .leer {
     font-size: 12px;

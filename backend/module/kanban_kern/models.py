@@ -200,6 +200,7 @@ class Zeiteintrag(BaseModel):
     manuell: bool = False
     karte_titel: str | None = None
     karte_schluessel: str | None = None
+    karte_zustaendig: str | None = None
 
 
 class ZeiteintragCreate(BaseModel):

@@ -78,4 +78,5 @@ export interface Zeiteintrag {
   manuell: boolean
   karte_titel?: string | null
   karte_schluessel?: string | null
+  karte_zustaendig?: string | null
 }

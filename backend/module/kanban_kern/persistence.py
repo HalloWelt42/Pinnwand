@@ -544,7 +544,7 @@ def laufende_karte() -> Karte | None:
 # -- Zeiteinträge (Auswertung / Korrektur) -------------------------------
 
 _ZE_SELECT = (
-    "SELECT z.*, k.titel AS karte_titel, k.schluessel AS karte_schluessel "
+    "SELECT z.*, k.titel AS karte_titel, k.schluessel AS karte_schluessel, k.zustaendig AS karte_zustaendig "
     "FROM zeiteintrag z LEFT JOIN karte k ON k.id = z.karte_id "
 )
 
@@ -555,6 +555,7 @@ def _zeiteintrag_aus_row(row: sqlite3.Row) -> Zeiteintrag:
         datum=row["datum"], start=row["start"], ende=row["ende"], sekunden=row["sekunden"],
         kommentar=row["kommentar"], manuell=bool(row["manuell"]),
         karte_titel=row["karte_titel"], karte_schluessel=row["karte_schluessel"],
+        karte_zustaendig=row["karte_zustaendig"],
     )
 
 

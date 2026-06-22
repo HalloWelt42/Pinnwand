@@ -34,27 +34,45 @@ def kapazitaet(person_id: str, von: str, bis: str) -> dict | None:
     return {"person_id": person_id, "name": p["name"], "summe_std": summe, "tage": tage}
 
 
-def _ist_sek_gesamt(von: str, bis: str) -> int:
-    """Geleistete Sekunden insgesamt im Zeitraum: alle Zeiteintraege (auch ohne
-    Zustaendigen) plus bestaetigte Termine als zweite Ist-Quelle."""
+def _ist_sek_gesamt(von: str, bis: str, kuerzel: str | None = None) -> int:
+    """Geleistete Sekunden im Zeitraum. Ohne kuerzel: alle Zeiteintraege (auch ohne
+    Zustaendigen) plus alle bestaetigten Termine. Mit kuerzel: nur die Zeiteintraege
+    auf Karten dieser Person plus deren bestaetigte Termine - konsistent zur
+    personenbezogenen Auswertung (Jahreskalender/Berichte)."""
     with verbindung() as conn:
-        r = conn.execute(
-            "SELECT COALESCE(SUM(sekunden), 0) AS s FROM zeiteintrag WHERE datum >= ? AND datum <= ?",
-            (von, bis),
-        ).fetchone()
+        if kuerzel:
+            r = conn.execute(
+                "SELECT COALESCE(SUM(z.sekunden), 0) AS s FROM zeiteintrag z "
+                "JOIN karte k ON k.id = z.karte_id "
+                "WHERE z.datum >= ? AND z.datum <= ? AND k.zustaendig = ?",
+                (von, bis, kuerzel),
+            ).fetchone()
+        else:
+            r = conn.execute(
+                "SELECT COALESCE(SUM(sekunden), 0) AS s FROM zeiteintrag WHERE datum >= ? AND datum <= ?",
+                (von, bis),
+            ).fetchone()
     ist = int(r["s"] or 0)
     try:
         from module.termine import dienst as _td
-        ist += sum(int(m) for m in _td.ist_minuten_je_tag_person(von, bis).values()) * 60
+        for (k, _d), minuten in _td.ist_minuten_je_tag_person(von, bis).items():
+            if kuerzel is None or k == kuerzel:
+                ist += int(minuten) * 60
     except Exception:
         pass
     return ist
 
 
-def _soll_sek_gesamt(von: str, bis: str) -> int:
-    """Soll-Sekunden insgesamt im Zeitraum: Summe der Kapazitaet aller Personen."""
+def _soll_sek_gesamt(von: str, bis: str, person_id: str | None = None) -> int:
+    """Soll-Sekunden im Zeitraum. Ohne person_id: Summe der Kapazitaet aller AKTIVEN
+    Personen (gleicher Kreis wie der Jahreskalender). Mit person_id: nur diese Person."""
+    if person_id:
+        k = kapazitaet(person_id, von, bis)
+        return int(round((k["summe_std"] if k else 0.0) * 3600))
     total_std = 0.0
     for p in db.liste_personen():
+        if not p.get("aktiv"):
+            continue
         k = kapazitaet(p["id"], von, bis)
         if k:
             total_std += k["summe_std"]
@@ -75,13 +93,24 @@ def _zeitraeume(heute: date) -> dict[str, tuple[date, date]]:
     }
 
 
-def stunden_uebersicht(heute: date | None = None) -> dict:
-    """Geleistete Stunden (Ist) gegen Soll je Heute/Woche/Monat/Jahr - in Sekunden."""
+def stunden_uebersicht(heute: date | None = None, person_id: str | None = None) -> dict:
+    """Geleistete Stunden (Ist) gegen Soll je Heute/Woche/Monat/Jahr - in Sekunden.
+
+    Ohne person_id: Team-Gesamt (alle Zeit, Soll aller aktiven Personen).
+    Mit person_id: nur diese Person - dann stimmt das Ist mit Jahreskalender/Berichten
+    ueberein (Zeit ueber das Zustaendigkeits-Kuerzel der Karte)."""
     bezug = heute or date.today()
+    kuerzel = None
+    if person_id:
+        p = db.hole_person(person_id)
+        kuerzel = (p or {}).get("kuerzel")
     out: dict[str, dict[str, int]] = {}
     for name, (a, b) in _zeitraeume(bezug).items():
         va, vb = a.isoformat(), b.isoformat()
-        out[name] = {"ist_sek": _ist_sek_gesamt(va, vb), "soll_sek": _soll_sek_gesamt(va, vb)}
+        out[name] = {
+            "ist_sek": _ist_sek_gesamt(va, vb, kuerzel),
+            "soll_sek": _soll_sek_gesamt(va, vb, person_id),
+        }
     return out
 
 

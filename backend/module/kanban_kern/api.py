@@ -180,6 +180,13 @@ def schnell_erfassen(e: SchnellErfassen) -> dict:
 
 @router.post("/karten", response_model=Karte, status_code=201)
 def karte_anlegen(eingabe: KarteCreate) -> Karte:
+    # Board und Spalte muessen existieren und zusammenpassen - sonst entstuenden
+    # Waisen-Karten ohne gueltiges Board, die in keiner Ansicht erscheinen.
+    detail = db.board_detail(eingabe.board_id)
+    if detail is None:
+        raise HTTPException(status_code=404, detail="Board nicht gefunden")
+    if eingabe.spalte not in {s.id for s in detail.spalten}:
+        raise HTTPException(status_code=400, detail="Spalte gehoert nicht zum Board")
     karte = db.erstelle_karte(
         karte_id=f"k_{uuid4().hex[:8]}",
         board_id=eingabe.board_id,

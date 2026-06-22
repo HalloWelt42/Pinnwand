@@ -2,6 +2,7 @@
   import type { BoardDetail, Zeiteintrag } from '../../types'
   import { ladeBoard, ladeZeiteintraege, erstelleZeiteintrag, aktualisiereZeiteintrag, loescheZeiteintrag, ladeTerminInstanzen, type TerminInstanz } from '../../api'
   import { ymd, addTage, montagDer, isoWoche, formatStd, stdDezimal, wochentag, tagKurz } from '../../zeit'
+  import { formatDauerVoll } from '../../timer.svelte'
 
   let { boardId }: { boardId: string } = $props()
 
@@ -56,8 +57,8 @@
     s = s.trim().replace(',', '.')
     if (!s) return null
     if (s.includes(':')) {
-      const [h, m] = s.split(':')
-      return ((parseInt(h || '0', 10) || 0) * 60 + (parseInt(m || '0', 10) || 0)) * 60
+      const [h, m, sek] = s.split(':')
+      return (parseInt(h || '0', 10) || 0) * 3600 + (parseInt(m || '0', 10) || 0) * 60 + (parseInt(sek || '0', 10) || 0)
     }
     const std = parseFloat(s)
     return Number.isNaN(std) ? null : Math.round(std * 3600)
@@ -65,7 +66,7 @@
 
   async function dauerAendern(e: Zeiteintrag, wert: string) {
     const sek = parseDauer(wert)
-    if (sek == null) return
+    if (sek == null || sek === e.sekunden) return // unveraendert -> keine Rundung zurueckschreiben
     await aktualisiereZeiteintrag(e.id, { sekunden: sek })
     await laden()
   }
@@ -175,7 +176,7 @@
           <div class="eintrag">
             <span class="key">{e.karte_schluessel ?? ''}</span>
             <span class="etitel">{e.karte_titel ?? e.karte_id}</span>
-            <input class="edauer" value={formatStd(e.sekunden)} aria-label="Dauer" onchange={(ev) => dauerAendern(e, ev.currentTarget.value)} />
+            <input class="edauer" value={formatDauerVoll(e.sekunden)} aria-label="Dauer (h:mm:ss)" title="h:mm:ss, h:mm oder Dezimalstunden (1,5)" onchange={(ev) => dauerAendern(e, ev.currentTarget.value)} />
             <input class="ekomm" value={e.kommentar ?? ''} placeholder="Kommentar ..." aria-label="Kommentar" onblur={(ev) => kommentarAendern(e, ev.currentTarget.value)} />
             {#if !e.manuell}<span class="auto" title="Automatisch erfasst"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i></span>{/if}
             <button class="del" aria-label="Eintrag löschen" onclick={() => loeschen(e)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>

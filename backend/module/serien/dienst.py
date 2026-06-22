@@ -83,7 +83,13 @@ def materialisiere(serie: dict, heute: date | None = None) -> int:
         )
         if serie.get("dauer_min"):
             k.aktualisiere_karte(karte.id, {"schaetzung_min": serie["dauer_min"]})
-        k.markiere_serie(karte.id, serie["id"], iso)
+        try:
+            k.markiere_serie(karte.id, serie["id"], iso)
+        except Exception:
+            # Paralleler Lauf hat dieselbe Instanz bereits angelegt (UNIQUE-Index)
+            # -> die eben erzeugte Doppel-Karte wieder verwerfen.
+            k.loesche_karte(karte.id)
+            continue
         erzeugt += 1
     return erzeugt
 

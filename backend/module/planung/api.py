@@ -156,9 +156,11 @@ def tage(von: str = Query(...), bis: str = Query(...), person: str | None = Quer
 
 
 @router.get("/stunden-uebersicht")
-def stunden_uebersicht() -> dict:
-    """Geleistete Stunden (Ist) gegen Soll je Heute/Woche/Monat/Jahr."""
-    return kapazitaet.stunden_uebersicht()
+def stunden_uebersicht(person: str | None = Query(default=None)) -> dict:
+    """Geleistete Stunden (Ist) gegen Soll je Heute/Woche/Monat/Jahr.
+
+    Ohne person: Team-Gesamt. Mit person (Personen-ID): nur diese Person."""
+    return kapazitaet.stunden_uebersicht(person_id=person)
 
 
 # -- Jahreskalender (Aggregation über alle Personen) --------------------

@@ -374,6 +374,11 @@ def _leeren() -> None:
         for t in daten_tabellen:
             if t in vorhanden:
                 conn.execute(f"DELETE FROM {t}")
+    _loesche_berichtsdateien()
+
+
+def _loesche_berichtsdateien() -> None:
+    """Entfernt die Berichtsdateien auf der Platte (der Index liegt in der DB)."""
     if _BERICHTE.is_dir():
         for p in _BERICHTE.glob("*"):
             if p.is_file():
@@ -401,6 +406,9 @@ def zuruecksetzen(modus: str = "beispiel") -> dict:
     # Snapshot-Index aus den vorhandenen Dateien neu auf, der Sicherheits-Snapshot bleibt erhalten.
     for manifest in lade_manifeste():
         init_fuer(manifest)
+    # Berichtsdateien auf der Platte gehoeren zum alten Stand und haben nach dem
+    # Reset keinen Index mehr - in beiden Modi mitloeschen (sonst verwaiste Dateien).
+    _loesche_berichtsdateien()
     if modus == "leer":
         _leeren()
     return {"ok": True, "modus": modus, "vorher_gesichert": sicherung["id"], "zustand": aktueller_zustand()}

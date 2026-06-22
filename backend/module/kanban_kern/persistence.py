@@ -121,6 +121,16 @@ def init_db() -> None:
     with _verb() as conn:
         conn.executescript(SCHEMA)
         _migriere(conn)
+        # Serien-Vorbuchung auf DB-Ebene idempotent: hoechstens eine Karte je
+        # (Serie, Datum). Defensiv, damit etwaige Altdaten-Duplikate den Start nicht
+        # blockieren (dann greift der Index eben erst nach Bereinigung).
+        try:
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ux_karte_serie "
+                "ON karte(serie_id, serie_datum) WHERE serie_id IS NOT NULL"
+            )
+        except Exception:
+            pass
         if conn.execute("SELECT COUNT(*) AS n FROM mappe").fetchone()["n"] == 0:
             _seed(conn)
 

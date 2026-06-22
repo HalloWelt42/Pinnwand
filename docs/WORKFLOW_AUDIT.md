@@ -279,9 +279,13 @@ Bewusst akzeptiert / dokumentiert (lokaler Standard oder Randfall):
 - A4 / A5: Agenten-Token-Bootstrap und Konfig-Token - dokumentiert, an localhost
   gebunden.
 
-Braucht eine Entscheidung (kein eindeutiger Default):
-- P4 / P6: Urlaubskonto-Anrechnung an Feiertagen/Halbtagen - soll ein Urlaubstag
-  auf einem 0-Stunden- oder Halbtag weniger Konto kosten? (Aktuell ohne Wirkung,
-  da die normale Urlaubsbuchung solche Tage ohnehin überspringt.)
-- A2: echte Mandanten-/Eigentümer-Trennung der Daten (Owner-Spalte + Filter) -
-  der große Schritt über die Personen-Sicht hinaus.
+Erledigt nach Entscheidung:
+- P4 / P6 (v0.45.4): Urlaubskonto an die echte Soll-Wirkung gekoppelt (Feiertag/
+  freier Tag = 0, Halbtag = halb).
+- A2 (v0.46.0 + v0.47.0): Modell "geteilte Boards + eigene Daten, Anmeldung per
+  Auswahl". Phase 1 - Identität ("Wer bist du?"-Erstwahl, treibt die Personen-
+  Sicht). Phase 2 - Eigentum: Eigentümer eines Zeiteintrags ist die der Karte
+  zugewiesene Person; in der Zeiten-Ansicht sind fremde Einträge bei aktiver
+  Personen-Sicht nur lesbar, eigene editierbar, "Alle" = alles editierbar.
+  Optionale Erweiterung später: Was-steht-an / weitere Sichten standardmäßig auf
+  die eigene Person filtern.

@@ -759,6 +759,15 @@ def serien_instanz_existiert(serie_id: str, datum: str) -> bool:
     return r is not None
 
 
+def letztes_serie_datum(serie_id: str) -> str | None:
+    """Spätestes bereits materialisiertes Datum einer Serie (für Backfill verpasster Tage)."""
+    with _verb() as conn:
+        r = conn.execute(
+            "SELECT MAX(serie_datum) AS m FROM karte WHERE serie_id = ?", (serie_id,)
+        ).fetchone()
+    return r["m"] if r and r["m"] else None
+
+
 def verschiebe_spalte(spalte_id: str, richtung: int) -> Spalte | None:
     with _verb() as conn:
         r = conn.execute("SELECT board_id FROM spalte WHERE id = ?", (spalte_id,)).fetchone()

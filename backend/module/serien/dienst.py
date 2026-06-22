@@ -64,10 +64,25 @@ def materialisiere(serie: dict, heute: date | None = None) -> int:
     spalte = _zielspalte(serie)
     if not spalte:
         return 0
-    feiertage = _feiertage(heute, bis) if serie.get("feiertage_ueberspringen") else None
-    urlaub = _urlaubstage(serie.get("zustaendig"), heute, bis)
+    # Verpasste Werktage nachbilden: ab dem Tag nach der letzten erzeugten Instanz
+    # (bzw. ab serie.start), aber hoechstens RUECKBLICK Tage zurueck, damit nach
+    # laengerer Abwesenheit kein Riesenstapel entsteht. Vorhandene Tage werden ohnehin
+    # ueber die Dedup-Pruefung uebersprungen.
+    RUECKBLICK = 31
+    letzte = k.letztes_serie_datum(serie["id"])
+    if letzte:
+        von = date.fromisoformat(letzte) + timedelta(days=1)
+    elif serie.get("start"):
+        von = date.fromisoformat(serie["start"])
+    else:
+        von = heute
+    von = max(von, heute - timedelta(days=RUECKBLICK))
+    if von > bis:
+        return 0
+    feiertage = _feiertage(von, bis) if serie.get("feiertage_ueberspringen") else None
+    urlaub = _urlaubstage(serie.get("zustaendig"), von, bis)
     erzeugt = 0
-    for d in wiederholung.termine(serie, heute, bis, feiertage):
+    for d in wiederholung.termine(serie, von, bis, feiertage):
         iso = d.isoformat()
         if iso in urlaub:
             continue

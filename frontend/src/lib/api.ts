@@ -321,6 +321,18 @@ export const serieVorbuchen = (id: string): Promise<{ erzeugt: number }> =>
 export const serienVorbuchenAlle = (): Promise<{ erzeugt: number }> =>
   hole('/api/serien/vorbuchen', { method: 'POST' })
 
+export interface SerienNachtrag {
+  karte_id: string
+  schluessel: string | null
+  titel: string
+  datum: string
+  serie_titel: string
+  soll_min: number | null
+}
+export const ladeSerienNachtraege = (): Promise<SerienNachtrag[]> => hole('/api/serien/nachtraege')
+export const serieNachtragen = (karteId: string, dauerMin: number): Promise<Karte> =>
+  hole(`/api/serien/nachtraege/${karteId}`, { method: 'POST', body: JSON.stringify({ dauer_min: dauerMin }) })
+
 // --- Planung (Personen, Urlaub, Feiertage) ---
 
 export interface Person {

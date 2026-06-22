@@ -10,6 +10,10 @@ SerienTyp = Literal["taeglich", "woechentlich", "monatlich"]
 Monatsregel = Literal["tag", "erster_werktag", "letzter_werktag"]
 
 
+class NachtragEingabe(BaseModel):
+    dauer_min: int | None = None  # None -> Serien-Soll als Vorschlag
+
+
 class Serie(BaseModel):
     id: str
     board_id: str

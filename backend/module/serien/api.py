@@ -7,9 +7,24 @@ from fastapi import APIRouter, HTTPException, Query
 
 from . import dienst, wiederholung
 from . import persistence as db
-from .models import Serie, SerieCreate, SerieUpdate
+from .models import NachtragEingabe, Serie, SerieCreate, SerieUpdate
 
 router = APIRouter(prefix="/api/serien", tags=["serien"])
+
+
+@router.get("/nachtraege")
+def nachtraege() -> list[dict]:
+    """Ignorierte Serien-Karten vergangener Tage (nicht erfasst, nicht erledigt)."""
+    return dienst.offene_nachtraege()
+
+
+@router.post("/nachtraege/{karte_id}")
+def nachtragen(karte_id: str, eingabe: NachtragEingabe) -> dict:
+    """Traegt die Stunden einer ignorierten Serien-Karte nach und erledigt sie."""
+    karte = dienst.nachtragen(karte_id, eingabe.dauer_min)
+    if karte is None:
+        raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    return karte.model_dump() if hasattr(karte, "model_dump") else karte
 
 
 @router.get("", response_model=list[Serie])

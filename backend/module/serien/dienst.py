@@ -38,6 +38,20 @@ def _feiertage(von: date, bis: date) -> set[str]:
     return {r["datum"] for r in rows}
 
 
+def _urlaubstage(kuerzel: str | None, von: date, bis: date) -> set[str]:
+    """Urlaubs-Datumswerte der zustaendigen Person im Bereich (zum Ueberspringen). Defensiv."""
+    if not kuerzel:
+        return set()
+    try:
+        from module.planung import persistence as pdb
+        pid = next((p["id"] for p in pdb.liste_personen() if p.get("kuerzel") == kuerzel), None)
+        if not pid:
+            return set()
+        return {u["datum"] for u in pdb.liste_urlaub(pid, von.isoformat(), bis.isoformat())}
+    except Exception:
+        return set()
+
+
 def materialisiere(serie: dict, heute: date | None = None) -> int:
     """Legt fehlende Instanzen der Serie im Vorlauf-Zeitraum an. Gibt die Anzahl zurück."""
     if not serie.get("aktiv"):
@@ -51,9 +65,12 @@ def materialisiere(serie: dict, heute: date | None = None) -> int:
     if not spalte:
         return 0
     feiertage = _feiertage(heute, bis) if serie.get("feiertage_ueberspringen") else None
+    urlaub = _urlaubstage(serie.get("zustaendig"), heute, bis)
     erzeugt = 0
     for d in wiederholung.termine(serie, heute, bis, feiertage):
         iso = d.isoformat()
+        if iso in urlaub:
+            continue
         if k.serien_instanz_existiert(serie["id"], iso):
             continue
         titel = serie["titel"]
@@ -96,6 +113,56 @@ def loesche(sid: str) -> bool:
         else:
             k.loesche_karte(kid)
     return db.loesche(sid)
+
+
+def offene_nachtraege(heute: date | None = None) -> list[dict]:
+    """Serien-Karten vergangener Tage, die nicht erfasst und nicht erledigt sind.
+
+    Das sind die Vorkommen, die der Nutzer ignoriert hat - dafuer wird am
+    Folgetag gefragt, ob die Stunden nachgetragen werden sollen.
+    """
+    heute = heute or date.today()
+    with verbindung() as conn:
+        rows = conn.execute(
+            "SELECT k.id, k.schluessel, k.titel, k.faellig, s.titel AS serie_titel, s.dauer_min "
+            "FROM karte k "
+            "JOIN serie s ON s.id = k.serie_id "
+            "JOIN spalte sp ON sp.id = k.spalte "
+            "WHERE k.serie_id IS NOT NULL AND k.faellig IS NOT NULL AND k.faellig < ? "
+            "AND k.erfasst_sek = 0 AND sp.erledigt = 0 "
+            "ORDER BY k.faellig",
+            (heute.isoformat(),),
+        ).fetchall()
+    return [
+        {
+            "karte_id": r["id"], "schluessel": r["schluessel"], "titel": r["titel"],
+            "datum": r["faellig"], "serie_titel": r["serie_titel"], "soll_min": r["dauer_min"],
+        }
+        for r in rows
+    ]
+
+
+def nachtragen(karte_id: str, dauer_min: int | None = None) -> "object | None":
+    """Traegt fuer eine ignorierte Serien-Karte die Stunden ihres Tages nach und
+    verschiebt sie in die Erledigt-Spalte. Ohne Dauer wird das Serien-Soll genutzt."""
+    with verbindung() as conn:
+        row = conn.execute("SELECT board_id, faellig, serie_id FROM karte WHERE id = ?", (karte_id,)).fetchone()
+        if row is None:
+            return None
+        if dauer_min is None and row["serie_id"]:
+            s = conn.execute("SELECT dauer_min FROM serie WHERE id = ?", (row["serie_id"],)).fetchone()
+            dauer_min = (s["dauer_min"] if s else None) or 60
+        done = conn.execute(
+            "SELECT id FROM spalte WHERE board_id = ? AND erledigt = 1 ORDER BY reihenfolge LIMIT 1",
+            (row["board_id"],),
+        ).fetchone()
+    datum = row["faellig"] or date.today().isoformat()
+    sek = max(0, int(dauer_min or 0)) * 60
+    if sek > 0:
+        k.erstelle_zeiteintrag("z_" + uuid4().hex[:8], karte_id, datum, sek, "Nachgetragen")
+    if done is not None:
+        k.verschiebe_karte(karte_id, done["id"], 1_000_000)
+    return k.hole_karte(karte_id)
 
 
 def init() -> None:

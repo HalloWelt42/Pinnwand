@@ -17,6 +17,7 @@
   import DokumentVerwaltung from './lib/DokumentVerwaltung.svelte'
   import VorleseLeiste from './lib/VorleseLeiste.svelte'
   import BestaetigungsOverlay from './lib/module/termine/BestaetigungsOverlay.svelte'
+  import SerienErinnerung from './lib/SerienErinnerung.svelte'
 
   interface Ansicht {
     id: string
@@ -428,6 +429,7 @@
 <Toast />
 <VorleseLeiste />
 <BestaetigungsOverlay />
+<SerienErinnerung />
 {#if hilfeOffen}<Hilfe onSchliessen={() => (hilfeOffen = false)} />{/if}
 {#if onboardingOffen}<Onboarding onFertig={onboardingFertig} onGeheZu={geheZuAnsicht} />{/if}
 {#if mappeDokOffen && aktiveMappe}

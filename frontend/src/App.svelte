@@ -2,7 +2,7 @@
   import { onMount } from 'svelte'
   import type { Component } from 'svelte'
   import type { Board, Projektmappe } from './lib/types'
-  import { ladeMappen, ladeBoards, ladeErweiterungen, erstelleBoard, benenneBoard, loescheBoard, erstelleMappe, benenneMappe, loescheMappe } from './lib/api'
+  import { ladeMappen, ladeBoards, ladeErweiterungen, erstelleBoard, benenneBoard, loescheBoard, erstelleMappe, benenneMappe, loescheMappe, serienVorbuchenAlle } from './lib/api'
   import { ansichten, komponenteFuer } from './lib/module/registry'
   import { theme, wechsleTheme } from './lib/theme/theme.svelte'
   import { VERSION } from './lib/version'
@@ -243,9 +243,23 @@
       : ansichtsListe[0]?.id ?? ''
   }
 
+  // Wiederkehrende Aufgaben einmal pro Tag vorbuchen, damit genau die heute
+  // faelligen Karten entstehen (bei vorlauf 0 ohne Neustart, kein Voraus-Stapel).
+  async function serienTagesabgleich(): Promise<void> {
+    const heute = new Date().toISOString().slice(0, 10)
+    if (localStorage.getItem('pw_serien_check') === heute) return
+    try {
+      await serienVorbuchenAlle()
+      localStorage.setItem('pw_serien_check', heute)
+    } catch {
+      /* Vorbuchung ist unkritisch */
+    }
+  }
+
   onMount(async () => {
     await ladeAnsichten()
     aktualisiereLaufend()
+    serienTagesabgleich()
     try {
       mappen = await ladeMappen()
       if (mappen[0]) await waehleMappe(mappen[0])

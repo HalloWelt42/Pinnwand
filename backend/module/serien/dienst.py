@@ -43,7 +43,10 @@ def materialisiere(serie: dict, heute: date | None = None) -> int:
     if not serie.get("aktiv"):
         return 0
     heute = heute or date.today()
-    bis = heute + timedelta(days=max(0, int(serie.get("vorlauf_tage") or 14)))
+    # 0 ist ein gueltiger Wert (nur heute) - daher kein "or 14", das 0 verschlucken wuerde.
+    vorlauf = serie.get("vorlauf_tage")
+    vorlauf = 14 if vorlauf is None else int(vorlauf)
+    bis = heute + timedelta(days=max(0, vorlauf))
     spalte = _zielspalte(serie)
     if not spalte:
         return 0
@@ -70,6 +73,29 @@ def materialisiere(serie: dict, heute: date | None = None) -> int:
 
 def materialisiere_alle(heute: date | None = None) -> int:
     return sum(materialisiere(s, heute) for s in db.liste())
+
+
+def loesche(sid: str) -> bool:
+    """Loescht die Serie und raeumt ihre Instanzen auf.
+
+    Karten ohne erfasste Zeit (reine Vorbuchungen) werden geloescht; Karten mit
+    erfasster Zeit bleiben als Verlauf erhalten, werden aber von der Serie
+    geloest (serie_id/serie_datum entfernt). So entstehen beim Loeschen oder
+    Ersetzen einer Serie keine verwaisten Doppel-Karten.
+    """
+    with verbindung() as conn:
+        ids = [r["id"] for r in conn.execute("SELECT id FROM karte WHERE serie_id = ?", (sid,)).fetchall()]
+    for kid in ids:
+        with verbindung() as conn:
+            hat_zeit = conn.execute(
+                "SELECT 1 FROM zeiteintrag WHERE karte_id = ? LIMIT 1", (kid,)
+            ).fetchone()
+        if hat_zeit:
+            with verbindung() as conn:
+                conn.execute("UPDATE karte SET serie_id = NULL, serie_datum = NULL WHERE id = ?", (kid,))
+        else:
+            k.loesche_karte(kid)
+    return db.loesche(sid)
 
 
 def init() -> None:

@@ -35,7 +35,7 @@ def aendern(sid: str, eingabe: SerieUpdate) -> dict:
 
 @router.delete("/{sid}", status_code=204)
 def loeschen(sid: str) -> None:
-    if not db.loesche(sid):
+    if not dienst.loesche(sid):
         raise HTTPException(status_code=404, detail="Serie nicht gefunden")
 
 

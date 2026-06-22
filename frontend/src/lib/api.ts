@@ -318,6 +318,8 @@ export const serieVorschau = (id: string, tage = 30): Promise<{ termine: string[
   hole(`/api/serien/${id}/vorschau?tage=${tage}`)
 export const serieVorbuchen = (id: string): Promise<{ erzeugt: number }> =>
   hole(`/api/serien/${id}/vorbuchen`, { method: 'POST' })
+export const serienVorbuchenAlle = (): Promise<{ erzeugt: number }> =>
+  hole('/api/serien/vorbuchen', { method: 'POST' })
 
 // --- Planung (Personen, Urlaub, Feiertage) ---
 

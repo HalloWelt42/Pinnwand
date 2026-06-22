@@ -19,6 +19,7 @@
   import BestaetigungsOverlay from './lib/module/termine/BestaetigungsOverlay.svelte'
   import SerienErinnerung from './lib/SerienErinnerung.svelte'
   import LoginTor from './lib/LoginTor.svelte'
+  import PersonWahl from './lib/PersonWahl.svelte'
 
   interface Ansicht {
     id: string
@@ -432,6 +433,7 @@
 <BestaetigungsOverlay />
 <SerienErinnerung />
 <LoginTor />
+<PersonWahl />
 {#if hilfeOffen}<Hilfe onSchliessen={() => (hilfeOffen = false)} />{/if}
 {#if onboardingOffen}<Onboarding onFertig={onboardingFertig} onGeheZu={geheZuAnsicht} />{/if}
 {#if mappeDokOffen && aktiveMappe}

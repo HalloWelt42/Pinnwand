@@ -22,3 +22,22 @@ export function setzePersonSicht(id: string): void {
     /* localStorage nicht verfuegbar */
   }
 }
+
+// Identitaet: wurde die eigene Person schon einmal bewusst gewaehlt? (Erstwahl-Prompt)
+const GEWAEHLT = 'pw_person_gewaehlt'
+
+export function identitaetGewaehlt(): boolean {
+  try {
+    return localStorage.getItem(GEWAEHLT) === '1'
+  } catch {
+    return true
+  }
+}
+
+export function merkeIdentitaetGewaehlt(): void {
+  try {
+    localStorage.setItem(GEWAEHLT, '1')
+  } catch {
+    /* localStorage nicht verfuegbar */
+  }
+}

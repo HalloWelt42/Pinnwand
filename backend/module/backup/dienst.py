@@ -84,11 +84,22 @@ def aktuelles_schema() -> list[dict]:
 
 
 def _kopiere_db(ziel: Path) -> None:
-    """Konsistente Kopie der Datenbank über die Online-Backup-Schnittstelle."""
+    """Konsistente Kopie der Datenbank über die Online-Backup-Schnittstelle.
+
+    Aus der Kopie werden die lokalen Token-/Protokoll-Tabellen entfernt
+    (agent_token, agent_audit), damit ein weitergegebener Snapshot keine
+    Token-Metadaten (Scopes) oder Audit-Details enthält - der Snapshot ist so
+    wirklich teilbar. Beim Wiederherstellen sind Agenten-Token daher neu anzulegen."""
     quelle = sqlite3.connect(DB_PFAD)
     senke = sqlite3.connect(ziel)
     try:
         quelle.backup(senke)
+        for t in ("agent_token", "agent_audit"):
+            try:
+                senke.execute(f"DELETE FROM {t}")
+            except sqlite3.Error:
+                pass
+        senke.commit()
     finally:
         senke.close()
         quelle.close()

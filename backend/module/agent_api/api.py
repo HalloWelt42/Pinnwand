@@ -97,12 +97,16 @@ def erfassen(eingabe: Freitext, akteur: Akteur = Depends(erfordere("write"))) ->
 @router.get("/suche")
 def suche(q: str = Query(default=""), limit: int = Query(default=10),
           akteur: Akteur = Depends(erfordere("read"))) -> dict:
-    return Aktionen(akteur.name).suchen(q, limit)
+    ergebnis = Aktionen(akteur.name).suchen(q, limit)
+    db.protokolliere(akteur.name, "suche", None, "ok", {"q": q, "limit": limit})
+    return ergebnis
 
 
 @router.get("/briefing")
 def briefing(datum: str | None = Query(default=None), akteur: Akteur = Depends(erfordere("read"))) -> dict:
-    return Aktionen(akteur.name).briefing(datum)
+    ergebnis = Aktionen(akteur.name).briefing(datum)
+    db.protokolliere(akteur.name, "briefing", None, "ok", {"datum": datum})
+    return ergebnis
 
 
 @router.get("/info")

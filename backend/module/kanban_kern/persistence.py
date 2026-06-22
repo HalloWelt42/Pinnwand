@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
-from datetime import datetime
+from datetime import datetime, time as _zeit, timedelta
 from uuid import uuid4
 
 from app.db import verbindung
@@ -470,6 +470,23 @@ def setze_erfasst(karte_id: str, ziel_sek: int) -> Karte | None:
     return hole_karte(karte_id)
 
 
+def _tagessegmente(start_iso: str, ende_iso: str) -> list[tuple[str, str, str, int]]:
+    """Zerlegt ein Start-Ende-Intervall in (datum, start, ende, sekunden) je Kalendertag,
+    damit ein ueber Mitternacht laufender Timer die Zeit dem richtigen Tag gutschreibt."""
+    a = datetime.fromisoformat(start_iso)
+    b = datetime.fromisoformat(ende_iso)
+    segs: list[tuple[str, str, str, int]] = []
+    cur = a
+    while cur < b:
+        naechste_mitternacht = datetime.combine(cur.date() + timedelta(days=1), _zeit.min)
+        seg_ende = min(b, naechste_mitternacht)
+        sek = int((seg_ende - cur).total_seconds())
+        if sek >= 1:
+            segs.append((cur.date().isoformat(), cur.isoformat(timespec="seconds"), seg_ende.isoformat(timespec="seconds"), sek))
+        cur = seg_ende
+    return segs
+
+
 def _pause_intern(conn: sqlite3.Connection, karte_id: str) -> None:
     """Stoppt eine laufende Karte, schreibt einen Zeiteintrag und berechnet erfasst_sek neu."""
     row = conn.execute("SELECT laeuft_seit, board_id FROM karte WHERE id = ?", (karte_id,)).fetchone()
@@ -477,17 +494,17 @@ def _pause_intern(conn: sqlite3.Connection, karte_id: str) -> None:
         return
     start = row["laeuft_seit"]
     ende = _jetzt_genau()
-    try:
-        verstrichen = int((datetime.fromisoformat(ende) - datetime.fromisoformat(start)).total_seconds())
-    except ValueError:
-        verstrichen = 0
     conn.execute("UPDATE karte SET laeuft_seit = NULL WHERE id = ?", (karte_id,))
-    if verstrichen >= 1:
+    try:
+        segmente = _tagessegmente(start, ende)
+    except ValueError:
+        segmente = []
+    mappe_id = _mappe_fuer_board(conn, row["board_id"])
+    for datum, seg_start, seg_ende, sek in segmente:
         conn.execute(
             "INSERT INTO zeiteintrag (id, karte_id, board_id, mappe_id, datum, start, ende, sekunden, kommentar, manuell)"
             " VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, 0)",
-            (f"z_{uuid4().hex[:8]}", karte_id, row["board_id"], _mappe_fuer_board(conn, row["board_id"]),
-             start[:10], start, ende, verstrichen),
+            (f"z_{uuid4().hex[:8]}", karte_id, row["board_id"], mappe_id, datum, seg_start, seg_ende, sek),
         )
     _recompute_erfasst(conn, karte_id)
 

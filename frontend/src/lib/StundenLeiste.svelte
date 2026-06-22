@@ -4,7 +4,7 @@
   // Einklappbar; der Zustand wird im Browser gemerkt.
   import { ladeStundenUebersicht, type StundenUebersicht } from './api'
   import { formatStd } from './zeit'
-  import { timer } from './timer.svelte'
+  import { timer, formatDauerVoll } from './timer.svelte'
 
   let daten = $state<StundenUebersicht | null>(null)
   let offen = $state(ladeOffen())
@@ -50,6 +50,28 @@
       clearInterval(iv)
       window.removeEventListener('focus', beiFokus)
     }
+  })
+
+  // Tab-Titel zeigt heutiges Ist/Soll; ein heute laufender Timer tickt live mit.
+  function heuteIso(): string {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
+  $effect(() => {
+    const h = daten?.heute
+    if (!h) {
+      document.title = 'Pinnwand'
+      return
+    }
+    let ist = h.ist_sek
+    const a = timer.aktiv
+    const laeuft = !!a?.laeuft_seit
+    if (a?.laeuft_seit && a.laeuft_seit.slice(0, 10) === heuteIso()) {
+      // Noch nicht gebuchtes, laufendes Segment von heute dazurechnen.
+      ist += Math.max(0, Math.floor((timer.jetzt - new Date(a.laeuft_seit).getTime()) / 1000))
+    }
+    const istTxt = laeuft ? formatDauerVoll(ist) : formatStd(ist)
+    document.title = `${istTxt} / ${formatStd(h.soll_sek)} - Pinnwand`
   })
 
   const PERIODEN: { key: keyof StundenUebersicht; label: string }[] = [

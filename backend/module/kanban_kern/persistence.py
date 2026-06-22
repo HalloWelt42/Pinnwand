@@ -482,12 +482,19 @@ def _pause_intern(conn: sqlite3.Connection, karte_id: str) -> None:
 
 def timer_start(karte_id: str) -> Karte | None:
     with _verb() as conn:
-        if conn.execute("SELECT 1 FROM karte WHERE id = ?", (karte_id,)).fetchone() is None:
+        row = conn.execute("SELECT start FROM karte WHERE id = ?", (karte_id,)).fetchone()
+        if row is None:
             return None
         # Nur eine Karte darf gleichzeitig laufen -> alle anderen pausieren.
         for r in conn.execute("SELECT id FROM karte WHERE laeuft_seit IS NOT NULL").fetchall():
             _pause_intern(conn, r["id"])
-        conn.execute("UPDATE karte SET laeuft_seit = ? WHERE id = ?", (_jetzt_genau(), karte_id))
+        jetzt = _jetzt_genau()
+        # Ohne gesetztes Start-Datum gilt der erste Timer-Start als Arbeitsbeginn;
+        # einmal gesetzt wird der Wert beim Fortsetzen nie wieder ueberschrieben.
+        if not row["start"]:
+            conn.execute("UPDATE karte SET laeuft_seit = ?, start = ? WHERE id = ?", (jetzt, jetzt[:10], karte_id))
+        else:
+            conn.execute("UPDATE karte SET laeuft_seit = ? WHERE id = ?", (jetzt, karte_id))
     return hole_karte(karte_id)
 
 

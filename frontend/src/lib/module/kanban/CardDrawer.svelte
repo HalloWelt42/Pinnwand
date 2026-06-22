@@ -5,8 +5,8 @@
   import { oeffneTranskript } from '../../navigation.svelte'
   import { labelFarbe } from '../../labels'
   import { theme } from '../../theme/theme.svelte'
-  import { isoLang, isoDatumZeit, formatStd } from '../../zeit'
-  import { timer, timerStarten, timerPausieren, erfassteSekunden, formatDauer, formatPlan } from '../../timer.svelte'
+  import { isoLang, isoDatumZeit } from '../../zeit'
+  import { timer, timerStarten, timerPausieren, timerStoppen, erfassteSekunden, formatDauerVoll, formatPlan } from '../../timer.svelte'
   import Markdown from '../../Markdown.svelte'
   import DokumentVerwaltung from '../../DokumentVerwaltung.svelte'
   import { tts, vorlesen, stoppeVorlesen } from '../../tts.svelte'
@@ -174,6 +174,8 @@
   const imStatus = $derived(tage(karte.bewegt_am) ?? 0)
   const durchlauf = $derived(tage(karte.erstellt_am) ?? 0)
   const laeuft = $derived(!!karte.laeuft_seit)
+  // Pausiert = diese Karte ist die aktive Sitzung, laeuft aber gerade nicht (Fortsetzen moeglich).
+  const pausiert = $derived(!laeuft && timer.aktiv?.id === karte.id)
   const sek = $derived(laeuft ? erfassteSekunden(karte, timer.jetzt) : (karte.erfasst_sek ?? 0))
   const planMin = $derived(karte.schaetzung_min ?? null)
   const prozent = $derived(planMin && planMin > 0 ? (sek / 60 / planMin) * 100 : null)
@@ -269,14 +271,20 @@
 
     <p class="sec">Zeiterfassung</p>
     <div class="timer">
-      <button class="tbtn" class:an={laeuft} onclick={() => (laeuft ? timerPausieren(karte.id) : timerStarten(karte.id))}>
-        <i class="fa-solid {laeuft ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i> {laeuft ? 'Pause' : 'Start'}
-      </button>
       {#if laeuft}
-        <span class="erfasst" title="Läuft - zum Bearbeiten pausieren">{formatDauer(sek)}</span>
+        <button class="tbtn an" onclick={() => timerPausieren(karte.id)}><i class="fa-solid fa-pause" aria-hidden="true"></i> Pause</button>
+        <button class="tbtn stopp" onclick={() => timerStoppen(karte.id)}><i class="fa-solid fa-stop" aria-hidden="true"></i> Stopp</button>
+      {:else if pausiert}
+        <button class="tbtn play" onclick={() => timerStarten(karte.id)}><i class="fa-solid fa-play" aria-hidden="true"></i> Fortsetzen</button>
+        <button class="tbtn stopp" onclick={() => timerStoppen(karte.id)}><i class="fa-solid fa-stop" aria-hidden="true"></i> Stopp</button>
       {:else}
-        <input class="erfasst erfasst-edit" value={formatStd(sek)} aria-label="Erfasste Zeit bearbeiten"
-          title="Erfasste Zeit direkt anpassen (z.B. 2:30 oder 1,5)"
+        <button class="tbtn play" onclick={() => timerStarten(karte.id)}><i class="fa-solid fa-play" aria-hidden="true"></i> Start</button>
+      {/if}
+      {#if laeuft}
+        <span class="erfasst" title="Läuft - zum Bearbeiten pausieren">{formatDauerVoll(sek)}</span>
+      {:else}
+        <input class="erfasst erfasst-edit" value={formatDauerVoll(sek)} aria-label="Erfasste Zeit bearbeiten"
+          title="Erfasste Zeit direkt anpassen (z.B. 1:30:00, 2:30 oder 1,5)"
           onchange={(e) => erfasstAendern(e.currentTarget.value)} />
       {/if}
       <label class="plan">Schätzung
@@ -500,6 +508,15 @@
     background: var(--surface-2);
     color: var(--hl-primary-text);
   }
+  .tbtn.stopp {
+    background: var(--surface-1);
+    color: var(--text-2);
+    border-color: var(--border-2);
+  }
+  .tbtn.stopp:hover {
+    border-color: var(--gefahr);
+    color: var(--due-rot-fg);
+  }
   .erfasst {
     font-family: var(--font-mono);
     font-size: 18px;
@@ -507,7 +524,7 @@
     color: var(--text-1);
   }
   .erfasst-edit {
-    width: 96px;
+    width: 112px;
     border: 1px solid transparent;
     background: transparent;
     border-radius: var(--r-s);

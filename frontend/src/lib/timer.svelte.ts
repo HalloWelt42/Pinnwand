@@ -60,6 +60,16 @@ export function formatDauer(sek: number): string {
   return h > 0 ? `${h}:${zwei(m)}:${zwei(s)}` : `${m}:${zwei(s)}`
 }
 
+// Immer volles H:MM:SS - sekundengenau und eindeutig rueckuebersetzbar (parseZeit).
+// Wird im Karten-Detail genutzt, damit der Wert laufend wie gestoppt identisch aussieht.
+export function formatDauerVoll(sek: number): string {
+  const h = Math.floor(sek / 3600)
+  const m = Math.floor((sek % 3600) / 60)
+  const s = sek % 60
+  const zwei = (n: number) => String(n).padStart(2, '0')
+  return `${h}:${zwei(m)}:${zwei(s)}`
+}
+
 export function formatPlan(min: number): string {
   const h = Math.floor(min / 60)
   const m = min % 60

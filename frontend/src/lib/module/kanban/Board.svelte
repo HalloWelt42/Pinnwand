@@ -90,6 +90,8 @@
   async function laden() {
     board = await ladeBoard(boardId)
     baueAnsicht()
+    // Offene Detailansicht auf den frischen Stand spiegeln (Timer-Start/Pause/Stopp, erfasste Zeit).
+    if (ausgewaehlt) ausgewaehlt = board?.karten.find((k) => k.id === ausgewaehlt!.id) ?? ausgewaehlt
   }
 
   // Spalten-/Filterzustand je Board im Browser merken.

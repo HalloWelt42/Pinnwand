@@ -238,21 +238,50 @@ aktuellen Echtdaten (eine Person, keine Termine, kein Override) ist der Betrieb
 stimmig. Sie werden relevant, sobald mehrere Nutzer arbeiten oder die genannten
 Funktionen aktiv genutzt werden.
 
-## 5. Umgesetzt (Stand 2026-06-22)
+## 5. Umgesetzt
 
-- T1 + A1 (v0.44.0): Optionaler Zugangsschutz per UI-Token (PINNWAND_UI_TOKEN).
-  Ist er gesetzt, verlangt die Haupt-API (außer /api/health) und /mcp den Header
-  X-Pinnwand-Token; ohne Token bleibt der lokale Standard offen.
-- T2 + Z1 + Z2 (v0.43.0): Personen-Sicht - ein "aktive Person"-Schalter filtert
-  Stunden-Leiste und Tab-Titel; der Ist-Wert je Person stimmt dann mit
-  Jahreskalender/Berichten überein, "Alle" zeigt weiter das Team-Gesamt.
-- K1 (v0.42.0): Karten-Anlage prüft Board und Spalte (404/400 statt Waisen-Karte).
-- Z4 (v0.42.0): Stundenzettel-Dauerfeld sekundengenau, kein Sekundenverlust beim
-  Bearbeiten.
-- R1 (v0.42.0): Reset löscht die Berichtsdateien in beiden Modi mit.
-- S2 (v0.42.0): UNIQUE-Teilindex gegen Serien-Doppelkarten + robuste Materialisierung.
-- P3 (v0.42.0): Gesamt-Soll nur über aktive Personen.
+v0.42.0 - v0.44.0:
+- T1 + A1: Optionaler Zugangsschutz per UI-Token (PINNWAND_UI_TOKEN). Ist er gesetzt,
+  verlangt die Haupt-API (außer /api/health) und /mcp den Header X-Pinnwand-Token;
+  ohne Token bleibt der lokale Standard offen.
+- T2 + Z1 + Z2: Personen-Sicht - ein "aktive Person"-Schalter filtert Stunden-Leiste
+  und Tab-Titel; der Ist-Wert je Person stimmt dann mit Jahreskalender/Berichten
+  überein, "Alle" zeigt weiter das Team-Gesamt.
+- K1: Karten-Anlage prüft Board und Spalte (404/400 statt Waisen-Karte).
+- Z4: Stundenzettel-Dauerfeld sekundengenau, kein Sekundenverlust beim Bearbeiten.
+- R1: Reset löscht die Berichtsdateien in beiden Modi mit.
+- S2: UNIQUE-Teilindex gegen Serien-Doppelkarten + robuste Materialisierung.
+- P3: Gesamt-Soll nur über aktive Personen.
 
-Offen (bewusst, bzw. bei Bedarf): Z3, Z5, S1, S3, S4, S5, S6, P1, P2, P4, P5, P6,
-R2, R3, A2, A3, A4, A5 - überwiegend latent; anzugehen, sobald das jeweilige
-Feature bzw. der Mehrbenutzer-Betrieb es erfordert.
+v0.45.0 - v0.45.2:
+- S1: Hinweis in "Wiederkehrendes" gegen Doppelpflege (Aufgabe ODER Termin).
+- P1: Brückentag-Erkennung berücksichtigt den Wochen-Override.
+- P2: regionale (Bundesland-)Feiertage werden automatisch geladen.
+- S6: Nachtragen nutzt Erledigt-Spalte mit Rückfall auf die letzte Spalte.
+- R2: Reset "leer" entfernt personenspezifische Tagesregeln.
+- Z5: Timer über Mitternacht wird taggenau gesplittet.
+- A3: REST-Lesezugriffe /suche und /briefing werden protokolliert.
+- R3: Snapshots enthalten agent_token/agent_audit nicht mehr (wirklich teilbar).
+- S3: verpasste Serien-Werktage werden nachgebildet (Backfill, max. 31 Tage).
+  Mildert zugleich S4: auch ohne den gerätelokalen Tages-Trigger holt der nächste
+  App-/Backend-Start die fehlenden Tage nach.
+
+## 6. Offen
+
+Bewusst akzeptiert / dokumentiert (lokaler Standard oder Randfall):
+- S4: Tages-Trigger gerätelokal - durch S3-Backfill weitgehend entschärft.
+- S5: Kürzel-Bezug ist ein freies Label (gewollt); harte Validierung wäre ein
+  größerer Umbau, latent (Tippfehler/Umbenennen).
+- P5: Wochen-Override an der Jahresgrenze (ISO-Woche) - niedrig, nur KW1/52/53,
+  bräuchte eine Eingabe-Umstellung auf Datum statt freier KW.
+- Z3: Live-Timer-Uhrdrift - nur bei abweichenden Uhren (auf einem Rechner ohne
+  Wirkung); gespeicherte Werte sind immer korrekt.
+- A4 / A5: Agenten-Token-Bootstrap und Konfig-Token - dokumentiert, an localhost
+  gebunden.
+
+Braucht eine Entscheidung (kein eindeutiger Default):
+- P4 / P6: Urlaubskonto-Anrechnung an Feiertagen/Halbtagen - soll ein Urlaubstag
+  auf einem 0-Stunden- oder Halbtag weniger Konto kosten? (Aktuell ohne Wirkung,
+  da die normale Urlaubsbuchung solche Tage ohnehin überspringt.)
+- A2: echte Mandanten-/Eigentümer-Trennung der Daten (Owner-Spalte + Filter) -
+  der große Schritt über die Personen-Sicht hinaus.

@@ -414,6 +414,50 @@ def _recompute_erfasst(conn: sqlite3.Connection, karte_id: str) -> None:
     conn.execute("UPDATE karte SET erfasst_sek = ? WHERE id = ?", (int(r["s"]), karte_id))
 
 
+_KORREKTUR = "Manuelle Korrektur"
+
+
+def setze_erfasst(karte_id: str, ziel_sek: int) -> Karte | None:
+    """Setzt die erfasste Gesamtzeit exakt - ueber genau eine Korrektur-Position.
+
+    Timer- und Nachtrags-Eintraege bleiben unangetastet; die Differenz zum Ziel
+    landet in einem einzigen manuellen Eintrag (idempotent bei erneutem Setzen,
+    wird bei Differenz 0 wieder entfernt).
+    """
+    ziel = max(0, int(ziel_sek))
+    with _verb() as conn:
+        row = conn.execute("SELECT board_id FROM karte WHERE id = ?", (karte_id,)).fetchone()
+        if row is None:
+            return None
+        rest = conn.execute(
+            "SELECT COALESCE(SUM(sekunden), 0) AS s FROM zeiteintrag"
+            " WHERE karte_id = ? AND NOT (manuell = 1 AND kommentar = ?)",
+            (karte_id, _KORREKTUR),
+        ).fetchone()["s"]
+        korr = ziel - int(rest)
+        vorhanden = conn.execute(
+            "SELECT id FROM zeiteintrag WHERE karte_id = ? AND manuell = 1 AND kommentar = ? LIMIT 1",
+            (karte_id, _KORREKTUR),
+        ).fetchone()
+        if korr == 0:
+            if vorhanden:
+                conn.execute("DELETE FROM zeiteintrag WHERE id = ?", (vorhanden["id"],))
+        elif vorhanden:
+            conn.execute(
+                "UPDATE zeiteintrag SET sekunden = ?, datum = ? WHERE id = ?",
+                (korr, _jetzt_genau()[:10], vorhanden["id"]),
+            )
+        else:
+            conn.execute(
+                "INSERT INTO zeiteintrag (id, karte_id, board_id, mappe_id, datum, sekunden, kommentar, manuell)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
+                (f"z_{uuid4().hex[:8]}", karte_id, row["board_id"], _mappe_fuer_board(conn, row["board_id"]),
+                 _jetzt_genau()[:10], korr, _KORREKTUR),
+            )
+        _recompute_erfasst(conn, karte_id)
+    return hole_karte(karte_id)
+
+
 def _pause_intern(conn: sqlite3.Connection, karte_id: str) -> None:
     """Stoppt eine laufende Karte, schreibt einen Zeiteintrag und berechnet erfasst_sek neu."""
     row = conn.execute("SELECT laeuft_seit, board_id FROM karte WHERE id = ?", (karte_id,)).fetchone()

@@ -134,6 +134,9 @@ export const aktualisiereKarte = (id: string, daten: KarteAenderung): Promise<Ka
 export const verschiebeKarte = (id: string, spalte: string, reihenfolge: number): Promise<Karte> =>
   hole(`/api/kanban/karten/${id}/move`, { method: 'POST', body: JSON.stringify({ spalte, reihenfolge }) })
 
+export const setzeErfasst = (id: string, sekunden: number): Promise<Karte> =>
+  hole(`/api/kanban/karten/${id}/erfasst`, { method: 'PATCH', body: JSON.stringify({ sekunden }) })
+
 export const anhaengenKommentar = (id: string, autor: string, text: string): Promise<Karte> =>
   hole(`/api/kanban/karten/${id}/kommentare`, { method: 'POST', body: JSON.stringify({ autor, text }) })
 

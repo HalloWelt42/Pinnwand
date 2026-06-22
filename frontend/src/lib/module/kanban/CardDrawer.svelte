@@ -5,7 +5,7 @@
   import { oeffneTranskript } from '../../navigation.svelte'
   import { labelFarbe } from '../../labels'
   import { theme } from '../../theme/theme.svelte'
-  import { isoLang, isoDatumZeit } from '../../zeit'
+  import { isoLang, isoDatumZeit, formatStd } from '../../zeit'
   import { timer, timerStarten, timerPausieren, erfassteSekunden, formatDauer, formatPlan } from '../../timer.svelte'
   import Markdown from '../../Markdown.svelte'
   import DokumentVerwaltung from '../../DokumentVerwaltung.svelte'
@@ -17,6 +17,7 @@
     onSchliessen,
     onAendern,
     onKommentar,
+    onErfasst,
     onLoeschen,
   }: {
     karte: Karte
@@ -24,6 +25,7 @@
     onSchliessen: () => void
     onAendern: (daten: KarteAenderung) => void
     onKommentar: (text: string) => void
+    onErfasst: (sekunden: number) => void
     onLoeschen: () => void
   } = $props()
 
@@ -153,6 +155,21 @@
   function datum(iso?: string | null): string {
     return iso ? isoLang(iso) : '-'
   }
+  // Erfasste Zeit direkt setzen: "2:30", "1:30:00", "1,5" (Stunden) oder "90" (Stunden? -> nein, Dezimalstunden).
+  function parseZeit(s: string): number | null {
+    s = s.trim().replace(',', '.')
+    if (!s) return null
+    if (s.includes(':')) {
+      const [h, m, sek] = s.split(':')
+      return (parseInt(h || '0', 10) || 0) * 3600 + (parseInt(m || '0', 10) || 0) * 60 + (parseInt(sek || '0', 10) || 0)
+    }
+    const std = parseFloat(s)
+    return Number.isNaN(std) ? null : Math.round(std * 3600)
+  }
+  function erfasstAendern(wert: string): void {
+    const sek = parseZeit(wert)
+    if (sek != null) onErfasst(Math.max(0, sek))
+  }
 
   const imStatus = $derived(tage(karte.bewegt_am) ?? 0)
   const durchlauf = $derived(tage(karte.erstellt_am) ?? 0)
@@ -255,7 +272,13 @@
       <button class="tbtn" class:an={laeuft} onclick={() => (laeuft ? timerPausieren(karte.id) : timerStarten(karte.id))}>
         <i class="fa-solid {laeuft ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i> {laeuft ? 'Pause' : 'Start'}
       </button>
-      <span class="erfasst">{formatDauer(sek)}</span>
+      {#if laeuft}
+        <span class="erfasst" title="Läuft - zum Bearbeiten pausieren">{formatDauer(sek)}</span>
+      {:else}
+        <input class="erfasst erfasst-edit" value={formatStd(sek)} aria-label="Erfasste Zeit bearbeiten"
+          title="Erfasste Zeit direkt anpassen (z.B. 2:30 oder 1,5)"
+          onchange={(e) => erfasstAendern(e.currentTarget.value)} />
+      {/if}
       <label class="plan">Schätzung
         <input type="number" min="0" step="0.25" value={planMin ? planMin / 60 : ''}
           onchange={(e) => { const v = parseFloat(e.currentTarget.value); onAendern({ schaetzung_min: Number.isFinite(v) && v > 0 ? Math.round(v * 60) : null }) }} />
@@ -482,6 +505,21 @@
     font-size: 18px;
     font-variant-numeric: tabular-nums;
     color: var(--text-1);
+  }
+  .erfasst-edit {
+    width: 96px;
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: var(--r-s);
+    padding: 3px 7px;
+  }
+  .erfasst-edit:hover {
+    border-color: var(--border-2);
+  }
+  .erfasst-edit:focus {
+    border-color: var(--hl-primary);
+    background: var(--surface-2);
+    outline: none;
   }
   .plan {
     margin-left: auto;

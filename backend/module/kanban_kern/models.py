@@ -152,6 +152,10 @@ class KarteMove(BaseModel):
     reihenfolge: int
 
 
+class ErfasstSetzen(BaseModel):
+    sekunden: int
+
+
 class KommentarCreate(BaseModel):
     autor: str
     text: str

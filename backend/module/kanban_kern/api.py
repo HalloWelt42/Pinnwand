@@ -15,6 +15,7 @@ from .models import (
     Dokument,
     DokumentCreate,
     DokumentUpdate,
+    ErfasstSetzen,
     Karte,
     KarteCreate,
     KarteMove,
@@ -202,6 +203,14 @@ def karte_aendern(karte_id: str, eingabe: KarteUpdate) -> Karte:
     if karte is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
     _index(karte_id)
+    return karte
+
+
+@router.patch("/karten/{karte_id}/erfasst", response_model=Karte)
+def erfasst_setzen(karte_id: str, eingabe: ErfasstSetzen) -> Karte:
+    karte = db.setze_erfasst(karte_id, eingabe.sekunden)
+    if karte is None:
+        raise HTTPException(status_code=404, detail="Karte nicht gefunden")
     return karte
 
 

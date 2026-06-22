@@ -155,6 +155,12 @@ def tage(von: str = Query(...), bis: str = Query(...), person: str | None = Quer
     return kapazitaet.tage_overlay(von, bis, person)
 
 
+@router.get("/stunden-uebersicht")
+def stunden_uebersicht() -> dict:
+    """Geleistete Stunden (Ist) gegen Soll je Heute/Woche/Monat/Jahr."""
+    return kapazitaet.stunden_uebersicht()
+
+
 # -- Jahreskalender (Aggregation über alle Personen) --------------------
 
 @router.get("/kalender")

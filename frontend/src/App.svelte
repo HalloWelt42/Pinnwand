@@ -10,6 +10,7 @@
   import { nav, transkriptNav, kartenZeiger, oeffneKarte } from './lib/navigation.svelte'
   import Toast from './lib/Toast.svelte'
   import LaufBar from './lib/LaufBar.svelte'
+  import StundenLeiste from './lib/StundenLeiste.svelte'
   import DiensteStatus from './lib/DiensteStatus.svelte'
   import Hilfe from './lib/Hilfe.svelte'
   import Onboarding from './lib/Onboarding.svelte'
@@ -262,6 +263,7 @@
 
 <div class="wurzel">
 <LaufBar />
+<StundenLeiste />
 <div class="app">
   <aside class="rail" class:zu={!railEin}>
     <div class="marke">

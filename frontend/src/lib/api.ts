@@ -444,6 +444,19 @@ export interface KalenderAntwort {
 
 export const ladeKalender = (jahr: number): Promise<KalenderAntwort> =>
   hole(`/api/planung/kalender?jahr=${jahr}`)
+
+export interface StundenSumme {
+  ist_sek: number
+  soll_sek: number
+}
+export interface StundenUebersicht {
+  heute: StundenSumme
+  woche: StundenSumme
+  monat: StundenSumme
+  jahr: StundenSumme
+}
+export const ladeStundenUebersicht = (): Promise<StundenUebersicht> =>
+  hole('/api/planung/stunden-uebersicht')
 export const ladeAbwesenheitstypen = (): Promise<AbwesenheitTyp[]> =>
   hole('/api/planung/abwesenheitstypen')
 export const aktualisiereAbwesenheitstyp = (code: string, d: Partial<AbwesenheitTyp>): Promise<AbwesenheitTyp> =>

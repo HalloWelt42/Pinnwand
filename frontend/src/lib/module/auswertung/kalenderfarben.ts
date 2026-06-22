@@ -8,14 +8,25 @@ export interface Ebenen {
   feiertage: boolean
   stunden: boolean
   auslastung: boolean
+  frei: boolean
 }
 
 export type TypMap = Record<string, AbwesenheitTyp>
+
+const FREI_TON = 'color-mix(in srgb, var(--text-3) 24%, transparent)'
 
 const TAG_REF_SEK = 8 * 3600 // Referenz für die Stunden-Heatmap (ein voller Arbeitstag)
 
 /** Hintergrundfarbe einer Zelle (Matrix) je nach aktiven Ebenen. */
 export function zellHintergrund(z: KalenderZelle, e: Ebenen, typen: TypMap): string {
+  // Frei-Ebene: alle freien Tage hervorheben (Feiertag, Urlaub/Abwesenheit, Wochenende),
+  // Arbeitstage bleiben neutral - so sieht man das Frei-Muster auf einen Blick.
+  if (e.frei) {
+    if (z.feiertag) return 'var(--due-rot-bg)'
+    if (z.status === 'abwesend' && z.abw) return typen[z.abw.typ]?.farbe ?? 'var(--due-rot-bg)'
+    if (z.status === 'frei' || z.status === 'feiertag') return FREI_TON
+    return 'var(--surface-2)'
+  }
   if (e.feiertage && z.feiertag) return 'var(--due-rot-bg)'
   // Feiertag und freier Tag gelten nie als anwesend (keine grüne Färbung).
   if (z.status === 'frei' || z.status === 'feiertag') return 'var(--surface-2)'
@@ -81,6 +92,20 @@ export function tagAggregat(zellen: KalenderZelle[], e: Ebenen): TagAggregat {
     bg = `color-mix(in srgb, var(--ok) ${Math.round(10 + r * 40)}%, transparent)`
   }
   if (e.feiertage && feier) bg = 'var(--due-rot-bg)'
+
+  // Frei-Ebene: freie Tage hervorheben (Feiertag, Abwesenheit, oder ganz arbeitsfrei).
+  if (e.frei) {
+    if (feier) {
+      bg = 'var(--due-rot-bg)'
+    } else if (eingeplant === 0) {
+      bg = FREI_TON
+    } else if (abwesend > 0) {
+      bg = 'color-mix(in srgb, var(--text-3) 15%, transparent)'
+      if (!zahl) zahl = `${abwesend} frei`
+    } else {
+      bg = 'var(--surface-2)'
+    }
+  }
 
   const teile = eingeplant > 0 ? [`anwesend ${anwesend}/${eingeplant}`] : ['arbeitsfrei']
   if (abwesend) teile.push(`abwesend ${abwesend}`)

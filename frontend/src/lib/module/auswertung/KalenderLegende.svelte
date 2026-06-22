@@ -21,7 +21,16 @@
     <span class="eintrag"><span class="punkt" style="background:color-mix(in srgb, var(--ok) 42%, transparent)"></span>im Soll</span>
     <span class="eintrag"><span class="punkt" style="background:color-mix(in srgb, var(--gefahr) 38%, transparent)"></span>über Soll</span>
   {/if}
-  <span class="eintrag"><span class="punkt" style="background:var(--surface-2)"></span>frei/Wochenende</span>
+  {#if ebenen.frei}
+    <span class="eintrag"><span class="punkt" style="background:color-mix(in srgb, var(--text-3) 24%, transparent)"></span>frei/Wochenende</span>
+    <span class="eintrag"><span class="punkt" style="background:var(--due-rot-bg)"></span>Feiertag</span>
+    {#each typen as t (t.code)}
+      <span class="eintrag"><span class="punkt" style="background:{t.farbe}"></span>{t.name}</span>
+    {/each}
+    <span class="eintrag"><span class="punkt" style="background:var(--surface-2)"></span>Arbeitstag</span>
+  {:else}
+    <span class="eintrag"><span class="punkt" style="background:var(--surface-2)"></span>frei/Wochenende</span>
+  {/if}
 </div>
 
 <style>

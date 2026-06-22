@@ -13,7 +13,7 @@
   const STD: UiStand = {
     jahr: new Date().getFullYear(),
     layout: 'gitter',
-    ebenen: { anwesenheit: true, feiertage: true, stunden: false, auslastung: false },
+    ebenen: { anwesenheit: true, feiertage: true, stunden: false, auslastung: false, frei: false },
   }
   function ladeUi(): UiStand {
     try {
@@ -54,6 +54,7 @@
   const EBENEN: { key: keyof Ebenen; label: string; icon: string }[] = [
     { key: 'anwesenheit', label: 'Anwesenheit', icon: 'fa-users' },
     { key: 'feiertage', label: 'Feiertage', icon: 'fa-star' },
+    { key: 'frei', label: 'Frei', icon: 'fa-umbrella-beach' },
     { key: 'stunden', label: 'Stunden', icon: 'fa-clock' },
     { key: 'auslastung', label: 'Auslastung', icon: 'fa-gauge' },
   ]
@@ -123,7 +124,7 @@
   .ebenen { display: inline-flex; gap: 6px; flex-wrap: wrap; }
   .chip { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-3); border-radius: 999px; padding: 6px 11px; font-size: 11.5px; }
   .chip.an { background: color-mix(in srgb, var(--hl-primary) 18%, transparent); color: var(--hl-primary-text); border-color: var(--hl-primary); }
-  .flaeche { flex: 1; min-height: 0; overflow: hidden; display: flex; }
-  .flaeche > :global(*) { flex: 1; min-width: 0; }
+  /* Scrollbereich: das Gitter scrollt vertikal, die Matrix bringt ihr eigenes Scrollen mit. */
+  .flaeche { flex: 1; min-height: 0; overflow: auto; }
   .hinweis { color: var(--text-3); font-size: 12.5px; padding: 16px; }
 </style>

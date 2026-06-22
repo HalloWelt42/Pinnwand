@@ -59,7 +59,7 @@
 </div>
 
 <style>
-  .gitter { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; padding: 14px; }
+  .gitter { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; padding: 14px; align-items: start; }
   .monat { border: 1px solid var(--border); border-radius: var(--r-l); background: var(--surface-col); padding: 10px; }
   .mkopf { font-family: var(--font-display); font-size: 12.5px; color: var(--text-1); margin-bottom: 6px; }
   .wdzeile { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 3px; }

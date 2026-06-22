@@ -274,16 +274,15 @@ def loesche_urlaub(uid: str) -> bool:
     return cur.rowcount > 0
 
 
-def _genommen(conn: sqlite3.Connection, person_id: str, jahr: int) -> float:
-    """Summe der im Jahr verbrauchten Tage - alle Abwesenheits-Arten mit anrechnen=1 (Anteil 1.0/0.5)."""
-    codes = [r["code"] for r in conn.execute("SELECT code FROM abwesenheit_typ WHERE anrechnen = 1").fetchall()] or ["urlaub"]
-    platzhalter = ",".join("?" for _ in codes)
-    r = conn.execute(
-        f"SELECT COALESCE(SUM(anteil), 0) AS s FROM urlaub"
-        f" WHERE person_id = ? AND typ IN ({platzhalter}) AND datum >= ? AND datum <= ?",
-        (person_id, *codes, f"{jahr}-01-01", f"{jahr}-12-31"),
-    ).fetchone()
-    return round(float(r["s"] or 0), 2)
+def _genommen(person: dict, jahr: int) -> float:
+    """Im Jahr verbrauchte Urlaubstage, gewichtet mit der echten Soll-Wirkung des Tages
+    (Feiertag/freier Tag = 0, Halbtag = halb). Anrechenbare Arten = anrechnen=1."""
+    with verbindung() as conn:
+        anrechenbar = {
+            r["code"] for r in conn.execute("SELECT code FROM abwesenheit_typ WHERE anrechnen = 1").fetchall()
+        } or {"urlaub"}
+    from . import kalender
+    return kalender.urlaub_konto_genommen(person, jahr, anrechenbar)
 
 
 def urlaubskonto(person_id: str, jahr: int) -> dict | None:
@@ -292,9 +291,8 @@ def urlaubskonto(person_id: str, jahr: int) -> dict | None:
         return None
     anspruch = float(p["urlaubsanspruch"] or 0)
     uebertrag = float(p["resturlaub_vorjahr"] or 0)
-    with verbindung() as conn:
-        genommen = _genommen(conn, person_id, jahr)
-        genommen_vorjahr = _genommen(conn, person_id, jahr - 1)
+    genommen = _genommen(p, jahr)
+    genommen_vorjahr = _genommen(p, jahr - 1)
     verfuegbar = round(anspruch + uebertrag, 2)
     return {
         "person_id": person_id,

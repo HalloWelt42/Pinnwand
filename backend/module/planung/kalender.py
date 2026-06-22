@@ -192,6 +192,35 @@ def _feiertage_gepuffert(von: str, bis: str) -> list[dict]:
     return db.liste_feiertage(v, b)
 
 
+def _tagesfaktor(d: date, ctx: dict) -> float:
+    """Anteil eines normalen Arbeitstags VOR Abwesenheit (0..1): freier Tag/Feiertag = 0,
+    Halbtags-Regel = deren Anteil, sonst 1. Grundlage fuer die Urlaubskonto-Anrechnung."""
+    wd = d.weekday()
+    ws = _ws_fuer(d, ctx)
+    if wd >= len(ws) or float(ws[wd]) == 0:
+        return 0.0
+    if ctx["feier_name"].get(d.isoformat()) is not None:
+        return 0.0
+    regel = _regel_anteil(d, ctx)
+    return float(regel) if regel is not None else 1.0
+
+
+def urlaub_konto_genommen(person: dict, jahr: int, anrechenbar: set[str]) -> float:
+    """Im Jahr verbrauchte Urlaubstage, gewichtet mit der echten Soll-Wirkung des Tages.
+
+    Ein Urlaubstag auf einem freien Tag/Feiertag kostet 0, auf einem Halbtag den halben
+    Konto-Tag - so stimmen Verbrauch und tatsaechlich vermiedene Arbeitszeit ueberein."""
+    von, bis = f"{jahr}-01-01", f"{jahr}-12-31"
+    all_feier = _feiertage_gepuffert(von, bis)
+    regelinfo = _regeln_aufbereiten(db.liste_tagesregeln())
+    ctx = _person_kontext(person, all_feier, regelinfo, {}, db.overrides_je_person())
+    total = 0.0
+    for u in db.liste_urlaub(person["id"], von, bis):
+        if u["typ"] in anrechenbar:
+            total += float(u["anteil"]) * _tagesfaktor(date.fromisoformat(u["datum"]), ctx)
+    return round(total, 2)
+
+
 def tageszellen(person: dict, von: str, bis: str) -> list[dict]:
     """Tageszellen einer Person über einen Zeitraum (für Kapazität/Overlay)."""
     all_feier = _feiertage_gepuffert(von, bis)

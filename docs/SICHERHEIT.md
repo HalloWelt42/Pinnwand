@@ -14,9 +14,14 @@ Restrisiken fest. Es ist das Ergebnis mehrerer Audit-Runden.
 
 ## Authentifizierung
 
-- Die Kanban-Kern-API und die Sicherungs-API sind bewusst ohne Token nutzbar.
-  Das entspricht dem lokalen Modell: Sie sind nur über die localhost-Bindung
+- Die Kanban-Kern-API und die Sicherungs-API sind im Standard (lokal) ohne Token
+  nutzbar. Das entspricht dem lokalen Modell: Sie sind nur über die localhost-Bindung
   erreichbar und nicht stärker geschützt als die Datenbankdatei selbst.
+- Optionaler Zugangsschutz: Ist PINNWAND_UI_TOKEN gesetzt, verlangt die gesamte
+  Haupt-API (außer /api/health) und der MCP-Pfad den Header X-Pinnwand-Token
+  (timing-sicher verglichen); die Oberfläche fragt das Token einmalig ab und merkt
+  es im Browser. Empfohlen, sobald die Instanz im LAN oder von mehreren Personen
+  genutzt wird. Die Agenten-API behält daneben ihre eigene Bearer-Prüfung.
 - Die Agenten-API (/api/agent) ist authentifiziert: Bearer-Token je Werkzeug mit
   den Scopes read, write und admin. Token werden nur als SHA-256-Hash gespeichert
   (hohe Entropie, pw_ plus 32 Byte Zufall); der Klartext wird genau einmal bei

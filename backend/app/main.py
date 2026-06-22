@@ -6,10 +6,12 @@ bereitstellen. Die eigentliche Funktionalität liefern die Module.
 """
 from __future__ import annotations
 
+import hmac
 from contextlib import AsyncExitStack, asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import VERSION, cors_origins, dienste_status, einstellungen
 from app.modul_registry import (
@@ -37,6 +39,29 @@ async def lebenszyklus(app: FastAPI):
 
 app = FastAPI(title="Pinnwand", version=VERSION, lifespan=lebenszyklus)
 
+
+@app.middleware("http")
+async def ui_token_schutz(request: Request, call_next):
+    """Optionaler Schutz der Haupt-API und von /mcp per UI-Token (PINNWAND_UI_TOKEN).
+
+    Ohne gesetztes Token bleibt alles offen (lokaler Standard, unveraendert). Mit
+    Token muessen geschuetzte Pfade den Header X-Pinnwand-Token mitschicken. Die
+    Agenten-API (/api/agent/*) hat ihre eigene Bearer-Pruefung und ist ausgenommen;
+    /api/health bleibt frei fuer Erreichbarkeits-Checks."""
+    token = einstellungen.ui_token
+    if token and request.method != "OPTIONS":
+        pfad = request.url.path
+        geschuetzt = (
+            (pfad.startswith("/api/") and not pfad.startswith("/api/agent/") and pfad != "/api/health")
+            or pfad.startswith("/mcp")
+        )
+        if geschuetzt and not hmac.compare_digest(request.headers.get("x-pinnwand-token", ""), token):
+            return JSONResponse({"detail": "UI-Token erforderlich"}, status_code=401)
+    return await call_next(request)
+
+
+# CORS zuletzt registrieren = aeusserste Schicht, damit auch die 401-Antwort des
+# Token-Schutzes die noetigen CORS-Header traegt.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins(),

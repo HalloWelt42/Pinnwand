@@ -1,14 +1,20 @@
 // HTTP-Client zum Pinnwand-Backend.
 
 import type { Board, BoardDetail, ChecklistPunkt, Karte, Prioritaet, Projektmappe, Spalte, Zeiteintrag } from './types'
+import { uiAuth, uiToken } from './uiAuth.svelte'
 
 const BASIS = import.meta.env.VITE_API ?? 'http://localhost:8420'
 
 async function hole<T>(pfad: string, init?: RequestInit): Promise<T> {
+  const t = uiToken()
   const antwort = await fetch(`${BASIS}${pfad}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(t ? { 'X-Pinnwand-Token': t } : {}) },
     ...init,
   })
+  if (antwort.status === 401) {
+    uiAuth.noetig = true
+    throw new Error('Anmeldung erforderlich')
+  }
   if (!antwort.ok) throw new Error(`Anfrage fehlgeschlagen: ${antwort.status} ${antwort.statusText}`)
   if (antwort.status === 204) return undefined as T
   return (await antwort.json()) as T

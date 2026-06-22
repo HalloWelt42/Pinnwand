@@ -18,6 +18,7 @@
   import VorleseLeiste from './lib/VorleseLeiste.svelte'
   import BestaetigungsOverlay from './lib/module/termine/BestaetigungsOverlay.svelte'
   import SerienErinnerung from './lib/SerienErinnerung.svelte'
+  import LoginTor from './lib/LoginTor.svelte'
 
   interface Ansicht {
     id: string
@@ -430,6 +431,7 @@
 <VorleseLeiste />
 <BestaetigungsOverlay />
 <SerienErinnerung />
+<LoginTor />
 {#if hilfeOffen}<Hilfe onSchliessen={() => (hilfeOffen = false)} />{/if}
 {#if onboardingOffen}<Onboarding onFertig={onboardingFertig} onGeheZu={geheZuAnsicht} />{/if}
 {#if mappeDokOffen && aktiveMappe}

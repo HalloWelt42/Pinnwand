@@ -26,30 +26,15 @@ def _zielspalte(serie: dict) -> str | None:
 
 
 def _feiertage(von: date, bis: date) -> set[str]:
-    """Feiertags-Datumswerte im Bereich (zum Ueberspringen in Serien)."""
-    with verbindung() as conn:
-        try:
-            rows = conn.execute(
-                "SELECT DISTINCT datum FROM feiertag WHERE datum >= ? AND datum <= ?",
-                (von.isoformat(), bis.isoformat()),
-            ).fetchall()
-        except Exception:
-            return set()
-    return {r["datum"] for r in rows}
+    """Feiertags-Datumswerte im Bereich. Logik zentral in planung (feiertage_set)."""
+    from module.planung import persistence as pdb
+    return pdb.feiertage_set(von.isoformat(), bis.isoformat())
 
 
 def _urlaubstage(kuerzel: str | None, von: date, bis: date) -> set[str]:
-    """Urlaubs-Datumswerte der zustaendigen Person im Bereich (zum Ueberspringen). Defensiv."""
-    if not kuerzel:
-        return set()
-    try:
-        from module.planung import persistence as pdb
-        pid = next((p["id"] for p in pdb.liste_personen() if p.get("kuerzel") == kuerzel), None)
-        if not pid:
-            return set()
-        return {u["datum"] for u in pdb.liste_urlaub(pid, von.isoformat(), bis.isoformat())}
-    except Exception:
-        return set()
+    """Urlaubs-Datumswerte der zustaendigen Person. Logik zentral in planung (urlaubstage_set)."""
+    from module.planung import persistence as pdb
+    return pdb.urlaubstage_set(kuerzel, von.isoformat(), bis.isoformat())
 
 
 def materialisiere(serie: dict, heute: date | None = None) -> int:

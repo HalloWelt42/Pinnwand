@@ -2,7 +2,7 @@
   import type { BoardDetail, Zeiteintrag } from '../../types'
   import { ladeBoard, ladeZeiteintraege, erstelleZeiteintrag, aktualisiereZeiteintrag, loescheZeiteintrag, ladeTerminInstanzen, ladePersonen, type TerminInstanz, type Person } from '../../api'
   import { ymd, addTage, montagDer, isoWoche, formatStd, stdDezimal, wochentag, tagKurz } from '../../zeit'
-  import { formatDauerVoll } from '../../timer.svelte'
+  import { formatDauerVoll, parseZeit } from '../../timer.svelte'
   import { personSicht } from '../../personSicht.svelte'
 
   let { boardId }: { boardId: string } = $props()
@@ -66,19 +66,8 @@
       + termineAm(tag).reduce((s, t) => s + (t.effektiv_min ?? 0) * 60, 0)
   }
 
-  function parseDauer(s: string): number | null {
-    s = s.trim().replace(',', '.')
-    if (!s) return null
-    if (s.includes(':')) {
-      const [h, m, sek] = s.split(':')
-      return (parseInt(h || '0', 10) || 0) * 3600 + (parseInt(m || '0', 10) || 0) * 60 + (parseInt(sek || '0', 10) || 0)
-    }
-    const std = parseFloat(s)
-    return Number.isNaN(std) ? null : Math.round(std * 3600)
-  }
-
   async function dauerAendern(e: Zeiteintrag, wert: string) {
-    const sek = parseDauer(wert)
+    const sek = parseZeit(wert)
     if (sek == null || sek === e.sekunden) return // unveraendert -> keine Rundung zurueckschreiben
     await aktualisiereZeiteintrag(e.id, { sekunden: sek })
     await laden()
@@ -93,7 +82,7 @@
     await laden()
   }
   async function hinzufuegen() {
-    const sek = parseDauer(nDauer)
+    const sek = parseZeit(nDauer)
     if (!nKarte || sek == null) return
     await erstelleZeiteintrag({ karte_id: nKarte, datum: nDatum, sekunden: sek, kommentar: nKommentar || null })
     nDauer = ''

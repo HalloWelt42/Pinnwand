@@ -19,6 +19,7 @@
   import type { Karte } from '../../types'
   import { tts, vorlesen, stoppeVorlesen } from '../../tts.svelte'
   import { transkriptNav, oeffneKarte } from '../../navigation.svelte'
+  import { mmss } from '../../timer.svelte'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
@@ -102,10 +103,6 @@
     return markiertePositionen.has(Math.round(start * 10))
   }
 
-  function mmss(s: number): string {
-    const t = Math.max(0, Math.floor(s))
-    return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`
-  }
   function springe(start: number, i: number | null = null): void {
     aktivSeg = i
     if (!audioEl) return

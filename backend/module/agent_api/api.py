@@ -26,13 +26,6 @@ from .models import (
 router = APIRouter(prefix="/api/agent", tags=["agent"])
 
 
-def _ziel(ergebnis: dict) -> str | None:
-    karte = ergebnis.get("karte")
-    if isinstance(karte, dict):
-        return karte.get("schluessel") or karte.get("id")
-    return ergebnis.get("board_id")
-
-
 def _schreibe(akteur: Akteur, aktion_name: str, idem: str | None, dry_run: bool, fn: Callable[[], dict]) -> dict:
     """Gemeinsamer Pfad für Schreibaktionen: Idempotenz, Trockenlauf, Audit."""
     if not dry_run:
@@ -45,10 +38,10 @@ def _schreibe(akteur: Akteur, aktion_name: str, idem: str | None, dry_run: bool,
         db.protokolliere(akteur.name, aktion_name, None, "fehler", {"fehler": e.nachricht})
         raise HTTPException(status_code=e.status, detail=e.nachricht)
     if dry_run:
-        db.protokolliere(akteur.name, aktion_name, _ziel(ergebnis), "vorschau", None)
+        db.protokolliere(akteur.name, aktion_name, werkzeuge.ziel_referenz(ergebnis), "vorschau", None)
         return ergebnis
     db.idempotenz_merke(akteur.name, idem, ergebnis)
-    db.protokolliere(akteur.name, aktion_name, _ziel(ergebnis), "ok", None)
+    db.protokolliere(akteur.name, aktion_name, werkzeuge.ziel_referenz(ergebnis), "ok", None)
     return ergebnis
 
 

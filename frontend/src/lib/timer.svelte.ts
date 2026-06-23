@@ -70,6 +70,29 @@ export function formatDauerVoll(sek: number): string {
   return `${h}:${zwei(m)}:${zwei(s)}`
 }
 
+// Gegenstueck zu formatDauer/formatDauerVoll: liest "H:MM", "H:MM:SS" oder eine
+// Dezimalstunde ("1,5") und liefert Sekunden. null bei leerer/ungueltiger Eingabe.
+// Eine zentrale Stelle, damit Karten-Detail und Auswertung identisch parsen.
+export function parseZeit(s: string): number | null {
+  s = s.trim().replace(',', '.')
+  if (!s) return null
+  if (s.includes(':')) {
+    const [h, m, sek] = s.split(':')
+    return (parseInt(h || '0', 10) || 0) * 3600 + (parseInt(m || '0', 10) || 0) * 60 + (parseInt(sek || '0', 10) || 0)
+  }
+  const std = parseFloat(s)
+  return Number.isNaN(std) ? null : Math.round(std * 3600)
+}
+
+// Kurze Position als M:SS (ohne Stunden) - fuer Sprechpositionen/Marken im
+// Transkript. null/undefined -> leerer String. Zentral, damit Karten-Detail und
+// Transkript-Ansicht identisch formatieren.
+export function mmss(s?: number | null): string {
+  if (s == null) return ''
+  const t = Math.max(0, Math.floor(s))
+  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`
+}
+
 export function formatPlan(min: number): string {
   const h = Math.floor(min / 60)
   const m = min % 60

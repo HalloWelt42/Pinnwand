@@ -120,7 +120,12 @@ def openai_schemas() -> list[dict]:
     return schemas
 
 
-def _ziel(ergebnis: dict) -> str | None:
+def ziel_referenz(ergebnis: dict) -> str | None:
+    """Audit-Referenz eines Aktionsergebnisses: Kartenschluessel/-Id, sonst Board-Id.
+
+    Zentral, weil sowohl die HTTP-Schicht als auch die Werkzeug-Schicht dasselbe
+    Ziel ins Protokoll schreiben (vorher in beiden Dateien wortgleich vorhanden).
+    """
     karte = ergebnis.get("karte")
     if isinstance(karte, dict):
         return karte.get("schluessel") or karte.get("id")
@@ -154,10 +159,10 @@ def fuehre_aus(name: str, argumente: dict, akteur: Akteur,
         raise AktionsFehler(f"Pflichtfeld fehlt: {fehlend}")
 
     if schreibt and dry_run:
-        db.protokolliere(akteur.name, name, _ziel(ergebnis), "vorschau", None)
+        db.protokolliere(akteur.name, name, ziel_referenz(ergebnis), "vorschau", None)
     elif schreibt:
         db.idempotenz_merke(akteur.name, idempotenz_schluessel, ergebnis)
-        db.protokolliere(akteur.name, name, _ziel(ergebnis), "ok", None)
+        db.protokolliere(akteur.name, name, ziel_referenz(ergebnis), "ok", None)
     else:
         db.protokolliere(akteur.name, name, None, "ok", None)
     return ergebnis

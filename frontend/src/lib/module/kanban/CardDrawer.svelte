@@ -7,7 +7,7 @@
   import { labelFarbe } from '../../labels'
   import { theme } from '../../theme/theme.svelte'
   import { isoLang, isoDatumZeit, ymd } from '../../zeit'
-  import { timer, timerStarten, timerPausieren, timerStoppen, erfassteSekunden, formatDauerVoll, formatPlan } from '../../timer.svelte'
+  import { timer, timerStarten, timerPausieren, timerStoppen, erfassteSekunden, formatDauerVoll, formatPlan, parseZeit, mmss } from '../../timer.svelte'
   import Markdown from '../../Markdown.svelte'
   import DokumentVerwaltung from '../../DokumentVerwaltung.svelte'
   import { tts, vorlesen, stoppeVorlesen } from '../../tts.svelte'
@@ -104,11 +104,6 @@
   let kiVorschau = $state<Record<string, string>>({})
   let kiFehler = $state<Record<string, string>>({})
 
-  function mmssZeit(s?: number | null): string {
-    if (s == null) return ''
-    const t = Math.max(0, Math.floor(s))
-    return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`
-  }
   async function ladeMarkenFuer(): Promise<void> {
     try { marken = (await ladeMarken(karte.id)).marken } catch { marken = [] }
   }
@@ -246,17 +241,6 @@
   }
   function datum(iso?: string | null): string {
     return iso ? isoLang(iso) : '-'
-  }
-  // Erfasste Zeit direkt setzen: "2:30", "1:30:00", "1,5" (Stunden) oder "90" (Stunden? -> nein, Dezimalstunden).
-  function parseZeit(s: string): number | null {
-    s = s.trim().replace(',', '.')
-    if (!s) return null
-    if (s.includes(':')) {
-      const [h, m, sek] = s.split(':')
-      return (parseInt(h || '0', 10) || 0) * 3600 + (parseInt(m || '0', 10) || 0) * 60 + (parseInt(sek || '0', 10) || 0)
-    }
-    const std = parseFloat(s)
-    return Number.isNaN(std) ? null : Math.round(std * 3600)
   }
   // -- Ticketzeit nach Tagen: alle Zeiteintraege dieser Karte (alle Tage) --
   // Ticketzeit = Summe je Karte; jeder Eintrag ist einem Tag (= Arbeitszeit) zugeordnet.
@@ -504,7 +488,7 @@
         <div class="mkopf">
           <i class="fa-solid fa-headphones" aria-hidden="true"></i>
           <span class="mname">{m.titel || m.transkript_name || 'Transkript'}</span>
-          {#if m.position_sek != null}<span class="mzeit">{mmssZeit(m.position_sek)}</span>{/if}
+          {#if m.position_sek != null}<span class="mzeit">{mmss(m.position_sek)}</span>{/if}
           {#if m.sprecher}<span class="mspk">{m.sprecher}</span>{/if}
           <button class="mini geist" onclick={() => markeOeffnen(m)}><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> Öffnen</button>
           <button class="ic" aria-label="Verweis entfernen" onclick={() => markeLoeschen(m)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>

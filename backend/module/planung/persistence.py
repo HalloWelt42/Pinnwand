@@ -487,3 +487,30 @@ def loesche_tagesregel(rid: str) -> bool:
     with verbindung() as conn:
         cur = conn.execute("DELETE FROM tagesregel WHERE id = ?", (rid,))
     return cur.rowcount > 0
+
+
+# -- Querschnitt: Feiertags-/Urlaubs-Datumswerte (zentral, genutzt von serien+termine) --
+
+def feiertage_set(von: str, bis: str) -> set[str]:
+    """Feiertags-Datumswerte (ISO) im Bereich - zum Ueberspringen in Serien/Terminen."""
+    with verbindung() as conn:
+        try:
+            rows = conn.execute(
+                "SELECT DISTINCT datum FROM feiertag WHERE datum >= ? AND datum <= ?", (von, bis)
+            ).fetchall()
+        except Exception:
+            return set()
+    return {r["datum"] for r in rows}
+
+
+def urlaubstage_set(kuerzel: str | None, von: str, bis: str) -> set[str]:
+    """Urlaubs-Datumswerte (ISO) der Person mit diesem Kuerzel im Bereich. Defensiv."""
+    if not kuerzel:
+        return set()
+    try:
+        pid = next((p["id"] for p in liste_personen() if p.get("kuerzel") == kuerzel), None)
+        if not pid:
+            return set()
+        return {u["datum"] for u in liste_urlaub(pid, von, bis)}
+    except Exception:
+        return set()

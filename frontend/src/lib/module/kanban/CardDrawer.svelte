@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { Karte, Prioritaet, Spalte } from '../../types'
+  import type { Karte, Prioritaet, Spalte, Zeiteintrag } from '../../types'
   import type { KarteAenderung, TranskriptTreffer, Person, TranskriptMarke } from '../../api'
-  import { transkripteSuche, ladePersonen, ladeMarken, erstelleMarke, aktualisiereMarke, loescheMarke, zusammenfassungVorschlag, erstelleZeiteintrag } from '../../api'
+  import { transkripteSuche, ladePersonen, ladeMarken, erstelleMarke, aktualisiereMarke, loescheMarke, zusammenfassungVorschlag, erstelleZeiteintrag, ladeKartenZeiten, aktualisiereZeiteintrag, loescheZeiteintrag } from '../../api'
   import { merkeKuerzel } from '../../zuletztKuerzel.svelte'
   import { oeffneTranskript } from '../../navigation.svelte'
   import { labelFarbe } from '../../labels'
@@ -18,7 +18,6 @@
     onSchliessen,
     onAendern,
     onKommentar,
-    onErfasst,
     onLoeschen,
   }: {
     karte: Karte
@@ -26,7 +25,6 @@
     onSchliessen: () => void
     onAendern: (daten: KarteAenderung) => void
     onKommentar: (text: string) => void
-    onErfasst: (sekunden: number) => void
     onLoeschen: () => void
   } = $props()
 
@@ -195,6 +193,7 @@
       mTreffer = []
       kiVorschau = {}
       ladeMarkenFuer()
+      ladeKartenZeitenFuer()
     }
   })
 
@@ -259,9 +258,35 @@
     const std = parseFloat(s)
     return Number.isNaN(std) ? null : Math.round(std * 3600)
   }
-  function erfasstAendern(wert: string): void {
+  // -- Ticketzeit nach Tagen: alle Zeiteintraege dieser Karte (alle Tage) --
+  // Ticketzeit = Summe je Karte; jeder Eintrag ist einem Tag (= Arbeitszeit) zugeordnet.
+  // Korrekturen laufen ueber datierte Eintraege, damit die Arbeitszeit dem richtigen
+  // Tag gutgeschrieben wird (keine undatierte Gesamt-Eingabe mehr).
+  let kartenZeiten = $state<Zeiteintrag[]>([])
+  async function ladeKartenZeitenFuer(): Promise<void> {
+    try {
+      kartenZeiten = (await ladeKartenZeiten(karte.id)).sort((a, b) => b.datum.localeCompare(a.datum))
+    } catch {
+      kartenZeiten = []
+    }
+  }
+  async function zeileDatum(e: Zeiteintrag, datum: string): Promise<void> {
+    if (!datum || datum === e.datum) return
+    await aktualisiereZeiteintrag(e.id, { datum })
+    timer.stand++
+    await ladeKartenZeitenFuer()
+  }
+  async function zeileDauer(e: Zeiteintrag, wert: string): Promise<void> {
     const sek = parseZeit(wert)
-    if (sek != null) onErfasst(Math.max(0, sek))
+    if (sek == null || sek === e.sekunden) return
+    await aktualisiereZeiteintrag(e.id, { sekunden: Math.max(0, sek) })
+    timer.stand++
+    await ladeKartenZeitenFuer()
+  }
+  async function zeileLoeschen(e: Zeiteintrag): Promise<void> {
+    await loescheZeiteintrag(e.id)
+    timer.stand++
+    await ladeKartenZeitenFuer()
   }
 
   // Zeit fuer einen beliebigen Tag nachtragen (zusaetzlich zu Start/Stopp).
@@ -272,7 +297,8 @@
     if (sek == null || sek <= 0) return
     await erstelleZeiteintrag({ karte_id: karte.id, datum: nbDatum, sekunden: sek })
     nbDauer = ''
-    timer.stand++ // Board laedt neu -> erfasste Zeit der Karte aktualisiert sich
+    timer.stand++ // Board laedt neu -> erfasste Zeit (Ticketzeit) der Karte aktualisiert sich
+    await ladeKartenZeitenFuer()
   }
 
   const imStatus = $derived(tage(karte.bewegt_am) ?? 0)
@@ -394,19 +420,14 @@
       {:else}
         <button class="tbtn play" onclick={() => timerStarten(karte.id)}><i class="fa-solid fa-play" aria-hidden="true"></i> Start</button>
       {/if}
-      {#if laeuft}
-        <span class="erfasst" title="Läuft - zum Bearbeiten pausieren">{formatDauerVoll(sek)}</span>
-      {:else}
-        <input class="erfasst erfasst-edit" value={formatDauerVoll(sek)} aria-label="Erfasste Zeit bearbeiten"
-          title="Erfasste Zeit direkt anpassen (z.B. 1:30:00, 2:30 oder 1,5)"
-          onchange={(e) => erfasstAendern(e.currentTarget.value)} />
-      {/if}
+      <span class="erfasst" title="Ticketzeit gesamt (Summe aller Tage)">{formatDauerVoll(sek)}</span>
       <label class="plan">Schätzung
         <input type="number" min="0" step="0.25" value={planMin ? planMin / 60 : ''}
           onchange={(e) => { const v = parseFloat(e.currentTarget.value); onAendern({ schaetzung_min: Number.isFinite(v) && v > 0 ? Math.round(v * 60) : null }) }} />
         Std
       </label>
     </div>
+    <p class="zcap">Ticketzeit gesamt (Summe aller Tage). Die Tage darunter bilden die Arbeitszeit des jeweiligen Tages.</p>
     {#if prozent != null}
       <div class="fortschritt" class:ueber={prozent > 100}><span style="width:{Math.min(prozent, 100)}%"></span></div>
       <div class="pinfo" class:ueber={prozent > 100}>{Math.round(prozent)}% von {formatPlan(planMin ?? 0)}{#if prozent > 100} - überschritten{/if}</div>
@@ -418,6 +439,18 @@
       <button class="mini" onclick={bucheTag}>Tag buchen</button>
     </div>
     <p class="taginfo">Zeit für einen beliebigen Tag nachtragen (zusätzlich zu Start/Stopp).</p>
+    {#if kartenZeiten.length}
+      <div class="tageliste">
+        {#each kartenZeiten as e (e.id)}
+          <div class="tagrow">
+            <input type="date" value={e.datum} onchange={(ev) => zeileDatum(e, ev.currentTarget.value)} aria-label="Tag des Eintrags" />
+            <input class="trdauer" value={formatDauerVoll(e.sekunden)} onchange={(ev) => zeileDauer(e, ev.currentTarget.value)} aria-label="Dauer" title="Dauer (z.B. 1:30:00 oder 1,5)" />
+            {#if !e.manuell}<span class="trauto" title="Aus Start/Stopp"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i></span>{/if}
+            <button class="ic" aria-label="Eintrag löschen" onclick={() => zeileLoeschen(e)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+          </div>
+        {/each}
+      </div>
+    {/if}
 
     <p class="sec">Labels</p>
     <div class="labels">
@@ -680,20 +713,43 @@
     font-variant-numeric: tabular-nums;
     color: var(--text-1);
   }
-  .erfasst-edit {
-    width: 112px;
-    border: 1px solid transparent;
-    background: transparent;
-    border-radius: var(--r-s);
-    padding: 3px 7px;
+  .zcap {
+    font-size: 10.5px;
+    color: var(--text-3);
+    margin: 6px 0 0;
   }
-  .erfasst-edit:hover {
-    border-color: var(--border-2);
+  .tageliste {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 8px;
   }
-  .erfasst-edit:focus {
-    border-color: var(--hl-primary);
+  .tagrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tagrow input[type='date'] {
+    border: 1px solid var(--border);
     background: var(--surface-2);
-    outline: none;
+    color: var(--text-1);
+    border-radius: var(--r-s);
+    padding: 5px 8px;
+    font-size: 12.5px;
+  }
+  .trdauer {
+    width: 96px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-1);
+    border-radius: var(--r-s);
+    padding: 5px 8px;
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .trauto {
+    color: var(--text-3);
+    font-size: 11px;
   }
   .plan {
     margin-left: auto;

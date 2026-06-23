@@ -104,6 +104,8 @@ Umsetzung: Neue Tabellen abwesenheit_typ (Farbe, reduziert_soll, anrechnen, anwe
 15. Transkript-Verknüpfung mit Tickets: Marken verbinden eine Karte mit einer Sprechposition samt editierbarer Zusammenfassung (KI-Vorschlag als Vorschau); Öffnen springt im Transkript an die Position; Anheften direkt am Segment; Gegenrichtung über verknüpfte Tickets.
 16. UI-Lückenschluss zu fertigen Backend-Fähigkeiten: Spalte als Erledigt-Spalte markieren, Karten-Cover-Farbe, Zeitbuchung auf beliebige Tage (im Karten-Detail und im Stundenzettel, dessen Woche dem gebuchten Tag folgt).
 
+17. Zeitmodell sauber getrennt (siehe ZEITMODELL.md): Ticketzeit (Summe je Karte, read-only) und Arbeitszeit (Summe je Tag) speisen sich aus denselben datierten Eintraegen. Die undatierte Gesamt-Eingabe (die still auf heute buchte) entfaellt; im Karten-Detail werden die Zeiten eines Tickets nach Tagen aufgeschluesselt und je Tag korrigierbar.
+
 Noch offen (geplant, weder Backend noch UI): WIP-Durchsetzung beim Verschieben (Blockade bzw. Warnung bei Überschreitung des Limits).
 
 Querschnitt: strenge Versionierung (Patch je Änderung, Feature je Ausbaustufe), saubere Commits, README hält den Ist-Zustand.

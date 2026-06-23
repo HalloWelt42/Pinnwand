@@ -450,48 +450,10 @@ def _recompute_erfasst(conn: sqlite3.Connection, karte_id: str) -> None:
     conn.execute("UPDATE karte SET erfasst_sek = ? WHERE id = ?", (int(r["s"]), karte_id))
 
 
-_KORREKTUR = "Manuelle Korrektur"
-
-
-def setze_erfasst(karte_id: str, ziel_sek: int) -> Karte | None:
-    """Setzt die erfasste Gesamtzeit exakt - ueber genau eine Korrektur-Position.
-
-    Timer- und Nachtrags-Eintraege bleiben unangetastet; die Differenz zum Ziel
-    landet in einem einzigen manuellen Eintrag (idempotent bei erneutem Setzen,
-    wird bei Differenz 0 wieder entfernt).
-    """
-    ziel = max(0, int(ziel_sek))
-    with _verb() as conn:
-        row = conn.execute("SELECT board_id FROM karte WHERE id = ?", (karte_id,)).fetchone()
-        if row is None:
-            return None
-        rest = conn.execute(
-            "SELECT COALESCE(SUM(sekunden), 0) AS s FROM zeiteintrag"
-            " WHERE karte_id = ? AND NOT (manuell = 1 AND kommentar = ?)",
-            (karte_id, _KORREKTUR),
-        ).fetchone()["s"]
-        korr = ziel - int(rest)
-        vorhanden = conn.execute(
-            "SELECT id FROM zeiteintrag WHERE karte_id = ? AND manuell = 1 AND kommentar = ? LIMIT 1",
-            (karte_id, _KORREKTUR),
-        ).fetchone()
-        if korr == 0:
-            if vorhanden:
-                conn.execute("DELETE FROM zeiteintrag WHERE id = ?", (vorhanden["id"],))
-        elif vorhanden:
-            conn.execute(
-                "UPDATE zeiteintrag SET sekunden = ?, datum = ? WHERE id = ?",
-                (korr, _jetzt_genau()[:10], vorhanden["id"]),
-            )
-        else:
-            conn.execute(
-                "INSERT INTO zeiteintrag (id, karte_id, board_id, mappe_id, datum, sekunden, kommentar, manuell)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
-                (f"z_{uuid4().hex[:8]}", karte_id, row["board_id"], _mappe_fuer_board(conn, row["board_id"]),
-                 _jetzt_genau()[:10], korr, _KORREKTUR),
-            )
-        _recompute_erfasst(conn, karte_id)
-    return hole_karte(karte_id)
+# Hinweis: Es gibt bewusst keine undatierte Gesamt-Eingabe der erfassten Zeit mehr.
+# Ticketzeit (erfasst_sek) = Summe der datierten Zeiteintraege je Karte; jede Korrektur
+# laeuft ueber einen datierten Zeiteintrag, damit die Arbeitszeit dem richtigen Tag
+# zugeordnet wird. Siehe docs/ZEITMODELL.md.
 
 
 def _tagessegmente(start_iso: str, ende_iso: str) -> list[tuple[str, str, str, int]]:
@@ -583,11 +545,25 @@ def _zeiteintrag_aus_row(row: sqlite3.Row) -> Zeiteintrag:
     )
 
 
-def zeiteintraege_range(von: str, bis: str) -> list[Zeiteintrag]:
+def zeiteintraege_range(von: str | None = None, bis: str | None = None, karte_id: str | None = None) -> list[Zeiteintrag]:
+    """Zeiteintraege gefiltert. Mit karte_id (ohne von/bis) liefert es ALLE Eintraege
+    einer Karte ueber alle Tage - Grundlage der Tages-Aufschluesselung im Ticket."""
+    bed: list[str] = []
+    params: list[str] = []
+    if von:
+        bed.append("z.datum >= ?")
+        params.append(von)
+    if bis:
+        bed.append("z.datum <= ?")
+        params.append(bis)
+    if karte_id:
+        bed.append("z.karte_id = ?")
+        params.append(karte_id)
+    where = ("WHERE " + " AND ".join(bed) + " ") if bed else ""
     with _verb() as conn:
         rows = conn.execute(
-            _ZE_SELECT + "WHERE z.datum >= ? AND z.datum <= ? ORDER BY z.datum, z.start, z.id",
-            (von, bis),
+            _ZE_SELECT + where + "ORDER BY z.datum, z.start, z.id",
+            tuple(params),
         ).fetchall()
     return [_zeiteintrag_aus_row(r) for r in rows]
 

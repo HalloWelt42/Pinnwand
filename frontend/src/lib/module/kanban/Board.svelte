@@ -8,7 +8,6 @@
     erstelleKarte,
     aktualisiereKarte,
     anhaengenKommentar,
-    setzeErfasst,
     loescheKarte,
     erstelleSpalte,
     aktualisiereSpalte,
@@ -314,10 +313,6 @@
     if (!ausgewaehlt) return
     ersetzeKarte(await anhaengenKommentar(ausgewaehlt.id, ausgewaehlt.zustaendig ?? 'Ich', text))
   }
-  async function karteErfasst(sekunden: number) {
-    if (!ausgewaehlt) return
-    ersetzeKarte(await setzeErfasst(ausgewaehlt.id, sekunden))
-  }
   async function loescheKarteMitUndo(k: Karte) {
     const snap = $state.snapshot(k) as Karte
     const spalteId = snap.spalte
@@ -449,7 +444,6 @@
       onSchliessen={() => (ausgewaehlt = null)}
       onAendern={karteAendern}
       onKommentar={karteKommentar}
-      onErfasst={karteErfasst}
       onLoeschen={karteLoeschen}
     />
   {/if}

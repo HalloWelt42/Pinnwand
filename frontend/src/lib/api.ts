@@ -140,9 +140,6 @@ export const aktualisiereKarte = (id: string, daten: KarteAenderung): Promise<Ka
 export const verschiebeKarte = (id: string, spalte: string, reihenfolge: number): Promise<Karte> =>
   hole(`/api/kanban/karten/${id}/move`, { method: 'POST', body: JSON.stringify({ spalte, reihenfolge }) })
 
-export const setzeErfasst = (id: string, sekunden: number): Promise<Karte> =>
-  hole(`/api/kanban/karten/${id}/erfasst`, { method: 'PATCH', body: JSON.stringify({ sekunden }) })
-
 export const anhaengenKommentar = (id: string, autor: string, text: string): Promise<Karte> =>
   hole(`/api/kanban/karten/${id}/kommentare`, { method: 'POST', body: JSON.stringify({ autor, text }) })
 
@@ -163,6 +160,10 @@ export const timerPause = (id: string): Promise<Karte> =>
 
 export const ladeZeiteintraege = (von: string, bis: string): Promise<Zeiteintrag[]> =>
   hole(`/api/kanban/zeiteintraege?von=${von}&bis=${bis}`)
+
+// Alle Zeiteintraege einer Karte ueber alle Tage (Tages-Aufschluesselung im Ticket).
+export const ladeKartenZeiten = (karteId: string): Promise<Zeiteintrag[]> =>
+  hole(`/api/kanban/zeiteintraege?karte_id=${encodeURIComponent(karteId)}`)
 
 export const erstelleZeiteintrag = (eingabe: { karte_id: string; datum: string; sekunden: number; kommentar?: string | null }): Promise<Zeiteintrag> =>
   hole('/api/kanban/zeiteintraege', { method: 'POST', body: JSON.stringify(eingabe) })

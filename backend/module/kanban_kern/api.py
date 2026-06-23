@@ -15,7 +15,6 @@ from .models import (
     Dokument,
     DokumentCreate,
     DokumentUpdate,
-    ErfasstSetzen,
     Karte,
     KarteCreate,
     KarteMove,
@@ -213,14 +212,6 @@ def karte_aendern(karte_id: str, eingabe: KarteUpdate) -> Karte:
     return karte
 
 
-@router.patch("/karten/{karte_id}/erfasst", response_model=Karte)
-def erfasst_setzen(karte_id: str, eingabe: ErfasstSetzen) -> Karte:
-    karte = db.setze_erfasst(karte_id, eingabe.sekunden)
-    if karte is None:
-        raise HTTPException(status_code=404, detail="Karte nicht gefunden")
-    return karte
-
-
 @router.post("/karten/{karte_id}/move", response_model=Karte)
 def karte_verschieben(karte_id: str, ziel: KarteMove) -> Karte:
     karte = db.verschiebe_karte(karte_id, ziel.spalte, ziel.reihenfolge)
@@ -270,8 +261,8 @@ def timer_pause(karte_id: str) -> Karte:
 # -- Zeiteinträge (Auswertung / Korrektur) -------------------------------
 
 @router.get("/zeiteintraege", response_model=list[Zeiteintrag])
-def zeiteintraege(von: str, bis: str) -> list[Zeiteintrag]:
-    return db.zeiteintraege_range(von, bis)
+def zeiteintraege(von: str | None = None, bis: str | None = None, karte_id: str | None = None) -> list[Zeiteintrag]:
+    return db.zeiteintraege_range(von, bis, karte_id)
 
 
 @router.post("/zeiteintraege", response_model=Zeiteintrag, status_code=201)

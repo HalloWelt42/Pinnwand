@@ -29,7 +29,7 @@
   }
 
   // UI-Zustand im Browser merken (Sidebar, aktive Ansicht, letztes Board).
-  const _ui: { rail?: boolean; ansicht?: string; board?: string | null } = (() => {
+  const _ui: { rail?: boolean; railBreite?: number; ansicht?: string; board?: string | null } = (() => {
     try {
       return JSON.parse(localStorage.getItem('pw_ui') || '{}')
     } catch {
@@ -38,7 +38,7 @@
   })()
   function _merkeUi(): void {
     try {
-      localStorage.setItem('pw_ui', JSON.stringify({ rail: railEin, ansicht: aktiveAnsicht, board: aktivesBoard?.id ?? null }))
+      localStorage.setItem('pw_ui', JSON.stringify({ rail: railEin, railBreite, ansicht: aktiveAnsicht, board: aktivesBoard?.id ?? null }))
     } catch {
       /* localStorage nicht verfügbar */
     }
@@ -116,10 +116,31 @@
   let neueMappe = $state(false)
   let neuerMappeTitel = $state('')
   let railEin = $state(_ui.rail !== false)
+  // Sidebar-Breite frei einstellbar (Ziehgriff) und dauerhaft gemerkt.
+  const RAIL_MIN = 200
+  const RAIL_MAX = 480
+  let railBreite = $state(Math.max(RAIL_MIN, Math.min(RAIL_MAX, _ui.railBreite ?? 264)))
+  let zieht = $state(false)
+  function resizeStart(e: MouseEvent): void {
+    e.preventDefault()
+    zieht = true
+    const move = (ev: MouseEvent) => {
+      railBreite = Math.max(RAIL_MIN, Math.min(RAIL_MAX, Math.round(ev.clientX)))
+    }
+    const stop = () => {
+      zieht = false
+      window.removeEventListener('mousemove', move)
+      window.removeEventListener('mouseup', stop)
+      _merkeUi()
+    }
+    window.addEventListener('mousemove', move)
+    window.addEventListener('mouseup', stop)
+  }
 
   // Änderungen am UI-Zustand merken.
   $effect(() => {
     void railEin
+    void railBreite
     void aktiveAnsicht
     void aktivesBoard
     _merkeUi()
@@ -282,7 +303,7 @@
 <LaufBar />
 <StundenLeiste />
 <div class="app">
-  <aside class="rail" class:zu={!railEin}>
+  <aside class="rail" class:zu={!railEin} style={railEin ? `flex-basis:${railBreite}px` : ''}>
     <div class="marke">
       <img class="logo" src="/favicon.svg" alt="" />
       <span class="name">Pinnwand <span class="ver">v{VERSION}</span></span>
@@ -318,9 +339,9 @@
             </div>
           </div>
         {:else}
-          <div class="zeile board" class:aktiv={aktiveMappe?.id === m.id}>
+          <div class="zeile board mappe" class:aktiv={aktiveMappe?.id === m.id}>
             <button class="bname" onclick={() => waehleMappe(m)} title={m.titel}>
-              <i class="fa-solid fa-folder" aria-hidden="true"></i><span>{m.titel}</span>
+              <i class="fa-solid {aktiveMappe?.id === m.id ? 'fa-folder-open' : 'fa-folder'}" aria-hidden="true"></i><span>{m.titel}</span>
             </button>
             <div class="aktionen">
               <button class="ic" aria-label="Mappe umbenennen" onclick={() => { bearbeiteMappeId = m.id; mappeEntwurf = m.titel }}><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
@@ -329,6 +350,47 @@
               {/if}
             </div>
           </div>
+
+          {#if aktiveMappe?.id === m.id}
+            <!-- Unterbaum: Boards + Dokumente dieser Mappe, eingerueckt fuer klare Hierarchie -->
+            <div class="unterbaum">
+              {#each boards as b (b.id)}
+                {#if bearbeiteBoardId === b.id}
+                  <!-- svelte-ignore a11y_autofocus -->
+                  <input class="feld" bind:value={boardEntwurf} aria-label="Board umbenennen" autofocus
+                    onkeydown={(e) => { if (e.key === 'Enter') boardSpeichern(b.id); if (e.key === 'Escape') (bearbeiteBoardId = null) }}
+                    onblur={() => boardSpeichern(b.id)} />
+                {:else if loescheBoardId === b.id}
+                  <div class="confirm">
+                    <span>Board und alle Karten löschen?</span>
+                    <div class="reihe">
+                      <button class="mini gefahr" onclick={() => boardLoeschenBestaetigt(b.id)}>Löschen</button>
+                      <button class="mini geist" onclick={() => (loescheBoardId = null)}>Abbrechen</button>
+                    </div>
+                  </div>
+                {:else}
+                  <div class="zeile board" class:aktiv={aktivesBoard?.id === b.id}>
+                    <button class="bname" onclick={() => (aktivesBoard = b)} title={b.titel}>
+                      <i class="fa-solid fa-table-columns" aria-hidden="true"></i><span>{b.titel}</span>
+                    </button>
+                    <div class="aktionen">
+                      <button class="ic" aria-label="Umbenennen" onclick={() => { bearbeiteBoardId = b.id; boardEntwurf = b.titel }}><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+                      <button class="ic" aria-label="Löschen" onclick={() => (loescheBoardId = b.id)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+                    </div>
+                  </div>
+                {/if}
+              {/each}
+
+              {#if neuesBoard}
+                <!-- svelte-ignore a11y_autofocus -->
+                <input class="feld" placeholder="Board-Name" bind:value={neuerBoardTitel} aria-label="Neues Board" autofocus
+                  onkeydown={(e) => { if (e.key === 'Enter') neuesBoardErstellen(); if (e.key === 'Escape') { neuesBoard = false; neuerBoardTitel = '' } }} />
+              {:else}
+                <button class="add" onclick={() => (neuesBoard = true)}><i class="fa-solid fa-plus" aria-hidden="true"></i> Board</button>
+              {/if}
+              <button class="add dokbtn" onclick={() => (mappeDokOffen = true)} title="Dokumente dieser Mappe"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> Dokumente</button>
+            </div>
+          {/if}
         {/if}
       {/each}
 
@@ -340,47 +402,6 @@
         <button class="add" onclick={() => (neueMappe = true)}><i class="fa-solid fa-plus" aria-hidden="true"></i> Mappe</button>
       {/if}
     </nav>
-
-    {#if aktiveMappe}
-      <p class="rubrik">Boards</p>
-      <nav>
-        {#each boards as b (b.id)}
-          {#if bearbeiteBoardId === b.id}
-            <!-- svelte-ignore a11y_autofocus -->
-            <input class="feld" bind:value={boardEntwurf} aria-label="Board umbenennen" autofocus
-              onkeydown={(e) => { if (e.key === 'Enter') boardSpeichern(b.id); if (e.key === 'Escape') (bearbeiteBoardId = null) }}
-              onblur={() => boardSpeichern(b.id)} />
-          {:else if loescheBoardId === b.id}
-            <div class="confirm">
-              <span>Board und alle Karten löschen?</span>
-              <div class="reihe">
-                <button class="mini gefahr" onclick={() => boardLoeschenBestaetigt(b.id)}>Löschen</button>
-                <button class="mini geist" onclick={() => (loescheBoardId = null)}>Abbrechen</button>
-              </div>
-            </div>
-          {:else}
-            <div class="zeile board" class:aktiv={aktivesBoard?.id === b.id}>
-              <button class="bname" onclick={() => (aktivesBoard = b)}>
-                <i class="fa-solid fa-table-columns" aria-hidden="true"></i><span>{b.titel}</span>
-              </button>
-              <div class="aktionen">
-                <button class="ic" aria-label="Umbenennen" onclick={() => { bearbeiteBoardId = b.id; boardEntwurf = b.titel }}><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
-                <button class="ic" aria-label="Löschen" onclick={() => (loescheBoardId = b.id)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
-              </div>
-            </div>
-          {/if}
-        {/each}
-
-        {#if neuesBoard}
-          <!-- svelte-ignore a11y_autofocus -->
-          <input class="feld" placeholder="Board-Name" bind:value={neuerBoardTitel} aria-label="Neues Board" autofocus
-            onkeydown={(e) => { if (e.key === 'Enter') neuesBoardErstellen(); if (e.key === 'Escape') { neuesBoard = false; neuerBoardTitel = '' } }} />
-        {:else}
-          <button class="add" onclick={() => (neuesBoard = true)}><i class="fa-solid fa-plus" aria-hidden="true"></i> Board</button>
-        {/if}
-      </nav>
-      <button class="add dokbtn" onclick={() => (mappeDokOffen = true)} title="Dokumente dieser Mappe"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> Dokumente</button>
-    {/if}
     {/if}
 
     <div class="fussbereich">
@@ -396,6 +417,10 @@
       </div>
     </div>
   </aside>
+  {#if railEin}
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <div class="resizer" class:zieht role="separator" aria-label="Seitenleiste breiter oder schmaler ziehen" onmousedown={resizeStart}></div>
+  {/if}
 
   <div class="haupt">
     <header class="topbar">
@@ -463,14 +488,32 @@
     background: var(--surface-page);
   }
   .rail {
-    flex: 0 0 232px;
+    flex: 0 0 264px;
     background: var(--surface-col);
-    border-right: 1px solid var(--border);
     padding: 14px 11px;
     display: flex;
     flex-direction: column;
     gap: 2px;
     overflow-y: auto;
+  }
+  .resizer {
+    flex: 0 0 5px;
+    border-right: 1px solid var(--border);
+    cursor: col-resize;
+    background: transparent;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .resizer:hover,
+  .resizer.zieht {
+    background: var(--hl-primary-weich);
+    border-right-color: var(--hl-primary);
+  }
+  /* Boards + Dokumente eingerueckt unter der aktiven Mappe (klare Hierarchie). */
+  .unterbaum {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 2px 0 8px 16px;
   }
   .marke {
     font-family: var(--font-display);
@@ -511,6 +554,7 @@
   }
   .rail.zu {
     flex-basis: 58px;
+    border-right: 1px solid var(--border);
   }
   .rail.zu .rubrik,
   .rail.zu .marke .name,
@@ -518,6 +562,7 @@
   .rail.zu .menu span,
   .rail.zu .bname span,
   .rail.zu .aktionen,
+  .rail.zu .unterbaum,
   .rail.zu .thema span {
     display: none;
   }

@@ -49,9 +49,10 @@ class Karte(BaseModel):
     laeuft_seit: str | None = None
     transkript_id: str | None = None
     transkript_name: str | None = None
-    # Datum der letzten Zeitbuchung (YYYY-MM-DD); Abschlussdatum fuer den Fertig-Zeitfilter,
-    # robust ueber Mitternacht. None wenn keine Zeit gebucht wurde.
-    letzte_buchung: str | None = None
+    # Abschlussdatum (YYYY-MM-DD) fuer den Fertig-Zeitfilter: bei Serien-/REKO-Karten
+    # das feste geplante Datum (faellig), sonst der Erledigt-Zeitpunkt (bewegt_am).
+    # Die erfassten Zeiten (zeiteintrag) spielen hier bewusst keine Rolle.
+    abschluss_am: str | None = None
 
 
 class Spalte(BaseModel):

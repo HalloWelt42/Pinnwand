@@ -98,5 +98,12 @@ Umsetzung: Neue Tabellen abwesenheit_typ (Farbe, reduziert_soll, anrechnen, anwe
 9. Flow-Ansicht, Was-steht-an, Detailansicht, UI-Persistenz, Routing und Benutzerführung (N, I, J, K, L, O).
 10. Backup und Wiederherstellung (R).
 11. Mehrere Security-Audit-Runden.
+12. Personen-Identität, Personen-Sicht und optionaler Zugangsschutz: Wer-bist-du-Erstwahl, aktive Person filtert Kennzahlen (Stunden-Leiste, Tab-Titel), Eigentum an Zeiteinträgen (eigene editierbar, fremde nur lesbar), opt-in UI-Token.
+13. Personenzuordnung: neue Karten bekommen automatisch ein Kürzel (aktive Identität, sonst zuletzt genutztes); Karten-Zuständig als echte Personen-Auswahl; Serien mit Teilnehmer-Auswahl, je Teilnehmer eine eigene Serie.
+14. Fertig-Zeitfilter im Spaltenkopf erledigter Spalten (Heute, Gestern, Woche, Monat, Jahr, Alle). Datierung: Serien-/REKO-Karten nach ihrem festen geplanten Datum, alle anderen nach dem Erledigt-Zeitpunkt. Erfasste Zeiten sind reine Tages-Summen und zählen hier nicht.
+15. Transkript-Verknüpfung mit Tickets: Marken verbinden eine Karte mit einer Sprechposition samt editierbarer Zusammenfassung (KI-Vorschlag als Vorschau); Öffnen springt im Transkript an die Position; Anheften direkt am Segment; Gegenrichtung über verknüpfte Tickets.
+16. UI-Lückenschluss zu fertigen Backend-Fähigkeiten: Spalte als Erledigt-Spalte markieren, Karten-Cover-Farbe, Zeitbuchung auf beliebige Tage (im Karten-Detail und im Stundenzettel, dessen Woche dem gebuchten Tag folgt).
+
+Noch offen (geplant, weder Backend noch UI): WIP-Durchsetzung beim Verschieben (Blockade bzw. Warnung bei Überschreitung des Limits).
 
 Querschnitt: strenge Versionierung (Patch je Änderung, Feature je Ausbaustufe), saubere Commits, README hält den Ist-Zustand.

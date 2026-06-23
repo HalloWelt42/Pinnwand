@@ -16,7 +16,7 @@ from pathlib import Path
 import httpx
 
 # Zentrale Versionsangabe der Anwendung (Backend + Snapshots beziehen sich hierauf).
-VERSION = "0.49.0"
+VERSION = "0.50.0"
 
 # backend/app/config.py -> Projektwurzel (Pinnwand/)
 _PROJEKT_WURZEL = Path(__file__).resolve().parents[2]

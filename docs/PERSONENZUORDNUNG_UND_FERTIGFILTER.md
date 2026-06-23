@@ -38,12 +38,18 @@ gemeinsamen Karte auf mehrere Personen.
 ## Zeitfilter im Kopf erledigter Spalten
 
 Im Kopf jeder erledigten Spalte steht ein kleines Auswahlfeld für den Zeitraum:
-Heute (Standard), Gestern, Woche, Monat, Jahr, Alle. Gefiltert wird über das
-Abschlussdatum: das Datum der letzten Zeitbuchung der Karte, sonst (ohne erfasste
-Zeit) der Verschiebe-Zeitpunkt. So zählt der Arbeitstag, nicht der Moment des
-Verschiebens - eine nachts um 2 in die Spalte gezogene, aber am Vortag erledigte
-Karte bleibt korrekt dem Vortag zugeordnet. So zeigt die Fertig-Spalte standardmäßig
-nur das heute Erledigte und bleibt übersichtlich.
+Heute (Standard), Gestern, Woche, Monat, Jahr, Alle. Das Abschlussdatum richtet sich
+nach der Art der Karte:
+
+- **Serien-/REKO-Karten** haben ein festes geplantes Datum (der Termintag) und
+  bleiben diesem Tag zugeordnet - egal wann sie als erledigt in die Spalte verschoben
+  werden.
+- **Alle anderen Karten** zählen ab ihrem Erledigt-Zeitpunkt, also dem Tag, an dem sie
+  in die Fertig-Spalte gezogen wurden.
+
+Die erfassten Zeiten sind reine Tages-Summen (aus Start/Stopp-Differenzen und
+manuellen Nachträgen) und spielen für diese Datierung bewusst keine Rolle. So zeigt
+die Fertig-Spalte standardmäßig nur das heute Erledigte und bleibt übersichtlich.
 
 Details:
 

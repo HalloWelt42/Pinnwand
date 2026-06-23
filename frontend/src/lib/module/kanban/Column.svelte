@@ -25,6 +25,7 @@
     onSpalteUmbenennen,
     onSpalteVerschieben,
     onSpalteLoeschen,
+    onSpalteErledigt,
   }: {
     spalte: Spalte
     karten: Karte[]
@@ -46,6 +47,7 @@
     onSpalteUmbenennen: (daten: { titel: string; wip_limit: number | null }) => void
     onSpalteVerschieben: (richtung: -1 | 1) => void
     onSpalteLoeschen: () => void
+    onSpalteErledigt: () => void
   } = $props()
 
   let modus = $state<'normal' | 'edit'>('normal')
@@ -144,6 +146,9 @@
         {#if menuOffen}
           <div class="menu">
             <button onclick={bearbeiten}><i class="fa-solid fa-pen" aria-hidden="true"></i> Umbenennen / WIP</button>
+            {#if !spalte.erledigt}
+              <button onclick={() => { onSpalteErledigt(); menuOffen = false }}><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Als Erledigt-Spalte</button>
+            {/if}
             <button onclick={() => { onToggleEinklappen(); menuOffen = false }}><i class="fa-solid fa-angles-left" aria-hidden="true"></i> Einklappen</button>
             <button disabled={istErste} onclick={() => { onSpalteVerschieben(-1); menuOffen = false }}><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Nach links</button>
             <button disabled={istLetzte} onclick={() => { onSpalteVerschieben(1); menuOffen = false }}><i class="fa-solid fa-arrow-right" aria-hidden="true"></i> Nach rechts</button>

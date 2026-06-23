@@ -14,6 +14,7 @@
     aktualisiereSpalte,
     verschiebeSpalte,
     loescheSpalte,
+    setzeErledigtSpalte,
     setzeSpaltenReihenfolge,
     ladePersonen,
     type KarteAenderung,
@@ -238,8 +239,8 @@
     if (eintrag.spalte.erledigt && !ziehtGerade) {
       const z = fertigFilter[eintrag.spalte.id] ?? 'heute'
       if (z !== 'alle') {
-        // Abschlussdatum = Arbeitstag (letzte Zeitbuchung), sonst Verschiebe-Datum.
-        return eintrag.karten.filter((k) => k.id === SHADOW_PLACEHOLDER_ITEM_ID || imZeitraum(k.letzte_buchung ?? k.bewegt_am, z))
+        // Abschlussdatum: Serien/REKO = festes faellig, sonst Erledigt-Datum (bewegt_am).
+        return eintrag.karten.filter((k) => k.id === SHADOW_PLACEHOLDER_ITEM_ID || imZeitraum(k.abschluss_am ?? k.bewegt_am, z))
       }
     }
     return eintrag.karten
@@ -357,6 +358,10 @@
     await verschiebeSpalte(id, richtung)
     await laden()
   }
+  async function spalteErledigt(id: string) {
+    await setzeErledigtSpalte(id)
+    await laden()
+  }
   async function spalteLoeschen(id: string) {
     const eintrag = ansicht.find((e) => e.spalte.id === id)
     if (!eintrag) return
@@ -415,6 +420,7 @@
               onSpalteUmbenennen={(daten) => spalteUmbenennen(eintrag.spalte.id, daten)}
               onSpalteVerschieben={(richtung) => spalteVerschieben(eintrag.spalte.id, richtung)}
               onSpalteLoeschen={() => spalteLoeschen(eintrag.spalte.id)}
+              onSpalteErledigt={() => spalteErledigt(eintrag.spalte.id)}
             />
           {/if}
         </div>

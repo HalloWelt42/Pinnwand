@@ -98,6 +98,9 @@
     await erstelleZeiteintrag({ karte_id: nKarte, datum: nDatum, sekunden: sek, kommentar: nKommentar || null })
     nDauer = ''
     nKommentar = ''
+    // Woche dem gebuchten Tag folgen lassen, damit der Eintrag sichtbar ist
+    // (auch wenn auf einen Tag ausserhalb der aktuellen Woche gebucht wurde).
+    anker = new Date(nDatum + 'T00:00:00')
     await laden()
   }
 

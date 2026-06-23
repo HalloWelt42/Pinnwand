@@ -200,6 +200,8 @@ export const verschiebeSpalte = (spalteId: string, richtung: -1 | 1): Promise<Sp
 
 export const loescheSpalte = (spalteId: string): Promise<void> =>
   hole(`/api/kanban/spalten/${spalteId}`, { method: 'DELETE' })
+export const setzeErledigtSpalte = (spalteId: string): Promise<Spalte> =>
+  hole(`/api/kanban/spalten/${spalteId}/erledigt`, { method: 'POST' })
 
 // --- Suche ---
 

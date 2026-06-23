@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { Karte, Prioritaet, Spalte } from '../../types'
   import type { KarteAenderung, TranskriptTreffer, Person, TranskriptMarke } from '../../api'
-  import { transkripteSuche, ladePersonen, ladeMarken, erstelleMarke, aktualisiereMarke, loescheMarke, zusammenfassungVorschlag } from '../../api'
+  import { transkripteSuche, ladePersonen, ladeMarken, erstelleMarke, aktualisiereMarke, loescheMarke, zusammenfassungVorschlag, erstelleZeiteintrag } from '../../api'
   import { merkeKuerzel } from '../../zuletztKuerzel.svelte'
   import { oeffneTranskript } from '../../navigation.svelte'
   import { labelFarbe } from '../../labels'
   import { theme } from '../../theme/theme.svelte'
-  import { isoLang, isoDatumZeit } from '../../zeit'
+  import { isoLang, isoDatumZeit, ymd } from '../../zeit'
   import { timer, timerStarten, timerPausieren, timerStoppen, erfassteSekunden, formatDauerVoll, formatPlan } from '../../timer.svelte'
   import Markdown from '../../Markdown.svelte'
   import DokumentVerwaltung from '../../DokumentVerwaltung.svelte'
@@ -264,6 +264,17 @@
     if (sek != null) onErfasst(Math.max(0, sek))
   }
 
+  // Zeit fuer einen beliebigen Tag nachtragen (zusaetzlich zu Start/Stopp).
+  let nbDatum = $state(ymd(new Date()))
+  let nbDauer = $state('')
+  async function bucheTag(): Promise<void> {
+    const sek = parseZeit(nbDauer)
+    if (sek == null || sek <= 0) return
+    await erstelleZeiteintrag({ karte_id: karte.id, datum: nbDatum, sekunden: sek })
+    nbDauer = ''
+    timer.stand++ // Board laedt neu -> erfasste Zeit der Karte aktualisiert sich
+  }
+
   const imStatus = $derived(tage(karte.bewegt_am) ?? 0)
   const durchlauf = $derived(tage(karte.erstellt_am) ?? 0)
   const laeuft = $derived(!!karte.laeuft_seit)
@@ -359,6 +370,13 @@
       </select>
     </div>
 
+    <div class="zeile"><span class="lbl"><i class="fa-solid fa-palette" aria-hidden="true"></i> Cover</span>
+      <span class="coverwahl">
+        <input class="cfarbe" type="color" value={karte.cover ?? '#4f9be8'} onchange={(e) => onAendern({ cover: e.currentTarget.value })} aria-label="Cover-Farbe" />
+        {#if karte.cover}<button class="mini geist" onclick={() => onAendern({ cover: null })}>Entfernen</button>{:else}<span class="cleer">keiner</span>{/if}
+      </span>
+    </div>
+
     <div class="zeiten">
       <span class:warn={imStatus >= 8}><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Im Status: {imStatus} Tage</span>
       <span><i class="fa-solid fa-stopwatch" aria-hidden="true"></i> Durchlaufzeit: {durchlauf} Tage</span>
@@ -393,6 +411,13 @@
       <div class="fortschritt" class:ueber={prozent > 100}><span style="width:{Math.min(prozent, 100)}%"></span></div>
       <div class="pinfo" class:ueber={prozent > 100}>{Math.round(prozent)}% von {formatPlan(planMin ?? 0)}{#if prozent > 100} - überschritten{/if}</div>
     {/if}
+    <div class="tagbuchung">
+      <input type="date" bind:value={nbDatum} aria-label="Datum für Nachtrag" />
+      <input class="tbdauer" placeholder="z.B. 0:30 oder 1,5" bind:value={nbDauer} aria-label="Dauer"
+        onkeydown={(e) => { if (e.key === 'Enter') bucheTag() }} />
+      <button class="mini" onclick={bucheTag}>Tag buchen</button>
+    </div>
+    <p class="taginfo">Zeit für einen beliebigen Tag nachtragen (zusätzlich zu Start/Stopp).</p>
 
     <p class="sec">Labels</p>
     <div class="labels">
@@ -709,6 +734,53 @@
   .pinfo.ueber {
     color: var(--due-rot-fg);
     font-weight: 600;
+  }
+  .tagbuchung {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .tagbuchung input[type='date'] {
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-1);
+    border-radius: var(--r-s);
+    padding: 6px 8px;
+    font-size: 12.5px;
+  }
+  .tbdauer {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-1);
+    border-radius: var(--r-s);
+    padding: 6px 8px;
+    font-size: 12.5px;
+  }
+  .taginfo {
+    font-size: 10.5px;
+    color: var(--text-3);
+    margin: 4px 0 0;
+  }
+  .coverwahl {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .cfarbe {
+    width: 42px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--r-s);
+    background: var(--surface-2);
+  }
+  .cleer {
+    font-size: 12px;
+    color: var(--text-3);
   }
   .sec {
     font-family: var(--font-display);

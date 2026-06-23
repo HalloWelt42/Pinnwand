@@ -241,21 +241,20 @@ def board_detail(board_id: str) -> BoardDetail | None:
             return None
         spalten = _spalten(conn, board_id)
         rows = conn.execute("SELECT * FROM karte WHERE board_id = ? ORDER BY reihenfolge, id", (board_id,)).fetchall()
-        karten = [_karte_aus_row(r) for r in rows]
-        # Abschlussdatum je Karte = Datum der letzten Zeitbuchung. Treibt den
-        # Fertig-Zeitfilter und zaehlt den Arbeitstag, nicht den Verschiebe-Zeitpunkt
-        # (sonst landet ueber Mitternacht erledigte Arbeit faelschlich auf dem Folgetag).
-        bk = {
-            r["karte_id"]: r["m"]
-            for r in conn.execute(
-                "SELECT karte_id, MAX(datum) AS m FROM zeiteintrag"
-                " WHERE karte_id IN (SELECT id FROM karte WHERE board_id = ?)"
-                " GROUP BY karte_id",
-                (board_id,),
-            ).fetchall()
-        }
-        for k in karten:
-            k.letzte_buchung = bk.get(k.id)
+        karten = []
+        for r in rows:
+            k = _karte_aus_row(r)
+            # Abschlussdatum fuer den Fertig-Zeitfilter:
+            # - Serien-/REKO-Karten haben ein FESTES Datum (faellig = geplanter Tag),
+            #   egal wann sie als erledigt verschoben werden.
+            # - Alle anderen Karten zaehlen ab dem Erledigt-Zeitpunkt (bewegt_am).
+            # Die erfassten Zeiten (zeiteintrag) sind reine Tages-Summen und bleiben
+            # hier bewusst aussen vor.
+            if r["serie_id"] and r["faellig"]:
+                k.abschluss_am = r["faellig"]
+            elif r["bewegt_am"]:
+                k.abschluss_am = r["bewegt_am"][:10]
+            karten.append(k)
     return BoardDetail(
         id=b["id"], mappe_id=b["mappe_id"], titel=b["titel"], kuerzel=b["kuerzel"],
         spalten=spalten, karten=karten,

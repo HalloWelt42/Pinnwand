@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { ladeBoard, ladeSerien, erstelleSerie, aktualisiereSerie, loescheSerie, serieVorschau, serieVorbuchen, type Serie } from '../../api'
+  import { ladeBoard, ladeSerien, erstelleSerie, aktualisiereSerie, loescheSerie, serieVorschau, serieVorbuchen, ladePersonen, type Serie, type Person } from '../../api'
   import type { Spalte } from '../../types'
   import { isoKurz } from '../../zeit'
+  import { personSicht } from '../../personSicht.svelte'
+  import { zuletztKuerzel } from '../../zuletztKuerzel.svelte'
 
   let { boardId }: { boardId: string } = $props()
 
@@ -9,6 +11,10 @@
 
   let serien = $state<Serie[]>([])
   let spalten = $state<Spalte[]>([])
+  let personen = $state<Person[]>([])
+  // Ausgewaehlte Teilnehmer (Kuerzel): je Teilnehmer entsteht eine eigene Serie.
+  let teilnehmer = $state<string[]>([])
+  let tnVorbelegt = false
   let vorschau = $state<Record<string, string[]>>({})
   let meldung = $state('')
 
@@ -31,6 +37,15 @@
     const b = await ladeBoard(boardId)
     spalten = b.spalten
     if (!spalteId && spalten[0]) spalteId = spalten[0].id
+    personen = (await ladePersonen().catch(() => [])).filter((p) => !!p.kuerzel)
+    // Beim ersten Laden den Default-Teilnehmer setzen: aktive Identitaet, sonst
+    // zuletzt genutztes Kuerzel, sonst erste Person. Danach entscheidet der Nutzer.
+    if (!tnVorbelegt) {
+      tnVorbelegt = true
+      const ak = personSicht.id ? (personen.find((p) => p.id === personSicht.id)?.kuerzel ?? null) : null
+      const def = ak ?? (zuletztKuerzel.wert || null) ?? (personen[0]?.kuerzel ?? null)
+      if (def) teilnehmer = [def]
+    }
   }
   $effect(() => {
     void boardId
@@ -40,10 +55,13 @@
   function wtUmschalten(i: number): void {
     wochentage = wochentage.includes(i) ? wochentage.filter((x) => x !== i) : [...wochentage, i].sort()
   }
+  function tnUmschalten(kuerzel: string): void {
+    teilnehmer = teilnehmer.includes(kuerzel) ? teilnehmer.filter((x) => x !== kuerzel) : [...teilnehmer, kuerzel]
+  }
 
   async function anlegen(): Promise<void> {
     if (!titel.trim()) return
-    await erstelleSerie({
+    const basis = {
       board_id: boardId,
       spalte_id: spalteId || null,
       titel: titel.trim(),
@@ -57,11 +75,29 @@
       vorlauf_tage: vorlaufTage,
       wochenenden_ueberspringen: wochenendenUeberspringen,
       feiertage_ueberspringen: feiertageUeberspringen,
-    })
+    }
+    // Je angehaktem Teilnehmer eine eigene Serie (jeder trackt seine eigene Zeit).
+    // Nur aktuell bekannte Kuerzel; ohne gueltige Auswahl eine Serie ohne Zustaendigen.
+    const gewaehlt = teilnehmer.filter((k) => k && personen.some((p) => p.kuerzel === k))
+    const ziele: (string | null)[] = gewaehlt.length ? gewaehlt : [null]
+    let erstellt = 0
+    try {
+      for (const kz of ziele) {
+        await erstelleSerie({ ...basis, zustaendig: kz })
+        erstellt++
+      }
+    } catch (e) {
+      console.error(e)
+      meldung = `Nur ${erstellt} von ${ziele.length} Serien angelegt - bitte erneut versuchen.`
+      await laden()
+      return
+    }
     titel = ''
     uhrzeit = ''
     wochentage = []
-    meldung = 'Serie angelegt und vorgebucht.'
+    meldung = erstellt > 1
+      ? `${erstellt} Serien angelegt und vorgebucht (je Teilnehmer eine).`
+      : 'Serie angelegt und vorgebucht.'
     await laden()
   }
 
@@ -129,6 +165,17 @@
       <label class="f mini">Vorlauf (Tage) <input type="number" min="0" bind:value={vorlaufTage} /></label>
       <label class="f chk"><input type="checkbox" bind:checked={wochenendenUeberspringen} /> Wochenenden überspringen</label>
       <label class="f chk"><input type="checkbox" bind:checked={feiertageUeberspringen} /> Feiertage überspringen</label>
+      {#if personen.length}
+        <div class="tn">
+          <span class="tn-lbl">Teilnehmer</span>
+          {#each personen as p (p.id)}
+            <label class="tnb" class:an={teilnehmer.includes(p.kuerzel ?? '')}>
+              <input type="checkbox" checked={teilnehmer.includes(p.kuerzel ?? '')} onchange={() => tnUmschalten(p.kuerzel ?? '')} />
+              {p.kuerzel} - {p.name}
+            </label>
+          {/each}
+        </div>
+      {/if}
       <button class="btn primaer" onclick={anlegen}>Anlegen + vorbuchen</button>
     </div>
     {#if meldung}<p class="meldung">{meldung}</p>{/if}
@@ -141,6 +188,7 @@
       <div class="serie" class:aus={!s.aktiv}>
         <div class="kopf">
           <span class="t">{s.uhrzeit ? s.uhrzeit + ' ' : ''}{s.titel}</span>
+          {#if s.zustaendig}<span class="kz" title="Zustaendig">{s.zustaendig}</span>{/if}
           <span class="rhy">{rhythmus(s)}{#if s.dauer_min} &middot; {s.dauer_min} min{/if}</span>
           <span class="akt">
             <button class="ic" title="Vorschau" onclick={() => zeigeVorschau(s)}><i class="fa-solid fa-calendar-day" aria-hidden="true"></i></button>
@@ -215,6 +263,42 @@
     font-size: 12px;
     border: none;
     background: transparent;
+  }
+  .tn {
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+  .tn-lbl {
+    font-size: 11.5px;
+    color: var(--text-3);
+    margin-right: 2px;
+  }
+  .tnb {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--border-2);
+    background: var(--surface-2);
+    color: var(--text-2);
+    border-radius: var(--r-s);
+    padding: 5px 9px;
+    font-size: 12px;
+  }
+  .tnb.an {
+    background: var(--hl-primary-weich);
+    color: var(--hl-primary-text);
+    border-color: var(--hl-primary);
+  }
+  .kz {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--hl-primary-text);
+    background: var(--hl-primary-weich);
+    padding: 1px 6px;
+    border-radius: var(--r-s);
   }
   .wd {
     display: flex;

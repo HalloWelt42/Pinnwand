@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Karte, Prioritaet, Spalte } from '../../types'
-  import type { KarteAenderung, TranskriptTreffer } from '../../api'
-  import { transkripteSuche } from '../../api'
+  import type { KarteAenderung, TranskriptTreffer, Person } from '../../api'
+  import { transkripteSuche, ladePersonen } from '../../api'
+  import { merkeKuerzel } from '../../zuletztKuerzel.svelte'
   import { oeffneTranskript } from '../../navigation.svelte'
   import { labelFarbe } from '../../labels'
   import { theme } from '../../theme/theme.svelte'
@@ -30,6 +31,27 @@
   } = $props()
 
   const dunkel = $derived(theme.modus === 'dunkel')
+
+  // Personen fuer die Zustaendig-Auswahl (echtes Dropdown statt Freitext, verhindert
+  // Tippfehler/leeres Kuerzel). Einmalig beim Oeffnen laden.
+  let personen = $state<Person[]>([])
+  $effect(() => {
+    ladePersonen().then((p) => (personen = p.filter((x) => !!x.kuerzel))).catch(() => {})
+  })
+  // Aktuelles Kuerzel der Karte mit aufnehmen, falls es (z.B. aus Altdaten) nicht
+  // in der Personenliste steht - sonst wuerde die Auswahl es nicht anzeigen.
+  const kuerzelWahl = $derived.by(() => {
+    const z = karte.zustaendig
+    if (z && !personen.some((p) => p.kuerzel === z)) {
+      return [{ id: '_aktuell', name: z, kuerzel: z } as Person, ...personen]
+    }
+    return personen
+  })
+  function zustaendigSetzen(wert: string): void {
+    const z = wert || null
+    onAendern({ zustaendig: z })
+    merkeKuerzel(z)
+  }
 
   let beschr = $state('')
   let neuerPunkt = $state('')
@@ -260,7 +282,10 @@
       <input type="date" value={karte.faellig ?? ''} onchange={(e) => onAendern({ faellig: e.currentTarget.value || null })} />
     </div>
     <div class="zeile"><span class="lbl"><i class="fa-solid fa-user" aria-hidden="true"></i> Zuständig</span>
-      <input class="kurz" placeholder="Kürzel" value={karte.zustaendig ?? ''} onchange={(e) => onAendern({ zustaendig: e.currentTarget.value || null })} />
+      <select value={karte.zustaendig ?? ''} onchange={(e) => zustaendigSetzen(e.currentTarget.value)}>
+        <option value="">(niemand)</option>
+        {#each kuerzelWahl as p (p.id)}<option value={p.kuerzel}>{p.kuerzel} - {p.name}</option>{/each}
+      </select>
     </div>
 
     <div class="zeiten">
@@ -463,9 +488,6 @@
     border-radius: var(--r-m);
     padding: 6px 9px;
     font-size: 12.5px;
-  }
-  .zeile input.kurz {
-    flex: 0 0 90px;
   }
   .zeiten {
     display: flex;

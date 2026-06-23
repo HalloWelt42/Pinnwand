@@ -15,12 +15,16 @@
     verschiebeSpalte,
     loescheSpalte,
     setzeSpaltenReihenfolge,
+    ladePersonen,
     type KarteAenderung,
+    type Person,
   } from '../../api'
   import { zeigeToast } from '../../toaster.svelte'
   import { timer } from '../../timer.svelte'
   import { nav, setzeOffeneKarte } from '../../navigation.svelte'
   import { neuKarteAus } from '../../restore'
+  import { personSicht } from '../../personSicht.svelte'
+  import { zuletztKuerzel } from '../../zuletztKuerzel.svelte'
   import Column from './Column.svelte'
   import Toolbar from './Toolbar.svelte'
   import CardDrawer from './CardDrawer.svelte'
@@ -37,6 +41,12 @@
   let ansicht = $state<Eintrag[]>([])
   let ausgewaehlt = $state<Karte | null>(null)
   let eingeklappt = $state<Set<string>>(new Set())
+  let personen = $state<Person[]>([])
+  // Zeitraum-Filter je erledigter Spalte (Schluessel = Spalten-ID, Wert = Zeitraum).
+  let fertigFilter = $state<Record<string, string>>({})
+  // Waehrend ein Kartenzug laeuft, den Zeitfilter aussetzen (sonst flackert die
+  // gezogene Karte in der Fertig-Spalte, solange bewegt_am noch alt ist).
+  let ziehtGerade = $state(false)
 
   let suche = $state('')
   let sortModus = $state<'manuell' | 'faellig' | 'prioritaet'>('manuell')
@@ -54,6 +64,9 @@
   const kartenDragAus = $derived(suche !== '' || filterLabels.length > 0 || filterPrio !== null || sortModus !== 'manuell')
   const alleLabels = $derived([...new Set((board?.karten ?? []).flatMap((k) => k.labels))].sort())
   const mitglieder = $derived([...new Set((board?.karten ?? []).map((k) => k.zustaendig).filter((z): z is string => !!z))])
+  // Default-Zustaendiger fuer neue Karten: aktive Identitaet, sonst zuletzt genutztes Kuerzel.
+  const aktivKuerzel = $derived(personSicht.id ? (personen.find((p) => p.id === personSicht.id)?.kuerzel ?? null) : null)
+  const standardKuerzel = $derived(aktivKuerzel ?? (zuletztKuerzel.wert || null))
 
   // Aus der Suche/Deep-Link angesteuerte Karte öffnen, sobald dieses Board geladen ist
   // (über interne ID oder über den Karten-Schlüssel aus der URL).
@@ -95,7 +108,7 @@
   }
 
   // Spalten-/Filterzustand je Board im Browser merken.
-  function _ladeBoardUi(id: string): { suche?: string; sortModus?: typeof sortModus; filterPrio?: Prioritaet | null; filterLabels?: string[]; eingeklappt?: string[] } {
+  function _ladeBoardUi(id: string): { suche?: string; sortModus?: typeof sortModus; filterPrio?: Prioritaet | null; filterLabels?: string[]; eingeklappt?: string[]; fertigFilter?: Record<string, string> } {
     try {
       return JSON.parse(localStorage.getItem('pw_board_' + id) || '{}')
     } catch {
@@ -105,7 +118,7 @@
   function _merkeBoardUi(): void {
     try {
       localStorage.setItem('pw_board_' + boardId, JSON.stringify({
-        suche, sortModus, filterPrio, filterLabels, eingeklappt: Array.from(eingeklappt),
+        suche, sortModus, filterPrio, filterLabels, eingeklappt: Array.from(eingeklappt), fertigFilter,
       }))
     } catch {
       /* localStorage nicht verfügbar */
@@ -121,6 +134,7 @@
     filterLabels = s.filterLabels ?? []
     ausgewaehlt = null
     eingeklappt = new Set(s.eingeklappt ?? [])
+    fertigFilter = s.fertigFilter ?? {}
     laden()
   })
 
@@ -130,6 +144,7 @@
     void filterPrio
     void filterLabels
     void eingeklappt
+    void fertigFilter
     _merkeBoardUi()
   })
 
@@ -140,6 +155,13 @@
       letzterStand = timer.stand
       laden()
     }
+  })
+
+  // Personen laden (fuer den Default-Zustaendigen neuer Karten); bei Board-Wechsel
+  // auffrischen, damit neu angelegte Personen ohne App-Neustart auftauchen.
+  $effect(() => {
+    void boardId
+    ladePersonen().then((p) => (personen = p)).catch(() => {})
   })
 
   function volltext(k: Karte): string {
@@ -170,15 +192,65 @@
     return true
   }
 
-  function anzeige(eintrag: Eintrag): Karte[] {
-    if (!kartenDragAus) return eintrag.karten
-    let liste = eintrag.karten.filter(passt)
-    if (sortModus === 'faellig') {
-      liste = [...liste].sort((a, b) => (a.faellig ?? '9999').localeCompare(b.faellig ?? '9999'))
-    } else if (sortModus === 'prioritaet') {
-      liste = [...liste].sort((a, b) => (PRIO_RANG[a.prioritaet ?? 'z'] ?? 9) - (PRIO_RANG[b.prioritaet ?? 'z'] ?? 9))
+  function _pad(n: number): string {
+    return String(n).padStart(2, '0')
+  }
+  function _isoTag(d: Date): string {
+    return `${d.getFullYear()}-${_pad(d.getMonth() + 1)}-${_pad(d.getDate())}`
+  }
+  // Faellt das Abschlussdatum (bewegt_am, gesetzt beim Verschieben) in den Zeitraum?
+  function imZeitraum(iso: string | null | undefined, zeitraum: string): boolean {
+    if (zeitraum === 'alle') return true
+    if (!iso) return false
+    const tag = iso.slice(0, 10)
+    const heute = new Date()
+    const heuteTag = _isoTag(heute)
+    if (zeitraum === 'heute') return tag === heuteTag
+    if (zeitraum === 'gestern') {
+      const g = new Date(heute)
+      g.setDate(heute.getDate() - 1)
+      return tag === _isoTag(g)
     }
-    return liste
+    if (zeitraum === 'woche') {
+      const mo = new Date(heute)
+      mo.setDate(heute.getDate() - ((heute.getDay() + 6) % 7))
+      const so = new Date(mo)
+      so.setDate(mo.getDate() + 6)
+      return tag >= _isoTag(mo) && tag <= _isoTag(so)
+    }
+    if (zeitraum === 'monat') return tag.slice(0, 7) === heuteTag.slice(0, 7)
+    if (zeitraum === 'jahr') return tag.slice(0, 4) === heuteTag.slice(0, 4)
+    return true
+  }
+
+  function anzeige(eintrag: Eintrag): Karte[] {
+    // Aktive Board-Suche/Filter: ueber den gesamten Bestand suchen (Zeitfilter ausgesetzt).
+    if (kartenDragAus) {
+      let liste = eintrag.karten.filter(passt)
+      if (sortModus === 'faellig') {
+        liste = [...liste].sort((a, b) => (a.faellig ?? '9999').localeCompare(b.faellig ?? '9999'))
+      } else if (sortModus === 'prioritaet') {
+        liste = [...liste].sort((a, b) => (PRIO_RANG[a.prioritaet ?? 'z'] ?? 9) - (PRIO_RANG[b.prioritaet ?? 'z'] ?? 9))
+      }
+      return liste
+    }
+    // Standardsicht: erledigte Spalten nach Abschlussdatum filtern (Default heute).
+    if (eintrag.spalte.erledigt && !ziehtGerade) {
+      const z = fertigFilter[eintrag.spalte.id] ?? 'heute'
+      if (z !== 'alle') {
+        return eintrag.karten.filter((k) => k.id === SHADOW_PLACEHOLDER_ITEM_ID || imZeitraum(k.bewegt_am, z))
+      }
+    }
+    return eintrag.karten
+  }
+
+  function setzeFertigFilter(spalteId: string, zeitraum: string): void {
+    fertigFilter = { ...fertigFilter, [spalteId]: zeitraum }
+  }
+  // Erledigte Spalte mit aktivem Zeitfilter: Umsortieren per Drag sperren (sonst
+  // schreibt das Neuordnen Positionen relativ zur gefilterten Teilmenge).
+  function gefiltertErledigt(eintrag: Eintrag): boolean {
+    return !!eintrag.spalte.erledigt && (fertigFilter[eintrag.spalte.id] ?? 'heute') !== 'alle'
   }
 
   function toggleEinklappen(id: string) {
@@ -189,16 +261,23 @@
 
   // -- Karten-Drag --
   function cardsConsider(idx: number, items: Karte[]) {
+    ziehtGerade = true
     ansicht[idx].karten = items
     zuletztGezogen = Date.now()
   }
   function cardsFinalize(idx: number, items: Karte[], info: { id: string }) {
+    ziehtGerade = false
     ansicht[idx].karten = items
     const spalteId = ansicht[idx].spalte.id
     const pos = items.findIndex((k) => k.id === info.id)
     if (pos >= 0) {
+      const wechsel = items[pos].spalte !== spalteId
       items[pos].spalte = spalteId
-      verschiebeKarte(info.id, spalteId, pos).catch(() => laden())
+      // Bei Spaltenwechsel neu laden, damit bewegt_am (Abschlussdatum) frisch ist und
+      // die Karte sofort korrekt unter dem Fertig-Zeitfilter erscheint.
+      verschiebeKarte(info.id, spalteId, pos)
+        .then(() => { if (wechsel) laden() })
+        .catch(() => laden())
     }
     zuletztGezogen = Date.now()
   }
@@ -258,7 +337,7 @@
 
   // -- Anlegen / Spaltenpflege --
   async function karteAnlegen(spalteId: string, titel: string) {
-    await erstelleKarte({ board_id: boardId, spalte: spalteId, titel })
+    await erstelleKarte({ board_id: boardId, spalte: spalteId, titel, zustaendig: standardKuerzel })
     await laden()
   }
   async function spalteAnlegen() {
@@ -317,7 +396,9 @@
             <Column
               spalte={eintrag.spalte}
               karten={anzeige(eintrag)}
-              dragDisabled={kartenDragAus}
+              dragDisabled={kartenDragAus || gefiltertErledigt(eintrag)}
+              zeitfilter={fertigFilter[eintrag.spalte.id] ?? 'heute'}
+              onZeitfilter={(z) => setzeFertigFilter(eintrag.spalte.id, z)}
               akzent={AKZENTE[idx % AKZENTE.length]}
               eingeklappt={eingeklappt.has(eintrag.spalte.id)}
               istErste={idx === 0}

@@ -8,6 +8,8 @@
     spalte,
     karten,
     dragDisabled,
+    zeitfilter,
+    onZeitfilter,
     akzent,
     eingeklappt,
     istErste,
@@ -27,6 +29,8 @@
     spalte: Spalte
     karten: Karte[]
     dragDisabled: boolean
+    zeitfilter: string
+    onZeitfilter: (zeitraum: string) => void
     akzent: string
     eingeklappt: boolean
     istErste: boolean
@@ -125,6 +129,16 @@
         <span class="punkt" style="background:{akzent}"></span>
         <span class="titel">{spalte.titel}</span>
         <span class="zaehler" class:warn={wipVoll}>{anzahl}{#if spalte.wip_limit != null}/{spalte.wip_limit}{/if}</span>
+        {#if spalte.erledigt}
+          <select class="zeitfilter" value={zeitfilter} onchange={(e) => onZeitfilter(e.currentTarget.value)} title="Zeitraum (fertiggestellt)" aria-label="Zeitraum-Filter">
+            <option value="heute">Heute</option>
+            <option value="gestern">Gestern</option>
+            <option value="woche">Woche</option>
+            <option value="monat">Monat</option>
+            <option value="jahr">Jahr</option>
+            <option value="alle">Alle</option>
+          </select>
+        {/if}
         <button class="hbtn" aria-label="Spalte einklappen" title="Einklappen" onclick={onToggleEinklappen}><i class="fa-solid fa-angles-left" aria-hidden="true"></i></button>
         <button class="hbtn" class:aktiv={menuOffen} aria-label="Spaltenmenü" onclick={() => (menuOffen = !menuOffen)}><i class="fa-solid fa-ellipsis" aria-hidden="true"></i></button>
         {#if menuOffen}
@@ -303,6 +317,19 @@
   .zaehler.warn {
     color: var(--prio-mittel);
     font-weight: 600;
+  }
+  .zeitfilter {
+    border: 1px solid var(--border-2);
+    background: var(--surface-2);
+    color: var(--text-2);
+    border-radius: var(--r-s);
+    font-size: 10.5px;
+    padding: 2px 4px;
+    max-width: 74px;
+  }
+  .zeitfilter:hover {
+    color: var(--text-1);
+    border-color: var(--hl-primary);
   }
   .hbtn {
     border: none;

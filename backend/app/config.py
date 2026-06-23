@@ -62,6 +62,7 @@ class Einstellungen:
     frontend_port: int
     llm_url: str
     embedding_model: str
+    ki_modell: str
     qdrant_url: str
     tts_url: str
     transcripts_url: str
@@ -80,6 +81,7 @@ def _lese_einstellungen() -> Einstellungen:
         frontend_port=_port("PINNWAND_FRONTEND_PORT", 5198),
         llm_url=_env("PINNWAND_LLM_URL", "http://localhost:1234"),
         embedding_model=_env("PINNWAND_EMBEDDING_MODEL"),
+        ki_modell=_env("PINNWAND_KI_MODELL"),
         qdrant_url=_env("PINNWAND_QDRANT_URL", "http://localhost:6333"),
         tts_url=_env("PINNWAND_TTS_URL", "http://127.0.0.1:8765"),
         transcripts_url=_env("PINNWAND_TRANSCRIPTS_URL", "http://localhost:10031"),

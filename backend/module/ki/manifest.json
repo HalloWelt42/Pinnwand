@@ -1,0 +1,17 @@
+{
+  "id": "ki",
+  "name": "KI-Assistent",
+  "version": "0.1.0",
+  "extends": {
+    "views": [],
+    "cardFields": [],
+    "mappeTabs": [],
+    "commands": []
+  },
+  "backend": {
+    "router": "module.ki.api:router",
+    "init": "module.ki.persistence:init_db"
+  },
+  "permissions": [],
+  "requires": []
+}

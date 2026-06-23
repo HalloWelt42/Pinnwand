@@ -40,6 +40,16 @@ genau dieser Segment-Position, mit übernommenem Text und Sprecher.
 Bereits verknüpfte Segmente sind markiert. Im Kopf des Transkripts zeigt eine Leiste
 "Verknüpfte Tickets" alle Marken; ein Klick springt zurück zur jeweiligen Karte.
 
+## Arbeitspool (Vorfilter)
+
+Da die Transkript-Quelle auch fremde, irrelevante Aufnahmen enthält, gibt es einen
+Arbeitspool: über den Stern nimmt man relevante Transkripte auf. Die Liste hat einen
+Umschalter "Arbeitspool" (Standard - zeigt nur die ausgewählten) und "Alle" (zum Aus-
+und Abwählen). So erschlägt einen der Bestand im Alltag nicht; der Pool ist im Backend
+gespeichert (Tabelle transkript_pool), der gewählte Modus im Browser. Mehrere
+Transkriptionen desselben Files (gleicher Name) werden zu einer Gruppe mit "N Fassungen"
+zusammengefasst (aufklappbar); sortierbar nach Name oder Sprecheranzahl.
+
 ## Sprung an die Position
 
 "Öffnen" an einer Marke wechselt in die Transkript-Ansicht, öffnet das Transkript,

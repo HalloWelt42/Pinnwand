@@ -8,6 +8,9 @@
     ladeMappen,
     ladeBoards,
     ladeBoard,
+    ladePool,
+    poolAufnehmen,
+    poolEntfernen,
     type TranskriptTreffer,
     type TranskriptDetail,
     type TranskriptSegment,
@@ -23,6 +26,59 @@
   let frage = $state('')
   let treffer = $state<TranskriptTreffer[]>([])
   let aktiv = $state<TranskriptDetail | null>(null)
+
+  // Arbeitspool (Vorfilter): nur ausgewaehlte Transkripte sind im Alltag sichtbar;
+  // "Alle" zeigt den ganzen Bestand zum Aus-/Abwaehlen. Modus im Browser gemerkt.
+  let modus = $state<'pool' | 'alle'>('pool')
+  try {
+    const m = localStorage.getItem('pw_transkripte_modus')
+    if (m === 'alle' || m === 'pool') modus = m
+  } catch { /* localStorage nicht verfuegbar */ }
+  $effect(() => { try { localStorage.setItem('pw_transkripte_modus', modus) } catch { /* ignorieren */ } })
+  let poolIds = $state<Set<string>>(new Set())
+  let sortierung = $state<'name' | 'sprecher'>('name')
+  let gruppenOffen = $state<Set<string>>(new Set())
+
+  async function ladePoolIds(): Promise<void> {
+    try { poolIds = new Set((await ladePool()).pool.map((p) => p.transkript_id)) } catch { poolIds = new Set() }
+  }
+  $effect(() => { ladePoolIds() })
+
+  function imPool(id: string): boolean {
+    return poolIds.has(id)
+  }
+  async function poolToggle(t: TranskriptTreffer): Promise<void> {
+    if (poolIds.has(t.id)) {
+      await poolEntfernen(t.id)
+      const s = new Set(poolIds); s.delete(t.id); poolIds = s
+    } else {
+      await poolAufnehmen(t.id, t.name)
+      poolIds = new Set(poolIds).add(t.id)
+    }
+  }
+  function toggleGruppe(name: string): void {
+    const s = new Set(gruppenOffen)
+    s.has(name) ? s.delete(name) : s.add(name)
+    gruppenOffen = s
+  }
+
+  // Sichtbare Treffer je nach Modus, gruppiert nach Name (Duplikate = mehrere Fassungen).
+  const sichtbar = $derived(modus === 'pool' ? treffer.filter((t) => poolIds.has(t.id)) : treffer)
+  const gruppen = $derived.by(() => {
+    const map = new Map<string, TranskriptTreffer[]>()
+    for (const t of sichtbar) {
+      const key = t.name || t.id
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(t)
+    }
+    const arr = [...map.entries()].map(([name, fassungen]) => {
+      const sorted = [...fassungen].sort((a, b) => (b.speaker_names?.length ?? 0) - (a.speaker_names?.length ?? 0))
+      return { name, fassungen: sorted, primaer: sorted[0], count: sorted.length }
+    })
+    if (sortierung === 'name') arr.sort((a, b) => a.name.localeCompare(b.name))
+    else arr.sort((a, b) => (b.primaer.speaker_names?.length ?? 0) - (a.primaer.speaker_names?.length ?? 0))
+    return arr
+  })
   let status = $state<{ erreichbar: boolean; konfiguriert: boolean } | null>(null)
   let laeuft = $state(false)
   let timer: ReturnType<typeof setTimeout> | null = null
@@ -190,25 +246,51 @@
   {:else}
     <div class="spalten">
       <aside class="liste">
+        <div class="kopfzeile">
+          <div class="umschalt" role="tablist" aria-label="Transkript-Sicht">
+            <button class:an={modus === 'pool'} onclick={() => (modus = 'pool')} title="Nur ausgewaehlte (Arbeitspool)">Arbeitspool</button>
+            <button class:an={modus === 'alle'} onclick={() => (modus = 'alle')} title="Alle Transkripte zum Aus-/Abwaehlen">Alle</button>
+          </div>
+          <select class="sortwahl" bind:value={sortierung} aria-label="Sortierung">
+            <option value="name">A-Z</option>
+            <option value="sprecher">Sprecher</option>
+          </select>
+        </div>
         <div class="feldreihe">
           <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-          <input class="frage" placeholder="Transkripte durchsuchen ..." bind:value={frage} aria-label="Transkripte suchen" />
+          <input class="frage" placeholder="durchsuchen ..." bind:value={frage} aria-label="Transkripte suchen" />
         </div>
         {#if laeuft}<p class="lade">sucht ...</p>{/if}
         <ul>
-          {#each treffer as t (t.id)}
-            <li>
-              <button class="eintrag" class:on={aktiv?.id === t.id} onclick={() => oeffne(t)}>
-                <span class="nm">{t.name}</span>
-                {#if t.snippet}<span class="snip">{@html hervor(t.snippet, frage)}</span>{/if}
-                <span class="treffmeta">
-                  {#if t.start != null}<span class="tzeit"><i class="fa-solid fa-clock" aria-hidden="true"></i> {mmss(t.start)}</span>{/if}
-                  {#if t.speaker_names.length}<span class="spk">{t.speaker_names.length} Sprecher</span>{/if}
-                </span>
-              </button>
+          {#each gruppen as g (g.name)}
+            <li class="gruppe">
+              <div class="grow" class:on={g.fassungen.some((f) => f.id === aktiv?.id)}>
+                <button class="nmbtn" onclick={() => oeffne(g.primaer)} title={g.name}>
+                  <span class="nm">{g.name}</span>
+                  <span class="meta">{g.primaer.speaker_names.length} Sprecher{#if g.count > 1} &middot; {g.count} Fassungen{/if}</span>
+                </button>
+                {#if g.count > 1}
+                  <button class="ic" aria-label="Fassungen anzeigen" onclick={() => toggleGruppe(g.name)}><i class="fa-solid {gruppenOffen.has(g.name) ? 'fa-chevron-up' : 'fa-chevron-down'}" aria-hidden="true"></i></button>
+                {/if}
+                <button class="star" class:an={imPool(g.primaer.id)} aria-label="In Arbeitspool aufnehmen oder entfernen" onclick={() => poolToggle(g.primaer)}><i class="fa-{imPool(g.primaer.id) ? 'solid' : 'regular'} fa-star" aria-hidden="true"></i></button>
+              </div>
+              {#if g.count > 1 && gruppenOffen.has(g.name)}
+                <div class="fassungen">
+                  {#each g.fassungen as f (f.id)}
+                    <div class="grow klein" class:on={aktiv?.id === f.id}>
+                      <button class="nmbtn" onclick={() => oeffne(f)}>
+                        <span class="meta">{f.speaker_names.length} Sprecher{#if f.id === g.primaer.id} (Haupt){/if}</span>
+                      </button>
+                      <button class="star" class:an={imPool(f.id)} aria-label="In Arbeitspool aufnehmen oder entfernen" onclick={() => poolToggle(f)}><i class="fa-{imPool(f.id) ? 'solid' : 'regular'} fa-star" aria-hidden="true"></i></button>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
             </li>
           {/each}
-          {#if !treffer.length && !laeuft}<li class="leer">Keine Transkripte.</li>{/if}
+          {#if !gruppen.length && !laeuft}
+            <li class="leer">{modus === 'pool' ? 'Arbeitspool ist leer - wechsle zu "Alle" und nimm relevante Transkripte per Stern auf.' : 'Keine Transkripte.'}</li>
+          {/if}
         </ul>
       </aside>
 
@@ -342,25 +424,78 @@
     flex-direction: column;
     gap: 4px;
   }
-  .eintrag {
-    width: 100%;
-    text-align: left;
+  .kopfzeile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .umschalt {
+    display: flex;
+    flex: 1;
+    border: 1px solid var(--border-2);
+    border-radius: var(--r-m);
+    overflow: hidden;
+  }
+  .umschalt button {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+  .umschalt button.an {
+    background: var(--hl-primary);
+    color: var(--hl-on-primary);
+    font-weight: 500;
+  }
+  .sortwahl {
+    border: 1px solid var(--border-2);
+    background: var(--surface-2);
+    color: var(--text-2);
+    border-radius: var(--r-m);
+    font-size: 12px;
+    padding: 6px 6px;
+  }
+  .gruppe {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .grow {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     background: var(--surface-col);
     border: 1px solid var(--border);
     border-radius: var(--r-m);
-    padding: 9px 11px;
+    padding: 4px 6px 4px 9px;
+  }
+  .grow:hover {
+    background: var(--surface-3);
+  }
+  .grow.on {
+    border-color: var(--hl-primary);
+    background: var(--hl-primary-weich);
+  }
+  .grow.klein {
+    margin-left: 16px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+  .nmbtn {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    border: none;
+    background: transparent;
     color: var(--text-1);
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 1px;
     cursor: pointer;
-  }
-  .eintrag:hover {
-    background: var(--surface-3);
-  }
-  .eintrag.on {
-    border-color: var(--hl-primary);
-    background: var(--hl-primary-weich);
+    padding: 4px 0;
   }
   .nm {
     font-size: 12.5px;
@@ -369,29 +504,44 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .snip {
+  .meta {
+    font-size: 10.5px;
+    color: var(--text-3);
+  }
+  .grow .ic {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--text-3);
+    border-radius: var(--r-s);
     font-size: 11px;
-    color: var(--text-3);
-    line-height: 1.4;
-    max-height: 2.8em;
-    overflow: hidden;
   }
-  .spk {
-    font-size: 10px;
-    color: var(--text-3);
+  .grow .ic:hover {
+    color: var(--text-1);
+    background: var(--surface-2);
   }
-  .treffmeta {
+  .star {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border: none;
+    background: transparent;
+    color: var(--text-3);
+    border-radius: var(--r-s);
+    font-size: 12px;
+  }
+  .star:hover {
+    background: var(--surface-2);
+  }
+  .star.an {
+    color: var(--prio-mittel);
+  }
+  .fassungen {
     display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .tzeit {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--hl-primary-text);
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
+    flex-direction: column;
+    gap: 2px;
   }
   .leer,
   .leer-d {
@@ -451,8 +601,7 @@
     white-space: pre-wrap;
   }
   .text :global(mark),
-  .stext :global(mark),
-  .snip :global(mark) {
+  .stext :global(mark) {
     background: var(--hl-primary-weich);
     color: var(--hl-primary-text);
     border-radius: 2px;

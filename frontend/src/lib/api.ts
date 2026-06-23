@@ -340,6 +340,14 @@ export const loescheMarke = (id: string): Promise<void> =>
 export const zusammenfassungVorschlag = (transkriptId: string, positionSek: number | null): Promise<{ zusammenfassung: string }> =>
   hole('/api/transkripte/zusammenfassung-vorschlag', { method: 'POST', body: JSON.stringify({ transkript_id: transkriptId, position_sek: positionSek }) })
 
+// Arbeitspool: ausgewaehlte, fuer die Arbeit relevante Transkripte (Vorfilter).
+export const ladePool = (): Promise<{ pool: { transkript_id: string; transkript_name?: string | null }[] }> =>
+  hole('/api/transkripte/pool')
+export const poolAufnehmen = (transkriptId: string, name: string | null): Promise<{ ok: boolean }> =>
+  hole('/api/transkripte/pool', { method: 'POST', body: JSON.stringify({ transkript_id: transkriptId, transkript_name: name }) })
+export const poolEntfernen = (transkriptId: string): Promise<void> =>
+  hole(`/api/transkripte/pool/${encodeURIComponent(transkriptId)}`, { method: 'DELETE' })
+
 // --- Serien (wiederkehrende Termine/Aufgaben) ---
 
 export interface Serie {

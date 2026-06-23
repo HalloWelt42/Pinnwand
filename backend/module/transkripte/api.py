@@ -37,6 +37,11 @@ class VorschlagEingabe(BaseModel):
     position_sek: float | None = None
 
 
+class PoolEingabe(BaseModel):
+    transkript_id: str
+    transkript_name: str | None = None
+
+
 @router.get("/status")
 def status() -> dict:
     return {"erreichbar": dienst.erreichbar(), "konfiguriert": dienst.verfuegbar()}
@@ -81,6 +86,25 @@ def zusammenfassung_vorschlag(eingabe: VorschlagEingabe) -> dict:
     if txt is None:
         raise HTTPException(status_code=503, detail="KI-Vorschlag nicht verfuegbar (kein Chat-Modell geladen)")
     return {"zusammenfassung": txt}
+
+
+# -- Arbeitspool (Vorfilter relevanter Transkripte) -----------------------
+# WICHTIG: vor der Catch-all-Route /{tid} definieren.
+
+@router.get("/pool")
+def pool_liste() -> dict:
+    return {"pool": marken.pool_liste()}
+
+
+@router.post("/pool", status_code=201)
+def pool_aufnehmen(eingabe: PoolEingabe) -> dict:
+    marken.pool_aufnehmen(eingabe.transkript_id, eingabe.transkript_name)
+    return {"ok": True}
+
+
+@router.delete("/pool/{tid}", status_code=204)
+def pool_entfernen(tid: str) -> None:
+    marken.pool_entfernen(tid)
 
 
 @router.get("/{tid}/marken")

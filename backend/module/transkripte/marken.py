@@ -35,6 +35,11 @@ def init_db() -> None:
         conn.executescript(SCHEMA)
         conn.execute("CREATE INDEX IF NOT EXISTS ix_marke_karte ON transkript_marke(karte_id)")
         conn.execute("CREATE INDEX IF NOT EXISTS ix_marke_transkript ON transkript_marke(transkript_id)")
+        # Arbeitspool: die als relevant ausgewaehlten Transkripte (Vorfilter).
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS transkript_pool ("
+            " transkript_id TEXT PRIMARY KEY, transkript_name TEXT, erstellt_am TEXT)"
+        )
 
 
 def _row(r: sqlite3.Row) -> dict:
@@ -130,3 +135,26 @@ def aktualisiere(mid: str, felder: dict) -> dict | None:
 def loesche(mid: str) -> None:
     with verbindung() as conn:
         conn.execute("DELETE FROM transkript_marke WHERE id = ?", (mid,))
+
+
+# -- Arbeitspool (Vorfilter relevanter Transkripte) -----------------------
+
+def pool_liste() -> list[dict]:
+    with verbindung() as conn:
+        rows = conn.execute(
+            "SELECT transkript_id, transkript_name FROM transkript_pool ORDER BY transkript_name, transkript_id"
+        ).fetchall()
+    return [{"transkript_id": r["transkript_id"], "transkript_name": r["transkript_name"]} for r in rows]
+
+
+def pool_aufnehmen(transkript_id: str, name: str | None) -> None:
+    with verbindung() as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO transkript_pool (transkript_id, transkript_name, erstellt_am) VALUES (?, ?, ?)",
+            (transkript_id, name, datetime.now().isoformat(timespec="seconds")),
+        )
+
+
+def pool_entfernen(transkript_id: str) -> None:
+    with verbindung() as conn:
+        conn.execute("DELETE FROM transkript_pool WHERE transkript_id = ?", (transkript_id,))

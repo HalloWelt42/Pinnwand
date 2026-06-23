@@ -39,8 +39,11 @@ gemeinsamen Karte auf mehrere Personen.
 
 Im Kopf jeder erledigten Spalte steht ein kleines Auswahlfeld für den Zeitraum:
 Heute (Standard), Gestern, Woche, Monat, Jahr, Alle. Gefiltert wird über das
-Abschlussdatum (gesetzt beim Verschieben in die Spalte). So zeigt die Fertig-Spalte
-standardmäßig nur das heute Erledigte und bleibt übersichtlich.
+Abschlussdatum: das Datum der letzten Zeitbuchung der Karte, sonst (ohne erfasste
+Zeit) der Verschiebe-Zeitpunkt. So zählt der Arbeitstag, nicht der Moment des
+Verschiebens - eine nachts um 2 in die Spalte gezogene, aber am Vortag erledigte
+Karte bleibt korrekt dem Vortag zugeordnet. So zeigt die Fertig-Spalte standardmäßig
+nur das heute Erledigte und bleibt übersichtlich.
 
 Details:
 

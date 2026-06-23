@@ -241,9 +241,24 @@ def board_detail(board_id: str) -> BoardDetail | None:
             return None
         spalten = _spalten(conn, board_id)
         rows = conn.execute("SELECT * FROM karte WHERE board_id = ? ORDER BY reihenfolge, id", (board_id,)).fetchall()
+        karten = [_karte_aus_row(r) for r in rows]
+        # Abschlussdatum je Karte = Datum der letzten Zeitbuchung. Treibt den
+        # Fertig-Zeitfilter und zaehlt den Arbeitstag, nicht den Verschiebe-Zeitpunkt
+        # (sonst landet ueber Mitternacht erledigte Arbeit faelschlich auf dem Folgetag).
+        bk = {
+            r["karte_id"]: r["m"]
+            for r in conn.execute(
+                "SELECT karte_id, MAX(datum) AS m FROM zeiteintrag"
+                " WHERE karte_id IN (SELECT id FROM karte WHERE board_id = ?)"
+                " GROUP BY karte_id",
+                (board_id,),
+            ).fetchall()
+        }
+        for k in karten:
+            k.letzte_buchung = bk.get(k.id)
     return BoardDetail(
         id=b["id"], mappe_id=b["mappe_id"], titel=b["titel"], kuerzel=b["kuerzel"],
-        spalten=spalten, karten=[_karte_aus_row(r) for r in rows],
+        spalten=spalten, karten=karten,
     )
 
 

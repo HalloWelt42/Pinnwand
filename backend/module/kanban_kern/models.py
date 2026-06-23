@@ -49,6 +49,9 @@ class Karte(BaseModel):
     laeuft_seit: str | None = None
     transkript_id: str | None = None
     transkript_name: str | None = None
+    # Datum der letzten Zeitbuchung (YYYY-MM-DD); Abschlussdatum fuer den Fertig-Zeitfilter,
+    # robust ueber Mitternacht. None wenn keine Zeit gebucht wurde.
+    letzte_buchung: str | None = None
 
 
 class Spalte(BaseModel):

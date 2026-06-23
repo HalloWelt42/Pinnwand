@@ -238,7 +238,8 @@
     if (eintrag.spalte.erledigt && !ziehtGerade) {
       const z = fertigFilter[eintrag.spalte.id] ?? 'heute'
       if (z !== 'alle') {
-        return eintrag.karten.filter((k) => k.id === SHADOW_PLACEHOLDER_ITEM_ID || imZeitraum(k.bewegt_am, z))
+        // Abschlussdatum = Arbeitstag (letzte Zeitbuchung), sonst Verschiebe-Datum.
+        return eintrag.karten.filter((k) => k.id === SHADOW_PLACEHOLDER_ITEM_ID || imZeitraum(k.letzte_buchung ?? k.bewegt_am, z))
       }
     }
     return eintrag.karten

@@ -37,6 +37,7 @@ export interface Karte {
   laeuft_seit?: string | null
   transkript_id?: string | null
   transkript_name?: string | null
+  letzte_buchung?: string | null
 }
 
 export interface Spalte {

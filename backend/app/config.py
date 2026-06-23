@@ -16,7 +16,7 @@ from pathlib import Path
 import httpx
 
 # Zentrale Versionsangabe der Anwendung (Backend + Snapshots beziehen sich hierauf).
-VERSION = "0.51.0"
+VERSION = "0.51.1"
 
 # backend/app/config.py -> Projektwurzel (Pinnwand/)
 _PROJEKT_WURZEL = Path(__file__).resolve().parents[2]
@@ -78,9 +78,9 @@ def _lese_einstellungen() -> Einstellungen:
         bind=_env("PINNWAND_BIND", "127.0.0.1"),
         backend_port=_port("PINNWAND_BACKEND_PORT", 8420),
         frontend_port=_port("PINNWAND_FRONTEND_PORT", 5198),
-        llm_url=_env("PINNWAND_LLM_URL"),
+        llm_url=_env("PINNWAND_LLM_URL", "http://localhost:1234"),
         embedding_model=_env("PINNWAND_EMBEDDING_MODEL"),
-        qdrant_url=_env("PINNWAND_QDRANT_URL"),
+        qdrant_url=_env("PINNWAND_QDRANT_URL", "http://localhost:6333"),
         tts_url=_env("PINNWAND_TTS_URL", "http://127.0.0.1:8765"),
         transcripts_url=_env("PINNWAND_TRANSCRIPTS_URL", "http://localhost:10031"),
         stt_url=_env("PINNWAND_STT_URL"),

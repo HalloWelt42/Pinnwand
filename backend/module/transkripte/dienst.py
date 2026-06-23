@@ -211,7 +211,19 @@ def _chat_modell() -> str | None:
         modelle = [m.get("id", "") for m in r.json().get("data", [])]
     except Exception:
         return None
-    return next((m for m in modelle if m and "embed" not in m.lower()), None)
+
+    def _ist_text(m: str) -> bool:
+        s = m.lower()
+        # Embedding-, Bild-, Vision- und Audio-Modelle taugen nicht zum Zusammenfassen.
+        return bool(m) and not any(
+            x in s for x in ("embed", "image", "edit", "vl-", "-vl", "vision", "flux", "stable", "whisper", "tts")
+        )
+
+    kandidaten = [m for m in modelle if _ist_text(m)]
+    if not kandidaten:
+        return None
+    # Echte Instruct-/Chat-Modelle bevorzugen (Vision-/Flash-Varianten meiden).
+    return next((m for m in kandidaten if "instruct" in m.lower() or "chat" in m.lower()), kandidaten[0])
 
 
 def zusammenfassung_vorschlag(transkript_id: str, position_sek: float | None) -> str | None:
@@ -248,7 +260,7 @@ def zusammenfassung_vorschlag(transkript_id: str, position_sek: float | None) ->
                 "temperature": 0.3,
                 "max_tokens": 220,
             },
-            timeout=60.0,
+            timeout=120.0,
         )
         if r.status_code >= 400:
             return None

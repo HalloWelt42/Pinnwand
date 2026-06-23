@@ -15,11 +15,13 @@
     type TranskriptDetail,
     type TranskriptSegment,
     type TranskriptMarke,
+    type KiVorschlag,
   } from '../../api'
   import type { Karte } from '../../types'
   import { tts, vorlesen, stoppeVorlesen } from '../../tts.svelte'
   import { transkriptNav, oeffneKarte } from '../../navigation.svelte'
   import { mmss } from '../../timer.svelte'
+  import KiAssistent from '../../ki/KiAssistent.svelte'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
@@ -61,6 +63,26 @@
     const s = new Set(gruppenOffen)
     s.has(name) ? s.delete(name) : s.add(name)
     gruppenOffen = s
+  }
+
+  // KI-Vorfilter: aus allen geladenen Transkripten die relevanten in den Arbeitspool
+  // aufnehmen lassen (der Mensch korrigiert die Auswahl per Checkliste).
+  function kiPoolKontext(): Record<string, unknown> {
+    return {
+      elemente: treffer.map((t) => ({
+        id: t.id,
+        text: `${t.name}${t.speaker_names?.length ? ' - Sprecher: ' + t.speaker_names.join(', ') : ''}`,
+      })),
+    }
+  }
+  async function kiPoolUebernehmen(gewaehlt: KiVorschlag[]): Promise<void> {
+    for (const v of gewaehlt) {
+      if (poolIds.has(v.id)) continue
+      const t = treffer.find((x) => x.id === v.id)
+      await poolAufnehmen(v.id, t?.name ?? null)
+      poolIds = new Set(poolIds).add(v.id)
+    }
+    modus = 'pool'
   }
 
   // Sichtbare Treffer je nach Modus, gruppiert nach Name (Duplikate = mehrere Fassungen).
@@ -252,6 +274,14 @@
             <option value="name">A-Z</option>
             <option value="sprecher">Sprecher</option>
           </select>
+          <KiAssistent
+            typ="auswahl"
+            titel="Relevante Transkripte waehlen"
+            platzhalter="Wozu? z.B. alles zu Reklamationen oder zu Board R3"
+            uebernehmenText="In Arbeitspool"
+            kontext={kiPoolKontext}
+            onUebernehmen={kiPoolUebernehmen}
+          />
         </div>
         <div class="feldreihe">
           <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>

@@ -736,3 +736,31 @@ export const bestaetigeAlleTermine = (ids?: string[]): Promise<{ bestaetigt: num
   hole('/api/termine/instanzen/bestaetigen-alle', { method: 'POST', body: JSON.stringify({ ids: ids ?? null }) })
 export const materialisiereTermine = (): Promise<{ erzeugt: number }> =>
   hole('/api/termine/materialisieren', { method: 'POST' })
+
+// --- KI-Assistent (optionale 2. Option an datenreichen Stellen) ---
+export interface KiStatusAntwort {
+  verfuegbar: boolean
+  modell: string | null
+  automatisch: boolean
+}
+export interface KiVorschlag {
+  id: string
+  text: string
+  begruendung: string
+  vorgewaehlt: boolean
+}
+export interface KiAntwort {
+  ok: boolean
+  modell: string | null
+  vorschlaege: KiVorschlag[]
+  fehler: string | null
+}
+
+export const kiStatus = (): Promise<KiStatusAntwort> => hole('/api/ki/status')
+
+export const kiAufgabe = (
+  typ: string,
+  kontext: Record<string, unknown>,
+  anweisung = '',
+): Promise<KiAntwort> =>
+  hole('/api/ki/aufgabe', { method: 'POST', body: JSON.stringify({ typ, kontext, anweisung }) })

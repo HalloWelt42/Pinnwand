@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { Prioritaet } from '../../types'
+  import type { KiVorschlag } from '../../api'
+  import KiAssistent from '../../ki/KiAssistent.svelte'
 
   let {
     suche = $bindable(),
@@ -30,6 +32,28 @@
     filterPrio = null
     filterLabels = []
     sortModus = 'manuell'
+  }
+
+  // KI schlaegt eine Filter-Kombination aus einem Wunsch vor; uebernommen wird nur,
+  // was der Mensch in der Checkliste bestaetigt.
+  function kiFilterKontext(): Record<string, unknown> {
+    return {
+      labels: alleLabels,
+      prioritaeten: ['hoch', 'mittel', 'niedrig'],
+      sortierungen: ['manuell', 'faellig', 'prioritaet'],
+    }
+  }
+  function kiFilterUebernehmen(gewaehlt: KiVorschlag[]): void {
+    for (const v of gewaehlt) {
+      const [art, wert] = v.id.split(':')
+      if (art === 'label' && alleLabels.includes(wert) && !filterLabels.includes(wert)) {
+        filterLabels = [...filterLabels, wert]
+      } else if (art === 'prioritaet' && ['hoch', 'mittel', 'niedrig'].includes(wert)) {
+        filterPrio = wert as Prioritaet
+      } else if (art === 'sortierung' && ['manuell', 'faellig', 'prioritaet'].includes(wert)) {
+        sortModus = wert as 'manuell' | 'faellig' | 'prioritaet'
+      }
+    }
   }
 </script>
 
@@ -72,6 +96,8 @@
       <option value="prioritaet">Priorität</option>
     </select>
   </div>
+
+  <KiAssistent typ="filter" titel="Filter vorschlagen" platzhalter="Was willst du sehen? z.B. dringende offene Bugs" uebernehmenText="Anwenden" kontext={kiFilterKontext} onUebernehmen={kiFilterUebernehmen} />
 
   {#if reorderPausiert}
     <button class="hinweis" onclick={zuruecksetzen} title="Filter und Sortierung zurücksetzen">

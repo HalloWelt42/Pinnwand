@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Karte, Prioritaet, Spalte, Zeiteintrag } from '../../types'
-  import type { KarteAenderung, TranskriptTreffer, Person, TranskriptMarke } from '../../api'
+  import type { KarteAenderung, TranskriptTreffer, Person, TranskriptMarke, KiVorschlag } from '../../api'
   import { transkripteSuche, ladePersonen, ladeMarken, erstelleMarke, aktualisiereMarke, loescheMarke, zusammenfassungVorschlag, erstelleZeiteintrag, ladeKartenZeiten, aktualisiereZeiteintrag, loescheZeiteintrag } from '../../api'
+  import KiAssistent from '../../ki/KiAssistent.svelte'
   import { merkeKuerzel } from '../../zuletztKuerzel.svelte'
   import { oeffneTranskript } from '../../navigation.svelte'
   import { labelFarbe } from '../../labels'
@@ -215,6 +216,19 @@
     }
     onAendern({ labels: [...karte.labels, l] })
     neuesLabel = ''
+  }
+  // KI-Vorschlag fuer Labels aus Titel/Beschreibung; der Mensch waehlt per Checkliste.
+  function kiLabelKontext(): Record<string, unknown> {
+    return {
+      titel: karte.titel,
+      beschreibung: karte.beschreibung ?? '',
+      vorhandene_labels: karte.labels,
+      bereits_an_karte: karte.labels,
+    }
+  }
+  function kiLabelUebernehmen(gewaehlt: KiVorschlag[]): void {
+    const neue = gewaehlt.map((v) => v.id).filter((l) => l && !karte.labels.includes(l))
+    if (neue.length) onAendern({ labels: [...karte.labels, ...neue] })
   }
   function labelEntfernen(l: string) {
     onAendern({ labels: karte.labels.filter((x) => x !== l) })
@@ -436,7 +450,7 @@
       </div>
     {/if}
 
-    <p class="sec">Labels</p>
+    <p class="sec">Labels <span class="sec-ki"><KiAssistent typ="labels" titel="Labels vorschlagen" platzhalter="Worauf achten? (optional)" uebernehmenText="Hinzufuegen" kontext={kiLabelKontext} onUebernehmen={kiLabelUebernehmen} /></span></p>
     <div class="labels">
       {#each karte.labels as l (l)}
         {@const f = labelFarbe(l, dunkel)}
@@ -829,6 +843,12 @@
     text-transform: uppercase;
     color: var(--text-3);
     margin: 18px 0 8px;
+  }
+  .sec-ki {
+    float: right;
+    margin-top: -5px;
+    text-transform: none;
+    letter-spacing: normal;
   }
   .dezent {
     color: var(--text-3);

@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { BoardDetail, Zeiteintrag } from '../../types'
-  import { ladeBoard, ladeZeiteintraege, erstelleZeiteintrag, aktualisiereZeiteintrag, loescheZeiteintrag, ladeTerminInstanzen, ladePersonen, type TerminInstanz, type Person } from '../../api'
+  import { ladeBoard, ladeZeiteintraege, erstelleZeiteintrag, aktualisiereZeiteintrag, loescheZeiteintrag, ladeTerminInstanzen, ladePersonen, type TerminInstanz, type Person, type KiVorschlag } from '../../api'
   import { ymd, addTage, montagDer, isoWoche, formatStd, stdDezimal, wochentag, tagKurz } from '../../zeit'
   import { formatDauerVoll, parseZeit } from '../../timer.svelte'
   import { personSicht } from '../../personSicht.svelte'
+  import KiAssistent from '../../ki/KiAssistent.svelte'
 
   let { boardId }: { boardId: string } = $props()
 
@@ -93,6 +94,17 @@
     await laden()
   }
 
+  // KI hilft, in einer langen Kartenliste die gemeinte Karte zu finden; der Mensch
+  // bestaetigt. Bei mehreren Treffern wird der erste uebernommen.
+  function kiKarteKontext(): Record<string, unknown> {
+    return {
+      elemente: (board?.karten ?? []).map((k) => ({ id: k.id, text: `${k.schluessel} ${k.titel}` })),
+    }
+  }
+  function kiKarteUebernehmen(gewaehlt: KiVorschlag[]): void {
+    if (gewaehlt.length) nKarte = gewaehlt[0].id
+  }
+
   // Zeit der angezeigten Woche je Karte (aus den datierten Eintraegen) - so wird
   // unterschieden, was IN DIESER WOCHE lief, auch wenn sich eine Aufgabe weit streckt.
   const istWocheJeKarte = $derived.by(() => {
@@ -160,6 +172,7 @@
         <option value="" disabled>Karte wählen ...</option>
         {#each board?.karten ?? [] as k (k.id)}<option value={k.id}>{k.schluessel} · {k.titel}</option>{/each}
       </select>
+      <KiAssistent typ="auswahl" titel="Karte finden" platzhalter="Welche Aufgabe? z.B. Upload-Bug" uebernehmenText="Waehlen" kontext={kiKarteKontext} onUebernehmen={kiKarteUebernehmen} />
       <input type="date" bind:value={nDatum} aria-label="Datum" />
       <input class="dauer" placeholder="1:30 oder 1,5" bind:value={nDauer} aria-label="Dauer" />
       <input class="komm" placeholder="Kommentar" bind:value={nKommentar} aria-label="Kommentar" onkeydown={(e) => { if (e.key === 'Enter') hinzufuegen() }} />

@@ -5,10 +5,13 @@ Tabellen, Modelle und Seed gehören in die jeweiligen Module.
 """
 from __future__ import annotations
 
+import os
 import sqlite3
 from pathlib import Path
 
-DB_PFAD = Path(__file__).resolve().parent.parent / "pinnwand.db"
+# Standard ist pinnwand.db im Projektwurzelverzeichnis; per PINNWAND_DB_PFAD
+# umstellbar (z.B. fuer Tests gegen eine temporaere Datenbank).
+DB_PFAD = Path(os.environ.get("PINNWAND_DB_PFAD") or (Path(__file__).resolve().parent.parent / "pinnwand.db"))
 
 
 def verbindung() -> sqlite3.Connection:

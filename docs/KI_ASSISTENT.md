@@ -39,6 +39,11 @@ Oberflächen-Komponente. Neue Stellen docken mit wenigen Zeilen an.
   Kontext: `{titel, beschreibung, vorhandene_labels, bereits_an_karte}`.
 - `filter` - eine Filter-Kombination für ein Board vorschlagen. Kontext:
   `{labels, prioritaeten, sortierungen}`.
+- `bericht` - aus einem Wunsch ein Berichtsformular ausfüllen. Kontext:
+  `{typen: [{id, name}], personen: [{kuerzel, name}], formate, heute}`. Liefert
+  je Feld einen Vorschlag (Typ, Format, Von, Bis, Person).
+- `analyse` - Daten beurteilen und Befunde/Warnungen liefern (reine Anzeige, kein
+  Anwenden). Kontext: `{daten}`. Liefert eine Liste von Befunden.
 
 ### Frontend: eine Komponente für alle Stellen
 
@@ -51,6 +56,9 @@ Oberflächen-Komponente. Neue Stellen docken mit wenigen Zeilen an.
   `typ`, eine `kontext`-Funktion und einen `onUebernehmen`-Rückruf mit den
   bestätigten Vorschlägen. Was "Übernehmen" konkret tut, entscheidet die Stelle -
   die Komponente wendet nie selbst etwas an.
+  - Mit `nurAnzeige` wird das Panel zur reinen Auswertung: die Befunde erscheinen
+    ohne Auswahlkästchen und ohne "Übernehmen" (nur "Schließen"), `onUebernehmen`
+    entfällt. `aktionText` benennt den Auslöse-Knopf (z.B. "Analysieren").
 
 ## Eingebaute Stellen
 
@@ -62,6 +70,12 @@ Oberflächen-Komponente. Neue Stellen docken mit wenigen Zeilen an.
    finden (typ `auswahl`).
 4. Board-Werkzeugleiste, Filter: aus einem Wunsch eine Filter-Kombination
    vorschlagen (typ `filter`).
+5. Wiederkehrendes, Teilnehmer: passende Personen für eine Serie vorschlagen
+   (typ `auswahl`).
+6. Berichte, Bericht erzeugen: aus einem Wunsch das Formular ausfüllen
+   (typ `bericht`).
+7. Einstellungen, Snapshot-Vorschau: die Änderungen vor dem Wiederherstellen
+   beurteilen lassen (typ `analyse`, nur Anzeige).
 
 ## Eine neue Stelle anbinden
 

@@ -6,6 +6,7 @@
     type SnapshotInfo, type BackupZustand, type BackupVorschau, type AgentToken,
   } from '../../api'
   import { isoDatumZeit } from '../../zeit'
+  import KiAssistent from '../../ki/KiAssistent.svelte'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
@@ -175,6 +176,15 @@
     }
   }
 
+  // KI-Diff-Analyse: aus den Tabellen-Zaehlern Befunde/Warnungen vor dem Wiederherstellen
+  // (reine Einschaetzung, keine Aenderung).
+  function kiSnapshotKontext(): Record<string, unknown> {
+    if (!vorschau) return { daten: '' }
+    const rows = zeilen(vorschau).map((r) => `${r.name}: snap=${r.snap} akt=${r.akt}`)
+    rows.push(`berichte: snap=${vorschau.snapshot.berichte} akt=${vorschau.aktuell.berichte}`)
+    return { daten: rows.join('; ') }
+  }
+
   // Tabellen-Zähler aus Snapshot und aktuellem Stand für die Vorschau zusammenführen.
   function zeilen(v: BackupVorschau): { name: string; snap: number; akt: number }[] {
     const keys = new Set<string>([...Object.keys(v.snapshot.zaehler), ...Object.keys(v.aktuell.zaehler)])
@@ -251,6 +261,9 @@
                   <ul>{#each vorschau.warnungen as w (w)}<li>{w}</li>{/each}</ul>
                 </div>
               {/if}
+              <div class="ki-zeile-vorschau">
+                <KiAssistent typ="analyse" nurAnzeige titel="Aenderungen beurteilen" aktionText="Analysieren" platzhalter="Worauf achten? (optional)" kontext={kiSnapshotKontext} />
+              </div>
               <table class="diff">
                 <thead><tr><th>Bereich</th><th>im Snapshot</th><th>aktuell</th></tr></thead>
                 <tbody>
@@ -401,6 +414,7 @@
   .bestaetigung { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-2); }
   .vorschau { border-top: 1px solid var(--border); padding: 12px; }
   .warnung { display: flex; gap: 8px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: var(--r-m); padding: 8px 11px; margin-bottom: 10px; color: #f59e0b; font-size: 12px; }
+  .ki-zeile-vorschau { margin-bottom: 10px; }
   .warnung ul { margin: 0; padding-left: 16px; }
   .diff { width: 100%; border-collapse: collapse; font-size: 12px; }
   .diff th { text-align: left; color: var(--text-3); font-weight: 500; font-size: 11px; padding: 4px 8px; border-bottom: 1px solid var(--border); }

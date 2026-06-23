@@ -1,9 +1,10 @@
 <script lang="ts">
   import {
     ladeBerichtTypen, ladeArchiv, erzeugeBericht, archivDownloadUrl, ladePersonen,
-    type BerichtTyp, type ArchivEintrag, type Person,
+    type BerichtTyp, type ArchivEintrag, type Person, type KiVorschlag,
   } from '../../api'
   import { ymd, montagDer, addTage, isoDatumZeit } from '../../zeit'
+  import KiAssistent from '../../ki/KiAssistent.svelte'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
@@ -55,6 +56,28 @@
     }
   }
 
+  // KI-Berichts-Finder: aus einem Wunsch das Formular ausfuellen; der Mensch bestaetigt je Feld.
+  function kiBerichtKontext(): Record<string, unknown> {
+    return {
+      heute: ymd(new Date()),
+      formate: ['pdf', 'csv', 'markdown'],
+      typen: typen.map((t) => ({ id: t.id, name: t.titel })),
+      personen: personen.map((p) => ({ kuerzel: p.kuerzel ?? '', name: p.name })),
+    }
+  }
+  function kiBerichtUebernehmen(gewaehlt: KiVorschlag[]): void {
+    for (const v of gewaehlt) {
+      const i = v.id.indexOf(':')
+      const art = v.id.slice(0, i)
+      const wert = v.id.slice(i + 1)
+      if (art === 'typ') typ = wert
+      else if (art === 'format') format = wert
+      else if (art === 'von') von = wert
+      else if (art === 'bis') bis = wert
+      else if (art === 'person') person = wert
+    }
+  }
+
   const brauchtZeitraum = $derived(typ !== 'soll_ist')
 
   function groesse(b: number): string {
@@ -85,6 +108,7 @@
         </select>
       {/if}
       <label class="chk"><input type="checkbox" bind:checked={archivieren} /> archivieren</label>
+      <KiAssistent typ="bericht" titel="Bericht aus Wunsch" platzhalter="z.B. Stundenzettel fuer MP im Januar als PDF" uebernehmenText="Formular fuellen" kontext={kiBerichtKontext} onUebernehmen={kiBerichtUebernehmen} />
       <button class="btn primaer" onclick={erzeugen}>Erzeugen</button>
     </div>
     {#if meldung}<p class="meldung">{meldung}</p>{/if}

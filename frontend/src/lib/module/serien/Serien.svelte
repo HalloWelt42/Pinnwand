@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { ladeBoard, ladeSerien, erstelleSerie, aktualisiereSerie, loescheSerie, serieVorschau, serieVorbuchen, ladePersonen, type Serie, type Person } from '../../api'
+  import { ladeBoard, ladeSerien, erstelleSerie, aktualisiereSerie, loescheSerie, serieVorschau, serieVorbuchen, ladePersonen, type Serie, type Person, type KiVorschlag } from '../../api'
   import type { Spalte } from '../../types'
   import { isoKurz } from '../../zeit'
   import { personSicht } from '../../personSicht.svelte'
   import { zuletztKuerzel } from '../../zuletztKuerzel.svelte'
+  import KiAssistent from '../../ki/KiAssistent.svelte'
 
   let { boardId }: { boardId: string } = $props()
 
@@ -57,6 +58,18 @@
   }
   function tnUmschalten(kuerzel: string): void {
     teilnehmer = teilnehmer.includes(kuerzel) ? teilnehmer.filter((x) => x !== kuerzel) : [...teilnehmer, kuerzel]
+  }
+
+  // KI hilft, aus vielen Personen die passenden Teilnehmer zu waehlen; der Mensch korrigiert.
+  function kiTnKontext(): Record<string, unknown> {
+    return { elemente: personen.map((p) => ({ id: p.kuerzel ?? '', text: `${p.kuerzel} - ${p.name}` })) }
+  }
+  function kiTnUebernehmen(gewaehlt: KiVorschlag[]): void {
+    for (const v of gewaehlt) {
+      if (v.id && personen.some((p) => p.kuerzel === v.id) && !teilnehmer.includes(v.id)) {
+        teilnehmer = [...teilnehmer, v.id]
+      }
+    }
   }
 
   async function anlegen(): Promise<void> {
@@ -168,6 +181,7 @@
       {#if personen.length}
         <div class="tn">
           <span class="tn-lbl">Teilnehmer</span>
+          <KiAssistent typ="auswahl" titel="Teilnehmer vorschlagen" platzhalter="Wer? z.B. das Frontend-Team" uebernehmenText="Hinzufuegen" kontext={kiTnKontext} onUebernehmen={kiTnUebernehmen} />
           {#each personen as p (p.id)}
             <label class="tnb" class:an={teilnehmer.includes(p.kuerzel ?? '')}>
               <input type="checkbox" checked={teilnehmer.includes(p.kuerzel ?? '')} onchange={() => tnUmschalten(p.kuerzel ?? '')} />

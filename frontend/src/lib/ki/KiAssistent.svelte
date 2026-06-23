@@ -13,15 +13,19 @@
     titel = 'KI-Vorschlag',
     platzhalter = 'Was soll die KI auswaehlen? (optional)',
     knopfText = '',
+    aktionText = 'Vorschlagen',
     uebernehmenText = 'Uebernehmen',
+    nurAnzeige = false,
   }: {
     typ: string
     kontext: () => Record<string, unknown>
-    onUebernehmen: (ausgewaehlte: KiVorschlag[]) => void | Promise<void>
+    onUebernehmen?: (ausgewaehlte: KiVorschlag[]) => void | Promise<void>
     titel?: string
     platzhalter?: string
     knopfText?: string
+    aktionText?: string
     uebernehmenText?: string
+    nurAnzeige?: boolean
   } = $props()
 
   let offen = $state(false)
@@ -73,7 +77,7 @@
 
   async function uebernehmen(): Promise<void> {
     const gewaehlt = vorschlaege.filter((v) => auswahl[v.id])
-    if (!gewaehlt.length) return
+    if (!gewaehlt.length || !onUebernehmen) return
     await onUebernehmen(gewaehlt)
     zuruecksetzen()
     offen = false
@@ -119,9 +123,9 @@
 
         <div class="ki-aktionen">
           <button type="button" class="ki-vorschlag" onclick={vorschlagen} disabled={laedt}>
-            {#if laedt}<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Denkt nach...{:else}<i class="fa-solid fa-lightbulb" aria-hidden="true"></i> Vorschlagen{/if}
+            {#if laedt}<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Denkt nach...{:else}<i class="fa-solid fa-lightbulb" aria-hidden="true"></i> {aktionText}{/if}
           </button>
-          <span class="ki-hinweis">KI schlaegt nur vor - du entscheidest.</span>
+          <span class="ki-hinweis">{nurAnzeige ? 'Nur eine Einschaetzung - keine Aenderung.' : 'KI schlaegt nur vor - du entscheidest.'}</span>
         </div>
 
         {#if meldung}
@@ -129,25 +133,42 @@
         {/if}
 
         {#if vorschlaege.length}
-          <ul class="ki-liste">
-            {#each vorschlaege as v (v.id)}
-              <li class="ki-zeile">
-                <label class="ki-label">
-                  <input type="checkbox" checked={auswahl[v.id]} onchange={(e) => (auswahl[v.id] = e.currentTarget.checked)} />
-                  <span class="ki-text">
-                    <span class="ki-haupt">{v.text}</span>
+          {#if nurAnzeige}
+            <ul class="ki-liste">
+              {#each vorschlaege as v (v.id)}
+                <li class="ki-zeile">
+                  <span class="ki-text ki-info">
+                    <span class="ki-haupt"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> {v.text}</span>
                     {#if v.begruendung}<span class="ki-grund">{v.begruendung}</span>{/if}
                   </span>
-                </label>
-              </li>
-            {/each}
-          </ul>
-          <div class="ki-fuss">
-            <button type="button" class="ki-text-knopf" onclick={zuruecksetzen}>Verwerfen</button>
-            <button type="button" class="ki-primaer" onclick={uebernehmen} disabled={!anzahlGewaehlt}>
-              {uebernehmenText}{anzahlGewaehlt ? ` (${anzahlGewaehlt})` : ''}
-            </button>
-          </div>
+                </li>
+              {/each}
+            </ul>
+            <div class="ki-fuss">
+              <span></span>
+              <button type="button" class="ki-text-knopf" onclick={schliessen}>Schliessen</button>
+            </div>
+          {:else}
+            <ul class="ki-liste">
+              {#each vorschlaege as v (v.id)}
+                <li class="ki-zeile">
+                  <label class="ki-label">
+                    <input type="checkbox" checked={auswahl[v.id]} onchange={(e) => (auswahl[v.id] = e.currentTarget.checked)} />
+                    <span class="ki-text">
+                      <span class="ki-haupt">{v.text}</span>
+                      {#if v.begruendung}<span class="ki-grund">{v.begruendung}</span>{/if}
+                    </span>
+                  </label>
+                </li>
+              {/each}
+            </ul>
+            <div class="ki-fuss">
+              <button type="button" class="ki-text-knopf" onclick={zuruecksetzen}>Verwerfen</button>
+              <button type="button" class="ki-primaer" onclick={uebernehmen} disabled={!anzahlGewaehlt}>
+                {uebernehmenText}{anzahlGewaehlt ? ` (${anzahlGewaehlt})` : ''}
+              </button>
+            </div>
+          {/if}
         {:else if gefragt && !laedt && !meldung}
           <p class="ki-meldung">Kein Vorschlag.</p>
         {/if}
@@ -204,6 +225,8 @@
   .ki-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   .ki-haupt { font-size: 12.5px; color: var(--text-1); }
   .ki-grund { font-size: 11px; color: var(--text-3); line-height: 1.35; }
+  .ki-info { padding: 7px 2px; }
+  .ki-info .ki-haupt i { color: var(--hl-primary); margin-right: 5px; }
 
   .ki-fuss { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
   .ki-text-knopf { border: none; background: transparent; color: var(--text-3); font-size: 12px; cursor: pointer; padding: 6px 4px; }

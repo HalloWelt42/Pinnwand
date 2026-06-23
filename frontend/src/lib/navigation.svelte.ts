@@ -21,9 +21,11 @@ export function setzeOffeneKarte(boardId: string | null, schluessel?: string | n
   kartenZeiger.offen = boardId && schluessel ? { boardId, schluessel } : null
 }
 
-// Wunsch, ein bestimmtes Transkript zu oeffnen (z.B. aus einer verknuepften Karte).
-export const transkriptNav = $state<{ id: string | null }>({ id: null })
+// Wunsch, ein bestimmtes Transkript zu oeffnen (z.B. aus einer verknuepften Karte),
+// optional an einer Position (Sekunden) - dann wird dorthin gesprungen.
+export const transkriptNav = $state<{ id: string | null; positionSek: number | null }>({ id: null, positionSek: null })
 
-export function oeffneTranskript(id: string): void {
+export function oeffneTranskript(id: string, positionSek: number | null = null): void {
   transkriptNav.id = id
+  transkriptNav.positionSek = positionSek
 }

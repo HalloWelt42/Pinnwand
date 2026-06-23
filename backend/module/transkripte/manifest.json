@@ -11,7 +11,8 @@
     "commands": []
   },
   "backend": {
-    "router": "module.transkripte.api:router"
+    "router": "module.transkripte.api:router",
+    "init": "module.transkripte.marken:init_db"
   },
   "permissions": [],
   "requires": []

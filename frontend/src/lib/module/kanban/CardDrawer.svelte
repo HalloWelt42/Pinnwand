@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Karte, Prioritaet, Spalte } from '../../types'
-  import type { KarteAenderung, TranskriptTreffer, Person } from '../../api'
-  import { transkripteSuche, ladePersonen } from '../../api'
+  import type { KarteAenderung, TranskriptTreffer, Person, TranskriptMarke } from '../../api'
+  import { transkripteSuche, ladePersonen, ladeMarken, erstelleMarke, aktualisiereMarke, loescheMarke, zusammenfassungVorschlag } from '../../api'
   import { merkeKuerzel } from '../../zuletztKuerzel.svelte'
   import { oeffneTranskript } from '../../navigation.svelte'
   import { labelFarbe } from '../../labels'
@@ -96,6 +96,73 @@
     onAendern({ transkript_id: null, transkript_name: null })
   }
 
+  // -- Transkript-Verweise (mehrere Marken je Karte, mit Position + Zusammenfassung) --
+  let marken = $state<TranskriptMarke[]>([])
+  let mSuche = $state('')
+  let mTreffer = $state<TranskriptTreffer[]>([])
+  let mTimer: ReturnType<typeof setTimeout> | null = null
+  const zusTimer: Record<string, ReturnType<typeof setTimeout>> = {}
+  let kiLaeuft = $state<string | null>(null)
+  let kiVorschau = $state<Record<string, string>>({})
+  let kiFehler = $state<Record<string, string>>({})
+
+  function mmssZeit(s?: number | null): string {
+    if (s == null) return ''
+    const t = Math.max(0, Math.floor(s))
+    return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`
+  }
+  async function ladeMarkenFuer(): Promise<void> {
+    try { marken = (await ladeMarken(karte.id)).marken } catch { marken = [] }
+  }
+  function mSuchen(): void {
+    if (mTimer) clearTimeout(mTimer)
+    const q = mSuche
+    mTimer = setTimeout(async () => {
+      try { mTreffer = (await transkripteSuche(q, 12)).treffer } catch { mTreffer = [] }
+    }, 220)
+  }
+  async function markeHinzufuegen(t: TranskriptTreffer): Promise<void> {
+    const m = await erstelleMarke({ karte_id: karte.id, transkript_id: t.id, transkript_name: t.name })
+    marken = [...marken, m]
+    mSuche = ''
+    mTreffer = []
+  }
+  function markeOeffnen(m: TranskriptMarke): void {
+    oeffneTranskript(m.transkript_id, m.position_sek ?? null)
+  }
+  async function markeLoeschen(m: TranskriptMarke): Promise<void> {
+    await loescheMarke(m.id)
+    marken = marken.filter((x) => x.id !== m.id)
+  }
+  function zusAendern(m: TranskriptMarke, wert: string): void {
+    m.zusammenfassung = wert
+    if (zusTimer[m.id]) clearTimeout(zusTimer[m.id])
+    zusTimer[m.id] = setTimeout(() => { aktualisiereMarke(m.id, { zusammenfassung: wert }).catch(() => {}) }, 600)
+  }
+  async function kiVorschlag(m: TranskriptMarke): Promise<void> {
+    kiFehler = { ...kiFehler, [m.id]: '' }
+    kiLaeuft = m.id
+    try {
+      const { zusammenfassung } = await zusammenfassungVorschlag(m.transkript_id, m.position_sek ?? null)
+      kiVorschau = { ...kiVorschau, [m.id]: zusammenfassung }
+    } catch (e) {
+      kiFehler = { ...kiFehler, [m.id]: e instanceof Error ? e.message : 'KI nicht verfügbar' }
+    } finally {
+      kiLaeuft = null
+    }
+  }
+  function kiVerwerfen(m: TranskriptMarke): void {
+    const { [m.id]: _weg, ...rest } = kiVorschau
+    kiVorschau = rest
+  }
+  function kiUebernehmen(m: TranskriptMarke): void {
+    const t = kiVorschau[m.id]
+    if (t == null) return
+    m.zusammenfassung = t
+    aktualisiereMarke(m.id, { zusammenfassung: t }).catch(() => {})
+    kiVerwerfen(m)
+  }
+
   function autoSpeichern() {
     if (spTimer) clearTimeout(spTimer)
     gespeichert = false
@@ -124,6 +191,10 @@
       notiz = karte.notizen ?? ''
       notizVollbild = false
       notizGespeichert = false
+      mSuche = ''
+      mTreffer = []
+      kiVorschau = {}
+      ladeMarkenFuer()
     }
   })
 
@@ -367,6 +438,45 @@
           {/each}
         </div>
       {/if}
+    {/if}
+
+    <p class="sec">Transkript-Verweise</p>
+    {#each marken as m (m.id)}
+      <div class="marke">
+        <div class="mkopf">
+          <i class="fa-solid fa-headphones" aria-hidden="true"></i>
+          <span class="mname">{m.titel || m.transkript_name || 'Transkript'}</span>
+          {#if m.position_sek != null}<span class="mzeit">{mmssZeit(m.position_sek)}</span>{/if}
+          {#if m.sprecher}<span class="mspk">{m.sprecher}</span>{/if}
+          <button class="mini geist" onclick={() => markeOeffnen(m)}><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> Öffnen</button>
+          <button class="ic" aria-label="Verweis entfernen" onclick={() => markeLoeschen(m)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+        </div>
+        {#if m.segment_text}<div class="mseg">{m.segment_text}</div>{/if}
+        <textarea class="mzus" rows="2" placeholder="Zusammenfassung dieses Abschnitts ..." value={m.zusammenfassung ?? ''} oninput={(e) => zusAendern(m, e.currentTarget.value)}></textarea>
+        <div class="mreihe">
+          <button class="mini geist" disabled={kiLaeuft === m.id} onclick={() => kiVorschlag(m)}>
+            <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> {kiLaeuft === m.id ? 'erzeugt ...' : 'KI-Vorschlag'}
+          </button>
+          {#if kiFehler[m.id]}<span class="mfehler">{kiFehler[m.id]}</span>{/if}
+        </div>
+        {#if kiVorschau[m.id] != null}
+          <div class="kivorschau">
+            <div class="kitext">{kiVorschau[m.id]}</div>
+            <div class="mreihe">
+              <button class="mini" onclick={() => kiUebernehmen(m)}>Übernehmen</button>
+              <button class="mini geist" onclick={() => kiVerwerfen(m)}>Verwerfen</button>
+            </div>
+          </div>
+        {/if}
+      </div>
+    {/each}
+    <input class="feld" placeholder="Transkript suchen und als Verweis anhängen ..." bind:value={mSuche} oninput={mSuchen} />
+    {#if mTreffer.length}
+      <div class="ttreffer">
+        {#each mTreffer as t (t.id)}
+          <button class="ttr" onclick={() => markeHinzufuegen(t)}><i class="fa-regular fa-file-audio" aria-hidden="true"></i> <span>{t.name}</span></button>
+        {/each}
+      </div>
     {/if}
 
     <p class="sec">Aktivität</p>
@@ -797,6 +907,86 @@
   }
   .ttr:hover {
     border-color: var(--hl-primary);
+  }
+  .marke {
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    border-radius: var(--r-m);
+    padding: 9px 10px;
+    margin-bottom: 7px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .mkopf {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-1);
+    font-size: 12.5px;
+  }
+  .mname {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .mzeit {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--hl-primary-text);
+    background: var(--hl-primary-weich);
+    padding: 1px 6px;
+    border-radius: var(--r-s);
+  }
+  .mspk {
+    font-size: 10.5px;
+    color: var(--text-3);
+    white-space: nowrap;
+  }
+  .mseg {
+    font-size: 11.5px;
+    color: var(--text-2);
+    line-height: 1.45;
+    background: var(--surface-1);
+    border-radius: var(--r-s);
+    padding: 5px 8px;
+  }
+  .mzus {
+    width: 100%;
+    border: 1px solid var(--border);
+    background: var(--surface-1);
+    color: var(--text-1);
+    border-radius: var(--r-s);
+    padding: 6px 8px;
+    font-size: 12px;
+    line-height: 1.45;
+    resize: vertical;
+  }
+  .mreihe {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mfehler {
+    font-size: 10.5px;
+    color: var(--due-rot-fg);
+  }
+  .kivorschau {
+    border: 1px dashed var(--hl-primary);
+    background: var(--hl-primary-weich);
+    border-radius: var(--r-s);
+    padding: 7px 9px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .kitext {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-1);
   }
   .ct .cmt-md {
     margin: 3px 0 0;

@@ -289,6 +289,54 @@ export const transkripteSuche = (q: string, limit = 30): Promise<{ treffer: Tran
 export const transkriptDetail = (id: string): Promise<TranskriptDetail> =>
   hole(`/api/transkripte/${id}`)
 
+// Transkript-Marke: verbindet eine Karte mit einer Stelle im Transkript.
+export interface TranskriptMarke {
+  id: string
+  karte_id: string
+  transkript_id: string
+  transkript_name?: string | null
+  position_sek?: number | null
+  segment_text?: string | null
+  sprecher?: string | null
+  titel?: string | null
+  zusammenfassung?: string | null
+  reihenfolge: number
+  erstellt_am?: string | null
+  // nur bei marken-je-Transkript mitgeliefert:
+  karte_schluessel?: string | null
+  karte_titel?: string | null
+  karte_board?: string | null
+}
+export interface MarkeEingabe {
+  karte_id: string
+  transkript_id: string
+  transkript_name?: string | null
+  position_sek?: number | null
+  segment_text?: string | null
+  sprecher?: string | null
+  titel?: string | null
+  zusammenfassung?: string | null
+}
+export interface MarkeAenderung {
+  titel?: string | null
+  zusammenfassung?: string | null
+  position_sek?: number | null
+  segment_text?: string | null
+  sprecher?: string | null
+}
+export const ladeMarken = (karteId: string): Promise<{ marken: TranskriptMarke[] }> =>
+  hole(`/api/transkripte/marken?karte_id=${encodeURIComponent(karteId)}`)
+export const markenJeTranskript = (tid: string): Promise<{ marken: TranskriptMarke[] }> =>
+  hole(`/api/transkripte/${tid}/marken`)
+export const erstelleMarke = (eingabe: MarkeEingabe): Promise<TranskriptMarke> =>
+  hole('/api/transkripte/marken', { method: 'POST', body: JSON.stringify(eingabe) })
+export const aktualisiereMarke = (id: string, daten: MarkeAenderung): Promise<TranskriptMarke> =>
+  hole(`/api/transkripte/marken/${id}`, { method: 'PATCH', body: JSON.stringify(daten) })
+export const loescheMarke = (id: string): Promise<void> =>
+  hole(`/api/transkripte/marken/${id}`, { method: 'DELETE' })
+export const zusammenfassungVorschlag = (transkriptId: string, positionSek: number | null): Promise<{ zusammenfassung: string }> =>
+  hole('/api/transkripte/zusammenfassung-vorschlag', { method: 'POST', body: JSON.stringify({ transkript_id: transkriptId, position_sek: positionSek }) })
+
 // --- Serien (wiederkehrende Termine/Aufgaben) ---
 
 export interface Serie {

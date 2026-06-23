@@ -3,11 +3,19 @@
     transkripteStatus,
     transkripteSuche,
     transkriptDetail,
+    markenJeTranskript,
+    erstelleMarke,
+    ladeMappen,
+    ladeBoards,
+    ladeBoard,
     type TranskriptTreffer,
     type TranskriptDetail,
+    type TranskriptSegment,
+    type TranskriptMarke,
   } from '../../api'
+  import type { Karte } from '../../types'
   import { tts, vorlesen, stoppeVorlesen } from '../../tts.svelte'
-  import { transkriptNav } from '../../navigation.svelte'
+  import { transkriptNav, oeffneKarte } from '../../navigation.svelte'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
@@ -20,30 +28,74 @@
   let timer: ReturnType<typeof setTimeout> | null = null
   let audioEl = $state<HTMLAudioElement | null>(null)
 
+  // Marken (Karten-Verweise) des aktiven Transkripts + Deep-Link-Sprungziel.
+  let marken = $state<TranskriptMarke[]>([])
+  let zielPos = $state<number | null>(null)
+  let aktivSeg = $state<number | null>(null)
+  // Ticket-Auswahl beim Anheften eines Segments.
+  let anheftenSeg = $state<TranskriptSegment | null>(null)
+  let boardListe = $state<{ id: string; titel: string }[]>([])
+  let pickBoardId = $state('')
+  let pickKarten = $state<Karte[]>([])
+  let anheftMeldung = $state('')
+
+  const markiertePositionen = $derived(
+    new Set(marken.filter((m) => m.position_sek != null).map((m) => Math.round((m.position_sek as number) * 10))),
+  )
+  function istMarkiert(start: number): boolean {
+    return markiertePositionen.has(Math.round(start * 10))
+  }
+
   function mmss(s: number): string {
     const t = Math.max(0, Math.floor(s))
     return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`
   }
-  function springe(start: number): void {
+  function springe(start: number, i: number | null = null): void {
+    aktivSeg = i
     if (!audioEl) return
-    audioEl.currentTime = start
+    try { audioEl.currentTime = start } catch { /* noch keine Metadaten */ }
     void audioEl.play()
+  }
+  async function ladeMarkenDes(id: string): Promise<void> {
+    try { marken = (await markenJeTranskript(id)).marken } catch { marken = [] }
   }
   async function oeffneById(id: string): Promise<void> {
     stoppeVorlesen()
+    anheftenSeg = null
+    aktivSeg = null
     try {
       aktiv = await transkriptDetail(id)
     } catch {
       aktiv = null
     }
+    await ladeMarkenDes(id)
   }
-  // Wunsch aus einer verknuepften Karte: dieses Transkript oeffnen.
+  // Wunsch aus einer verknuepften Karte: dieses Transkript oeffnen, ggf. an Position springen.
   $effect(() => {
     const id = transkriptNav.id
     if (id) {
+      const pos = transkriptNav.positionSek
       transkriptNav.id = null
-      oeffneById(id)
+      transkriptNav.positionSek = null
+      oeffneById(id).then(() => { zielPos = pos })
     }
+  })
+  // Nach dem Laden zur gewuenschten Position springen + Segment hervorheben.
+  $effect(() => {
+    const pos = zielPos
+    if (pos == null || !aktiv) return
+    setTimeout(() => {
+      const segs = aktiv?.segmente ?? []
+      let bi = 0
+      let bd = Infinity
+      segs.forEach((s, i) => { const d = Math.abs((s.start ?? 0) - pos); if (d < bd) { bd = d; bi = i } })
+      if (segs.length) {
+        aktivSeg = bi
+        document.getElementById('seg-' + bi)?.scrollIntoView({ block: 'center' })
+      }
+      if (audioEl) { try { audioEl.currentTime = pos } catch { /* ignorieren */ } }
+      zielPos = null
+    }, 250)
   })
 
   $effect(() => {
@@ -70,12 +122,50 @@
   }
 
   async function oeffne(t: TranskriptTreffer): Promise<void> {
-    stoppeVorlesen()
-    try {
-      aktiv = await transkriptDetail(t.id)
-    } catch {
-      aktiv = null
+    await oeffneById(t.id)
+  }
+
+  // -- Segment an ein Ticket anheften (Position + Text + Sprecher uebernehmen) --
+  async function anheftenStart(seg: TranskriptSegment): Promise<void> {
+    anheftMeldung = ''
+    anheftenSeg = anheftenSeg === seg ? null : seg
+    pickKarten = []
+    if (!anheftenSeg) return
+    if (!boardListe.length) {
+      try {
+        const mappen = await ladeMappen()
+        const alle: { id: string; titel: string }[] = []
+        for (const mp of mappen) {
+          for (const b of await ladeBoards(mp.id)) alle.push({ id: b.id, titel: b.titel })
+        }
+        boardListe = alle
+        if (!pickBoardId && alle[0]) pickBoardId = alle[0].id
+      } catch {
+        boardListe = []
+      }
     }
+    if (pickBoardId) boardWaehlen(pickBoardId)
+  }
+  async function boardWaehlen(id: string): Promise<void> {
+    pickBoardId = id
+    try { pickKarten = (await ladeBoard(id)).karten } catch { pickKarten = [] }
+  }
+  async function anheften(k: Karte): Promise<void> {
+    if (!aktiv || !anheftenSeg) return
+    await erstelleMarke({
+      karte_id: k.id,
+      transkript_id: aktiv.id,
+      transkript_name: aktiv.name,
+      position_sek: anheftenSeg.start,
+      segment_text: anheftenSeg.text,
+      sprecher: anheftenSeg.speaker ?? null,
+    })
+    anheftMeldung = `An ${k.schluessel ?? k.titel} angeheftet.`
+    anheftenSeg = null
+    await ladeMarkenDes(aktiv.id)
+  }
+  function zurKarte(m: TranskriptMarke): void {
+    if (m.karte_board) oeffneKarte(m.karte_board, m.karte_id, m.karte_schluessel ?? undefined)
   }
 
   function vorlesenUmschalten(): void {
@@ -140,15 +230,47 @@
             {#if aktiv.audio_url}
               <audio class="player" controls src={aktiv.audio_url} bind:this={audioEl}></audio>
             {/if}
+            {#if marken.length}
+              <div class="verknuepft">
+                <span class="vlbl">Verknüpfte Tickets:</span>
+                {#each marken as m (m.id)}
+                  <button class="vchip" title="Zur Karte springen" onclick={() => zurKarte(m)}>
+                    {m.karte_schluessel || m.karte_titel || 'Karte'}{#if m.position_sek != null} &middot; {mmss(m.position_sek)}{/if}
+                  </button>
+                {/each}
+              </div>
+            {/if}
+            {#if anheftMeldung}<p class="anheftok">{anheftMeldung}</p>{/if}
           </header>
           {#if aktiv.segmente && aktiv.segmente.length}
             <div class="segmente">
               {#each aktiv.segmente as s, i (i)}
-                <button class="seg" onclick={() => springe(s.start)} title="Zum Segment springen">
-                  <span class="szeit">{mmss(s.start)}</span>
-                  {#if s.speaker}<span class="sspk">{s.speaker}</span>{/if}
-                  <span class="stext">{@html hervor(s.text, frage)}</span>
-                </button>
+                <div class="segzeile" id={'seg-' + i} class:aktiv={aktivSeg === i} class:markiert={istMarkiert(s.start)}>
+                  <button class="seg" onclick={() => springe(s.start, i)} title="Zum Segment springen">
+                    <span class="szeit">{mmss(s.start)}</span>
+                    {#if s.speaker}<span class="sspk">{s.speaker}</span>{/if}
+                    <span class="stext">{@html hervor(s.text, frage)}</span>
+                  </button>
+                  <button class="anheft-btn" class:an={istMarkiert(s.start)} title="An Ticket anheften" aria-label="An Ticket anheften" onclick={() => anheftenStart(s)}>
+                    <i class="fa-solid fa-thumbtack" aria-hidden="true"></i>
+                  </button>
+                </div>
+                {#if anheftenSeg === s}
+                  <div class="picker">
+                    <div class="preihe">
+                      <select aria-label="Board" bind:value={pickBoardId} onchange={(e) => boardWaehlen(e.currentTarget.value)}>
+                        {#each boardListe as b (b.id)}<option value={b.id}>{b.titel}</option>{/each}
+                      </select>
+                      <button class="mini geist" onclick={() => (anheftenSeg = null)}>Schliessen</button>
+                    </div>
+                    <div class="pkarten">
+                      {#each pickKarten as k (k.id)}
+                        <button class="pk" onclick={() => anheften(k)}>{#if k.schluessel}<span class="pkkey">{k.schluessel}</span>{/if} {k.titel}</button>
+                      {/each}
+                      {#if !pickKarten.length}<span class="leer">Keine Karten in diesem Board.</span>{/if}
+                    </div>
+                  </div>
+                {/if}
               {/each}
             </div>
           {:else}
@@ -375,5 +497,141 @@
   }
   .stext {
     min-width: 0;
+  }
+  .segzeile {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    border: 1px solid transparent;
+    border-radius: var(--r-m);
+  }
+  .segzeile.aktiv {
+    border-color: var(--hl-primary);
+    background: var(--hl-primary-weich);
+  }
+  .segzeile.markiert {
+    background: var(--surface-2);
+  }
+  .segzeile .seg {
+    flex: 1;
+    min-width: 0;
+  }
+  .anheft-btn {
+    flex: none;
+    width: 30px;
+    border: none;
+    background: transparent;
+    color: var(--text-3);
+    border-radius: var(--r-s);
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .segzeile:hover .anheft-btn {
+    opacity: 0.8;
+  }
+  .anheft-btn:hover {
+    background: var(--surface-3);
+    color: var(--hl-primary-text);
+    opacity: 1;
+  }
+  .anheft-btn.an {
+    color: var(--hl-primary-text);
+    opacity: 1;
+  }
+  .picker {
+    margin: 2px 0 6px 48px;
+    border: 1px solid var(--border-2);
+    background: var(--surface-1);
+    border-radius: var(--r-m);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .preihe {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .preihe select {
+    flex: 1;
+    border: 1px solid var(--border-2);
+    background: var(--surface-2);
+    color: var(--text-1);
+    border-radius: var(--r-s);
+    padding: 6px 8px;
+    font-size: 12.5px;
+  }
+  .pkarten {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .pk {
+    text-align: left;
+    border: 1px solid var(--border);
+    background: var(--surface-col);
+    color: var(--text-1);
+    border-radius: var(--r-s);
+    padding: 6px 9px;
+    font-size: 12.5px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .pk:hover {
+    border-color: var(--hl-primary);
+  }
+  .pkkey {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--hl-primary-text);
+    background: var(--hl-primary-weich);
+    padding: 1px 6px;
+    border-radius: var(--r-s);
+  }
+  .mini {
+    border: 1px solid var(--hl-primary);
+    background: var(--hl-primary);
+    color: var(--hl-on-primary);
+    border-radius: var(--r-s);
+    padding: 5px 9px;
+    font-size: 11.5px;
+    white-space: nowrap;
+  }
+  .mini.geist {
+    background: transparent;
+    color: var(--text-2);
+    border-color: var(--border-2);
+  }
+  .verknuepft {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+  .vlbl {
+    font-size: 11px;
+    color: var(--text-3);
+  }
+  .vchip {
+    border: 1px solid var(--border-2);
+    background: var(--surface-2);
+    color: var(--hl-primary-text);
+    border-radius: var(--r-s);
+    padding: 3px 8px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+  }
+  .vchip:hover {
+    border-color: var(--hl-primary);
+  }
+  .anheftok {
+    font-size: 11.5px;
+    color: var(--ok);
+    margin: 0;
   }
 </style>

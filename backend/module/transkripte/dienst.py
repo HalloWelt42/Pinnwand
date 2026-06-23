@@ -199,3 +199,59 @@ def detail(tid: str) -> dict | None:
     if grund is None:
         return None
     return {**grund, "audio_url": audio, "segmente": segmente}
+
+
+def _chat_modell() -> str | None:
+    """Erstes geladenes Nicht-Embedding-Modell von LM Studio (JIT laedt nur geladene)."""
+    base = einstellungen.llm_url
+    if not base:
+        return None
+    try:
+        r = httpx.get(base.rstrip("/") + "/v1/models", timeout=3.0)
+        modelle = [m.get("id", "") for m in r.json().get("data", [])]
+    except Exception:
+        return None
+    return next((m for m in modelle if m and "embed" not in m.lower()), None)
+
+
+def zusammenfassung_vorschlag(transkript_id: str, position_sek: float | None) -> str | None:
+    """Erzeugt aus dem Abschnitt ab der Position einen Zusammenfassungs-Vorschlag
+    (nur Vorschau, wird nicht gespeichert). None, wenn kein Chat-Modell verfuegbar."""
+    base = einstellungen.llm_url
+    if not base:
+        return None
+    d = detail(transkript_id)
+    if not d:
+        return None
+    segmente = d.get("segmente") or []
+    if position_sek is not None and segmente:
+        idx = min(range(len(segmente)), key=lambda i: abs((segmente[i].get("start") or 0) - position_sek))
+        abschnitt = segmente[idx: idx + 8]
+        text = " ".join(s.get("text", "") for s in abschnitt)
+    else:
+        text = d.get("full_text") or " ".join(s.get("text", "") for s in segmente)
+    text = (text or "").strip()[:4000]
+    if not text:
+        return None
+    modell = _chat_modell()
+    if not modell:
+        return None
+    try:
+        r = httpx.post(
+            base.rstrip("/") + "/v1/chat/completions",
+            json={
+                "model": modell,
+                "messages": [
+                    {"role": "system", "content": "Du fasst Transkript-Abschnitte praegnant auf Deutsch zusammen."},
+                    {"role": "user", "content": "Fasse den folgenden Transkript-Abschnitt in 1 bis 3 Saetzen auf Deutsch zusammen. Gib nur die Zusammenfassung aus, ohne Einleitung:\n\n" + text},
+                ],
+                "temperature": 0.3,
+                "max_tokens": 220,
+            },
+            timeout=60.0,
+        )
+        if r.status_code >= 400:
+            return None
+        return (r.json()["choices"][0]["message"]["content"] or "").strip() or None
+    except Exception:
+        return None

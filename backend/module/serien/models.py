@@ -59,6 +59,16 @@ class SerieCreate(BaseModel):
     aktiv: bool = True
 
 
+class SerienNachtrag(BaseModel):
+    """Eine ignorierte Serien-Karte vergangener Tage (Folgetag-Nachfrage)."""
+    karte_id: str
+    schluessel: str | None = None
+    titel: str
+    datum: str | None = None
+    serie_titel: str | None = None
+    soll_min: int | None = None
+
+
 class SerieUpdate(BaseModel):
     titel: str | None = None
     beschreibung: str | None = None

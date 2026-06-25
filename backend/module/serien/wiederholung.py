@@ -8,6 +8,22 @@ from __future__ import annotations
 
 import calendar
 from datetime import date, timedelta
+from typing import Protocol
+
+
+class Wiederholungsregel(Protocol):
+    """Strukturelle Sicht auf die Wiederholungs-Felder. Erfuellt sowohl von der
+    Aufgaben-Serie (serien.Serie) als auch von der Termin-Serie (termine.TerminSerie),
+    damit diese Berechnung von beiden Modulen geteilt werden kann."""
+    typ: str
+    intervall: int
+    wochentage: list[int]
+    monatstag: int | None
+    monatsregel: str
+    start: str | None
+    ende: str | None
+    wochenenden_ueberspringen: bool
+    feiertage_ueberspringen: bool
 
 
 def _montag(d: date) -> date:
@@ -29,22 +45,22 @@ def _letzter_werktag(jahr: int, monat: int) -> int:
     return letzter
 
 
-def _ziel_monatstag(d: date, serie: dict, start: date) -> int:
-    regel = serie.get("monatsregel") or "tag"
+def _ziel_monatstag(d: date, serie: Wiederholungsregel, start: date) -> int:
+    regel = serie.monatsregel or "tag"
     if regel == "erster_werktag":
         return _erster_werktag(d.year, d.month)
     if regel == "letzter_werktag":
         return _letzter_werktag(d.year, d.month)
-    return serie.get("monatstag") or start.day
+    return serie.monatstag or start.day
 
 
-def _passt(d: date, serie: dict, start: date) -> bool:
-    typ = serie.get("typ")
-    intervall = max(1, int(serie.get("intervall") or 1))
+def _passt(d: date, serie: Wiederholungsregel, start: date) -> bool:
+    typ = serie.typ
+    intervall = max(1, int(serie.intervall or 1))
     if typ == "taeglich":
         return (d - start).days % intervall == 0
     if typ == "woechentlich":
-        wochentage = serie.get("wochentage") or []
+        wochentage = serie.wochentage or []
         if wochentage and d.weekday() not in wochentage:
             return False
         if not wochentage and d.weekday() != start.weekday():
@@ -59,11 +75,11 @@ def _passt(d: date, serie: dict, start: date) -> bool:
     return False
 
 
-def termine(serie: dict, von: date, bis: date, feiertage: set[str] | None = None) -> list[date]:
-    start = date.fromisoformat(serie["start"]) if serie.get("start") else von
-    ende = date.fromisoformat(serie["ende"]) if serie.get("ende") else None
-    skip_we = bool(serie.get("wochenenden_ueberspringen"))
-    skip_ft = bool(serie.get("feiertage_ueberspringen")) and bool(feiertage)
+def termine(serie: Wiederholungsregel, von: date, bis: date, feiertage: set[str] | None = None) -> list[date]:
+    start = date.fromisoformat(serie.start) if serie.start else von
+    ende = date.fromisoformat(serie.ende) if serie.ende else None
+    skip_we = bool(serie.wochenenden_ueberspringen)
+    skip_ft = bool(serie.feiertage_ueberspringen) and bool(feiertage)
     out: list[date] = []
     cur = von
     while cur <= bis:

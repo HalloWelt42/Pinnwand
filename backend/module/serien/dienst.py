@@ -13,14 +13,15 @@ from app.db import verbindung
 from module.kanban_kern import persistence as k
 
 from . import persistence as db, wiederholung
+from .models import Serie, SerienNachtrag
 
 
-def _zielspalte(serie: dict) -> str | None:
-    if serie.get("spalte_id"):
-        return serie["spalte_id"]
+def _zielspalte(serie: Serie) -> str | None:
+    if serie.spalte_id:
+        return serie.spalte_id
     with verbindung() as conn:
         r = conn.execute(
-            "SELECT id FROM spalte WHERE board_id = ? ORDER BY reihenfolge LIMIT 1", (serie["board_id"],)
+            "SELECT id FROM spalte WHERE board_id = ? ORDER BY reihenfolge LIMIT 1", (serie.board_id,)
         ).fetchone()
     return r["id"] if r else None
 
@@ -37,13 +38,13 @@ def _urlaubstage(kuerzel: str | None, von: date, bis: date) -> set[str]:
     return pdb.urlaubstage_set(kuerzel, von.isoformat(), bis.isoformat())
 
 
-def materialisiere(serie: dict, heute: date | None = None) -> int:
+def materialisiere(serie: Serie, heute: date | None = None) -> int:
     """Legt fehlende Instanzen der Serie im Vorlauf-Zeitraum an. Gibt die Anzahl zurück."""
-    if not serie.get("aktiv"):
+    if not serie.aktiv:
         return 0
     heute = heute or date.today()
     # 0 ist ein gueltiger Wert (nur heute) - daher kein "or 14", das 0 verschlucken wuerde.
-    vorlauf = serie.get("vorlauf_tage")
+    vorlauf = serie.vorlauf_tage
     vorlauf = 14 if vorlauf is None else int(vorlauf)
     bis = heute + timedelta(days=max(0, vorlauf))
     spalte = _zielspalte(serie)
@@ -54,37 +55,37 @@ def materialisiere(serie: dict, heute: date | None = None) -> int:
     # laengerer Abwesenheit kein Riesenstapel entsteht. Vorhandene Tage werden ohnehin
     # ueber die Dedup-Pruefung uebersprungen.
     RUECKBLICK = 31
-    letzte = k.letztes_serie_datum(serie["id"])
+    letzte = k.letztes_serie_datum(serie.id)
     if letzte:
         von = date.fromisoformat(letzte) + timedelta(days=1)
-    elif serie.get("start"):
-        von = date.fromisoformat(serie["start"])
+    elif serie.start:
+        von = date.fromisoformat(serie.start)
     else:
         von = heute
     von = max(von, heute - timedelta(days=RUECKBLICK))
     if von > bis:
         return 0
-    feiertage = _feiertage(von, bis) if serie.get("feiertage_ueberspringen") else None
-    urlaub = _urlaubstage(serie.get("zustaendig"), von, bis)
+    feiertage = _feiertage(von, bis) if serie.feiertage_ueberspringen else None
+    urlaub = _urlaubstage(serie.zustaendig, von, bis)
     erzeugt = 0
     for d in wiederholung.termine(serie, von, bis, feiertage):
         iso = d.isoformat()
         if iso in urlaub:
             continue
-        if k.serien_instanz_existiert(serie["id"], iso):
+        if k.serien_instanz_existiert(serie.id, iso):
             continue
-        titel = serie["titel"]
-        if serie.get("uhrzeit"):
-            titel = f"{serie['uhrzeit']} {titel}"
+        titel = serie.titel
+        if serie.uhrzeit:
+            titel = f"{serie.uhrzeit} {titel}"
         karte = k.erstelle_karte(
-            karte_id="k_" + uuid4().hex[:8], board_id=serie["board_id"], spalte=spalte,
-            titel=titel, beschreibung=serie.get("beschreibung"), labels=serie.get("labels") or [],
-            prioritaet=None, cover=None, start=None, faellig=iso, zustaendig=serie.get("zustaendig"),
+            karte_id="k_" + uuid4().hex[:8], board_id=serie.board_id, spalte=spalte,
+            titel=titel, beschreibung=serie.beschreibung, labels=serie.labels or [],
+            prioritaet=None, cover=None, start=None, faellig=iso, zustaendig=serie.zustaendig,
         )
-        if serie.get("dauer_min"):
-            k.aktualisiere_karte(karte.id, {"schaetzung_min": serie["dauer_min"]})
+        if serie.dauer_min:
+            k.aktualisiere_karte(karte.id, {"schaetzung_min": serie.dauer_min})
         try:
-            k.markiere_serie(karte.id, serie["id"], iso)
+            k.markiere_serie(karte.id, serie.id, iso)
         except Exception:
             # Paralleler Lauf hat dieselbe Instanz bereits angelegt (UNIQUE-Index)
             # -> die eben erzeugte Doppel-Karte wieder verwerfen.
@@ -121,7 +122,7 @@ def loesche(sid: str) -> bool:
     return db.loesche(sid)
 
 
-def offene_nachtraege(heute: date | None = None) -> list[dict]:
+def offene_nachtraege(heute: date | None = None) -> list[SerienNachtrag]:
     """Serien-Karten vergangener Tage, die nicht erfasst und nicht erledigt sind.
 
     Das sind die Vorkommen, die der Nutzer ignoriert hat - dafuer wird am
@@ -140,10 +141,10 @@ def offene_nachtraege(heute: date | None = None) -> list[dict]:
             (heute.isoformat(),),
         ).fetchall()
     return [
-        {
-            "karte_id": r["id"], "schluessel": r["schluessel"], "titel": r["titel"],
-            "datum": r["faellig"], "serie_titel": r["serie_titel"], "soll_min": r["dauer_min"],
-        }
+        SerienNachtrag(
+            karte_id=r["id"], schluessel=r["schluessel"], titel=r["titel"],
+            datum=r["faellig"], serie_titel=r["serie_titel"], soll_min=r["dauer_min"],
+        )
         for r in rows
     ]
 

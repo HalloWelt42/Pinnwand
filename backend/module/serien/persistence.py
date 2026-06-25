@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from app.db import verbindung
 
-from .models import SerieUpdate
+from .models import Serie, SerieUpdate
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS serie (
@@ -47,23 +47,23 @@ def init_db() -> None:
             conn.execute("ALTER TABLE serie ADD COLUMN feiertage_ueberspringen INTEGER NOT NULL DEFAULT 0")
 
 
-def _row(r: sqlite3.Row) -> dict:
-    return {
-        "id": r["id"], "board_id": r["board_id"], "spalte_id": r["spalte_id"],
-        "titel": r["titel"], "beschreibung": r["beschreibung"],
-        "labels": json.loads(r["labels"] or "[]"), "zustaendig": r["zustaendig"],
-        "typ": r["typ"], "intervall": r["intervall"],
-        "wochentage": [int(x) for x in (r["wochentage"] or "").split(",") if x != ""],
-        "monatstag": r["monatstag"], "monatsregel": r["monatsregel"],
-        "uhrzeit": r["uhrzeit"], "dauer_min": r["dauer_min"],
-        "wochenenden_ueberspringen": bool(r["wochenenden_ueberspringen"]),
-        "feiertage_ueberspringen": bool(r["feiertage_ueberspringen"]),
-        "vorlauf_tage": r["vorlauf_tage"], "start": r["start"], "ende": r["ende"],
-        "aktiv": bool(r["aktiv"]),
-    }
+def _row(r: sqlite3.Row) -> Serie:
+    return Serie(
+        id=r["id"], board_id=r["board_id"], spalte_id=r["spalte_id"],
+        titel=r["titel"], beschreibung=r["beschreibung"],
+        labels=json.loads(r["labels"] or "[]"), zustaendig=r["zustaendig"],
+        typ=r["typ"], intervall=r["intervall"],
+        wochentage=[int(x) for x in (r["wochentage"] or "").split(",") if x != ""],
+        monatstag=r["monatstag"], monatsregel=r["monatsregel"],
+        uhrzeit=r["uhrzeit"], dauer_min=r["dauer_min"],
+        wochenenden_ueberspringen=bool(r["wochenenden_ueberspringen"]),
+        feiertage_ueberspringen=bool(r["feiertage_ueberspringen"]),
+        vorlauf_tage=r["vorlauf_tage"], start=r["start"], ende=r["ende"],
+        aktiv=bool(r["aktiv"]),
+    )
 
 
-def liste(board_id: str | None = None) -> list[dict]:
+def liste(board_id: str | None = None) -> list[Serie]:
     with verbindung() as conn:
         if board_id:
             rows = conn.execute("SELECT * FROM serie WHERE board_id = ? ORDER BY titel", (board_id,)).fetchall()
@@ -72,13 +72,13 @@ def liste(board_id: str | None = None) -> list[dict]:
     return [_row(r) for r in rows]
 
 
-def hole(sid: str) -> dict | None:
+def hole(sid: str) -> Serie | None:
     with verbindung() as conn:
         r = conn.execute("SELECT * FROM serie WHERE id = ?", (sid,)).fetchone()
     return _row(r) if r else None
 
 
-def erstelle(daten: dict) -> dict:
+def erstelle(daten: dict) -> Serie:
     sid = "se_" + uuid4().hex[:8]
     with verbindung() as conn:
         conn.execute(
@@ -100,10 +100,12 @@ def erstelle(daten: dict) -> dict:
                 datetime.now().isoformat(timespec="seconds"),
             ),
         )
-    return hole(sid)  # type: ignore[return-value]
+    s = hole(sid)
+    assert s is not None
+    return s
 
 
-def aktualisiere(sid: str, aenderungen: dict) -> dict | None:
+def aktualisiere(sid: str, aenderungen: dict) -> Serie | None:
     f = {k: v for k, v in aenderungen.items() if k in SerieUpdate.model_fields}
     if not f:
         return hole(sid)

@@ -7,13 +7,13 @@ from fastapi import APIRouter, HTTPException, Query
 
 from . import dienst, wiederholung
 from . import persistence as db
-from .models import NachtragEingabe, Serie, SerieCreate, SerieUpdate
+from .models import NachtragEingabe, Serie, SerieCreate, SerienNachtrag, SerieUpdate
 
 router = APIRouter(prefix="/api/serien", tags=["serien"])
 
 
-@router.get("/nachtraege")
-def nachtraege() -> list[dict]:
+@router.get("/nachtraege", response_model=list[SerienNachtrag])
+def nachtraege() -> list[SerienNachtrag]:
     """Ignorierte Serien-Karten vergangener Tage (nicht erfasst, nicht erledigt)."""
     return dienst.offene_nachtraege()
 
@@ -61,7 +61,7 @@ def vorschau(sid: str, tage: int = Query(default=30)) -> dict:
         raise HTTPException(status_code=404, detail="Serie nicht gefunden")
     heute = date.today()
     bis = heute + timedelta(days=max(1, min(tage, 365)))
-    feiertage = dienst._feiertage(heute, bis) if serie.get("feiertage_ueberspringen") else None
+    feiertage = dienst._feiertage(heute, bis) if serie.feiertage_ueberspringen else None
     termine = wiederholung.termine(serie, heute, bis, feiertage)
     return {"termine": [d.isoformat() for d in termine]}
 

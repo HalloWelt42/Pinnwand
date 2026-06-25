@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from app.db import verbindung
 
-from .models import TerminSerieUpdate
+from .models import TerminInstanz, TerminSerie, TerminSerieUpdate
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS termin_serie (
@@ -57,34 +57,34 @@ def init_db() -> None:
 
 # -- Serien ---------------------------------------------------------------
 
-def _serie(r: sqlite3.Row) -> dict:
-    return {
-        "id": r["id"], "titel": r["titel"], "beschreibung": r["beschreibung"],
-        "kuerzel": r["kuerzel"], "typ": r["typ"], "intervall": r["intervall"],
-        "wochentage": [int(x) for x in (r["wochentage"] or "").split(",") if x != ""],
-        "monatstag": r["monatstag"], "monatsregel": r["monatsregel"], "uhrzeit": r["uhrzeit"],
-        "dauer_min": r["dauer_min"],
-        "wochenenden_ueberspringen": bool(r["wochenenden_ueberspringen"]),
-        "feiertage_ueberspringen": bool(r["feiertage_ueberspringen"]),
-        "urlaub_ueberspringen": bool(r["urlaub_ueberspringen"]),
-        "rueckblick_tage": r["rueckblick_tage"],
-        "start": r["start"], "ende": r["ende"], "aktiv": bool(r["aktiv"]),
-    }
+def _serie(r: sqlite3.Row) -> TerminSerie:
+    return TerminSerie(
+        id=r["id"], titel=r["titel"], beschreibung=r["beschreibung"],
+        kuerzel=r["kuerzel"], typ=r["typ"], intervall=r["intervall"],
+        wochentage=[int(x) for x in (r["wochentage"] or "").split(",") if x != ""],
+        monatstag=r["monatstag"], monatsregel=r["monatsregel"], uhrzeit=r["uhrzeit"],
+        dauer_min=r["dauer_min"],
+        wochenenden_ueberspringen=bool(r["wochenenden_ueberspringen"]),
+        feiertage_ueberspringen=bool(r["feiertage_ueberspringen"]),
+        urlaub_ueberspringen=bool(r["urlaub_ueberspringen"]),
+        rueckblick_tage=r["rueckblick_tage"],
+        start=r["start"], ende=r["ende"], aktiv=bool(r["aktiv"]),
+    )
 
 
-def liste_serien() -> list[dict]:
+def liste_serien() -> list[TerminSerie]:
     with verbindung() as conn:
         rows = conn.execute("SELECT * FROM termin_serie ORDER BY titel").fetchall()
     return [_serie(r) for r in rows]
 
 
-def hole_serie(sid: str) -> dict | None:
+def hole_serie(sid: str) -> TerminSerie | None:
     with verbindung() as conn:
         r = conn.execute("SELECT * FROM termin_serie WHERE id = ?", (sid,)).fetchone()
     return _serie(r) if r else None
 
 
-def erstelle_serie(daten: dict) -> dict:
+def erstelle_serie(daten: dict) -> TerminSerie:
     sid = "ts_" + uuid4().hex[:8]
     with verbindung() as conn:
         conn.execute(
@@ -106,10 +106,12 @@ def erstelle_serie(daten: dict) -> dict:
                 datetime.now().isoformat(timespec="seconds"),
             ),
         )
-    return hole_serie(sid)  # type: ignore[return-value]
+    s = hole_serie(sid)
+    assert s is not None
+    return s
 
 
-def aktualisiere_serie(sid: str, aenderungen: dict) -> dict | None:
+def aktualisiere_serie(sid: str, aenderungen: dict) -> TerminSerie | None:
     f = {k: v for k, v in aenderungen.items() if k in TerminSerieUpdate.model_fields}
     if not f:
         return hole_serie(sid)
@@ -136,12 +138,12 @@ def loesche_serie(sid: str) -> bool:
 
 # -- Instanzen ------------------------------------------------------------
 
-def _instanz(r: sqlite3.Row) -> dict:
-    return {
-        "id": r["id"], "serie_id": r["serie_id"], "datum": r["datum"], "kuerzel": r["kuerzel"],
-        "titel": r["titel"], "uhrzeit": r["uhrzeit"], "geplant_min": r["geplant_min"],
-        "status": r["status"], "effektiv_min": r["effektiv_min"], "bestaetigt_am": r["bestaetigt_am"],
-    }
+def _instanz(r: sqlite3.Row) -> TerminInstanz:
+    return TerminInstanz(
+        id=r["id"], serie_id=r["serie_id"], datum=r["datum"], kuerzel=r["kuerzel"],
+        titel=r["titel"], uhrzeit=r["uhrzeit"], geplant_min=r["geplant_min"],
+        status=r["status"], effektiv_min=r["effektiv_min"], bestaetigt_am=r["bestaetigt_am"],
+    )
 
 
 def instanz_existiert(serie_id: str, datum: str) -> bool:
@@ -151,21 +153,21 @@ def instanz_existiert(serie_id: str, datum: str) -> bool:
         ).fetchone() is not None
 
 
-def erstelle_instanz(serie: dict, datum: str) -> None:
+def erstelle_instanz(serie: TerminSerie, datum: str) -> None:
     with verbindung() as conn:
         conn.execute(
             "INSERT OR IGNORE INTO termin_instanz (id, serie_id, datum, kuerzel, titel, uhrzeit,"
             " geplant_min, status, erstellt_am)"
             " VALUES (?, ?, ?, ?, ?, ?, ?, 'schwebend', ?)",
             (
-                "ti_" + uuid4().hex[:8], serie["id"], datum, serie.get("kuerzel"),
-                serie["titel"], serie.get("uhrzeit"), int(serie.get("dauer_min") or 60),
+                "ti_" + uuid4().hex[:8], serie.id, datum, serie.kuerzel,
+                serie.titel, serie.uhrzeit, int(serie.dauer_min or 60),
                 datetime.now().isoformat(timespec="seconds"),
             ),
         )
 
 
-def liste_instanzen(status: str | None = None, von: str | None = None, bis: str | None = None) -> list[dict]:
+def liste_instanzen(status: str | None = None, von: str | None = None, bis: str | None = None) -> list[TerminInstanz]:
     klauseln, args = [], []
     if status:
         klauseln.append("status = ?")
@@ -182,7 +184,7 @@ def liste_instanzen(status: str | None = None, von: str | None = None, bis: str 
     return [_instanz(r) for r in rows]
 
 
-def hole_instanz(iid: str) -> dict | None:
+def hole_instanz(iid: str) -> TerminInstanz | None:
     with verbindung() as conn:
         r = conn.execute("SELECT * FROM termin_instanz WHERE id = ?", (iid,)).fetchone()
     return _instanz(r) if r else None
@@ -196,7 +198,7 @@ def zaehle_offen(bis: str) -> int:
     return int(r["n"])
 
 
-def bestaetige(iid: str, dauer_min: int) -> dict | None:
+def bestaetige(iid: str, dauer_min: int) -> TerminInstanz | None:
     with verbindung() as conn:
         conn.execute(
             "UPDATE termin_instanz SET status = 'bestaetigt', effektiv_min = ?, bestaetigt_am = ? WHERE id = ?",
@@ -205,7 +207,7 @@ def bestaetige(iid: str, dauer_min: int) -> dict | None:
     return hole_instanz(iid)
 
 
-def lehne_ab(iid: str) -> dict | None:
+def lehne_ab(iid: str) -> TerminInstanz | None:
     with verbindung() as conn:
         conn.execute(
             "UPDATE termin_instanz SET status = 'abgelehnt', effektiv_min = NULL, bestaetigt_am = ? WHERE id = ?",

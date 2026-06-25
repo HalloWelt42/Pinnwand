@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { dndzone, SHADOW_PLACEHOLDER_ITEM_ID } from 'svelte-dnd-action'
+  import { dndzone, SHADOW_PLACEHOLDER_ITEM_ID, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action'
   import { flip } from 'svelte/animate'
   import type { BoardDetail, Karte, Prioritaet, Spalte } from '../../types'
   import {
@@ -45,9 +45,13 @@
   let personen = $state<Person[]>([])
   // Zeitraum-Filter je erledigter Spalte (Schluessel = Spalten-ID, Wert = Zeitraum).
   let fertigFilter = $state<Record<string, string>>({})
-  // Waehrend ein Kartenzug laeuft, den Zeitfilter aussetzen (sonst flackert die
-  // gezogene Karte in der Fertig-Spalte, solange bewegt_am noch alt ist).
-  let ziehtGerade = $state(false)
+
+  // Die gerade per Drag in eine Spalte gezogene Karte markiert svelte-dnd-action mit
+  // dieser Eigenschaft. So bleibt sie im Zeitfilter der Fertig-Spalte sichtbar, ohne
+  // den ganzen Filter auszusetzen (sonst tauchten bei JEDEM Zug alle erledigten Karten auf).
+  function istZiehSchatten(k: Karte): boolean {
+    return !!(k as unknown as Record<string, unknown>)[SHADOW_ITEM_MARKER_PROPERTY_NAME]
+  }
 
   let suche = $state('')
   let sortModus = $state<'manuell' | 'faellig' | 'prioritaet'>('manuell')
@@ -236,11 +240,14 @@
       return liste
     }
     // Standardsicht: erledigte Spalten nach Abschlussdatum filtern (Default heute).
-    if (eintrag.spalte.erledigt && !ziehtGerade) {
+    if (eintrag.spalte.erledigt) {
       const z = fertigFilter[eintrag.spalte.id] ?? 'heute'
       if (z !== 'alle') {
         // Abschlussdatum: Serien/REKO = festes faellig, sonst Erledigt-Datum (bewegt_am).
-        return eintrag.karten.filter((k) => k.id === SHADOW_PLACEHOLDER_ITEM_ID || imZeitraum(k.abschluss_am ?? k.bewegt_am, z))
+        // Platzhalter und die gerade hereingezogene Karte bleiben immer sichtbar.
+        return eintrag.karten.filter(
+          (k) => k.id === SHADOW_PLACEHOLDER_ITEM_ID || istZiehSchatten(k) || imZeitraum(k.abschluss_am ?? k.bewegt_am, z),
+        )
       }
     }
     return eintrag.karten
@@ -263,12 +270,10 @@
 
   // -- Karten-Drag --
   function cardsConsider(idx: number, items: Karte[]) {
-    ziehtGerade = true
     ansicht[idx].karten = items
     zuletztGezogen = Date.now()
   }
   function cardsFinalize(idx: number, items: Karte[], info: { id: string }) {
-    ziehtGerade = false
     ansicht[idx].karten = items
     const spalteId = ansicht[idx].spalte.id
     const pos = items.findIndex((k) => k.id === info.id)

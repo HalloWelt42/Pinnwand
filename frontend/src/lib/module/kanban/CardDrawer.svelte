@@ -3,6 +3,7 @@
   import type { KarteAenderung, TranskriptTreffer, Person, TranskriptMarke, KiVorschlag } from '../../api'
   import { transkripteSuche, ladePersonen, ladeMarken, erstelleMarke, aktualisiereMarke, loescheMarke, zusammenfassungVorschlag, erstelleZeiteintrag, ladeKartenZeiten, aktualisiereZeiteintrag, loescheZeiteintrag, karteVerknuepfen, verknuepfungLoesen, gruppeZeitTeilen } from '../../api'
   import KiAssistent from '../../ki/KiAssistent.svelte'
+  import Checkliste from './Checkliste.svelte'
   import { merkeKuerzel } from '../../zuletztKuerzel.svelte'
   import { oeffneTranskript } from '../../navigation.svelte'
   import { labelFarbe } from '../../labels'
@@ -64,7 +65,6 @@
   }
 
   let beschr = $state('')
-  let neuerPunkt = $state('')
   let neuesLabel = $state('')
   let kommentar = $state('')
   let bearbeiten = $state(false)
@@ -84,6 +84,11 @@
       onAendern({ notizen: notiz || null })
       notizGespeichert = true
     }, 600)
+  }
+  function notizFertig() {
+    if (notizTimer) clearTimeout(notizTimer)
+    onAendern({ notizen: notiz || null })
+    notizVollbild = false
   }
 
   // Transkript-Verknuepfung
@@ -201,37 +206,12 @@
       kiVorschau = {}
       bearbeiten = false
       vollbild = false
-      punktEdit = null
       vSuche = ''
       vTreffer = []
       ladeMarkenFuer()
       ladeKartenZeitenFuer()
     }
   })
-
-  const erledigt = $derived(karte.checkliste.filter((c) => c.erledigt).length)
-
-  function punktUmschalten(i: number) {
-    const neu = karte.checkliste.map((c, idx) => (idx === i ? { ...c, erledigt: !c.erledigt } : c))
-    onAendern({ checkliste: neu })
-  }
-  function punktHinzufuegen() {
-    const t = neuerPunkt.trim()
-    if (!t) return
-    onAendern({ checkliste: [...karte.checkliste, { text: t, erledigt: false }] })
-    neuerPunkt = ''
-  }
-  function punktEntfernen(i: number) {
-    onAendern({ checkliste: karte.checkliste.filter((_, idx) => idx !== i) })
-  }
-  // Checklisten-Punkt umbenennen: betroffene Zeile als Eingabe, neues Array senden.
-  let punktEdit = $state<number | null>(null)
-  function punktText(i: number, wert: string) {
-    const t = wert.trim()
-    punktEdit = null
-    if (!t || t === karte.checkliste[i]?.text) return
-    onAendern({ checkliste: karte.checkliste.map((c, idx) => (idx === i ? { ...c, text: t } : c)) })
-  }
 
   // -- Verknuepfte Aufgaben (geteilte Zeitgruppe) --
   let vSuche = $state('')
@@ -417,18 +397,24 @@
       <p class="sec">Notizen</p>
       <span class="md-werkzeuge">
         {#if notizGespeichert}<span class="gesp">gespeichert</span>{/if}
-        <button class="mini geist" onclick={() => (notizVollbild = !notizVollbild)}><i class="fa-solid {notizVollbild ? 'fa-compress' : 'fa-expand'}" aria-hidden="true"></i> {notizVollbild ? 'Verkleinern' : 'Vollbild'}</button>
+        {#if notiz.trim()}<button class="mini geist" onclick={() => (notizVollbild = true)}><i class="fa-solid fa-expand" aria-hidden="true"></i> Vollbild</button>{/if}
       </span>
     </div>
-    <div class="md-editor" class:vollbild={notizVollbild}>
-      {#if notizVollbild}
-        <div class="vb-kopf"><b>Notizen</b><button class="mini" onclick={() => (notizVollbild = false)}>Fertig</button></div>
-      {/if}
-      <div class="md-split">
-        <textarea class="desc" placeholder="Notizen (Markdown) ..." bind:value={notiz} oninput={notizAuto}></textarea>
-        <div class="md-vorschau"><Markdown md={notiz || '*Vorschau*'} /></div>
+    {#if notizVollbild}
+      <!-- Notizen werden nur im Vollbild bearbeitet (fokussiert, Eingabe links, Vorschau rechts). -->
+      <div class="md-editor vollbild">
+        <div class="vb-kopf"><b>Notizen</b><button class="mini" onclick={notizFertig}>Fertig</button></div>
+        <div class="md-split">
+          <!-- svelte-ignore a11y_autofocus -->
+          <textarea class="desc" placeholder="Notizen (Markdown) ..." bind:value={notiz} oninput={notizAuto} autofocus></textarea>
+          <div class="md-vorschau"><Markdown md={notiz || '*Vorschau*'} /></div>
+        </div>
       </div>
-    </div>
+    {:else if notiz.trim()}
+      <button class="md-ansicht" onclick={() => (notizVollbild = true)} title="Zum Bearbeiten klicken (Vollbild)"><Markdown md={notiz} /></button>
+    {:else}
+      <button class="leer-hinweis" onclick={() => (notizVollbild = true)}>Keine Notizen. Klicken zum Bearbeiten.</button>
+    {/if}
 
     <div class="zeile"><span class="lbl"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Status</span>
       <select value={karte.spalte} onchange={(e) => onAendern({ spalte: e.currentTarget.value })}>
@@ -547,27 +533,7 @@
       <input class="labinput" placeholder="+ Label" bind:value={neuesLabel} onkeydown={(e) => { if (e.key === 'Enter') labelHinzufuegen() }} onblur={labelHinzufuegen} />
     </div>
 
-    <p class="sec">Checkliste {#if karte.checkliste.length}<span class="dezent">&middot; {erledigt} von {karte.checkliste.length}</span>{/if}</p>
-    {#if karte.checkliste.length}
-      <div class="chkbar"><span style="width:{(erledigt / karte.checkliste.length) * 100}%"></span></div>
-    {/if}
-    {#each karte.checkliste as punkt, i (i)}
-      <div class="chk" class:done={punkt.erledigt}>
-        <button class="box" aria-label="Umschalten" onclick={() => punktUmschalten(i)}>
-          <i class="fa-{punkt.erledigt ? 'solid fa-square-check' : 'regular fa-square'}" aria-hidden="true"></i>
-        </button>
-        {#if punktEdit === i}
-          <!-- svelte-ignore a11y_autofocus -->
-          <input class="chkedit" value={punkt.text} autofocus aria-label="Punkt-Text"
-            onblur={(e) => punktText(i, e.currentTarget.value)}
-            onkeydown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); else if (e.key === 'Escape') punktEdit = null }} />
-        {:else}
-          <button class="chktext" title="Zum Umbenennen klicken" onclick={() => (punktEdit = i)}>{punkt.text}</button>
-        {/if}
-        <button class="del" aria-label="Punkt entfernen" onclick={() => punktEntfernen(i)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-      </div>
-    {/each}
-    <input class="feld" placeholder="+ Punkt hinzufügen" bind:value={neuerPunkt} onkeydown={(e) => { if (e.key === 'Enter') punktHinzufuegen() }} />
+    <Checkliste punkte={karte.checkliste} onChange={(neu) => onAendern({ checkliste: neu })} />
 
     <p class="sec">Dokumente</p>
     <DokumentVerwaltung kontext="karte" kontextId={karte.id} />
@@ -926,11 +892,6 @@
     text-transform: none;
     letter-spacing: normal;
   }
-  .dezent {
-    color: var(--text-3);
-    text-transform: none;
-    letter-spacing: 0;
-  }
   .labels {
     display: flex;
     flex-wrap: wrap;
@@ -973,50 +934,6 @@
     font-size: 12.5px;
     line-height: 1.5;
     resize: vertical;
-  }
-  .chkbar {
-    height: 5px;
-    border-radius: 4px;
-    background: var(--border);
-    overflow: hidden;
-    margin-bottom: 9px;
-  }
-  .chkbar span {
-    display: block;
-    height: 100%;
-    background: var(--ok);
-  }
-  .chk {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    font-size: 12.5px;
-    color: var(--text-1);
-    padding: 4px 0;
-  }
-  .chk.done .chktext {
-    color: var(--text-3);
-    text-decoration: line-through;
-  }
-  .chk .box {
-    border: none;
-    background: transparent;
-    color: var(--text-2);
-    font-size: 15px;
-    padding: 0;
-  }
-  .chk.done .box {
-    color: var(--ok);
-  }
-  .chk .del {
-    border: none;
-    background: transparent;
-    color: var(--text-3);
-    font-size: 11px;
-    opacity: 0;
-  }
-  .chk:hover .del {
-    opacity: 1;
   }
   .feld {
     width: 100%;
@@ -1424,26 +1341,5 @@
     font-size: 12px;
     color: var(--text-2);
     margin: 2px 0 8px;
-  }
-
-  /* -- Checkliste: Inline-Umbenennen -- */
-  .chktext {
-    flex: 1;
-    cursor: text;
-    border: none;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    text-align: left;
-    padding: 0;
-  }
-  .chkedit {
-    flex: 1;
-    border: 1px solid var(--hl-primary);
-    background: var(--surface-2);
-    color: var(--text-1);
-    border-radius: var(--r-s);
-    padding: 3px 6px;
-    font-size: 12.5px;
   }
 </style>

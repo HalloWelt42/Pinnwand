@@ -106,7 +106,8 @@
         title="Auf eine andere Karte ziehen, um die Zeit zu verknüpfen"
         draggable="true"
         ondragstart={ziehStart}
-        onpointerdown={(e) => e.stopPropagation()}
+        onmousedown={(e) => e.stopPropagation()}
+        ontouchstart={(e) => e.stopPropagation()}
         onclick={(e) => e.stopPropagation()}
       >
         <i class="fa-solid fa-link" aria-hidden="true"></i>

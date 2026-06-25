@@ -166,7 +166,7 @@
   <div class="body">
     <input class="titel" value={karte.titel} aria-label="Titel" onchange={(e) => onAendern({ titel: e.currentTarget.value })} />
 
-    <MarkdownFeld titel="Beschreibung" schluessel={karte.id} text={karte.beschreibung ?? ''}
+    <MarkdownFeld titel="Beschreibung" schluessel={karte.id} text={karte.beschreibung ?? ''} ohneVorschau ohneKnopf
       onSpeichern={(w) => onAendern({ beschreibung: w })}
       platzhalterEditor="Markdown ... (Überschriften, Listen, Code, Tabellen, $Mathe$, Mermaid)"
       platzhalterLeer="Keine Beschreibung. Klicken zum Bearbeiten."

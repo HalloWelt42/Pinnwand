@@ -209,7 +209,7 @@
   .kal {
     height: 100%;
     overflow-y: auto;
-    padding: 16px;
+    padding: 14px;
   }
   .spalten {
     display: flex;
@@ -220,7 +220,7 @@
   .karte {
     background: var(--surface-col);
     border: 1px solid var(--border);
-    border-radius: var(--r-xl);
+    border-radius: var(--r-l);
     padding: 14px;
   }
   .kh {
@@ -245,9 +245,9 @@
     gap: 4px;
   }
   .ib {
-    width: 26px;
-    height: 26px;
-    border-radius: var(--r-s);
+    width: 30px;
+    height: 30px;
+    border-radius: var(--r-m);
     border: 1px solid var(--border);
     background: var(--surface-2);
     color: var(--text-2);
@@ -318,11 +318,16 @@
     gap: 3px;
     margin-top: 10px;
     padding-left: 26px;
-    font-size: 9px;
+    font-size: 11px;
     color: var(--text-3);
   }
   .legende span {
     padding: 0 4px;
+  }
+  /* Legenden-Kaestchen wie die gemeinsame KalenderLegende (sichtbare Kante, 3px). */
+  .legende .zelle {
+    border-color: var(--border);
+    border-radius: 3px;
   }
   .mweekdays {
     display: grid;
@@ -357,7 +362,8 @@
     border-color: transparent;
   }
   .mtag.heute {
-    border-color: var(--ok);
+    outline: 2px solid var(--ok);
+    outline-offset: -2px;
   }
   .mtag.ft {
     box-shadow: inset 0 0 0 2px var(--due-rot-fg);

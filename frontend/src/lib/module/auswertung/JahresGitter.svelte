@@ -63,11 +63,11 @@
 <style>
   .gitter { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; padding: 14px; align-items: start; }
   .monat { border: 1px solid var(--border); border-radius: var(--r-l); background: var(--surface-col); padding: 10px; }
-  .mkopf { font-family: var(--font-display); font-size: 12.5px; color: var(--text-1); margin-bottom: 6px; }
+  .mkopf { font-family: var(--font-display); font-size: 12.5px; font-weight: 600; color: var(--text-1); margin-bottom: 6px; }
   .wdzeile { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 3px; }
   .wdzeile span { text-align: center; font-size: 9.5px; color: var(--text-3); }
   .tage { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-  .tag { position: relative; aspect-ratio: 1; border-radius: var(--r-s, 5px); border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; }
+  .tag { position: relative; aspect-ratio: 1; border-radius: var(--r-s); border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; }
   .tag:hover { outline: 1px solid var(--hl-primary); }
   .tag.heute { outline: 2px solid var(--ok); outline-offset: -2px; z-index: 1; }
   .nr { font-size: 9px; color: var(--text-3); position: absolute; top: 1px; left: 3px; }

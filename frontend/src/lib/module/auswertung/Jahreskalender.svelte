@@ -116,8 +116,9 @@
   .jk { height: 100%; display: flex; flex-direction: column; }
   .topbar { flex: none; display: flex; align-items: center; gap: 16px; padding: 10px 14px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
   .jahrnav { display: flex; align-items: center; gap: 8px; }
-  .jahr { font-family: var(--font-display); font-size: 15px; color: var(--text-1); min-width: 48px; text-align: center; }
-  .ib { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); border-radius: var(--r-m); width: 30px; height: 30px; }
+  .jahr { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--text-1); min-width: 48px; text-align: center; }
+  .ib { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); border-radius: var(--r-m); width: 30px; height: 30px; font-size: 11px; }
+  .ib:hover { color: var(--hl-primary-text); border-color: var(--hl-primary); }
   .seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--r-m); overflow: hidden; }
   .seg button { background: var(--surface-2); color: var(--text-2); border: none; padding: 7px 12px; font-size: 12px; }
   .seg button.an { background: var(--hl-primary); color: var(--hl-on-primary); }

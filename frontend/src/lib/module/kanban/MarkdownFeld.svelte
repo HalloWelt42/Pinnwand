@@ -1,7 +1,9 @@
 <script lang="ts">
   // Wiederverwendbares Markdown-Textfeld: gerendert lesen, zum Bearbeiten klicken
-  // (Editor mit Live-Vorschau), optional Vollbild und Vorlesen.
+  // (Editor mit optionaler Live-Vorschau), optional Vollbild und Vorlesen.
   // nurVollbild=true: Bearbeitung laeuft immer im Vollbild (z.B. Notizen).
+  // ohneVorschau=true: Editor ist einspaltig (kein Vorschau-Bereich, z.B. Beschreibung).
+  // ohneKnopf=true: kein eigener Bearbeiten-Knopf - der gerenderte Text ist anklickbar.
   import Markdown from '../../Markdown.svelte'
 
   let {
@@ -10,6 +12,8 @@
     schluessel,
     onSpeichern,
     nurVollbild = false,
+    ohneVorschau = false,
+    ohneKnopf = false,
     platzhalterEditor = 'Markdown ...',
     platzhalterLeer = 'Leer. Klicken zum Bearbeiten.',
     onVorlesen,
@@ -20,6 +24,8 @@
     schluessel: string // wechselt bei Kartenwechsel -> Entwurf neu laden
     onSpeichern: (wert: string | null) => void
     nurVollbild?: boolean
+    ohneVorschau?: boolean
+    ohneKnopf?: boolean
     platzhalterEditor?: string
     platzhalterLeer?: string
     onVorlesen?: (text: string) => void
@@ -79,7 +85,7 @@
       {/if}
       {#if nurVollbild}
         {#if wert.trim()}<button class="mini geist" onclick={oeffneEdit}><i class="fa-solid fa-expand" aria-hidden="true"></i> Vollbild</button>{/if}
-      {:else}
+      {:else if !ohneKnopf}
         <button class="mini geist" onclick={oeffneEdit}><i class="fa-solid fa-pen" aria-hidden="true"></i> Bearbeiten</button>
       {/if}
     {/if}
@@ -90,10 +96,10 @@
     {#if vollbild}
       <div class="vb-kopf"><b>{titel} bearbeiten</b><button class="mini" onclick={fertig}>Fertig</button></div>
     {/if}
-    <div class="md-split">
+    <div class="md-split" class:einzeln={ohneVorschau}>
       <!-- svelte-ignore a11y_autofocus -->
-      <textarea class="desc" placeholder={platzhalterEditor} bind:value={wert} oninput={auto} autofocus={vollbild}></textarea>
-      <div class="md-vorschau"><Markdown md={wert || '*Vorschau*'} /></div>
+      <textarea class="desc" placeholder={platzhalterEditor} bind:value={wert} oninput={auto} autofocus></textarea>
+      {#if !ohneVorschau}<div class="md-vorschau"><Markdown md={wert || '*Vorschau*'} /></div>{/if}
     </div>
   </div>
 {:else if wert.trim()}
@@ -114,6 +120,7 @@
   .md-ansicht:hover { border-color: var(--border-2); }
   .leer-hinweis { display: block; width: 100%; text-align: left; background: transparent; border: 1px dashed var(--border-2); border-radius: var(--r-m); padding: 10px 11px; color: var(--text-3); font-size: 12.5px; cursor: text; }
   .md-editor .md-split { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .md-editor .md-split.einzeln { grid-template-columns: 1fr; }
   .md-editor .desc { min-height: 120px; }
   .md-vorschau { border: 1px solid var(--border); background: var(--surface-2); border-radius: var(--r-m); padding: 9px 10px; overflow-y: auto; max-height: 320px; }
   /* Vollbild: nur dieses Feld gross, fokussiert (Eingabe links, Vorschau rechts). */

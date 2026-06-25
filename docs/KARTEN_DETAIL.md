@@ -7,10 +7,10 @@ stattdessen ist jedes Feld an Ort und Stelle bearbeitbar.
 
 ## Felder: lesen und bearbeiten
 
-- **Beschreibung**: sauber gerendertes Markdown. Ein Klick darauf (oder der Knopf
-  "Bearbeiten") öffnet einen Editor mit Live-Vorschau direkt an der Stelle; "Vollbild"
-  blendet ihn groß und ruhig ein, "Fertig" speichert und kehrt zur gerenderten Ansicht
-  zurück. Bei vorhandenem Text gibt es zusätzlich "Vorlesen".
+- **Beschreibung**: sauber gerendertes Markdown. Ein Klick darauf öffnet direkt einen
+  einspaltigen Editor an Ort und Stelle - ohne eigenen Bearbeiten-Knopf und ohne
+  Seiten-Vorschau. "Vollbild" blendet ihn groß und ruhig ein, "Fertig" speichert und
+  kehrt zur gerenderten Ansicht zurück. Bei vorhandenem Text gibt es zusätzlich "Vorlesen".
 - **Notizen**: gerendertes Markdown und **read-only**. Ein Klick (oder "Vollbild")
   öffnet die Notizen direkt im Vollbild-Editor mit Live-Vorschau; "Fertig" speichert und
   schließt. So liegt der Fokus auf den gerenderten Notizen, bearbeitet wird nur bewusst.
@@ -67,8 +67,10 @@ großen Datei zu halten. Jede trägt genau eine Verantwortung, ist getypt und ka
 ihren eigenen Zustand und ihr eigenes CSS:
 
 - `MarkdownFeld.svelte` - das gerenderte Markdown-Feld (lesen, bearbeiten, Vollbild,
-  optional Vorlesen). Wird für Beschreibung und Notizen wiederverwendet (`nurVollbild`
-  schaltet auf das read-only-mit-Klick-ins-Vollbild-Verhalten der Notizen um).
+  optional Vorlesen). Wird für Beschreibung und Notizen wiederverwendet. Schalter:
+  `nurVollbild` = read-only mit Klick ins Vollbild (Notizen); `ohneVorschau` = einspaltiger
+  Editor ohne Seiten-Vorschau und `ohneKnopf` = kein Bearbeiten-Knopf, Klick auf den Text
+  bearbeitet (beide für die Beschreibung).
 - `Zeiterfassung.svelte` - Start/Pause/Stopp, Schätzung, Fortschritt, geteilte
   Gruppen-Zeit, Tag nachbuchen und die Tages-Aufschlüsselung.
 - `VerknuepfteAufgaben.svelte` - Gruppen-Mitglieder, Verknüpfen/Lösen, Schalter

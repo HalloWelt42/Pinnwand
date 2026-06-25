@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    ladePersonen, erstellePerson, aktualisierePerson, loeschePerson,
+    ladePersonen, erstellePerson, aktualisierePerson, loeschePerson, setzePersonPasswort,
     ladeUrlaub, setzeUrlaub, loescheUrlaub, ladeUrlaubskonten,
     ladeLaender, feiertageVorschau, feiertageUebernehmen, ladeFeiertage, loescheFeiertage,
     ladeAbwesenheitstypen, aktualisiereAbwesenheitstyp, ladeTagesregeln, setzeTagesregel, loescheTagesregel,
@@ -92,17 +92,46 @@
     await aktualisierePerson(p.id, { bundesland: wert || null })
     await ladenPersonen()
   }
+  // Passwoerter (fuer das echte Login). Entwurf je Person bis zum Speichern.
+  let pwEntwurf = $state<Record<string, string>>({})
+  async function passwortSetzen(p: Person): Promise<void> {
+    const pw = (pwEntwurf[p.id] ?? '').trim()
+    if (!pw) return
+    try {
+      await setzePersonPasswort(p.id, pw)
+      pwEntwurf[p.id] = ''
+      await ladenPersonen()
+      zeigeToast(`Passwort für ${p.name} gesetzt.`)
+    } catch (e) {
+      zeigeToast(e instanceof Error ? e.message : 'Passwort konnte nicht gesetzt werden.')
+    }
+  }
+  async function passwortEntfernen(p: Person): Promise<void> {
+    try {
+      await setzePersonPasswort(p.id, '')
+      await ladenPersonen()
+      zeigeToast(`Passwort für ${p.name} entfernt.`)
+    } catch (e) {
+      zeigeToast(e instanceof Error ? e.message : 'Passwort konnte nicht entfernt werden.')
+    }
+  }
+
   async function rolleAendern(p: Person, wert: string): Promise<void> {
     const rolle = wert === 'admin' ? 'admin' : 'mitarbeiter'
     if (rolle === p.rolle) return
-    // Aussperr-Schutz: den letzten Admin nicht herabstufen.
+    // Aussperr-Schutz: den letzten Admin nicht herabstufen (serverseitig zusaetzlich erzwungen).
     if (p.rolle === 'admin' && rolle === 'mitarbeiter' && personen.filter((x) => x.rolle === 'admin').length <= 1) {
       zeigeToast('Mindestens ein Admin muss bestehen bleiben.')
       await ladenPersonen() // setzt das Select optisch zurueck
       return
     }
-    await aktualisierePerson(p.id, { rolle })
-    await ladenPersonen()
+    try {
+      await aktualisierePerson(p.id, { rolle })
+      await ladenPersonen()
+    } catch (e) {
+      zeigeToast(e instanceof Error ? e.message : 'Rolle konnte nicht geändert werden.')
+      await ladenPersonen()
+    }
   }
   async function anspruchAendern(p: Person, wert: number): Promise<void> {
     await aktualisierePerson(p.id, { urlaubsanspruch: wert })
@@ -197,8 +226,12 @@
     await ladenPersonen()
   }
   async function personEntfernen(p: Person): Promise<void> {
-    await loeschePerson(p.id)
-    await ladenPersonen()
+    try {
+      await loeschePerson(p.id)
+      await ladenPersonen()
+    } catch (e) {
+      zeigeToast(e instanceof Error ? e.message : 'Person konnte nicht gelöscht werden.')
+    }
   }
 
   async function urlaubEintragen(): Promise<void> {
@@ -255,20 +288,34 @@
 
   {#if istAdmin}
     <section class="block">
-      <p class="sec">Rollen</p>
+      <p class="sec">Rollen und Passwörter</p>
       <p class="rhint">
         Admins sehen die Verwaltung (Einstellungen, Planung, Labels), Mitarbeiter nur den
-        Arbeitsbereich. Das blendet nur Bereiche aus - ohne Passwort ist es keine echte
-        Zugriffssperre.
+        Arbeitsbereich. Hier vergibst du Passwörter; ist die Anmeldung aktiv (Einstellungen),
+        melden sich Personen mit Name oder Kürzel und Passwort an, und die Rollen werden
+        serverseitig durchgesetzt.
       </p>
       <div class="rollen">
         {#each personen as p (p.id)}
-          <div class="rzeile">
+          <div class="rrow">
             <span class="pn"><b>{p.kuerzel ?? ''}</b> {p.name}</span>
             <select class="rsel" value={p.rolle} onchange={(e) => rolleAendern(p, e.currentTarget.value)} aria-label="Rolle">
               <option value="admin">Admin</option>
               <option value="mitarbeiter">Mitarbeiter</option>
             </select>
+            <input
+              class="pwfeld"
+              type="password"
+              autocomplete="new-password"
+              placeholder={p.hat_passwort ? 'Neues Passwort' : 'Passwort setzen'}
+              bind:value={pwEntwurf[p.id]}
+              onkeydown={(e) => { if (e.key === 'Enter') passwortSetzen(p) }}
+            />
+            <button class="pwbtn" onclick={() => passwortSetzen(p)} disabled={!(pwEntwurf[p.id] ?? '').trim()}>Speichern</button>
+            {#if p.hat_passwort}
+              <span class="pwja" title="Passwort gesetzt"><i class="fa-solid fa-key" aria-hidden="true"></i></span>
+              <button class="pwweg" onclick={() => passwortEntfernen(p)} title="Passwort entfernen" aria-label="Passwort entfernen"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            {/if}
           </div>
         {/each}
       </div>
@@ -454,9 +501,16 @@
   .meldung { color: var(--ok); font-size: 12px; margin: 0 0 10px; }
   .rhint { font-size: 12px; color: var(--text-3); line-height: 1.55; margin: 0 0 10px; max-width: 70ch; }
   .rollen { border: 1px solid var(--border); border-radius: var(--r-l); overflow: hidden; background: var(--surface-col); }
-  .rzeile { display: grid; grid-template-columns: 1fr 160px; align-items: center; gap: 10px; padding: 7px 10px; font-size: 12.5px; }
-  .rzeile + .rzeile { border-top: 1px solid var(--border); }
+  .rrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 7px 10px; font-size: 12.5px; }
+  .rrow + .rrow { border-top: 1px solid var(--border); }
+  .rrow .pn { flex: 1; min-width: 140px; }
   .rsel { border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-1); border-radius: var(--r-s); padding: 5px 8px; font-size: 12px; }
+  .pwfeld { width: 150px; border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-1); border-radius: var(--r-s); padding: 5px 8px; font-size: 12px; }
+  .pwbtn { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); border-radius: var(--r-s); padding: 5px 10px; font-size: 12px; }
+  .pwbtn:disabled { opacity: 0.5; }
+  .pwja { color: var(--ok, #2e7d32); }
+  .pwweg { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-3); border-radius: var(--r-s); width: 26px; height: 26px; }
+  .pwweg:hover { color: var(--gefahr, #e5484d); }
   .tab { border: 1px solid var(--border); border-radius: var(--r-l); overflow: hidden; background: var(--surface-col); }
   .kopf, .zeile { display: grid; grid-template-columns: 1fr repeat(7, 52px) 40px; align-items: center; gap: 6px; padding: 6px 10px; }
   .kopf { border-bottom: 1px solid var(--border); font-size: 10.5px; color: var(--text-3); text-transform: uppercase; }

@@ -49,8 +49,10 @@ import type {
   TerminInstanz,
   KiStatusAntwort,
   KiAntwort,
+  AuthStatus,
 } from './types'
 import { uiAuth, uiToken } from './uiAuth.svelte'
+import { auth, authToken, setzeAuthToken } from './auth.svelte'
 
 // Datenmodelle bleiben ueber api.ts erreichbar (viele Komponenten importieren von hier).
 export type {
@@ -104,24 +106,80 @@ export type {
   KiVorschlag,
   KiAntwort,
   LabelDefinition,
+  AuthStatus,
 } from './types'
 
 const BASIS = import.meta.env.VITE_API ?? 'http://localhost:8420'
 
 async function hole<T>(pfad: string, init?: RequestInit): Promise<T> {
   const t = uiToken()
+  const s = authToken()
   const antwort = await fetch(`${BASIS}${pfad}`, {
-    headers: { 'Content-Type': 'application/json', ...(t ? { 'X-Pinnwand-Token': t } : {}) },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(t ? { 'X-Pinnwand-Token': t } : {}),
+      ...(s ? { 'X-Pinnwand-Sitzung': s } : {}),
+    },
     ...init,
   })
   if (antwort.status === 401) {
-    uiAuth.noetig = true
-    throw new Error('Anmeldung erforderlich')
+    // Zwei Quellen einer 401 unterscheiden: optionales UI-Token vs. echte Anmeldung.
+    let detail = ''
+    try { detail = (await antwort.clone().json()).detail } catch { /* kein JSON */ }
+    if (detail === 'UI-Token erforderlich') uiAuth.noetig = true
+    else auth.angemeldet = false
+    throw new Error(detail || 'nicht autorisiert')
   }
-  if (!antwort.ok) throw new Error(`Anfrage fehlgeschlagen: ${antwort.status} ${antwort.statusText}`)
+  if (!antwort.ok) {
+    // Server-Begruendung (detail) mitliefern, damit die Oberflaeche sie anzeigen kann.
+    let detail = ''
+    try { detail = (await antwort.clone().json()).detail } catch { /* kein JSON */ }
+    throw new Error(detail || `Anfrage fehlgeschlagen: ${antwort.status} ${antwort.statusText}`)
+  }
   if (antwort.status === 204) return undefined as T
   return (await antwort.json()) as T
 }
+
+// --- Anmeldung (echtes Login mit Name/Kuerzel + Passwort) ---
+export async function ladeAuthStatus(): Promise<void> {
+  try {
+    const s = await hole<AuthStatus>('/api/auth/status')
+    auth.erforderlich = s.erforderlich
+    auth.angemeldet = s.angemeldet
+    auth.personId = s.person_id ?? null
+    auth.name = s.name ?? null
+    auth.kuerzel = s.kuerzel ?? null
+    auth.rolle = (s.rolle as 'admin' | 'mitarbeiter' | null) ?? null
+  } catch {
+    /* offline o.ae.: Login bleibt inaktiv, App laeuft wie bisher */
+  } finally {
+    auth.geladen = true
+  }
+}
+
+export async function anmelden(kennung: string, passwort: string): Promise<boolean> {
+  const r = await fetch(`${BASIS}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kennung, passwort }),
+  })
+  if (!r.ok) return false
+  const d = await r.json()
+  setzeAuthToken(d.token)
+  await ladeAuthStatus()
+  return true
+}
+
+export async function abmelden(): Promise<void> {
+  try { await hole('/api/auth/logout', { method: 'POST' }) } catch { /* egal */ }
+  setzeAuthToken('')
+}
+
+export const setzeLoginModus = (erforderlich: boolean): Promise<AuthStatus> =>
+  hole('/api/auth/login-modus', { method: 'PUT', body: JSON.stringify({ erforderlich }) })
+
+export const setzePersonPasswort = (id: string, passwort: string): Promise<Person> =>
+  hole(`/api/planung/personen/${id}/passwort`, { method: 'POST', body: JSON.stringify({ passwort }) })
 
 export const ladeErweiterungen = (): Promise<Erweiterungen> => hole('/api/erweiterungen')
 export const ladeMappen = (): Promise<Projektmappe[]> => hole('/api/kanban/mappen')

@@ -22,6 +22,8 @@ from app.modul_registry import (
     mount_fuer,
     router_fuer,
 )
+# Querschnittsbelang Anmeldung: der Kern ruft nur die Prüffunktion des auth-Moduls auf.
+from module.auth import dienst as authdienst
 
 
 @asynccontextmanager
@@ -57,6 +59,14 @@ async def ui_token_schutz(request: Request, call_next):
         )
         if geschuetzt and not hmac.compare_digest(request.headers.get("x-pinnwand-token", ""), token):
             return JSONResponse({"detail": "UI-Token erforderlich"}, status_code=401)
+    # Anmeldung (Modul auth): bei aktivem Login Sitzung + Admin-Rechte serverseitig durchsetzen.
+    status = authdienst.zugriff_pruefen(
+        request.method, request.url.path, request.headers.get("x-pinnwand-sitzung", "")
+    )
+    if status == 401:
+        return JSONResponse({"detail": "Anmeldung erforderlich"}, status_code=401)
+    if status == 403:
+        return JSONResponse({"detail": "Nur für Admins"}, status_code=403)
     return await call_next(request)
 
 

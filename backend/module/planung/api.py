@@ -5,12 +5,16 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, HTTPException, Query
 
+from module.auth import dienst as authdienst
+from module.auth import persistence as authdb
+
 from . import feiertage, kalender, kapazitaet
 from . import persistence as db
 from .models import (
     AbwesenheitTyp,
     AbwesenheitTypUpdate,
     FeiertageUebernehmen,
+    PasswortEingabe,
     Person,
     PersonCreate,
     PersonUpdate,
@@ -56,16 +60,51 @@ def urlaubskonto(person: str = Query(...), jahr: int = Query(...)) -> dict:
 
 @router.patch("/personen/{pid}", response_model=Person)
 def person_aendern(pid: str, e: PersonUpdate) -> dict:
-    p = db.aktualisiere_person(pid, e.model_dump(exclude_unset=True))
+    daten = e.model_dump(exclude_unset=True)
+    # Aussperr-Schutz: bei aktiver Anmeldung den letzten Admin (mit Passwort) nicht
+    # herabstufen oder deaktivieren.
+    entzieht_admin = daten.get("rolle") == "mitarbeiter" or daten.get("aktiv") is False
+    if authdienst.login_aktiv() and entzieht_admin and not db.admin_mit_passwort_existiert(ausser_pid=pid):
+        raise HTTPException(
+            status_code=409,
+            detail="Der letzte Admin kann bei aktiver Anmeldung nicht herabgestuft oder deaktiviert werden.",
+        )
+    p = db.aktualisiere_person(pid, daten)
     if p is None:
         raise HTTPException(status_code=404, detail="Person nicht gefunden")
+    if daten.get("aktiv") is False:
+        authdb.loesche_sitzungen_von(pid)  # Deaktivierte Person sofort abmelden
     return p
 
 
 @router.delete("/personen/{pid}", status_code=204)
 def person_loeschen(pid: str) -> None:
+    # Aussperr-Schutz: bei aktiver Anmeldung den letzten Admin mit Passwort nicht loeschen.
+    if authdienst.login_aktiv() and not db.admin_mit_passwort_existiert(ausser_pid=pid):
+        raise HTTPException(
+            status_code=409, detail="Der letzte Admin kann bei aktiver Anmeldung nicht gelöscht werden.",
+        )
     if not db.loesche_person(pid):
         raise HTTPException(status_code=404, detail="Person nicht gefunden")
+    authdb.loesche_sitzungen_von(pid)  # verwaiste Sitzungen der geloeschten Person entfernen
+
+
+@router.post("/personen/{pid}/passwort", response_model=Person)
+def person_passwort(pid: str, eingabe: PasswortEingabe) -> dict:
+    """Setzt oder entfernt (leer) das Passwort einer Person. Bei aktivem Login
+    nur fuer Admins (serverseitig durchgesetzt)."""
+    neu = eingabe.passwort.strip() or None
+    # Aussperr-Schutz: bei aktiver Anmeldung das letzte Admin-Passwort nicht entfernen.
+    if authdienst.login_aktiv() and neu is None and not db.admin_mit_passwort_existiert(ausser_pid=pid):
+        raise HTTPException(
+            status_code=409, detail="Das letzte Admin-Passwort kann bei aktiver Anmeldung nicht entfernt werden.",
+        )
+    p = db.setze_passwort(pid, neu)
+    if p is None:
+        raise HTTPException(status_code=404, detail="Person nicht gefunden")
+    # Passwortwechsel/-entfernung beendet bestehende Sitzungen dieser Person (CWE-613).
+    authdb.loesche_sitzungen_von(pid)
+    return p
 
 
 # -- Urlaub ---------------------------------------------------------------

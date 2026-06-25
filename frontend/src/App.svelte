@@ -2,9 +2,11 @@
   import { onMount } from 'svelte'
   import type { Component } from 'svelte'
   import type { Board, Projektmappe, Person } from './lib/types'
-  import { ladeMappen, ladeBoards, ladeErweiterungen, erstelleBoard, benenneBoard, loescheBoard, erstelleMappe, benenneMappe, loescheMappe, serienVorbuchenAlle, ladeLabels, ladePersonen } from './lib/api'
+  import { ladeMappen, ladeBoards, ladeErweiterungen, erstelleBoard, benenneBoard, loescheBoard, erstelleMappe, benenneMappe, loescheMappe, serienVorbuchenAlle, ladeLabels, ladePersonen, ladeAuthStatus, abmelden } from './lib/api'
   import { setzeLabelDefinitionen } from './lib/labels'
-  import { personSicht, rolleAus } from './lib/personSicht.svelte'
+  import { personSicht, rolleAus, setzePersonSicht } from './lib/personSicht.svelte'
+  import { auth } from './lib/auth.svelte'
+  import Login from './lib/Login.svelte'
   import { ansichten, komponenteFuer } from './lib/module/registry'
   import { theme, wechsleTheme } from './lib/theme/theme.svelte'
   import { VERSION } from './lib/version'
@@ -69,7 +71,9 @@
   // gewaehlte Person gilt 'admin' (Bestand/frische Installation bleibt voll sichtbar).
   let personen = $state<Person[]>([])
   const ADMIN_ANSICHTEN = new Set(['einstellungen', 'planung', 'labels'])
-  const aktiveRolle = $derived(rolleAus(personen, personSicht.id))
+  // Bei aktivem Login ist die Rolle serverseitig bestimmt (autoritativ), sonst aus
+  // der gewaehlten Person abgeleitet (Phase-1-Verhalten).
+  const aktiveRolle = $derived(auth.erforderlich ? (auth.rolle ?? 'mitarbeiter') : rolleAus(personen, personSicht.id))
   const sichtbareAnsichten = $derived(
     aktiveRolle === 'mitarbeiter' ? ansichtsListe.filter((a) => !ADMIN_ANSICHTEN.has(a.id)) : ansichtsListe,
   )
@@ -293,7 +297,18 @@
     }
   }
 
+  async function abmeldenUndNeu(): Promise<void> {
+    await abmelden()
+    location.reload()
+  }
+
   onMount(async () => {
+    // Zuerst den Anmeldestatus klaeren. Ist Anmeldung erforderlich und niemand
+    // angemeldet, zeigt sich die Login-Sperre und der Rest der App laedt nicht.
+    await ladeAuthStatus()
+    if (auth.erforderlich && !auth.angemeldet) return
+    // Bei aktivem Login ist die eigene Person die aktive Sicht.
+    if (auth.erforderlich && auth.personId) setzePersonSicht(auth.personId)
     await ladeAnsichten()
     ladeLabelFarben()
     ladePersonen().then((p) => (personen = p)).catch(() => {}) // fuer das Rollen-Gating
@@ -420,6 +435,12 @@
     {/if}
 
     <div class="fussbereich">
+      {#if auth.angemeldet}
+        <button class="abmelden" onclick={abmeldenUndNeu} title="Abmelden">
+          <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+          <span>{auth.kuerzel ?? auth.name} abmelden</span>
+        </button>
+      {/if}
       <DiensteStatus />
       <div class="fzeile">
         <button class="thema" onclick={wechsleTheme} aria-label="Theme wechseln">
@@ -474,7 +495,8 @@
 <BestaetigungsOverlay />
 <SerienErinnerung />
 <LoginTor />
-<PersonWahl />
+<Login />
+{#if !auth.erforderlich}<PersonWahl />{/if}
 {#if hilfeOffen}<Hilfe onSchliessen={() => (hilfeOffen = false)} />{/if}
 {#if onboardingOffen}<Onboarding onFertig={onboardingFertig} onGeheZu={geheZuAnsicht} />{/if}
 {#if mappeDokOffen && aktiveMappe}
@@ -745,6 +767,23 @@
     display: flex;
     flex-direction: column;
   }
+  .abmelden {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-2);
+    border-radius: var(--r-m);
+    padding: 7px 10px;
+    font-size: 12px;
+    margin-bottom: 8px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .abmelden:hover { background: var(--surface-3); color: var(--text-1); }
+  .rail.zu .abmelden span { display: none; }
   .fzeile {
     display: flex;
     gap: 6px;

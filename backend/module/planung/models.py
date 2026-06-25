@@ -18,8 +18,11 @@ class Person(BaseModel):
     urlaubsanspruch: float = 30
     resturlaub_vorjahr: float = 0
     aktiv: bool = True
-    # Rolle steuert nur die sichtbaren Verwaltungsbereiche im UI (kein Login/Schutz).
+    # Rolle steuert die sichtbaren Verwaltungsbereiche; bei aktiver Anmeldung auch
+    # serverseitig durchgesetzt (siehe Modul auth).
     rolle: Rolle = "mitarbeiter"
+    # Nur die Information, OB ein Passwort gesetzt ist - nie der Hash selbst.
+    hat_passwort: bool = False
 
 
 class PersonCreate(BaseModel):
@@ -30,6 +33,10 @@ class PersonCreate(BaseModel):
     bundesland: str | None = None
     urlaubsanspruch: float = 30
     resturlaub_vorjahr: float = 0
+
+
+class PasswortEingabe(BaseModel):
+    passwort: str  # leer = Passwort entfernen
 
 
 class PersonUpdate(BaseModel):

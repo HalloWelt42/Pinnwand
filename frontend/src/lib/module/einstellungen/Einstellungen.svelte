@@ -3,8 +3,10 @@
     ladeSnapshots, backupZustand, erzeugeSnapshot, snapshotVorschau,
     snapshotDownloadUrl, stelleSnapshotWiederHer, loescheSnapshot, datenZuruecksetzen,
     ladeAgentTokens, erstelleAgentToken, widerrufeAgentToken, AuthFehler,
+    setzeLoginModus, ladeAuthStatus,
     type SnapshotInfo, type BackupZustand, type BackupVorschau, type AgentToken,
   } from '../../api'
+  import { auth } from '../../auth.svelte'
   import { isoDatumZeit } from '../../zeit'
   import { leseText, schreibeText } from '../../uiSpeicher'
   import KiAssistent from '../../ki/KiAssistent.svelte'
@@ -129,6 +131,20 @@
   }
 
   // --- Agenten-Zugriff (Token-Verwaltung) ---
+  // Anmeldung erforderlich? (Login-Modus)
+  let loginFehler = $state('')
+  async function loginModusUmschalten(e: Event): Promise<void> {
+    const ziel = (e.currentTarget as HTMLInputElement).checked
+    loginFehler = ''
+    try {
+      await setzeLoginModus(ziel)
+      await ladeAuthStatus()
+    } catch {
+      loginFehler = 'Aktivieren nicht möglich: mindestens eine Admin-Person braucht ein Passwort (in der Planung setzen).'
+      ;(e.currentTarget as HTMLInputElement).checked = auth.erforderlich
+    }
+  }
+
   let adminToken = $state(leseText('pw_admin_token'))
   let tokens = $state<AgentToken[]>([])
   let tokenGeladen = $state(false)
@@ -198,6 +214,21 @@
 </script>
 
 <div class="einstellungen">
+  <section class="block">
+    <p class="sec">Anmeldung</p>
+    <p class="hint">
+      Mit aktiver Anmeldung meldet sich jede Person mit Name oder Kürzel und Passwort an;
+      Mitarbeiter sehen nur den Arbeitsbereich, Admin-Bereiche sind dann serverseitig
+      geschützt. Passwörter vergibst du in der Planung. Ohne aktive Anmeldung bleibt alles
+      offen (kein Passwort nötig).
+    </p>
+    <label class="anmeldung">
+      <input type="checkbox" checked={auth.erforderlich} onchange={loginModusUmschalten} />
+      Anmeldung erforderlich
+    </label>
+    {#if loginFehler}<p class="fehler">{loginFehler}</p>{/if}
+  </section>
+
   <section class="block">
     <p class="sec">Datensicherung</p>
     <p class="hint">
@@ -384,6 +415,7 @@
 
 <style>
   .einstellungen { height: 100%; overflow-y: auto; padding: 16px; max-width: 920px; }
+  .anmeldung { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-2); cursor: pointer; }
   .sec { font-family: var(--font-display); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3); margin: 0 0 8px; }
   .block { margin-bottom: 26px; }
   .hint { font-size: 12px; color: var(--text-3); line-height: 1.55; margin: 0 0 10px; max-width: 70ch; }

@@ -1,0 +1,17 @@
+{
+  "id": "auth",
+  "name": "Anmeldung",
+  "version": "0.1.0",
+  "extends": {
+    "views": [],
+    "cardFields": [],
+    "mappeTabs": [],
+    "commands": []
+  },
+  "backend": {
+    "router": "module.auth.api:router",
+    "init": "module.auth.persistence:init_db"
+  },
+  "permissions": [],
+  "requires": ["planung"]
+}

@@ -12,6 +12,9 @@ from uuid import uuid4
 
 from app.db import verbindung
 
+from module.auth.passwort import hash_passwort
+from module.auth.passwort import pruefe as pruefe_passwort
+
 from .models import AbwesenheitTypUpdate, PersonUpdate
 
 SCHEMA = """
@@ -25,7 +28,8 @@ CREATE TABLE IF NOT EXISTS person (
     urlaubsanspruch REAL NOT NULL DEFAULT 30,
     resturlaub_vorjahr REAL NOT NULL DEFAULT 0,
     aktiv INTEGER NOT NULL DEFAULT 1,
-    rolle TEXT NOT NULL DEFAULT 'mitarbeiter'
+    rolle TEXT NOT NULL DEFAULT 'mitarbeiter',
+    passwort_hash TEXT
 );
 CREATE TABLE IF NOT EXISTS urlaub (
     id TEXT PRIMARY KEY,
@@ -98,6 +102,8 @@ def _migriere(conn: sqlite3.Connection) -> None:
         # setzen - so wird beim Einfuehren der Rollen niemand aus der Verwaltung ausgesperrt.
         conn.execute("ALTER TABLE person ADD COLUMN rolle TEXT")
         conn.execute("UPDATE person SET rolle = 'admin' WHERE rolle IS NULL")
+    if "passwort_hash" not in spalten:
+        conn.execute("ALTER TABLE person ADD COLUMN passwort_hash TEXT")
 
 
 def init_db() -> None:
@@ -192,6 +198,7 @@ def _person(r: sqlite3.Row) -> dict:
         # Unbekannte/fehlende Werte sicher auf 'mitarbeiter' mappen - sonst wuerde eine
         # einzige kaputte Zeile (z.B. aus fremdem Backup) die ganze Personenliste (500) killen.
         "rolle": (r["rolle"] if "rolle" in schluessel and r["rolle"] in ("admin", "mitarbeiter") else "mitarbeiter"),
+        "hat_passwort": bool("passwort_hash" in schluessel and r["passwort_hash"]),
     }
 
 
@@ -205,6 +212,55 @@ def hole_person(pid: str) -> dict | None:
     with verbindung() as conn:
         r = conn.execute("SELECT * FROM person WHERE id = ?", (pid,)).fetchone()
     return _person(r) if r else None
+
+
+# -- Passwort / Anmeldung (Modul auth nutzt diese Funktionen) ---------------
+
+def setze_passwort(pid: str, klartext: str | None) -> dict | None:
+    """Setzt oder entfernt (leerer Wert) das Passwort einer Person."""
+    wert = hash_passwort(klartext) if klartext else None
+    with verbindung() as conn:
+        cur = conn.execute("UPDATE person SET passwort_hash = ? WHERE id = ?", (wert, pid))
+        if cur.rowcount == 0:
+            return None
+    return hole_person(pid)
+
+
+def pruefe_anmeldung(kennung: str, klartext: str) -> dict | None:
+    """Findet eine aktive Person per Name ODER Kuerzel (ohne Gross-/Kleinschreibung)
+    und prueft ihr Passwort. Gibt die Person zurueck oder None."""
+    kennung = (kennung or "").strip()
+    if not kennung or not klartext:
+        return None
+    with verbindung() as conn:
+        rows = conn.execute(
+            "SELECT * FROM person WHERE aktiv = 1 AND (name = ? COLLATE NOCASE OR kuerzel = ? COLLATE NOCASE)",
+            (kennung, kennung),
+        ).fetchall()
+    for r in rows:
+        if pruefe_passwort(klartext, r["passwort_hash"] if "passwort_hash" in r.keys() else None):
+            return _person(r)
+    return None
+
+
+def admin_mit_passwort_existiert(ausser_pid: str | None = None) -> bool:
+    """True, wenn (ausser ggf. einer Person) eine aktive Admin-Person mit Passwort
+    existiert. Basis fuer den Aussperr-Schutz."""
+    sql = (
+        "SELECT 1 FROM person WHERE rolle = 'admin' AND aktiv = 1"
+        " AND passwort_hash IS NOT NULL AND passwort_hash != ''"
+    )
+    params: tuple = ()
+    if ausser_pid:
+        sql += " AND id != ?"
+        params = (ausser_pid,)
+    with verbindung() as conn:
+        return conn.execute(sql + " LIMIT 1", params).fetchone() is not None
+
+
+def hat_admin_mit_passwort() -> bool:
+    """True, wenn mindestens eine aktive Admin-Person ein Passwort hat (Aussperr-Schutz)."""
+    return admin_mit_passwort_existiert()
 
 
 def erstelle_person(name: str, kuerzel: str | None, wochenstunden: list | None, farbe: str | None,

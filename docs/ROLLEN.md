@@ -5,13 +5,13 @@ verwaltenden Bereiche nicht in der Seitenleiste, Admins sehen alles.
 
 ## Ehrliche Einordnung
 
-Ohne Passwort/Login ist das **reines UI-Scoping, keine Sicherheitsgrenze**. Die
-aktive Person ist nur ein browser-lokaler Wert; jeder kann über das Personen-
-Dropdown wieder zu einer Admin-Person wechseln, und die API-Endpunkte (inklusive
-Löschen und Zurücksetzen) bleiben technisch erreichbar. Der Nutzen ist trotzdem
-real: eine aufgeräumte Oberfläche für Mitarbeiter und weniger Versehen. Echte
-Durchsetzung (serverseitig, mit Login) ist eine spätere Phase und hier bewusst
-NICHT enthalten.
+Ohne aktive Anmeldung ist das Rollen-Gating **reines UI-Scoping, keine
+Sicherheitsgrenze**: die aktive Person ist nur ein browser-lokaler Wert, jeder kann
+über das Personen-Dropdown wechseln, und die API bleibt offen.
+
+Mit aktiver **Anmeldung** (siehe LOGIN.md) werden die Rollen dagegen **serverseitig
+durchgesetzt**: die Identität kommt aus der Sitzung (nicht aus dem Dropdown), und die
+Admin-Bereiche sind echt geschützt (403). Dann ist es eine echte Zugriffskontrolle.
 
 ## Was ist admin-nur?
 

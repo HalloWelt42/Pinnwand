@@ -4,6 +4,7 @@
 // optional - ohne Dienst und ohne Browser-Unterstuetzung passiert nichts.
 
 import { vorleseAudio } from './api'
+import { leseText, schreibeText } from './uiSpeicher'
 
 export const tts = $state<{
   laeuft: boolean
@@ -15,22 +16,18 @@ export const tts = $state<{
   anzahl: number
 }>({ laeuft: false, pausiert: false, stimme: '', tempo: 1, satz: '', index: 0, anzahl: 0 })
 
-try {
-  tts.stimme = localStorage.getItem('pw_tts_stimme') ?? ''
-  const t = parseFloat(localStorage.getItem('pw_tts_tempo') ?? '')
-  if (Number.isFinite(t) && t > 0) tts.tempo = t
-} catch {
-  /* localStorage nicht verfuegbar */
-}
+tts.stimme = leseText('pw_tts_stimme')
+const _tempo = parseFloat(leseText('pw_tts_tempo'))
+if (Number.isFinite(_tempo) && _tempo > 0) tts.tempo = _tempo
 
 export function setzeStimme(stimme: string): void {
   tts.stimme = stimme
-  try { localStorage.setItem('pw_tts_stimme', stimme) } catch { /* ignorieren */ }
+  schreibeText('pw_tts_stimme', stimme)
 }
 
 export function setzeTempo(tempo: number): void {
   tts.tempo = tempo
-  try { localStorage.setItem('pw_tts_tempo', String(tempo)) } catch { /* ignorieren */ }
+  schreibeText('pw_tts_tempo', String(tempo))
   if (audio) audio.playbackRate = tempo // Audio-Tempo greift sofort.
 }
 

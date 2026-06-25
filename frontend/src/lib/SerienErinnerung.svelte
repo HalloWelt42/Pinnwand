@@ -6,6 +6,7 @@
   import { ladeSerienNachtraege, serieNachtragen, loescheKarte, type SerienNachtrag } from './api'
   import { timer } from './timer.svelte'
   import { isoLang } from './zeit'
+  import { leseText, schreibeText } from './uiSpeicher'
 
   let offen = $state<SerienNachtrag[]>([])
   let sichtbar = $state(false)
@@ -23,13 +24,11 @@
   }
 
   onMount(async () => {
-    let zuletzt = ''
-    try { zuletzt = localStorage.getItem(SCHLUESSEL) ?? '' } catch { /* ignorieren */ }
-    if (zuletzt === heuteIso()) return // heute schon gefragt
+    if (leseText(SCHLUESSEL) === heuteIso()) return // heute schon gefragt
     try {
       await offeneLaden()
     } catch { return }
-    try { localStorage.setItem(SCHLUESSEL, heuteIso()) } catch { /* ignorieren */ }
+    schreibeText(SCHLUESSEL, heuteIso())
     if (offen.length) sichtbar = true
   })
 

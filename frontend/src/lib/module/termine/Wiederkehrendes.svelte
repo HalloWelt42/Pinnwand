@@ -4,6 +4,7 @@
   import Termine from './Termine.svelte'
   import { ladeMappen, ladeBoards } from '../../api'
   import type { Projektmappe, Board } from '../../types'
+  import { leseText, schreibeText } from '../../uiSpeicher'
 
   // Globale Ansicht: die boardId-Prop der Ansichts-Schnittstelle wird hier nicht
   // gebraucht (das Board fuer den Aufgaben-Modus waehlt man unten selbst).
@@ -14,13 +15,11 @@
   // "aufgabe" -> Board-Karte mit Soll (Serie), "termin" -> Meeting mit Folgetag-
   // Bestaetigung (Termin). Die bestehenden Komponenten werden wiederverwendet.
   let modus = $state<'aufgabe' | 'termin'>('aufgabe')
-  try {
-    const m = localStorage.getItem('pw_wk_modus')
-    if (m === 'aufgabe' || m === 'termin') modus = m
-  } catch { /* ignorieren */ }
+  const _modus = leseText('pw_wk_modus')
+  if (_modus === 'aufgabe' || _modus === 'termin') modus = _modus
   function setzeModus(m: 'aufgabe' | 'termin'): void {
     modus = m
-    try { localStorage.setItem('pw_wk_modus', m) } catch { /* ignorieren */ }
+    schreibeText('pw_wk_modus', m)
   }
 
   let mappen = $state<Projektmappe[]>([])

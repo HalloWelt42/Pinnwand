@@ -6,6 +6,7 @@
   import { ansichten, komponenteFuer } from './lib/module/registry'
   import { theme, wechsleTheme } from './lib/theme/theme.svelte'
   import { VERSION } from './lib/version'
+  import { leseText, schreibeText, leseJson, schreibeJson } from './lib/uiSpeicher'
   import { aktualisiereLaufend } from './lib/timer.svelte'
   import { nav, transkriptNav, kartenZeiger, oeffneKarte } from './lib/navigation.svelte'
   import Toast from './lib/Toast.svelte'
@@ -30,19 +31,9 @@
   }
 
   // UI-Zustand im Browser merken (Sidebar, aktive Ansicht, letztes Board).
-  const _ui: { rail?: boolean; railBreite?: number; ansicht?: string; board?: string | null } = (() => {
-    try {
-      return JSON.parse(localStorage.getItem('pw_ui') || '{}')
-    } catch {
-      return {}
-    }
-  })()
+  const _ui = leseJson<{ rail?: boolean; railBreite?: number; ansicht?: string; board?: string | null }>('pw_ui', {})
   function _merkeUi(): void {
-    try {
-      localStorage.setItem('pw_ui', JSON.stringify({ rail: railEin, railBreite, ansicht: aktiveAnsicht, board: aktivesBoard?.id ?? null }))
-    } catch {
-      /* localStorage nicht verfügbar */
-    }
+    schreibeJson('pw_ui', { rail: railEin, railBreite, ansicht: aktiveAnsicht, board: aktivesBoard?.id ?? null })
   }
 
   // Startpfad frühzeitig sichern (bevor Effekte die URL anfassen können).
@@ -52,20 +43,10 @@
   // Hilfe + Einrichtungs-Assistent.
   let hilfeOffen = $state(false)
   let mappeDokOffen = $state(false)
-  let onboardingOffen = $state((() => {
-    try {
-      return localStorage.getItem('pw_onboarding_done') !== '1'
-    } catch {
-      return false
-    }
-  })())
+  let onboardingOffen = $state(leseText('pw_onboarding_done') !== '1')
   function onboardingFertig(): void {
     onboardingOffen = false
-    try {
-      localStorage.setItem('pw_onboarding_done', '1')
-    } catch {
-      /* ignorieren */
-    }
+    schreibeText('pw_onboarding_done', '1')
   }
   function geheZuAnsicht(id: string): void {
     if (ansichtsListe.some((a) => a.id === id)) aktiveAnsicht = id
@@ -272,10 +253,10 @@
   // faelligen Karten entstehen (bei vorlauf 0 ohne Neustart, kein Voraus-Stapel).
   async function serienTagesabgleich(): Promise<void> {
     const heute = new Date().toISOString().slice(0, 10)
-    if (localStorage.getItem('pw_serien_check') === heute) return
+    if (leseText('pw_serien_check') === heute) return
     try {
       await serienVorbuchenAlle()
-      localStorage.setItem('pw_serien_check', heute)
+      schreibeText('pw_serien_check', heute)
     } catch {
       /* Vorbuchung ist unkritisch */
     }

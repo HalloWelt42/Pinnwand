@@ -21,6 +21,7 @@
   import { tts, vorlesen, stoppeVorlesen } from '../../tts.svelte'
   import { transkriptNav, oeffneKarte } from '../../navigation.svelte'
   import { mmss } from '../../timer.svelte'
+  import { leseText, schreibeText } from '../../uiSpeicher'
   import KiAssistent from '../../ki/KiAssistent.svelte'
 
   let { boardId }: { boardId: string } = $props()
@@ -33,11 +34,9 @@
   // Arbeitspool (Vorfilter): nur ausgewaehlte Transkripte sind im Alltag sichtbar;
   // "Alle" zeigt den ganzen Bestand zum Aus-/Abwaehlen. Modus im Browser gemerkt.
   let modus = $state<'pool' | 'alle'>('pool')
-  try {
-    const m = localStorage.getItem('pw_transkripte_modus')
-    if (m === 'alle' || m === 'pool') modus = m
-  } catch { /* localStorage nicht verfuegbar */ }
-  $effect(() => { try { localStorage.setItem('pw_transkripte_modus', modus) } catch { /* ignorieren */ } })
+  const _modus = leseText('pw_transkripte_modus')
+  if (_modus === 'alle' || _modus === 'pool') modus = _modus
+  $effect(() => { schreibeText('pw_transkripte_modus', modus) })
   let poolIds = $state<Set<string>>(new Set())
   let sortierung = $state<'name' | 'sprecher'>('name')
   let gruppenOffen = $state<Set<string>>(new Set())

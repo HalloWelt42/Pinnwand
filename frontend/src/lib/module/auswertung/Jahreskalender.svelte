@@ -5,6 +5,7 @@
   import TeamMatrix from './TeamMatrix.svelte'
   import TagModal from './TagModal.svelte'
   import KalenderLegende from './KalenderLegende.svelte'
+  import { leseJson, schreibeJson } from '../../uiSpeicher'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
@@ -16,12 +17,8 @@
     ebenen: { anwesenheit: true, feiertage: true, stunden: false, auslastung: false, frei: false },
   }
   function ladeUi(): UiStand {
-    try {
-      const r = JSON.parse(localStorage.getItem('pw_jahreskalender') || '{}')
-      return { jahr: r.jahr ?? STD.jahr, layout: r.layout ?? STD.layout, ebenen: { ...STD.ebenen, ...(r.ebenen ?? {}) } }
-    } catch {
-      return STD
-    }
+    const r = leseJson<Partial<UiStand>>('pw_jahreskalender', {})
+    return { jahr: r.jahr ?? STD.jahr, layout: r.layout ?? STD.layout, ebenen: { ...STD.ebenen, ...(r.ebenen ?? {}) } }
   }
   const _ui = ladeUi()
 
@@ -48,7 +45,7 @@
   $effect(() => { void jahr; laden() })
   $effect(() => { ladeAbwesenheitstypen().then((t) => (typen = t)).catch(() => {}) })
   $effect(() => {
-    localStorage.setItem('pw_jahreskalender', JSON.stringify({ jahr, layout, ebenen }))
+    schreibeJson('pw_jahreskalender', { jahr, layout, ebenen })
   })
 
   const EBENEN: { key: keyof Ebenen; label: string; icon: string }[] = [

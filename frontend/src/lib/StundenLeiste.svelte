@@ -6,6 +6,7 @@
   import { personSicht, setzePersonSicht } from './personSicht.svelte'
   import { formatStd } from './zeit'
   import { timer, formatDauerVoll } from './timer.svelte'
+  import { leseJson, schreibeJson } from './uiSpeicher'
 
   let daten = $state<StundenUebersicht | null>(null)
   let personen = $state<Person[]>([])
@@ -20,18 +21,10 @@
   })
 
   function ladeOffen(): boolean {
-    try {
-      return JSON.parse(localStorage.getItem('pw_stundenleiste') || '{}').offen ?? true
-    } catch {
-      return true
-    }
+    return leseJson<{ offen?: boolean }>('pw_stundenleiste', {}).offen ?? true
   }
   $effect(() => {
-    try {
-      localStorage.setItem('pw_stundenleiste', JSON.stringify({ offen }))
-    } catch {
-      /* localStorage nicht verfuegbar */
-    }
+    schreibeJson('pw_stundenleiste', { offen })
   })
 
   async function laden(): Promise<void> {

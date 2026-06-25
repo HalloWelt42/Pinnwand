@@ -6,6 +6,7 @@
     type SnapshotInfo, type BackupZustand, type BackupVorschau, type AgentToken,
   } from '../../api'
   import { isoDatumZeit } from '../../zeit'
+  import { leseText, schreibeText } from '../../uiSpeicher'
   import KiAssistent from '../../ki/KiAssistent.svelte'
 
   let { boardId }: { boardId: string } = $props()
@@ -128,7 +129,7 @@
   }
 
   // --- Agenten-Zugriff (Token-Verwaltung) ---
-  let adminToken = $state(localStorage.getItem('pw_admin_token') ?? '')
+  let adminToken = $state(leseText('pw_admin_token'))
   let tokens = $state<AgentToken[]>([])
   let tokenGeladen = $state(false)
   let tokenFehler = $state('')
@@ -145,7 +146,7 @@
     try {
       tokens = await ladeAgentTokens(adminToken.trim())
       tokenGeladen = true
-      localStorage.setItem('pw_admin_token', adminToken.trim())
+      schreibeText('pw_admin_token', adminToken.trim())
     } catch (e) {
       tokenGeladen = false
       tokenFehler = e instanceof AuthFehler ? e.message : 'Agenten-API nicht erreichbar.'

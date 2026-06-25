@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { materialisiereTermine, ladeTerminInstanzen, bestaetigeTermin, lehneTerminAb, bestaetigeAlleTermine, type TerminInstanz } from '../../api'
   import { ymd, isoLang } from '../../zeit'
+  import { leseText, schreibeText } from '../../uiSpeicher'
 
   let offen = $state<TerminInstanz[]>([])
   let sichtbar = $state(false)
@@ -16,14 +17,12 @@
 
   onMount(async () => {
     const heute = ymd(new Date())
-    let zuletzt = ''
-    try { zuletzt = localStorage.getItem(SCHLUESSEL) ?? '' } catch { /* ignorieren */ }
-    if (zuletzt === heute) return // heute schon gefragt
+    if (leseText(SCHLUESSEL) === heute) return // heute schon gefragt
     try {
       await materialisiereTermine()
       await offeneLaden()
     } catch { return }
-    try { localStorage.setItem(SCHLUESSEL, heute) } catch { /* ignorieren */ }
+    schreibeText(SCHLUESSEL, heute)
     if (offen.length) sichtbar = true
   })
 

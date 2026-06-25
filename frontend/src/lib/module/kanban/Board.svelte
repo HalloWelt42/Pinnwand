@@ -26,6 +26,7 @@
   import { neuKarteAus } from '../../restore'
   import { personSicht } from '../../personSicht.svelte'
   import { zuletztKuerzel } from '../../zuletztKuerzel.svelte'
+  import { leseJson, schreibeJson } from '../../uiSpeicher'
   import Column from './Column.svelte'
   import Toolbar from './Toolbar.svelte'
   import CardDrawer from './CardDrawer.svelte'
@@ -113,20 +114,12 @@
 
   // Spalten-/Filterzustand je Board im Browser merken.
   function _ladeBoardUi(id: string): { suche?: string; sortModus?: typeof sortModus; filterPrio?: Prioritaet | null; filterLabels?: string[]; eingeklappt?: string[]; fertigFilter?: Record<string, string> } {
-    try {
-      return JSON.parse(localStorage.getItem('pw_board_' + id) || '{}')
-    } catch {
-      return {}
-    }
+    return leseJson('pw_board_' + id, {})
   }
   function _merkeBoardUi(): void {
-    try {
-      localStorage.setItem('pw_board_' + boardId, JSON.stringify({
-        suche, sortModus, filterPrio, filterLabels, eingeklappt: Array.from(eingeklappt), fertigFilter,
-      }))
-    } catch {
-      /* localStorage nicht verfügbar */
-    }
+    schreibeJson('pw_board_' + boardId, {
+      suche, sortModus, filterPrio, filterLabels, eingeklappt: Array.from(eingeklappt), fertigFilter,
+    })
   }
 
   $effect(() => {

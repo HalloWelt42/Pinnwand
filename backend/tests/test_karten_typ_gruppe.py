@@ -8,6 +8,8 @@ Geprueft wird:
 - Der Spezialfall "Zeit getrennt zaehlen" (zeit_geteilt=false) zeigt je Karte die
   eigene Zeit statt der Gruppensumme.
 - Loesen einer Verknuepfung loest eine Gruppe mit nur noch einem Mitglied auf.
+- Verknuepfte Tickets ziehen bei Spaltenwechsel als Gruppe mit; reines Umsortieren
+  innerhalb einer Spalte laesst die Gruppe unberuehrt.
 """
 from __future__ import annotations
 
@@ -34,6 +36,12 @@ def _buche(client, karte_id, datum, sekunden):
 def _karte_aus_board(client, board_id, karte_id):
     d = client.get(f"/api/kanban/boards/{board_id}").json()
     return next(k for k in d["karten"] if k["id"] == karte_id)
+
+
+def _move(client, karte_id, spalte, reihenfolge=0):
+    r = client.post(f"/api/kanban/karten/{karte_id}/move", json={"spalte": spalte, "reihenfolge": reihenfolge})
+    assert r.status_code == 200, r.text
+    return r.json()
 
 
 def test_ideenticket_blockt_timer(client):
@@ -107,3 +115,40 @@ def test_verknuepfung_loesen_loest_kleine_gruppe_auf(client):
     # Beide Karten sind danach ohne Gruppe.
     assert _karte_aus_board(client, board["id"], a["id"])["gruppe_id"] is None
     assert _karte_aus_board(client, board["id"], b["id"])["gruppe_id"] is None
+
+
+def test_gruppe_zieht_bei_spaltenwechsel_mit(client):
+    """Wird eine verknuepfte Karte in eine andere Spalte gezogen, folgen alle
+    Gruppen-Mitglieder (auch aus dritten Spalten) in die Zielspalte."""
+    board = _board(client)
+    s_offen, s_arbeit, s_fertig = (board["spalten"][i]["id"] for i in range(3))
+    a = _karte(client, board["id"], s_offen, "MZ A")
+    b = _karte(client, board["id"], s_offen, "MZ B")
+    c = _karte(client, board["id"], s_fertig, "MZ C")
+    # Alle drei in eine Gruppe (a-b und a-c).
+    client.post(f"/api/kanban/karten/{a['id']}/verknuepfen", json={"ziel_karte_id": b["id"]})
+    client.post(f"/api/kanban/karten/{a['id']}/verknuepfen", json={"ziel_karte_id": c["id"]})
+
+    _move(client, a["id"], s_arbeit, 0)
+
+    # a, b und c stehen jetzt alle in der Zielspalte (In Arbeit).
+    assert _karte_aus_board(client, board["id"], a["id"])["spalte"] == s_arbeit
+    assert _karte_aus_board(client, board["id"], b["id"])["spalte"] == s_arbeit
+    assert _karte_aus_board(client, board["id"], c["id"])["spalte"] == s_arbeit
+
+
+def test_umsortieren_in_spalte_zieht_gruppe_nicht(client):
+    """Reines Umsortieren innerhalb derselben Spalte (kein Spaltenwechsel) laesst
+    Gruppen-Mitglieder in anderen Spalten unberuehrt."""
+    board = _board(client)
+    s_offen, s_arbeit, _ = (board["spalten"][i]["id"] for i in range(3))
+    a = _karte(client, board["id"], s_offen, "US A")
+    b = _karte(client, board["id"], s_arbeit, "US B")  # Mitglied in anderer Spalte
+    client.post(f"/api/kanban/karten/{a['id']}/verknuepfen", json={"ziel_karte_id": b["id"]})
+
+    # a innerhalb von s_offen umsortieren (Quelle == Ziel).
+    _move(client, a["id"], s_offen, 0)
+
+    # b bleibt in seiner Spalte, wird NICHT mitgezogen.
+    assert _karte_aus_board(client, board["id"], a["id"])["spalte"] == s_offen
+    assert _karte_aus_board(client, board["id"], b["id"])["spalte"] == s_arbeit

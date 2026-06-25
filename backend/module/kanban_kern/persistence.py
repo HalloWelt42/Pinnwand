@@ -457,20 +457,39 @@ def erstelle_karte(
 
 def verschiebe_karte(karte_id: str, ziel_spalte: str, ziel_reihenfolge: int) -> Karte | None:
     with _verb() as conn:
-        row = conn.execute("SELECT board_id, spalte FROM karte WHERE id = ?", (karte_id,)).fetchone()
+        row = conn.execute("SELECT board_id, spalte, gruppe_id FROM karte WHERE id = ?", (karte_id,)).fetchone()
         if row is None:
             return None
-        board_id, quelle = row["board_id"], row["spalte"]
+        board_id, quelle, gruppe_id = row["board_id"], row["spalte"], row["gruppe_id"]
         conn.execute(
             "UPDATE karte SET reihenfolge = reihenfolge + 1"
             " WHERE board_id = ? AND spalte = ? AND reihenfolge >= ? AND id != ?",
             (board_id, ziel_spalte, ziel_reihenfolge, karte_id),
         )
         conn.execute("UPDATE karte SET spalte = ?, reihenfolge = ? WHERE id = ?", (ziel_spalte, ziel_reihenfolge, karte_id))
+        jetzt = _jetzt()
         # Wechsel der Spalte setzt die Verweildauer (Card-Aging) zurück.
         if quelle != ziel_spalte:
-            conn.execute("UPDATE karte SET bewegt_am = ? WHERE id = ?", (_jetzt(), karte_id))
-        for spalte in {quelle, ziel_spalte}:
+            conn.execute("UPDATE karte SET bewegt_am = ? WHERE id = ?", (jetzt, karte_id))
+        betroffene = {quelle, ziel_spalte}
+        # Verknuepfte Tickets ziehen bei Spaltenwechsel als Gruppe mit (ans Ende der
+        # Zielspalte, dort frei sortierbar). Nur im selben Board und nur Mitglieder,
+        # die nicht ohnehin schon in der Zielspalte stehen. Innerhalb derselben Spalte
+        # (reines Umsortieren) bleibt die Gruppe unberuehrt.
+        if gruppe_id and quelle != ziel_spalte:
+            mitglieder = conn.execute(
+                "SELECT id, spalte FROM karte"
+                " WHERE board_id = ? AND gruppe_id = ? AND id != ? AND spalte != ?",
+                (board_id, gruppe_id, karte_id, ziel_spalte),
+            ).fetchall()
+            for m in mitglieder:
+                ziel_pos = _naechste_reihenfolge(conn, board_id, ziel_spalte)
+                conn.execute(
+                    "UPDATE karte SET spalte = ?, reihenfolge = ?, bewegt_am = ? WHERE id = ?",
+                    (ziel_spalte, ziel_pos, jetzt, m["id"]),
+                )
+                betroffene.add(m["spalte"])
+        for spalte in betroffene:
             _kompaktiere(conn, board_id, spalte)
     return hole_karte(karte_id)
 

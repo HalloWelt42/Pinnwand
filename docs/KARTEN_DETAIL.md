@@ -60,6 +60,15 @@ Drag-and-Drop:
 - **Im Karten-Detail**: das Suchfeld unter "Verknüpfte Aufgaben" findet eine Karte und
   hängt sie an die Gruppe.
 
+### Mitziehen bei Spaltenwechsel
+
+Zieht man eine verknüpfte Karte in eine **andere Spalte**, folgen alle Mitglieder der
+Gruppe automatisch in die Zielspalte (ans Ende, dort frei sortierbar) - so bleibt eine
+gemeinsam bearbeitete Gruppe im selben Status. Reines **Umsortieren innerhalb derselben
+Spalte** lässt die Gruppe unberührt. Die Logik sitzt im Backend (`verschiebe_karte`),
+greift also unabhängig davon, wie die Karte verschoben wurde, und das Aging-Datum
+(`bewegt_am`) der mitgezogenen Karten wird wie bei jedem Spaltenwechsel neu gesetzt.
+
 ## Bausteine (Modularisierung)
 
 Das Karten-Detail ist in fokussierte Unterkomponenten aufgeteilt, statt alles in einer

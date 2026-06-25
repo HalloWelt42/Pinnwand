@@ -3,6 +3,7 @@
   import { labelFarbe } from '../../labels'
   import { theme } from '../../theme/theme.svelte'
   import { timer, timerStarten, timerPausieren, formatDauer } from '../../timer.svelte'
+  import { koppeln, koppelnStart, koppelnBeenden } from './verknuepfen.svelte'
 
   let { karte, onOeffnen, onLoeschen, onVerknuepfen }: {
     karte: Karte
@@ -12,25 +13,37 @@
   } = $props()
 
   const dunkel = $derived(theme.modus === 'dunkel')
-  // Zeit-Verknuepfung per Ziehen: die Kette ziehen und auf einer anderen Karte fallen
-  // lassen. Natives Drag-and-Drop (eigene MIME), getrennt vom Reorder (svelte-dnd-action).
-  let zielAktiv = $state(false)
-  function ziehStart(e: DragEvent) {
+  // Zeit-Verknuepfung per Ziehen: das Ketten-Symbol greifen und auf eine andere Karte
+  // ziehen. Eigene Pointer-Geste (nicht natives Drag), damit es zuverlaessig ist und
+  // sichtbar Rueckmeldung gibt; laeuft getrennt vom Reorder (siehe verknuepfen.svelte).
+  const istQuelle = $derived(koppeln.quelle === karte.id)
+  const istZiel = $derived(!!koppeln.quelle && koppeln.quelle !== karte.id && koppeln.ueber === karte.id)
+
+  function koppelDown(e: PointerEvent) {
+    if (!onVerknuepfen) return
     e.stopPropagation()
-    e.dataTransfer?.setData('application/x-karte', karte.id)
-    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'link'
-  }
-  function ueberZiel(e: DragEvent) {
-    if (!onVerknuepfen || !e.dataTransfer?.types.includes('application/x-karte')) return
     e.preventDefault()
-    zielAktiv = true
+    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId) } catch { /* ignorieren */ }
+    koppelnStart(karte.id, e.clientX, e.clientY)
   }
-  function fallenlassen(e: DragEvent) {
-    zielAktiv = false
-    const quelle = e.dataTransfer?.getData('application/x-karte')
-    if (!quelle) return
-    e.preventDefault()
-    if (quelle !== karte.id) onVerknuepfen?.(quelle, karte.id)
+  function koppelMove(e: PointerEvent) {
+    if (koppeln.quelle !== karte.id) return
+    koppeln.x = e.clientX
+    koppeln.y = e.clientY
+    const treffer = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+    const ziel = (treffer?.closest('article.card') as HTMLElement | null)?.dataset.karte ?? null
+    koppeln.ueber = ziel && ziel !== karte.id ? ziel : null
+  }
+  function koppelUp(e: PointerEvent) {
+    if (koppeln.quelle !== karte.id) return
+    const quelle = koppeln.quelle
+    const ziel = koppeln.ueber
+    koppelnBeenden()
+    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId) } catch { /* ignorieren */ }
+    if (ziel && ziel !== quelle) onVerknuepfen?.(quelle, ziel)
+  }
+  function koppelCancel() {
+    if (koppeln.quelle === karte.id) koppelnBeenden()
   }
   const istIdee = $derived(karte.typ === 'idee')
   const laeuft = $derived(!!karte.laeuft_seit)
@@ -83,13 +96,12 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <article
   class="card"
-  class:zielAktiv
+  class:zielAktiv={istZiel}
+  class:koppelQuelle={istQuelle}
+  data-karte={karte.id}
   role="listitem"
   tabindex="0"
   onclick={() => onOeffnen(karte.id)}
-  ondragover={ueberZiel}
-  ondragleave={() => (zielAktiv = false)}
-  ondrop={fallenlassen}
   onkeydown={(e) => {
     if (e.target !== e.currentTarget) return
     if (e.key === 'Enter') {
@@ -102,10 +114,13 @@
     {#if !istIdee && onVerknuepfen}
       <button
         class="aktion griff"
+        class:zieht={istQuelle}
         aria-label="Zeit verknüpfen (auf eine andere Karte ziehen)"
         title="Auf eine andere Karte ziehen, um die Zeit zu verknüpfen"
-        draggable="true"
-        ondragstart={ziehStart}
+        onpointerdown={koppelDown}
+        onpointermove={koppelMove}
+        onpointerup={koppelUp}
+        onpointercancel={koppelCancel}
         onmousedown={(e) => e.stopPropagation()}
         ontouchstart={(e) => e.stopPropagation()}
         onclick={(e) => e.stopPropagation()}
@@ -173,6 +188,14 @@
   </div>
 </article>
 
+{#if istQuelle}
+  <!-- Schwebende Anzeige am Zeiger, damit das Koppeln klar sichtbar ist. -->
+  <div class="koppel-geist" class:bereit={!!koppeln.ueber} style="left:{koppeln.x}px; top:{koppeln.y}px">
+    <i class="fa-solid fa-link" aria-hidden="true"></i>
+    {koppeln.ueber ? 'Hier koppeln' : 'Auf eine Karte ziehen ...'}
+  </div>
+{/if}
+
 <style>
   .card {
     position: relative;
@@ -228,10 +251,47 @@
   }
   .aktion.griff {
     cursor: grab;
+    touch-action: none; /* eigene Pointer-Geste, kein Scrollen/natives Drag */
   }
   .aktion.griff:hover {
     color: var(--hl-primary-text);
     background: var(--surface-1);
+  }
+  .aktion.griff.zieht {
+    cursor: grabbing;
+    color: var(--hl-on-primary);
+    background: var(--hl-primary);
+  }
+  .card.koppelQuelle {
+    opacity: 0.6;
+    outline: 2px dashed var(--hl-primary);
+    outline-offset: -2px;
+  }
+  /* Die Kopplungs-Aktionen der Quellkarte bleiben sichtbar, solange gezogen wird. */
+  .card.koppelQuelle .ecke {
+    opacity: 1;
+  }
+  .koppel-geist {
+    position: fixed;
+    z-index: 70;
+    transform: translate(14px, 14px);
+    pointer-events: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    white-space: nowrap;
+    background: var(--surface-3);
+    color: var(--text-2);
+    border: 1px solid var(--border-2);
+    box-shadow: var(--schatten-pop);
+  }
+  .koppel-geist.bereit {
+    background: var(--hl-primary);
+    color: var(--hl-on-primary);
+    border-color: transparent;
   }
   .cover {
     height: 6px;

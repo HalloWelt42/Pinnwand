@@ -66,6 +66,34 @@
     timer.stand++ // Board laedt neu -> Ticketzeit der Karte aktualisiert sich
     await ladeKartenZeitenFuer()
   }
+
+  // Ticketzeit gesamt direkt setzen (Schnellweg). Die Differenz zur aktuellen Summe
+  // wird gebucht: mehr -> manueller Eintrag auf heute; weniger -> von den juengsten
+  // Eintraegen abgezogen. Taggenaue Korrektur bleibt ueber die Tagesliste moeglich.
+  async function gesamtSetzen(wert: string): Promise<void> {
+    const ziel = parseZeit(wert)
+    if (ziel == null || ziel < 0) return
+    const aktuell = karte.erfasst_sek ?? 0
+    const delta = ziel - aktuell
+    if (delta === 0) return
+    if (delta > 0) {
+      await erstelleZeiteintrag({ karte_id: karte.id, datum: ymd(new Date()), sekunden: delta })
+    } else {
+      let rest = -delta
+      for (const e of kartenZeiten) {
+        if (rest <= 0) break
+        if (e.sekunden <= rest) {
+          await loescheZeiteintrag(e.id)
+          rest -= e.sekunden
+        } else {
+          await aktualisiereZeiteintrag(e.id, { sekunden: e.sekunden - rest })
+          rest = 0
+        }
+      }
+    }
+    timer.stand++
+    await ladeKartenZeitenFuer()
+  }
 </script>
 
 <p class="sec">Zeiterfassung</p>
@@ -79,7 +107,14 @@
   {:else}
     <button class="tbtn play" onclick={() => timerStarten(karte.id)}><i class="fa-solid fa-play" aria-hidden="true"></i> Start</button>
   {/if}
-  <span class="erfasst" title="Ticketzeit gesamt (Summe aller Tage)">{formatDauerVoll(sek)}</span>
+  {#if laeuft}
+    <span class="erfasst" title="Läuft - zum Bearbeiten erst stoppen">{formatDauerVoll(sek)}</span>
+  {:else}
+    <input class="erfasst erfasst-edit" value={formatDauerVoll(sek)}
+      aria-label="Ticketzeit gesamt bearbeiten"
+      title="Ticketzeit gesamt - direkt änderbar (z.B. 1:30:00 oder 1,5); die Differenz wird auf heute gebucht"
+      onchange={(e) => gesamtSetzen(e.currentTarget.value)} />
+  {/if}
   <label class="plan">Schätzung
     <input type="number" min="0" step="0.25" value={planMin ? planMin / 60 : ''}
       onchange={(e) => { const v = parseFloat(e.currentTarget.value); onAendern({ schaetzung_min: Number.isFinite(v) && v > 0 ? Math.round(v * 60) : null }) }} />
@@ -89,7 +124,7 @@
 {#if geteilt}
   <p class="grpzeit"><i class="fa-solid fa-link" aria-hidden="true"></i> Geteilt über {gruppeAnzahl} Aufgaben: {formatDauerVoll(karte.gruppe_sek ?? 0)} - zählt einmal</p>
 {/if}
-<p class="zcap">Ticketzeit gesamt (Summe aller Tage). Die Tage darunter bilden die Arbeitszeit des jeweiligen Tages.</p>
+<p class="zcap">Ticketzeit gesamt (Summe aller Tage) - direkt änderbar; die Differenz wird auf heute gebucht. Tagesgenau geht es über die Liste unten.</p>
 {#if prozent != null}
   <div class="fortschritt" class:ueber={prozent > 100}><span style="width:{Math.min(prozent, 100)}%"></span></div>
   <div class="pinfo" class:ueber={prozent > 100}>{Math.round(prozent)}% von {formatPlan(planMin ?? 0)}{#if prozent > 100} - überschritten{/if}</div>
@@ -122,6 +157,9 @@
   .tbtn.stopp { background: var(--surface-1); color: var(--text-2); border-color: var(--border-2); }
   .tbtn.stopp:hover { border-color: var(--gefahr); color: var(--due-rot-fg); }
   .erfasst { font-family: var(--font-mono); font-size: 18px; font-variant-numeric: tabular-nums; color: var(--text-1); }
+  .erfasst-edit { width: 108px; box-sizing: border-box; border: 1px solid transparent; background: transparent; border-radius: var(--r-s); padding: 2px 6px; }
+  .erfasst-edit:hover { border-color: var(--border-2); }
+  .erfasst-edit:focus { border-color: var(--hl-primary); background: var(--surface-2); outline: none; }
   .plan { margin-left: auto; font-size: 12px; color: var(--text-3); display: inline-flex; align-items: center; gap: 6px; }
   .plan input { width: 60px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-1); border-radius: var(--r-s); padding: 5px 7px; font-size: 12.5px; }
   .grpzeit { margin: 2px 0 0; font-size: 11.5px; color: var(--hl-primary-text); display: flex; align-items: center; gap: 6px; }

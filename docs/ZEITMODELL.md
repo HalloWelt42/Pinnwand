@@ -49,9 +49,13 @@ je Karte pro Tag eine Gesamtzeit statt vieler Sitzungs-Schnipsel.
 
 ## Im Karten-Detail
 
-- "Ticketzeit gesamt" wird nur angezeigt (read-only, Summe aller Tage).
+- "Ticketzeit gesamt" (der Wert neben Start) ist direkt änderbar: man tippt die neue
+  Gesamtzeit, die Differenz wird gebucht - mehr als manueller Eintrag auf heute, weniger
+  von den jüngsten Einträgen abgezogen. So geht das schnelle Erfassen ohne Start/Stopp.
+  (Bei laufendem Timer ist der Wert kurz nur Anzeige; erst stoppen.)
 - Darunter die Aufschlüsselung nach Tagen: je Eintrag Tag und Dauer änderbar, Eintrag
-  löschbar; Einträge aus Start/Stopp sind als solche markiert.
+  löschbar; Einträge aus Start/Stopp sind als solche markiert. Hier korrigiert man
+  taggenau, wenn die Schnell-Eingabe oben nicht auf heute gehört.
 - "Tag buchen" legt einen datierten Eintrag für einen beliebigen Tag an.
 
 ## Bestand

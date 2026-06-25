@@ -102,7 +102,7 @@
       </button>
     {/if}
     {#if karte.gruppe_id}
-      <span class="grp" title="Verknuepft mit {gruppeAnzahl - 1} weiteren{geteilt ? ' - Zeit geteilt' : ''}"><i class="fa-solid fa-link" aria-hidden="true"></i> {gruppeAnzahl}</span>
+      <span class="grp" class:geteilt title="Verknuepft mit {gruppeAnzahl - 1} weiteren{geteilt ? ' - Zeit geteilt, zaehlt einmal' : ''}"><i class="fa-solid fa-link" aria-hidden="true"></i> {gruppeAnzahl}</span>
     {/if}
     {#if karte.schluessel}<span class="key">{karte.schluessel}</span>{/if}
     {#if karte.faellig}
@@ -261,11 +261,23 @@
   .grp {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    color: var(--text-3);
+    gap: 5px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    border: 1px solid var(--border-2);
+    background: var(--surface-2);
+    color: var(--text-2);
+    font-variant-numeric: tabular-nums;
+  }
+  /* Geteilte Zeitgruppe deutlich erkennbar: gefuelltes Link-Pill im Akzent. */
+  .grp.geteilt {
+    border-color: transparent;
+    background: var(--hl-primary-weich);
+    color: var(--hl-primary-text);
   }
   .grp i {
     font-size: 10px;
+    transform: rotate(-45deg);
   }
   .key {
     font-family: var(--font-mono);

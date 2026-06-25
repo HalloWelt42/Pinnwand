@@ -1,33 +1,21 @@
 <script lang="ts">
-  import { sucheInhalte, sucheStatus, transkribiere, type SuchTreffer, type SuchStatus } from '../../api'
+  import { sucheInhalte, type SuchTreffer } from '../../api'
   import { oeffneKarte } from '../../navigation.svelte'
+  import { kopfSuche } from '../../suchkopf.svelte'
 
   // Suche ist global; boardId wird hier nicht benötigt (Pflichtprop der Ansichts-Schnittstelle).
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
 
-  let frage = $state('')
   let treffer = $state<SuchTreffer[]>([])
   let modus = $state('stichwort')
   let laeuft = $state(false)
-  let status = $state<SuchStatus | null>(null)
 
-  let aufnahme = $state(false)
-  let mikroFehler = $state('')
-  let recorder: MediaRecorder | null = null
-  let brocken: Blob[] = []
-
-  let timer: ReturnType<typeof setTimeout> | null = null
-
+  // Der Suchbegriff (und die Spracheingabe) kommen zentral aus dem Kopf der App.
+  const frage = $derived(kopfSuche.q)
   $effect(() => {
-    sucheStatus().then((s) => (status = s)).catch(() => {})
-  })
-
-  // Reaktiv auf die Eingabe: entprellt suchen (liest frage zuverlässig über das Binding).
-  $effect(() => {
-    const q = frage
-    if (timer) clearTimeout(timer)
-    timer = setTimeout(() => starteSuche(q), 220)
+    kopfSuche.stand // bei jeder neuen Kopf-Anfrage erneut suchen
+    starteSuche(kopfSuche.q)
   })
 
   async function starteSuche(q: string): Promise<void> {
@@ -47,68 +35,24 @@
     }
   }
 
-  async function mikrofon(): Promise<void> {
-    mikroFehler = ''
-    if (aufnahme) {
-      recorder?.stop()
-      return
-    }
-    try {
-      const strom = await navigator.mediaDevices.getUserMedia({ audio: true })
-      recorder = new MediaRecorder(strom)
-      brocken = []
-      recorder.ondataavailable = (e) => brocken.push(e.data)
-      recorder.onstop = async () => {
-        strom.getTracks().forEach((t) => t.stop())
-        aufnahme = false
-        const blob = new Blob(brocken, { type: recorder?.mimeType || 'audio/webm' })
-        try {
-          const { text } = await transkribiere(blob)
-          if (text) {
-            frage = text
-            starteSuche(text)
-          }
-        } catch {
-          mikroFehler = 'Spracheingabe nicht verfügbar.'
-        }
-      }
-      recorder.start()
-      aufnahme = true
-    } catch {
-      mikroFehler = 'Kein Mikrofonzugriff.'
-    }
-  }
-
   function oeffne(t: SuchTreffer): void {
     if (t.board_id) oeffneKarte(t.board_id, t.karte_id)
   }
 </script>
 
 <div class="suche">
-  <div class="kopf">
-    <div class="feldreihe">
-      <i class="fa-solid fa-magnifying-glass lupe" aria-hidden="true"></i>
-      <input
-        class="frage"
-        placeholder="Frag nach allem - z.B. 'Qualität vor Auslieferung' oder 'R3-130'"
-        bind:value={frage}
-        aria-label="Suche"
-      />
-      {#if status?.mikrofon}
-        <button class="mik" class:an={aufnahme} onclick={mikrofon} aria-label="Spracheingabe" title="Per Mikrofon suchen">
-          <i class="fa-solid {aufnahme ? 'fa-stop' : 'fa-microphone'}" aria-hidden="true"></i>
-        </button>
-      {/if}
-    </div>
+  {#if frage.trim()}
     <div class="zeile-info">
+      <span class="begriff">Suche: <b>{frage}</b></span>
       <span class="modus" title="Suchmodus">
         <i class="fa-solid {modus === 'hybrid' ? 'fa-wand-magic-sparkles' : 'fa-font'}" aria-hidden="true"></i>
         {modus === 'hybrid' ? 'Semantisch + Stichwort' : 'Stichwort'}
       </span>
       {#if laeuft}<span class="lade">sucht ...</span>{/if}
-      {#if mikroFehler}<span class="fehler">{mikroFehler}</span>{/if}
     </div>
-  </div>
+  {:else}
+    <p class="hinweis"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Tippe oben im Kopf in die Suche - oder nutze das Mikrofon fuer Spracheingabe.</p>
+  {/if}
 
   {#if frage.trim() && !treffer.length && !laeuft}
     <p class="leer">Keine Treffer.</p>
@@ -142,67 +86,31 @@
     margin: 0 auto;
     width: 100%;
   }
-  .kopf {
-    margin-bottom: 14px;
-  }
-  .feldreihe {
+  .hinweis {
     display: flex;
     align-items: center;
-    gap: 10px;
-    background: var(--surface-1);
-    border: 1px solid var(--border-2);
-    border-radius: var(--r-l);
-    padding: 4px 12px;
-  }
-  .feldreihe:focus-within {
-    border-color: var(--hl-primary);
-  }
-  .lupe {
+    gap: 9px;
     color: var(--text-3);
-    font-size: 15px;
-  }
-  .frage {
-    flex: 1;
-    border: none;
-    background: transparent;
-    color: var(--text-1);
-    font-size: 16px;
-    padding: 12px 0;
-    outline: none;
-  }
-  .mik {
-    width: 38px;
-    height: 38px;
+    font-size: 13px;
+    padding: 10px 12px;
+    border: 1px dashed var(--border-2);
     border-radius: var(--r-m);
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    color: var(--text-2);
-    flex: none;
-  }
-  .mik:hover {
-    color: var(--hl-primary-text);
-    border-color: var(--hl-primary);
-  }
-  .mik.an {
-    background: var(--gefahr);
-    color: #fff;
-    border-color: transparent;
   }
   .zeile-info {
     display: flex;
     align-items: center;
     gap: 14px;
-    margin: 8px 4px 0;
+    margin: 2px 4px 10px;
     font-size: 11.5px;
     color: var(--text-3);
+  }
+  .begriff {
+    color: var(--text-2);
   }
   .modus {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-  }
-  .fehler {
-    color: var(--due-rot-fg);
   }
   .leer {
     color: var(--text-3);

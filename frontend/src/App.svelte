@@ -9,6 +9,7 @@
   import { aktualisiereLaufend } from './lib/timer.svelte'
   import { nav, transkriptNav, kartenZeiger, oeffneKarte } from './lib/navigation.svelte'
   import Toast from './lib/Toast.svelte'
+  import KopfSuche from './lib/KopfSuche.svelte'
   import LaufBar from './lib/LaufBar.svelte'
   import StundenLeiste from './lib/StundenLeiste.svelte'
   import DiensteStatus from './lib/DiensteStatus.svelte'
@@ -428,6 +429,7 @@
         <span class="btitel">{boardgebunden ? (aktivesBoard?.titel ?? 'Pinnwand') : (aktuelleAnsichtMeta?.titel ?? 'Pinnwand')}</span>
         {#if boardgebunden && aktiveMappe}<span class="krumen">{aktiveMappe.titel}{#if aktivesBoard?.kuerzel} &middot; {aktivesBoard.kuerzel}{/if}</span>{/if}
       </div>
+      <div class="kopfsuche"><KopfSuche onSuche={() => geheZuAnsicht('suche')} /></div>
     </header>
 
     <main class="buehne">
@@ -785,6 +787,12 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
+  }
+  .kopfsuche {
+    margin-left: auto;
+    flex: 0 1 460px;
+    display: flex;
+    justify-content: flex-end;
   }
   .btitel {
     font-family: var(--font-display);

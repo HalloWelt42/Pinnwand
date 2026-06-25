@@ -10,6 +10,7 @@
   import { isoLang, isoDatumZeit, ymd } from '../../zeit'
   import { timer, timerStarten, timerPausieren, timerStoppen, erfassteSekunden, formatDauerVoll, formatPlan, parseZeit, mmss } from '../../timer.svelte'
   import Markdown from '../../Markdown.svelte'
+  import FarbWahl from '../../FarbWahl.svelte'
   import DokumentVerwaltung from '../../DokumentVerwaltung.svelte'
   import { tts, vorlesen, stoppeVorlesen } from '../../tts.svelte'
 
@@ -468,10 +469,7 @@
       </div>
       <div class="zeile"><span class="lbl"><i class="fa-solid fa-palette" aria-hidden="true"></i> Cover</span>
         {#if bearbeiten}
-          <span class="coverwahl">
-            <input class="cfarbe" type="color" value={karte.cover ?? '#4f9be8'} onchange={(e) => onAendern({ cover: e.currentTarget.value })} aria-label="Cover-Farbe" />
-            {#if karte.cover}<button class="mini geist" onclick={() => onAendern({ cover: null })}>Entfernen</button>{:else}<span class="cleer">keiner</span>{/if}
-          </span>
+          <FarbWahl value={karte.cover ?? null} onWahl={(c) => onAendern({ cover: c })} />
         {:else if karte.cover}<span class="cswatch" style="background:{karte.cover}"></span>{:else}<span class="wert">-</span>{/if}
       </div>
     </div>
@@ -928,24 +926,6 @@
     font-size: 10.5px;
     color: var(--text-3);
     margin: 4px 0 0;
-  }
-  .coverwahl {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 9px;
-  }
-  .cfarbe {
-    width: 42px;
-    height: 26px;
-    padding: 0;
-    border: 1px solid var(--border);
-    border-radius: var(--r-s);
-    background: var(--surface-2);
-  }
-  .cleer {
-    font-size: 12px;
-    color: var(--text-3);
   }
   .sec {
     font-family: var(--font-display);

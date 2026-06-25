@@ -8,6 +8,7 @@
     type Person, type Urlaubstag, type Feiertag, type Urlaubskonto, type Region,
     type AbwesenheitTyp, type Tagesregel, type WochenOverride,
   } from '../../api'
+  import FarbWahl from '../../FarbWahl.svelte'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
@@ -365,8 +366,9 @@
     <div class="atab">
       {#each abwTypen as t (t.code)}
         <div class="azeile">
-          <input class="cfarbe" type="color" value={t.farbe} onchange={(e) => farbeAendern(t, e.currentTarget.value)} aria-label="Farbe" />
+          <span class="cfarbe" style="background:{t.farbe}" title={t.farbe}></span>
           <span class="aname">{t.name}</span>
+          <FarbWahl value={t.farbe} mitKeine={false} onWahl={(c) => { if (c) farbeAendern(t, c) }} />
           <span class="adez">{t.anwesend ? 'gilt als anwesend' : t.reduziert_soll ? 'reduziert Soll' : ''}</span>
           <label class="chk"><input type="checkbox" checked={t.anrechnen} onchange={(e) => anrechnenAendern(t, e.currentTarget.checked)} /> zählt gegen Urlaubsanspruch</label>
         </div>

@@ -4,9 +4,34 @@
   import { theme } from '../../theme/theme.svelte'
   import { timer, timerStarten, timerPausieren, formatDauer } from '../../timer.svelte'
 
-  let { karte, onOeffnen, onLoeschen }: { karte: Karte; onOeffnen: (id: string) => void; onLoeschen: (id: string) => void } = $props()
+  let { karte, onOeffnen, onLoeschen, onVerknuepfen }: {
+    karte: Karte
+    onOeffnen: (id: string) => void
+    onLoeschen: (id: string) => void
+    onVerknuepfen?: (quelleId: string, zielId: string) => void
+  } = $props()
 
   const dunkel = $derived(theme.modus === 'dunkel')
+  // Zeit-Verknuepfung per Ziehen: die Kette ziehen und auf einer anderen Karte fallen
+  // lassen. Natives Drag-and-Drop (eigene MIME), getrennt vom Reorder (svelte-dnd-action).
+  let zielAktiv = $state(false)
+  function ziehStart(e: DragEvent) {
+    e.stopPropagation()
+    e.dataTransfer?.setData('application/x-karte', karte.id)
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'link'
+  }
+  function ueberZiel(e: DragEvent) {
+    if (!onVerknuepfen || !e.dataTransfer?.types.includes('application/x-karte')) return
+    e.preventDefault()
+    zielAktiv = true
+  }
+  function fallenlassen(e: DragEvent) {
+    zielAktiv = false
+    const quelle = e.dataTransfer?.getData('application/x-karte')
+    if (!quelle) return
+    e.preventDefault()
+    if (quelle !== karte.id) onVerknuepfen?.(quelle, karte.id)
+  }
   const istIdee = $derived(karte.typ === 'idee')
   const laeuft = $derived(!!karte.laeuft_seit)
   // Verknuepfte Aufgaben mit geteilter Zeit zeigen die kombinierte Gruppen-Zeit.
@@ -58,9 +83,13 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <article
   class="card"
+  class:zielAktiv
   role="listitem"
   tabindex="0"
   onclick={() => onOeffnen(karte.id)}
+  ondragover={ueberZiel}
+  ondragleave={() => (zielAktiv = false)}
+  ondrop={fallenlassen}
   onkeydown={(e) => {
     if (e.target !== e.currentTarget) return
     if (e.key === 'Enter') {
@@ -69,14 +98,29 @@
     }
   }}
 >
-  <button
-    class="aktion"
-    aria-label="Karte löschen"
-    title="Löschen"
-    onclick={(e) => { e.stopPropagation(); onLoeschen(karte.id) }}
-  >
-    <i class="fa-solid fa-trash" aria-hidden="true"></i>
-  </button>
+  <div class="ecke">
+    {#if !istIdee && onVerknuepfen}
+      <button
+        class="aktion griff"
+        aria-label="Zeit verknüpfen (auf eine andere Karte ziehen)"
+        title="Auf eine andere Karte ziehen, um die Zeit zu verknüpfen"
+        draggable="true"
+        ondragstart={ziehStart}
+        onpointerdown={(e) => e.stopPropagation()}
+        onclick={(e) => e.stopPropagation()}
+      >
+        <i class="fa-solid fa-link" aria-hidden="true"></i>
+      </button>
+    {/if}
+    <button
+      class="aktion"
+      aria-label="Karte löschen"
+      title="Löschen"
+      onclick={(e) => { e.stopPropagation(); onLoeschen(karte.id) }}
+    >
+      <i class="fa-solid fa-trash" aria-hidden="true"></i>
+    </button>
+  </div>
   {#if karte.cover}
     <div class="cover" style="background:{karte.cover}"></div>
   {/if}
@@ -146,10 +190,25 @@
   .card:active {
     cursor: grabbing;
   }
-  .aktion {
+  .card.zielAktiv {
+    outline: 2px solid var(--hl-primary);
+    outline-offset: -2px;
+    background: var(--hl-primary-weich);
+  }
+  .ecke {
     position: absolute;
     top: 6px;
     right: 6px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .card:hover .ecke,
+  .card:focus-within .ecke {
+    opacity: 1;
+  }
+  .aktion {
     width: 24px;
     height: 24px;
     border-radius: var(--r-s);
@@ -160,15 +219,17 @@
     align-items: center;
     justify-content: center;
     font-size: 11px;
-    opacity: 0;
-    transition: opacity 0.12s, color 0.12s;
-  }
-  .card:hover .aktion,
-  .card:focus-within .aktion {
-    opacity: 1;
+    transition: color 0.12s, background 0.12s;
   }
   .aktion:hover {
     color: var(--gefahr);
+    background: var(--surface-1);
+  }
+  .aktion.griff {
+    cursor: grab;
+  }
+  .aktion.griff:hover {
+    color: var(--hl-primary-text);
     background: var(--surface-1);
   }
   .cover {

@@ -19,6 +19,7 @@
     onCardsFinalize,
     onOeffnen,
     onLoeschenKarte,
+    onVerknuepfen,
     onKarteAnlegen,
     onGriffDown,
     onToggleEinklappen,
@@ -41,6 +42,7 @@
     onCardsFinalize: (items: Karte[], info: { id: string }) => void
     onOeffnen: (id: string) => void
     onLoeschenKarte: (id: string) => void
+    onVerknuepfen?: (quelleId: string, zielId: string) => void
     onKarteAnlegen: (titel: string, typ?: 'arbeit' | 'idee') => void
     onGriffDown: () => void
     onToggleEinklappen: () => void
@@ -175,7 +177,7 @@
           {#if karte.id === SHADOW_PLACEHOLDER_ITEM_ID}
             <div class="platzhalter"></div>
           {:else}
-            <Card {karte} {onOeffnen} onLoeschen={onLoeschenKarte} />
+            <Card {karte} {onOeffnen} onLoeschen={onLoeschenKarte} {onVerknuepfen} />
           {/if}
         </div>
       {/each}

@@ -7,6 +7,7 @@
     verschiebeKarte,
     erstelleKarte,
     aktualisiereKarte,
+    karteVerknuepfen,
     anhaengenKommentar,
     loescheKarte,
     erstelleSpalte,
@@ -337,6 +338,12 @@
     await erstelleKarte({ board_id: boardId, spalte: spalteId, titel, zustaendig: standardKuerzel, typ })
     await laden()
   }
+  // Zeit-Verknuepfung per Drag-and-Drop (Kette auf eine andere Karte gezogen).
+  async function verknuepfeKarten(quelleId: string, zielId: string) {
+    await karteVerknuepfen(quelleId, zielId)
+    await laden()
+    zeigeToast('Aufgaben verknüpft - Zeit wird geteilt')
+  }
   async function spalteAnlegen() {
     const t = spalteTitel.trim()
     if (!t) return
@@ -409,6 +416,7 @@
               onCardsFinalize={(items, info) => cardsFinalize(idx, items, info)}
               onOeffnen={oeffnen}
               onLoeschenKarte={karteSchnellLoeschen}
+              onVerknuepfen={verknuepfeKarten}
               onKarteAnlegen={(titel, typ) => karteAnlegen(eintrag.spalte.id, titel, typ)}
               onGriffDown={() => (spaltenDragAus = false)}
               onToggleEinklappen={() => toggleEinklappen(eintrag.spalte.id)}

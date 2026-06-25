@@ -1,7 +1,11 @@
 """Datenverträge der Planung."""
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
+
+Rolle = Literal["admin", "mitarbeiter"]
 
 
 class Person(BaseModel):
@@ -14,6 +18,8 @@ class Person(BaseModel):
     urlaubsanspruch: float = 30
     resturlaub_vorjahr: float = 0
     aktiv: bool = True
+    # Rolle steuert nur die sichtbaren Verwaltungsbereiche im UI (kein Login/Schutz).
+    rolle: Rolle = "mitarbeiter"
 
 
 class PersonCreate(BaseModel):
@@ -35,6 +41,7 @@ class PersonUpdate(BaseModel):
     urlaubsanspruch: float | None = None
     resturlaub_vorjahr: float | None = None
     aktiv: bool | None = None
+    rolle: Rolle | None = None
 
 
 class Urlaubskonto(BaseModel):

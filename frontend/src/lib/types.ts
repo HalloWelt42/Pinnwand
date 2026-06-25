@@ -328,6 +328,7 @@ export interface Person {
   urlaubsanspruch: number
   resturlaub_vorjahr: number
   aktiv: boolean
+  rolle: 'admin' | 'mitarbeiter'
 }
 export interface Urlaubskonto {
   person_id: string

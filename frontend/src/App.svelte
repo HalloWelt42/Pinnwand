@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import type { Component } from 'svelte'
-  import type { Board, Projektmappe } from './lib/types'
-  import { ladeMappen, ladeBoards, ladeErweiterungen, erstelleBoard, benenneBoard, loescheBoard, erstelleMappe, benenneMappe, loescheMappe, serienVorbuchenAlle, ladeLabels } from './lib/api'
+  import type { Board, Projektmappe, Person } from './lib/types'
+  import { ladeMappen, ladeBoards, ladeErweiterungen, erstelleBoard, benenneBoard, loescheBoard, erstelleMappe, benenneMappe, loescheMappe, serienVorbuchenAlle, ladeLabels, ladePersonen } from './lib/api'
   import { setzeLabelDefinitionen } from './lib/labels'
+  import { personSicht, rolleAus } from './lib/personSicht.svelte'
   import { ansichten, komponenteFuer } from './lib/module/registry'
   import { theme, wechsleTheme } from './lib/theme/theme.svelte'
   import { VERSION } from './lib/version'
@@ -62,7 +63,26 @@
 
   let ansichtsListe = $state<Ansicht[]>([])
   let aktiveAnsicht = $state('')
-  const aktuelleKomponente = $derived(ansichtsListe.find((a) => a.id === aktiveAnsicht)?.komponente)
+
+  // Rollen-Gating (Phase 1, ohne Passwort = reines UI-Scoping): Mitarbeiter sehen die
+  // verwaltenden Bereiche nicht. Rolle leitet sich aus der aktiven Person ab; ohne
+  // gewaehlte Person gilt 'admin' (Bestand/frische Installation bleibt voll sichtbar).
+  let personen = $state<Person[]>([])
+  const ADMIN_ANSICHTEN = new Set(['einstellungen', 'planung', 'labels'])
+  const aktiveRolle = $derived(rolleAus(personen, personSicht.id))
+  const sichtbareAnsichten = $derived(
+    aktiveRolle === 'mitarbeiter' ? ansichtsListe.filter((a) => !ADMIN_ANSICHTEN.has(a.id)) : ansichtsListe,
+  )
+  // Komponente nur aus den sichtbaren Ansichten - so rendert ein Mitarbeiter nie den
+  // Inhalt eines gesperrten Bereichs (auch nicht kurz vor dem Fallback).
+  const aktuelleKomponente = $derived(sichtbareAnsichten.find((a) => a.id === aktiveAnsicht)?.komponente)
+  // Faellt die aktive Ansicht fuer einen Mitarbeiter weg (z.B. gespeicherte Admin-Ansicht
+  // oder Personenwechsel), still auf die erste sichtbare Ansicht zurueckfallen.
+  $effect(() => {
+    if (aktiveAnsicht && sichtbareAnsichten.length && !sichtbareAnsichten.some((a) => a.id === aktiveAnsicht)) {
+      aktiveAnsicht = sichtbareAnsichten[0].id
+    }
+  })
 
   // Globale Ansichten brauchen keine Board-Navigation; boardgebundene schon.
   const GLOBALE_ANSICHTEN = new Set(['heute', 'suche', 'transkripte', 'planung', 'jahreskalender', 'wiederkehrendes', 'berichte', 'labels', 'einstellungen'])
@@ -276,6 +296,7 @@
   onMount(async () => {
     await ladeAnsichten()
     ladeLabelFarben()
+    ladePersonen().then((p) => (personen = p)).catch(() => {}) // fuer das Rollen-Gating
     aktualisiereLaufend()
     serienTagesabgleich()
     try {
@@ -308,7 +329,7 @@
 
     <p class="rubrik">Ansichten</p>
     <nav>
-      {#each ansichtsListe as a (a.id)}
+      {#each sichtbareAnsichten as a (a.id)}
         <button class="zeile menu" class:aktiv={aktiveAnsicht === a.id} onclick={() => (aktiveAnsicht = a.id)} title={a.titel}>
           <i class={a.icon} aria-hidden="true"></i><span>{a.titel}</span>
         </button>

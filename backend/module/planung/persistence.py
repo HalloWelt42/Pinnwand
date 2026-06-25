@@ -24,7 +24,8 @@ CREATE TABLE IF NOT EXISTS person (
     bundesland TEXT,
     urlaubsanspruch REAL NOT NULL DEFAULT 30,
     resturlaub_vorjahr REAL NOT NULL DEFAULT 0,
-    aktiv INTEGER NOT NULL DEFAULT 1
+    aktiv INTEGER NOT NULL DEFAULT 1,
+    rolle TEXT NOT NULL DEFAULT 'mitarbeiter'
 );
 CREATE TABLE IF NOT EXISTS urlaub (
     id TEXT PRIMARY KEY,
@@ -92,6 +93,11 @@ def _migriere(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE person ADD COLUMN urlaubsanspruch REAL NOT NULL DEFAULT 30")
     if "resturlaub_vorjahr" not in spalten:
         conn.execute("ALTER TABLE person ADD COLUMN resturlaub_vorjahr REAL NOT NULL DEFAULT 0")
+    if "rolle" not in spalten:
+        # Neue Spalte ohne Default hinzufuegen, dann bestehende Personen auf 'admin'
+        # setzen - so wird beim Einfuehren der Rollen niemand aus der Verwaltung ausgesperrt.
+        conn.execute("ALTER TABLE person ADD COLUMN rolle TEXT")
+        conn.execute("UPDATE person SET rolle = 'admin' WHERE rolle IS NULL")
 
 
 def init_db() -> None:
@@ -99,10 +105,11 @@ def init_db() -> None:
         conn.executescript(SCHEMA)
         _migriere(conn)
         if conn.execute("SELECT COUNT(*) AS n FROM person").fetchone()["n"] == 0:
-            for kuerzel, name in [("AK", "Anke Krause"), ("TB", "Tom Berger"), ("ML", "Mara Lang")]:
+            # Erste Beispiel-Person ist Admin, damit eine frische DB sofort verwaltbar ist.
+            for i, (kuerzel, name) in enumerate([("AK", "Anke Krause"), ("TB", "Tom Berger"), ("ML", "Mara Lang")]):
                 conn.execute(
-                    "INSERT INTO person (id, name, kuerzel, wochenstunden, aktiv) VALUES (?, ?, ?, ?, 1)",
-                    ("p_" + uuid4().hex[:8], name, kuerzel, json.dumps(_STD_WOCHE)),
+                    "INSERT INTO person (id, name, kuerzel, wochenstunden, aktiv, rolle) VALUES (?, ?, ?, ?, 1, ?)",
+                    ("p_" + uuid4().hex[:8], name, kuerzel, json.dumps(_STD_WOCHE), "admin" if i == 0 else "mitarbeiter"),
                 )
         if conn.execute("SELECT COUNT(*) AS n FROM abwesenheit_typ").fetchone()["n"] == 0:
             conn.executemany(
@@ -182,6 +189,9 @@ def _person(r: sqlite3.Row) -> dict:
         "urlaubsanspruch": r["urlaubsanspruch"] if "urlaubsanspruch" in schluessel else 30,
         "resturlaub_vorjahr": r["resturlaub_vorjahr"] if "resturlaub_vorjahr" in schluessel else 0,
         "aktiv": bool(r["aktiv"]),
+        # Unbekannte/fehlende Werte sicher auf 'mitarbeiter' mappen - sonst wuerde eine
+        # einzige kaputte Zeile (z.B. aus fremdem Backup) die ganze Personenliste (500) killen.
+        "rolle": (r["rolle"] if "rolle" in schluessel and r["rolle"] in ("admin", "mitarbeiter") else "mitarbeiter"),
     }
 
 

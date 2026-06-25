@@ -9,6 +9,8 @@
     type AbwesenheitTyp, type Tagesregel, type WochenOverride,
   } from '../../api'
   import FarbWahl from '../../FarbWahl.svelte'
+  import { personSicht, rolleAus } from '../../personSicht.svelte'
+  import { zeigeToast } from '../../toaster.svelte'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
@@ -17,6 +19,8 @@
   const jahr = new Date().getFullYear()
 
   let personen = $state<Person[]>([])
+  // Nur Admins duerfen Rollen zuweisen (Planung ist ohnehin admin-nur; doppelt abgesichert).
+  const istAdmin = $derived(rolleAus(personen, personSicht.id) === 'admin')
   let neuerName = $state('')
   let neuesKuerzel = $state('')
   let konten = $state<Record<string, Urlaubskonto>>({})
@@ -86,6 +90,18 @@
 
   async function bundeslandAendern(p: Person, wert: string): Promise<void> {
     await aktualisierePerson(p.id, { bundesland: wert || null })
+    await ladenPersonen()
+  }
+  async function rolleAendern(p: Person, wert: string): Promise<void> {
+    const rolle = wert === 'admin' ? 'admin' : 'mitarbeiter'
+    if (rolle === p.rolle) return
+    // Aussperr-Schutz: den letzten Admin nicht herabstufen.
+    if (p.rolle === 'admin' && rolle === 'mitarbeiter' && personen.filter((x) => x.rolle === 'admin').length <= 1) {
+      zeigeToast('Mindestens ein Admin muss bestehen bleiben.')
+      await ladenPersonen() // setzt das Select optisch zurueck
+      return
+    }
+    await aktualisierePerson(p.id, { rolle })
     await ladenPersonen()
   }
   async function anspruchAendern(p: Person, wert: number): Promise<void> {
@@ -236,6 +252,28 @@
       <button class="btn primaer" onclick={personAnlegen}>Person hinzufügen</button>
     </div>
   </section>
+
+  {#if istAdmin}
+    <section class="block">
+      <p class="sec">Rollen</p>
+      <p class="rhint">
+        Admins sehen die Verwaltung (Einstellungen, Planung, Labels), Mitarbeiter nur den
+        Arbeitsbereich. Das blendet nur Bereiche aus - ohne Passwort ist es keine echte
+        Zugriffssperre.
+      </p>
+      <div class="rollen">
+        {#each personen as p (p.id)}
+          <div class="rzeile">
+            <span class="pn"><b>{p.kuerzel ?? ''}</b> {p.name}</span>
+            <select class="rsel" value={p.rolle} onchange={(e) => rolleAendern(p, e.currentTarget.value)} aria-label="Rolle">
+              <option value="admin">Admin</option>
+              <option value="mitarbeiter">Mitarbeiter</option>
+            </select>
+          </div>
+        {/each}
+      </div>
+    </section>
+  {/if}
 
   <section class="block">
     <p class="sec">Wochen-Override (einzelne Woche abweichend vom Wochen-Soll)</p>
@@ -414,6 +452,11 @@
   .sec { font-family: var(--font-display); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3); margin: 0 0 8px; }
   .block { margin-bottom: 22px; }
   .meldung { color: var(--ok); font-size: 12px; margin: 0 0 10px; }
+  .rhint { font-size: 12px; color: var(--text-3); line-height: 1.55; margin: 0 0 10px; max-width: 70ch; }
+  .rollen { border: 1px solid var(--border); border-radius: var(--r-l); overflow: hidden; background: var(--surface-col); }
+  .rzeile { display: grid; grid-template-columns: 1fr 160px; align-items: center; gap: 10px; padding: 7px 10px; font-size: 12.5px; }
+  .rzeile + .rzeile { border-top: 1px solid var(--border); }
+  .rsel { border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-1); border-radius: var(--r-s); padding: 5px 8px; font-size: 12px; }
   .tab { border: 1px solid var(--border); border-radius: var(--r-l); overflow: hidden; background: var(--surface-col); }
   .kopf, .zeile { display: grid; grid-template-columns: 1fr repeat(7, 52px) 40px; align-items: center; gap: 6px; padding: 6px 10px; }
   .kopf { border-bottom: 1px solid var(--border); font-size: 10.5px; color: var(--text-3); text-transform: uppercase; }

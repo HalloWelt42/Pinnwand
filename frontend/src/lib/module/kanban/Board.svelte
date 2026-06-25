@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { dndzone, SHADOW_PLACEHOLDER_ITEM_ID, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action'
+  import { dndzone, dragHandleZone, SHADOW_PLACEHOLDER_ITEM_ID, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action'
   import { flip } from 'svelte/animate'
   import type { BoardDetail, Karte, Prioritaet, Spalte } from '../../types'
   import {
@@ -58,7 +58,6 @@
   let filterPrio = $state<Prioritaet | null>(null)
   let filterLabels = $state<string[]>([])
 
-  let spaltenDragAus = $state(true)
   let neueSpalte = $state(false)
   let spalteTitel = $state('')
   let zuletztGezogen = 0
@@ -290,12 +289,13 @@
   }
 
   // -- Spalten-Drag --
+  // Spalten werden ueber den Griff (dragHandle in Column) gezogen; die Zone ist immer
+  // aktiv und faengt Karten-Zuege nicht ab, weil sie nur ueber einen Griff startet.
   function spaltenConsider(items: Eintrag[]) {
     ansicht = items
   }
   function spaltenFinalize(items: Eintrag[]) {
     ansicht = items
-    spaltenDragAus = true
     const ids = items.filter((e) => e.id !== SHADOW_PLACEHOLDER_ITEM_ID).map((e) => e.spalte.id)
     setzeSpaltenReihenfolge(boardId, ids).catch(() => laden())
   }
@@ -397,7 +397,7 @@
   <div class="flaeche">
     <div
       class="spalten"
-      use:dndzone={{ items: ansicht, type: 'spalte', dragDisabled: spaltenDragAus, flipDurationMs: 160, dropTargetStyle: {} }}
+      use:dragHandleZone={{ items: ansicht, type: 'spalte', flipDurationMs: 160, dropTargetStyle: {} }}
       onconsider={(e) => spaltenConsider(e.detail.items)}
       onfinalize={(e) => spaltenFinalize(e.detail.items)}
     >
@@ -423,7 +423,6 @@
               onLoeschenKarte={karteSchnellLoeschen}
               onVerknuepfen={verknuepfeKarten}
               onKarteAnlegen={(titel, typ) => karteAnlegen(eintrag.spalte.id, titel, typ)}
-              onGriffDown={() => (spaltenDragAus = false)}
               onToggleEinklappen={() => toggleEinklappen(eintrag.spalte.id)}
               onSpalteUmbenennen={(daten) => spalteUmbenennen(eintrag.spalte.id, daten)}
               onSpalteVerschieben={(richtung) => spalteVerschieben(eintrag.spalte.id, richtung)}
@@ -493,6 +492,18 @@
     border: 2px dashed var(--hl-primary);
     background: var(--hl-primary-weich);
     border-radius: var(--r-xl);
+  }
+  /* Gezogene Spalte deutlich anheben - klares Feedback, dass das Ziehen laeuft. */
+  :global(#dnd-action-dragged-el .col) {
+    box-shadow: var(--schatten-lift);
+    outline: 2px solid var(--hl-primary);
+    outline-offset: -2px;
+    cursor: grabbing;
+  }
+  :global(#dnd-action-dragged-el .zu) {
+    box-shadow: var(--schatten-lift);
+    outline: 2px solid var(--hl-primary);
+    outline-offset: -2px;
   }
   .add-col {
     flex: 0 0 270px;

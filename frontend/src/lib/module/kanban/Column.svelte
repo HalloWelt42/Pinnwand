@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { dndzone, SHADOW_PLACEHOLDER_ITEM_ID } from 'svelte-dnd-action'
+  import { dndzone, dragHandle, SHADOW_PLACEHOLDER_ITEM_ID } from 'svelte-dnd-action'
   import { flip } from 'svelte/animate'
   import type { Karte, Spalte } from '../../types'
   import Card from './Card.svelte'
@@ -21,7 +21,6 @@
     onLoeschenKarte,
     onVerknuepfen,
     onKarteAnlegen,
-    onGriffDown,
     onToggleEinklappen,
     onSpalteUmbenennen,
     onSpalteVerschieben,
@@ -44,7 +43,6 @@
     onLoeschenKarte: (id: string) => void
     onVerknuepfen?: (quelleId: string, zielId: string) => void
     onKarteAnlegen: (titel: string, typ?: 'arbeit' | 'idee') => void
-    onGriffDown: () => void
     onToggleEinklappen: () => void
     onSpalteUmbenennen: (daten: { titel: string; wip_limit: number | null }) => void
     onSpalteVerschieben: (richtung: -1 | 1) => void
@@ -89,10 +87,10 @@
 
 {#if eingeklappt}
   <section class="zu">
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="zukopf" role="button" tabindex="0" title="Ausklappen"
       onclick={onToggleEinklappen}
       onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleEinklappen() } }}>
+      <span class="griffzu" use:dragHandle title="Zum Umsortieren ziehen" aria-label="Spalte umsortieren"><i class="fa-solid fa-grip-vertical" aria-hidden="true"></i></span>
       <i class="fa-solid fa-angles-right" aria-hidden="true"></i>
       <span class="dot" style="background:{akzent}"></span>
       <span class="vtitel">{spalte.titel}</span>
@@ -130,11 +128,12 @@
       </div>
     {:else}
       <header>
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <span class="griff" title="Spalte ziehen" onmousedown={onGriffDown} ontouchstart={onGriffDown}><i class="fa-solid fa-grip-vertical" aria-hidden="true"></i></span>
-        <span class="punkt" style="background:{akzent}"></span>
-        <span class="titel">{spalte.titel}</span>
-        <span class="zaehler" class:warn={wipVoll}>{anzahl}{#if spalte.wip_limit != null}/{spalte.wip_limit}{/if}</span>
+        <div class="zieh" title="Zum Umsortieren ziehen" use:dragHandle aria-label="Spalte umsortieren">
+          <span class="griff"><i class="fa-solid fa-grip-vertical" aria-hidden="true"></i></span>
+          <span class="punkt" style="background:{akzent}"></span>
+          <span class="titel">{spalte.titel}</span>
+          <span class="zaehler" class:warn={wipVoll} title={spalte.wip_limit != null ? `${anzahl} Karten / WIP-Limit ${spalte.wip_limit} (Hoechstzahl gleichzeitiger Karten; faerbt sich bei Erreichen)` : `${anzahl} Karten`}>{anzahl}{#if spalte.wip_limit != null}/{spalte.wip_limit}{/if}</span>
+        </div>
         {#if spalte.erledigt}
           <select class="zeitfilter" value={zeitfilter} onchange={(e) => onZeitfilter(e.currentTarget.value)} title="Zeitraum (fertiggestellt)" aria-label="Zeitraum-Filter">
             <option value="heute">Heute</option>
@@ -231,11 +230,22 @@
     align-items: center;
     gap: 10px;
     color: var(--text-2);
-    cursor: pointer;
+    cursor: grab;
     padding-bottom: 10px;
+  }
+  .zukopf:active {
+    cursor: grabbing;
   }
   .zukopf:hover {
     color: var(--text-1);
+  }
+  .griffzu {
+    font-size: 12px;
+    color: var(--text-3);
+    line-height: 1;
+  }
+  .zukopf:hover .griffzu {
+    color: var(--hl-primary-text);
   }
   .zukopf .dot {
     width: 8px;
@@ -291,16 +301,30 @@
     padding: 2px 2px 8px;
     position: relative;
   }
+  /* Ganze linke Kopfzeile ist der Zieh-Griff: grosses, klares Ziel zum Umsortieren. */
+  .zieh {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: grab;
+    padding: 2px 0;
+    border-radius: var(--r-s);
+  }
+  .zieh:hover {
+    background: var(--surface-3);
+  }
+  .zieh:active {
+    cursor: grabbing;
+  }
   .griff {
     color: var(--text-3);
-    cursor: grab;
-    font-size: 11px;
-    opacity: 0;
-    transition: opacity 0.12s;
-    margin-right: -1px;
+    font-size: 13px;
+    flex: none;
   }
-  header:hover .griff {
-    opacity: 0.7;
+  .zieh:hover .griff {
+    color: var(--hl-primary-text);
   }
   .punkt {
     width: 8px;

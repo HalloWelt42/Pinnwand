@@ -30,6 +30,23 @@ eines Tickets für Tag X, wächst die Ticketzeit UND die Arbeitszeit von Tag X -
 versehentlich die von heute. Das war früher der Stolperstein: eine Gesamt-Korrektur
 landete still auf dem heutigen Tag.
 
+## Start/Stopp wird je Tag zusammengefasst
+
+Häufiges Starten und Stoppen würde sonst viele kleine Fragmente erzeugen und die
+Übersichten zumüllen. Deshalb gilt: alle Start/Stopp-Sitzungen derselben Karte am
+selben Tag werden zu EINEM automatischen Eintrag verschmolzen (Summe der Sekunden,
+früheste Start- und späteste End-Zeit des Tages). Die erfasste Zeit bleibt exakt
+gleich - es ist eine Zusammenfassung, kein Verlust. In allen Übersichten steht damit
+je Karte pro Tag eine Gesamtzeit statt vieler Sitzungs-Schnipsel.
+
+- `_pause_intern` rechnet eine neue Sitzung direkt in den vorhandenen Tageseintrag der
+  Karte ein, statt jedes Mal einen neuen Eintrag anzulegen.
+- Beim Start räumt eine einmalige, idempotente Migration (`_konsolidiere_auto_zeiten`)
+  bestehende Fragmente je Karte+Tag auf; vorher wird einmalig eine Roh-Sicherung der
+  Tabelle (`zeiteintrag_roh_backup`) angelegt.
+- Manuelle Buchungen bleiben eigenständig (sie tragen oft einen Kommentar) und werden
+  nicht mit den automatischen Tageseinträgen verschmolzen.
+
 ## Im Karten-Detail
 
 - "Ticketzeit gesamt" wird nur angezeigt (read-only, Summe aller Tage).

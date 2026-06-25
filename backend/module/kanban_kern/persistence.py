@@ -130,6 +130,9 @@ def _migriere(conn: sqlite3.Connection) -> None:
         "CREATE TABLE IF NOT EXISTS kartengruppe ("
         "id TEXT PRIMARY KEY, zeit_geteilt INTEGER NOT NULL DEFAULT 1, erstellt_am TEXT)"
     )
+    # Altdaten aufraeumen: bestehende Start/Stopp-Fragmente je Karte+Tag zusammenfassen
+    # (idempotent, einmalige Roh-Sicherung). Neue Sitzungen fasst _pause_intern direkt zusammen.
+    _konsolidiere_auto_zeiten(conn)
 
 
 def init_db() -> None:
@@ -579,6 +582,53 @@ def _recompute_erfasst(conn: sqlite3.Connection, karte_id: str) -> None:
     conn.execute("UPDATE karte SET erfasst_sek = ? WHERE id = ?", (int(r["s"]), karte_id))
 
 
+def _konsolidiere_auto_zeiten(conn: sqlite3.Connection) -> int:
+    """Fasst bestehende automatische Start/Stopp-Eintraege (manuell=0) je Karte+Tag zu
+    einem Eintrag zusammen. Summen bleiben exakt gleich (nur Verschmelzung der Fragmente).
+    Idempotent: liegt schon hoechstens ein Auto-Eintrag je Karte+Tag vor, passiert nichts.
+    Vor der ersten Verschmelzung wird einmalig eine Roh-Sicherung der Tabelle angelegt.
+    Gibt die Anzahl betroffener Karten zurueck."""
+    gruppen = conn.execute(
+        "SELECT karte_id, datum FROM zeiteintrag WHERE manuell = 0 "
+        "GROUP BY karte_id, datum HAVING COUNT(*) > 1"
+    ).fetchall()
+    if not gruppen:
+        return 0
+    # Einmalige Sicherung der Rohdaten, bevor Fragmente verschmolzen werden.
+    hat_backup = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'zeiteintrag_roh_backup'"
+    ).fetchone()
+    if not hat_backup:
+        conn.execute("CREATE TABLE zeiteintrag_roh_backup AS SELECT * FROM zeiteintrag")
+    betroffen: set[str] = set()
+    for g in gruppen:
+        karte_id, datum = g["karte_id"], g["datum"]
+        rows = conn.execute(
+            "SELECT id, start, ende, sekunden FROM zeiteintrag "
+            "WHERE manuell = 0 AND karte_id = ? AND datum = ? ORDER BY start, id",
+            (karte_id, datum),
+        ).fetchall()
+        if len(rows) < 2:
+            continue
+        ziel = rows[0]
+        summe = sum(int(r["sekunden"]) for r in rows)
+        starts = [r["start"] for r in rows if r["start"]]
+        enden = [r["ende"] for r in rows if r["ende"]]
+        neu_start = min(starts) if starts else ziel["start"]
+        neu_ende = max(enden) if enden else ziel["ende"]
+        conn.execute(
+            "UPDATE zeiteintrag SET sekunden = ?, start = ?, ende = ? WHERE id = ?",
+            (summe, neu_start, neu_ende, ziel["id"]),
+        )
+        conn.executemany(
+            "DELETE FROM zeiteintrag WHERE id = ?", [(r["id"],) for r in rows[1:]]
+        )
+        betroffen.add(karte_id)
+    for kid in betroffen:
+        _recompute_erfasst(conn, kid)
+    return len(betroffen)
+
+
 # Hinweis: Es gibt bewusst keine undatierte Gesamt-Eingabe der erfassten Zeit mehr.
 # Ticketzeit (erfasst_sek) = Summe der datierten Zeiteintraege je Karte; jede Korrektur
 # laeuft ueber einen datierten Zeiteintrag, damit die Arbeitszeit dem richtigen Tag
@@ -603,7 +653,13 @@ def _tagessegmente(start_iso: str, ende_iso: str) -> list[tuple[str, str, str, i
 
 
 def _pause_intern(conn: sqlite3.Connection, karte_id: str) -> None:
-    """Stoppt eine laufende Karte, schreibt einen Zeiteintrag und berechnet erfasst_sek neu."""
+    """Stoppt eine laufende Karte, schreibt einen Zeiteintrag und berechnet erfasst_sek neu.
+
+    Start/Stopp-Sitzungen derselben Karte am selben Tag werden zu EINEM automatischen
+    Eintrag zusammengefasst (Summe der Sekunden, frueheste Start- und spaeteste End-Zeit),
+    damit die Uebersichten nicht mit vielen Fragmenten volllaufen. Die erfasste Zeit
+    bleibt exakt gleich - es ist eine Zusammenfassung, kein Verlust. Siehe ZEITMODELL.md.
+    """
     row = conn.execute("SELECT laeuft_seit, board_id FROM karte WHERE id = ?", (karte_id,)).fetchone()
     if row is None or not row["laeuft_seit"]:
         return
@@ -616,11 +672,23 @@ def _pause_intern(conn: sqlite3.Connection, karte_id: str) -> None:
         segmente = []
     mappe_id = _mappe_fuer_board(conn, row["board_id"])
     for datum, seg_start, seg_ende, sek in segmente:
-        conn.execute(
-            "INSERT INTO zeiteintrag (id, karte_id, board_id, mappe_id, datum, start, ende, sekunden, kommentar, manuell)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, 0)",
-            (f"z_{uuid4().hex[:8]}", karte_id, row["board_id"], mappe_id, datum, seg_start, seg_ende, sek),
-        )
+        vorhanden = conn.execute(
+            "SELECT id, start, ende FROM zeiteintrag WHERE manuell = 0 AND karte_id = ? AND datum = ? LIMIT 1",
+            (karte_id, datum),
+        ).fetchone()
+        if vorhanden:
+            neu_start = min(vorhanden["start"], seg_start) if vorhanden["start"] else seg_start
+            neu_ende = max(vorhanden["ende"], seg_ende) if vorhanden["ende"] else seg_ende
+            conn.execute(
+                "UPDATE zeiteintrag SET sekunden = sekunden + ?, start = ?, ende = ? WHERE id = ?",
+                (sek, neu_start, neu_ende, vorhanden["id"]),
+            )
+        else:
+            conn.execute(
+                "INSERT INTO zeiteintrag (id, karte_id, board_id, mappe_id, datum, start, ende, sekunden, kommentar, manuell)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, 0)",
+                (f"z_{uuid4().hex[:8]}", karte_id, row["board_id"], mappe_id, datum, seg_start, seg_ende, sek),
+            )
     _recompute_erfasst(conn, karte_id)
 
 

@@ -12,3 +12,25 @@ class BerichtAnfrage(BaseModel):
     person: str | None = None  # Kürzel (zustaendig)
     board_id: str | None = None
     archivieren: bool = False
+
+
+class BerichtTyp(BaseModel):
+    id: str
+    titel: str
+
+
+class TypenAntwort(BaseModel):
+    typen: list[BerichtTyp]
+
+
+class ArchivEintrag(BaseModel):
+    """Ein archivierter Bericht (Metadaten; die Datei liegt separat)."""
+
+    id: str
+    typ: str
+    titel: str
+    zeitraum: str
+    format: str
+    person: str | None = None
+    erstellt_am: str
+    groesse: int

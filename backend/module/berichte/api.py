@@ -5,14 +5,14 @@ from fastapi import APIRouter, HTTPException, Response
 
 from . import daten, render
 from . import persistence as db
-from .models import BerichtAnfrage
+from .models import ArchivEintrag, BerichtAnfrage, TypenAntwort
 
 router = APIRouter(prefix="/api/berichte", tags=["berichte"])
 
 _EXT = {"pdf": "pdf", "csv": "csv", "markdown": "md", "md": "md"}
 
 
-@router.get("/typen")
+@router.get("/typen", response_model=TypenAntwort)
 def typen() -> dict:
     return {"typen": [{"id": k, "titel": v} for k, v in daten.TYPEN.items()]}
 
@@ -38,7 +38,7 @@ def erzeugen(e: BerichtAnfrage) -> Response:
                     headers={"Content-Disposition": f'attachment; filename="{dateiname}"'})
 
 
-@router.get("/archiv")
+@router.get("/archiv", response_model=list[ArchivEintrag])
 def archiv() -> list[dict]:
     return db.liste()
 

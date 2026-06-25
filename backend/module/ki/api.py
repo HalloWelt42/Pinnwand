@@ -8,7 +8,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from . import aufgaben, modell, persistence
-from .models import KiAntwort, KiAufgabeEingabe, KiStatus
+from .models import KiAntwort, KiAufgabeEingabe, KiStatus, KiTyp
 
 router = APIRouter(prefix="/api/ki", tags=["ki"])
 
@@ -19,8 +19,8 @@ def status() -> KiStatus:
     return KiStatus(**modell.status())
 
 
-@router.get("/typen")
-def typen() -> list[dict]:
+@router.get("/typen", response_model=list[KiTyp])
+def typen() -> list[KiTyp]:
     """Die registrierten Aufgabentypen (fuer Doku/Diagnose)."""
     return aufgaben.typen()
 
@@ -35,5 +35,5 @@ def aufgabe(eingabe: KiAufgabeEingabe) -> KiAntwort:
         ergebnis = aufgaben.fuehre_aus(eingabe.typ, eingabe.kontext, eingabe.anweisung)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    persistence.protokolliere(eingabe.typ, ergebnis.get("modell"), len(ergebnis.get("vorschlaege") or []), ergebnis.get("ok", False))
-    return KiAntwort(**ergebnis)
+    persistence.protokolliere(eingabe.typ, ergebnis.modell, len(ergebnis.vorschlaege), ergebnis.ok)
+    return ergebnis

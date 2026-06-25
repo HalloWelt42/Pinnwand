@@ -30,3 +30,10 @@ class KiAntwort(BaseModel):
     modell: str | None = None
     vorschlaege: list[KiVorschlag] = []
     fehler: str | None = None
+
+
+class KiTyp(BaseModel):
+    """Ein registrierter KI-Aufgabentyp (fuer Doku/Diagnose)."""
+
+    typ: str
+    beschreibung: str

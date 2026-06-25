@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 from . import modell
+from .models import KiAntwort, KiTyp
 
 # Schutz vor Riesen-Prompts: grosse Listen werden gekappt, lange Texte gekuerzt.
 _MAX_ELEMENTE = 300
@@ -228,11 +229,11 @@ AUFGABEN: dict[str, Aufgabe] = {
 }
 
 
-def typen() -> list[dict]:
-    return [{"typ": a.typ, "beschreibung": a.beschreibung} for a in AUFGABEN.values()]
+def typen() -> list[KiTyp]:
+    return [KiTyp(typ=a.typ, beschreibung=a.beschreibung) for a in AUFGABEN.values()]
 
 
-def fuehre_aus(typ: str, kontext: dict, anweisung: str) -> dict:
+def fuehre_aus(typ: str, kontext: dict, anweisung: str) -> KiAntwort:
     """Fuehrt eine KI-Aufgabe aus und liefert korrigierbare Vorschlaege.
 
     Wirft nie wegen Modellproblemen: bei nicht erreichbarem/leerem Modell kommt
@@ -245,6 +246,7 @@ def fuehre_aus(typ: str, kontext: dict, anweisung: str) -> dict:
     system, nutzer = aufgabe.baue(kontext, anweisung or "")
     roh = modell.chat_json(system, nutzer)
     if roh is None:
-        return {"ok": False, "modell": None, "vorschlaege": [], "fehler": "kein-modell"}
+        return KiAntwort(ok=False, modell=None, vorschlaege=[], fehler="kein-modell")
+    # deute liefert strukturierte Vorschlaege (dicts); KiAntwort validiert sie zu KiVorschlag.
     vorschlaege = aufgabe.deute(roh, kontext)
-    return {"ok": True, "modell": modell.waehle_modell(), "vorschlaege": vorschlaege, "fehler": None}
+    return KiAntwort(ok=True, modell=modell.waehle_modell(), vorschlaege=vorschlaege, fehler=None)

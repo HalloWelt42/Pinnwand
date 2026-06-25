@@ -16,6 +16,7 @@ from .models import (
     DokumentCreate,
     DokumentUpdate,
     GruppeUpdate,
+    HeuteUebersicht,
     Karte,
     KarteCreate,
     KarteMove,
@@ -101,8 +102,8 @@ def board(board_id: str) -> BoardDetail:
     return detail
 
 
-@router.get("/heute")
-def heute(datum: str | None = None) -> dict:
+@router.get("/heute", response_model=HeuteUebersicht)
+def heute(datum: str | None = None) -> HeuteUebersicht:
     from datetime import date
 
     return db.was_steht_an(datum or date.today().isoformat())

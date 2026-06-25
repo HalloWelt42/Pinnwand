@@ -243,3 +243,22 @@ class ZeiteintragUpdate(BaseModel):
     datum: str | None = None
     sekunden: int | None = None
     kommentar: str | None = None
+
+
+class HeuteEintrag(BaseModel):
+    """Eine Karte in der handlungsorientierten Heute-Uebersicht (knappe Felder)."""
+
+    id: str
+    board_id: str
+    schluessel: str | None = None
+    titel: str
+    faellig: str | None = None
+
+
+class HeuteUebersicht(BaseModel):
+    datum: str
+    ueberfaellig: list[HeuteEintrag] = []
+    heute: list[HeuteEintrag] = []
+    diese_woche: list[HeuteEintrag] = []
+    laufend: list[HeuteEintrag] = []
+    liegengeblieben: list[HeuteEintrag] = []

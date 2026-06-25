@@ -27,6 +27,7 @@ from .models import (
     Dokument,
     DokumentUpdate,
     GruppenMitglied,
+    HeuteUebersicht,
     Karte,
     KarteUpdate,
     MappeUpdate,
@@ -913,7 +914,7 @@ def finde_karte_per_text(text: str, board_id: str | None = None) -> Karte | None
     return _karte_aus_row(row) if row else None
 
 
-def was_steht_an(heute: str) -> dict:
+def was_steht_an(heute: str) -> HeuteUebersicht:
     """Handlungsorientierte Übersicht: überfällig, heute, diese Woche, laufend, liegengeblieben.
 
     Wiederkehrende Termine erscheinen automatisch über ihre Fälligkeit.
@@ -951,10 +952,10 @@ def was_steht_an(heute: str) -> dict:
     for r in rows:
         if offen(r) and not r["laeuft_seit"] and r["id"] not in faellig_ids and r["bewegt_am"] and r["bewegt_am"] < alt:
             liegengeblieben.append(eintrag(r))
-    return {
-        "datum": heute, "ueberfaellig": ueberfaellig, "heute": heute_f,
-        "diese_woche": diese_woche, "laufend": laufend, "liegengeblieben": liegengeblieben,
-    }
+    return HeuteUebersicht(
+        datum=heute, ueberfaellig=ueberfaellig, heute=heute_f,
+        diese_woche=diese_woche, laufend=laufend, liegengeblieben=liegengeblieben,
+    )
 
 
 def markiere_serie(karte_id: str, serie_id: str, datum: str) -> None:

@@ -1,24 +1,23 @@
-# Karten-Detail: Lesen, Bearbeiten, Idee, verknüpfte Aufgaben
+# Karten-Detail: Felder, Idee, verknüpfte Aufgaben
 
-Das Karten-Detail (CardDrawer) trennt klar zwischen Lesen und Bearbeiten und fasst die
-Felder kompakt zusammen. Es kennt zwei Karten-Arten und verknüpfte Aufgaben mit
-geteilter Zeit.
+Das Karten-Detail (CardDrawer) zeigt die Felder kompakt und direkt bearbeitbar. Es kennt
+zwei Karten-Arten und verknüpfte Aufgaben mit geteilter Zeit. Ein globaler Lese-/
+Bearbeiten-Umschalter wurde bewusst wieder entfernt - er war mehr Aufwand statt weniger;
+stattdessen ist jedes Feld an Ort und Stelle bearbeitbar.
 
-## Lese- und Bearbeitungsmodus
+## Felder: lesen und bearbeiten
 
-- Das Detail öffnet im **Lesemodus**: Titel als Überschrift, Beschreibung und Notizen
-  als sauber gerendertes Markdown, die Meta-Felder (Status, Priorität, Start, Fällig,
-  Zuständig, Cover) als ruhige Label->Wert-Zeilen.
-- Ein Knopf im Kopf schaltet auf **Bearbeiten**; dann werden die großen Textfelder zu
-  Eingaben und die Meta-Felder zu Auswahlfeldern. Ein Klick auf einen Text wechselt
-  ebenfalls in den Bearbeitungsmodus.
-- **Vollbild** ist immer der Bearbeitungsmodus des ganzen Tickets - breit und ruhig,
-  mit zweispaltiger Markdown-Vorschau. "Vollbild schließen" speichert und kehrt in den
-  Lesemodus zurück.
-- **Immer direkt bearbeitbar**, in beiden Modi: Checklisten-Haken UND -Texte, die
-  Zeit-Tageszeilen (Datum + Dauer), Labels und das Kommentarfeld. Nur die großen
-  Textfelder sind dem Bearbeitungsmodus vorbehalten. Die frühere doppelte Vollbild-
-  Lösung je Textfeld entfällt zugunsten des einen Ticket-Vollbilds.
+- **Beschreibung**: sauber gerendertes Markdown. Ein Klick darauf (oder der Knopf
+  "Bearbeiten") öffnet einen Editor mit Live-Vorschau direkt an der Stelle; "Vollbild"
+  blendet ihn groß und ruhig ein, "Fertig" speichert und kehrt zur gerenderten Ansicht
+  zurück. Bei vorhandenem Text gibt es zusätzlich "Vorlesen".
+- **Notizen**: gerendertes Markdown und **read-only**. Ein Klick (oder "Vollbild")
+  öffnet die Notizen direkt im Vollbild-Editor mit Live-Vorschau; "Fertig" speichert und
+  schließt. So liegt der Fokus auf den gerenderten Notizen, bearbeitet wird nur bewusst.
+- **Meta-Felder** (Status, Priorität, Start, Fällig, Zuständig, Cover) sind direkt als
+  Auswahl-/Datumsfelder bearbeitbar - kein Moduswechsel nötig.
+- Ebenso direkt bearbeitbar: Checklisten-Haken UND -Texte, die Zeit-Tageszeilen
+  (Datum + Dauer), Labels und das Kommentarfeld.
 
 ## Checkliste
 
@@ -48,3 +47,33 @@ Im Abschnitt "Verknüpfte Aufgaben": die Mitglieder werden gelistet (Klick öffn
 jeweilige Karte), eine weitere Karte lässt sich per Suche verknüpfen, und diese Karte
 kann sich wieder lösen. Der Schalter **"Zeit teilen"** ist der einstellbare Spezialfall:
 ausgeschaltet zeigt jede Karte wieder nur ihre eigene Zeit.
+
+### Eine Zeitgruppe bilden
+
+Es gibt drei Wege, damit jeder den findet, der zu ihm passt - per Symbol, Klick und
+Drag-and-Drop:
+
+- **Drag-and-Drop** direkt auf dem Board: das Ketten-Symbol einer Karte auf eine andere
+  Karte ziehen und fallen lassen verknüpft beide zu einer Gruppe.
+- **Symbol/Knopf auf der Karte**: das Ketten-Symbol greift die Karte zum Verknüpfen;
+  bereits verknüpfte Karten tragen ein gefülltes Ketten-Symbol (Wire) als Erkennung.
+- **Im Karten-Detail**: das Suchfeld unter "Verknüpfte Aufgaben" findet eine Karte und
+  hängt sie an die Gruppe.
+
+## Bausteine (Modularisierung)
+
+Das Karten-Detail ist in fokussierte Unterkomponenten aufgeteilt, statt alles in einer
+großen Datei zu halten. Jede trägt genau eine Verantwortung, ist getypt und kapselt
+ihren eigenen Zustand und ihr eigenes CSS:
+
+- `MarkdownFeld.svelte` - das gerenderte Markdown-Feld (lesen, bearbeiten, Vollbild,
+  optional Vorlesen). Wird für Beschreibung und Notizen wiederverwendet (`nurVollbild`
+  schaltet auf das read-only-mit-Klick-ins-Vollbild-Verhalten der Notizen um).
+- `Zeiterfassung.svelte` - Start/Pause/Stopp, Schätzung, Fortschritt, geteilte
+  Gruppen-Zeit, Tag nachbuchen und die Tages-Aufschlüsselung.
+- `VerknuepfteAufgaben.svelte` - Gruppen-Mitglieder, Verknüpfen/Lösen, Schalter
+  "Zeit teilen".
+- `Checkliste.svelte` - abhaken, umbenennen, hinzufügen, entfernen.
+- `TranskriptVerweise.svelte` - mehrere Transkript-Marken je Karte.
+
+`CardDrawer.svelte` orchestriert nur noch diese Bausteine und die Kopf-/Meta-Felder.

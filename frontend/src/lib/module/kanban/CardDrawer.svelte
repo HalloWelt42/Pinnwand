@@ -1,15 +1,18 @@
 <script lang="ts">
-  import type { Karte, Prioritaet, Spalte, Zeiteintrag } from '../../types'
-  import type { KarteAenderung, TranskriptTreffer, Person, TranskriptMarke, KiVorschlag } from '../../api'
-  import { transkripteSuche, ladePersonen, ladeMarken, erstelleMarke, aktualisiereMarke, loescheMarke, zusammenfassungVorschlag, erstelleZeiteintrag, ladeKartenZeiten, aktualisiereZeiteintrag, loescheZeiteintrag, karteVerknuepfen, verknuepfungLoesen, gruppeZeitTeilen } from '../../api'
+  import type { Karte, Prioritaet, Spalte } from '../../types'
+  import type { KarteAenderung, TranskriptTreffer, Person, KiVorschlag } from '../../api'
+  import { transkripteSuche, ladePersonen } from '../../api'
   import KiAssistent from '../../ki/KiAssistent.svelte'
   import Checkliste from './Checkliste.svelte'
+  import TranskriptVerweise from './TranskriptVerweise.svelte'
+  import Zeiterfassung from './Zeiterfassung.svelte'
+  import VerknuepfteAufgaben from './VerknuepfteAufgaben.svelte'
+  import MarkdownFeld from './MarkdownFeld.svelte'
   import { merkeKuerzel } from '../../zuletztKuerzel.svelte'
   import { oeffneTranskript } from '../../navigation.svelte'
   import { labelFarbe } from '../../labels'
   import { theme } from '../../theme/theme.svelte'
-  import { isoLang, isoDatumZeit, ymd } from '../../zeit'
-  import { timer, timerStarten, timerPausieren, timerStoppen, erfassteSekunden, formatDauerVoll, formatPlan, parseZeit, mmss } from '../../timer.svelte'
+  import { isoLang, isoDatumZeit } from '../../zeit'
   import Markdown from '../../Markdown.svelte'
   import FarbWahl from '../../FarbWahl.svelte'
   import DokumentVerwaltung from '../../DokumentVerwaltung.svelte'
@@ -64,31 +67,13 @@
     merkeKuerzel(z)
   }
 
-  let beschr = $state('')
   let neuesLabel = $state('')
   let kommentar = $state('')
-  let bearbeiten = $state(false)
-  let vollbild = $state(false)
-  let gespeichert = $state(false)
-  let spTimer: ReturnType<typeof setTimeout> | null = null
 
-  let notiz = $state('')
-  let notizVollbild = $state(false)
-  let notizGespeichert = $state(false)
-  let notizTimer: ReturnType<typeof setTimeout> | null = null
-
-  function notizAuto() {
-    if (notizTimer) clearTimeout(notizTimer)
-    notizGespeichert = false
-    notizTimer = setTimeout(() => {
-      onAendern({ notizen: notiz || null })
-      notizGespeichert = true
-    }, 600)
-  }
-  function notizFertig() {
-    if (notizTimer) clearTimeout(notizTimer)
-    onAendern({ notizen: notiz || null })
-    notizVollbild = false
+  // Vorlesen der Beschreibung umschalten (an MarkdownFeld weitergereicht).
+  function vorlesenUmschalten(t: string): void {
+    if (tts.laeuft) stoppeVorlesen()
+    else vorlesen(t)
   }
 
   // Transkript-Verknuepfung
@@ -111,136 +96,6 @@
     onAendern({ transkript_id: null, transkript_name: null })
   }
 
-  // -- Transkript-Verweise (mehrere Marken je Karte, mit Position + Zusammenfassung) --
-  let marken = $state<TranskriptMarke[]>([])
-  let mSuche = $state('')
-  let mTreffer = $state<TranskriptTreffer[]>([])
-  let mTimer: ReturnType<typeof setTimeout> | null = null
-  const zusTimer: Record<string, ReturnType<typeof setTimeout>> = {}
-  let kiLaeuft = $state<string | null>(null)
-  let kiVorschau = $state<Record<string, string>>({})
-  let kiFehler = $state<Record<string, string>>({})
-
-  async function ladeMarkenFuer(): Promise<void> {
-    try { marken = (await ladeMarken(karte.id)).marken } catch { marken = [] }
-  }
-  function mSuchen(): void {
-    if (mTimer) clearTimeout(mTimer)
-    const q = mSuche
-    mTimer = setTimeout(async () => {
-      try { mTreffer = (await transkripteSuche(q, 12)).treffer } catch { mTreffer = [] }
-    }, 220)
-  }
-  async function markeHinzufuegen(t: TranskriptTreffer): Promise<void> {
-    const m = await erstelleMarke({ karte_id: karte.id, transkript_id: t.id, transkript_name: t.name })
-    marken = [...marken, m]
-    mSuche = ''
-    mTreffer = []
-  }
-  function markeOeffnen(m: TranskriptMarke): void {
-    oeffneTranskript(m.transkript_id, m.position_sek ?? null)
-  }
-  async function markeLoeschen(m: TranskriptMarke): Promise<void> {
-    await loescheMarke(m.id)
-    marken = marken.filter((x) => x.id !== m.id)
-  }
-  function zusAendern(m: TranskriptMarke, wert: string): void {
-    m.zusammenfassung = wert
-    if (zusTimer[m.id]) clearTimeout(zusTimer[m.id])
-    zusTimer[m.id] = setTimeout(() => { aktualisiereMarke(m.id, { zusammenfassung: wert }).catch(() => {}) }, 600)
-  }
-  async function kiVorschlag(m: TranskriptMarke): Promise<void> {
-    kiFehler = { ...kiFehler, [m.id]: '' }
-    kiLaeuft = m.id
-    try {
-      const { zusammenfassung } = await zusammenfassungVorschlag(m.transkript_id, m.position_sek ?? null)
-      kiVorschau = { ...kiVorschau, [m.id]: zusammenfassung }
-    } catch (e) {
-      kiFehler = { ...kiFehler, [m.id]: e instanceof Error ? e.message : 'KI nicht verfügbar' }
-    } finally {
-      kiLaeuft = null
-    }
-  }
-  function kiVerwerfen(m: TranskriptMarke): void {
-    const { [m.id]: _weg, ...rest } = kiVorschau
-    kiVorschau = rest
-  }
-  function kiUebernehmen(m: TranskriptMarke): void {
-    const t = kiVorschau[m.id]
-    if (t == null) return
-    m.zusammenfassung = t
-    aktualisiereMarke(m.id, { zusammenfassung: t }).catch(() => {})
-    kiVerwerfen(m)
-  }
-
-  function autoSpeichern() {
-    if (spTimer) clearTimeout(spTimer)
-    gespeichert = false
-    spTimer = setTimeout(() => {
-      onAendern({ beschreibung: beschr || null })
-      gespeichert = true
-    }, 600)
-  }
-  function bearbeitenFertig() {
-    if (spTimer) clearTimeout(spTimer)
-    onAendern({ beschreibung: beschr || null })
-    bearbeiten = false
-    vollbild = false
-  }
-  function vorlesenUmschalten() {
-    if (tts.laeuft) stoppeVorlesen()
-    else vorlesen(beschr)
-  }
-
-  // Beschreibungs-Entwurf folgt der Karte (auch beim ersten Öffnen).
-  let zuletzt = $state<string | null>(null)
-  $effect(() => {
-    if (karte.id !== zuletzt) {
-      zuletzt = karte.id
-      beschr = karte.beschreibung ?? ''
-      notiz = karte.notizen ?? ''
-      notizVollbild = false
-      notizGespeichert = false
-      mSuche = ''
-      mTreffer = []
-      kiVorschau = {}
-      bearbeiten = false
-      vollbild = false
-      vSuche = ''
-      vTreffer = []
-      ladeMarkenFuer()
-      ladeKartenZeitenFuer()
-    }
-  })
-
-  // -- Verknuepfte Aufgaben (geteilte Zeitgruppe) --
-  let vSuche = $state('')
-  const vTrefferRoh = $derived.by(() => {
-    const q = vSuche.trim().toLowerCase()
-    if (!q) return []
-    const drin = new Set([karte.id, ...(karte.gruppe_mitglieder ?? []).map((m) => m.id)])
-    return boardKarten
-      .filter((k) => !drin.has(k.id) && k.typ !== 'idee')
-      .filter((k) => k.titel.toLowerCase().includes(q) || (k.schluessel ?? '').toLowerCase().includes(q))
-      .slice(0, 8)
-  })
-  let vTreffer = $state<Karte[]>([])
-  $effect(() => { vTreffer = vTrefferRoh })
-  async function verknuepfeMit(ziel: Karte): Promise<void> {
-    vSuche = ''
-    vTreffer = []
-    await karteVerknuepfen(karte.id, ziel.id)
-    await onReload?.()
-  }
-  async function loeseVerknuepfung(): Promise<void> {
-    await verknuepfungLoesen(karte.id)
-    await onReload?.()
-  }
-  async function zeitTeilenUmschalten(): Promise<void> {
-    if (!karte.gruppe_id) return
-    await gruppeZeitTeilen(karte.gruppe_id, !(karte.gruppe_zeit_geteilt !== false))
-    await onReload?.()
-  }
   function labelHinzufuegen() {
     const l = neuesLabel.trim()
     if (!l || karte.labels.includes(l)) {
@@ -289,60 +144,9 @@
   function datum(iso?: string | null): string {
     return iso ? isoLang(iso) : '-'
   }
-  // -- Ticketzeit nach Tagen: alle Zeiteintraege dieser Karte (alle Tage) --
-  // Ticketzeit = Summe je Karte; jeder Eintrag ist einem Tag (= Arbeitszeit) zugeordnet.
-  // Korrekturen laufen ueber datierte Eintraege, damit die Arbeitszeit dem richtigen
-  // Tag gutgeschrieben wird (keine undatierte Gesamt-Eingabe mehr).
-  let kartenZeiten = $state<Zeiteintrag[]>([])
-  async function ladeKartenZeitenFuer(): Promise<void> {
-    try {
-      kartenZeiten = (await ladeKartenZeiten(karte.id)).sort((a, b) => b.datum.localeCompare(a.datum))
-    } catch {
-      kartenZeiten = []
-    }
-  }
-  async function zeileDatum(e: Zeiteintrag, datum: string): Promise<void> {
-    if (!datum || datum === e.datum) return
-    await aktualisiereZeiteintrag(e.id, { datum })
-    timer.stand++
-    await ladeKartenZeitenFuer()
-  }
-  async function zeileDauer(e: Zeiteintrag, wert: string): Promise<void> {
-    const sek = parseZeit(wert)
-    if (sek == null || sek === e.sekunden) return
-    await aktualisiereZeiteintrag(e.id, { sekunden: Math.max(0, sek) })
-    timer.stand++
-    await ladeKartenZeitenFuer()
-  }
-  async function zeileLoeschen(e: Zeiteintrag): Promise<void> {
-    await loescheZeiteintrag(e.id)
-    timer.stand++
-    await ladeKartenZeitenFuer()
-  }
-
-  // Zeit fuer einen beliebigen Tag nachtragen (zusaetzlich zu Start/Stopp).
-  let nbDatum = $state(ymd(new Date()))
-  let nbDauer = $state('')
-  async function bucheTag(): Promise<void> {
-    const sek = parseZeit(nbDauer)
-    if (sek == null || sek <= 0) return
-    await erstelleZeiteintrag({ karte_id: karte.id, datum: nbDatum, sekunden: sek })
-    nbDauer = ''
-    timer.stand++ // Board laedt neu -> erfasste Zeit (Ticketzeit) der Karte aktualisiert sich
-    await ladeKartenZeitenFuer()
-  }
 
   const imStatus = $derived(tage(karte.bewegt_am) ?? 0)
   const durchlauf = $derived(tage(karte.erstellt_am) ?? 0)
-  const laeuft = $derived(!!karte.laeuft_seit)
-  // Pausiert = diese Karte ist die aktive Sitzung, laeuft aber gerade nicht (Fortsetzen moeglich).
-  const pausiert = $derived(!laeuft && timer.aktiv?.id === karte.id)
-  const sek = $derived(laeuft ? erfassteSekunden(karte, timer.jetzt) : (karte.erfasst_sek ?? 0))
-  const planMin = $derived(karte.schaetzung_min ?? null)
-  const prozent = $derived(planMin && planMin > 0 ? (sek / 60 / planMin) * 100 : null)
-  // Geteilte Zeitgruppe: kombinierte Zeit nur zur Anzeige (zaehlt einmal).
-  const geteilt = $derived(!!karte.gruppe_id && karte.gruppe_zeit_geteilt !== false)
-  const gruppeAnzahl = $derived((karte.gruppe_mitglieder?.length ?? 0) + 1)
   const spalteTitel = $derived(spalten.find((s) => s.id === karte.spalte)?.titel ?? '')
 </script>
 
@@ -362,59 +166,16 @@
   <div class="body">
     <input class="titel" value={karte.titel} aria-label="Titel" onchange={(e) => onAendern({ titel: e.currentTarget.value })} />
 
-    <div class="sec-reihe">
-      <p class="sec">Beschreibung</p>
-      <span class="md-werkzeuge">
-        {#if bearbeiten}
-          {#if gespeichert}<span class="gesp">gespeichert</span>{/if}
-          <button class="mini geist" onclick={() => (vollbild = !vollbild)}><i class="fa-solid {vollbild ? 'fa-compress' : 'fa-expand'}" aria-hidden="true"></i> {vollbild ? 'Verkleinern' : 'Vollbild'}</button>
-          <button class="mini" onclick={bearbeitenFertig}>Fertig</button>
-        {:else}
-          {#if beschr.trim()}
-            <button class="mini geist" onclick={vorlesenUmschalten}><i class="fa-solid {tts.laeuft ? 'fa-stop' : 'fa-volume-high'}" aria-hidden="true"></i> {tts.laeuft ? 'Stopp' : 'Vorlesen'}</button>
-          {/if}
-          <button class="mini geist" onclick={() => (bearbeiten = true)}><i class="fa-solid fa-pen" aria-hidden="true"></i> Bearbeiten</button>
-        {/if}
-      </span>
-    </div>
-    {#if bearbeiten}
-      <div class="md-editor" class:vollbild>
-        {#if vollbild}
-          <div class="vb-kopf"><b>Beschreibung bearbeiten</b><button class="mini" onclick={bearbeitenFertig}>Fertig</button></div>
-        {/if}
-        <div class="md-split">
-          <textarea class="desc" placeholder="Markdown ... (Überschriften, Listen, Code, Tabellen, $Mathe$, Mermaid)" bind:value={beschr} oninput={autoSpeichern}></textarea>
-          <div class="md-vorschau"><Markdown md={beschr || '*Vorschau*'} /></div>
-        </div>
-      </div>
-    {:else if beschr.trim()}
-      <button class="md-ansicht" onclick={() => (bearbeiten = true)} title="Zum Bearbeiten klicken"><Markdown md={beschr} /></button>
-    {:else}
-      <button class="leer-hinweis" onclick={() => (bearbeiten = true)}>Keine Beschreibung. Klicken zum Bearbeiten.</button>
-    {/if}
+    <MarkdownFeld titel="Beschreibung" schluessel={karte.id} text={karte.beschreibung ?? ''}
+      onSpeichern={(w) => onAendern({ beschreibung: w })}
+      platzhalterEditor="Markdown ... (Überschriften, Listen, Code, Tabellen, $Mathe$, Mermaid)"
+      platzhalterLeer="Keine Beschreibung. Klicken zum Bearbeiten."
+      onVorlesen={vorlesenUmschalten} vorlesenLaeuft={tts.laeuft} />
 
-    <div class="sec-reihe">
-      <p class="sec">Notizen</p>
-      <span class="md-werkzeuge">
-        {#if notizGespeichert}<span class="gesp">gespeichert</span>{/if}
-        {#if notiz.trim()}<button class="mini geist" onclick={() => (notizVollbild = true)}><i class="fa-solid fa-expand" aria-hidden="true"></i> Vollbild</button>{/if}
-      </span>
-    </div>
-    {#if notizVollbild}
-      <!-- Notizen werden nur im Vollbild bearbeitet (fokussiert, Eingabe links, Vorschau rechts). -->
-      <div class="md-editor vollbild">
-        <div class="vb-kopf"><b>Notizen</b><button class="mini" onclick={notizFertig}>Fertig</button></div>
-        <div class="md-split">
-          <!-- svelte-ignore a11y_autofocus -->
-          <textarea class="desc" placeholder="Notizen (Markdown) ..." bind:value={notiz} oninput={notizAuto} autofocus></textarea>
-          <div class="md-vorschau"><Markdown md={notiz || '*Vorschau*'} /></div>
-        </div>
-      </div>
-    {:else if notiz.trim()}
-      <button class="md-ansicht" onclick={() => (notizVollbild = true)} title="Zum Bearbeiten klicken (Vollbild)"><Markdown md={notiz} /></button>
-    {:else}
-      <button class="leer-hinweis" onclick={() => (notizVollbild = true)}>Keine Notizen. Klicken zum Bearbeiten.</button>
-    {/if}
+    <MarkdownFeld titel="Notizen" schluessel={karte.id} text={karte.notizen ?? ''} nurVollbild
+      onSpeichern={(w) => onAendern({ notizen: w })}
+      platzhalterEditor="Notizen (Markdown) ..."
+      platzhalterLeer="Keine Notizen. Klicken zum Bearbeiten." />
 
     <div class="zeile"><span class="lbl"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Status</span>
       <select value={karte.spalte} onchange={(e) => onAendern({ spalte: e.currentTarget.value })}>
@@ -454,74 +215,8 @@
     {#if istIdee}
       <p class="idee-hinweis"><i class="fa-regular fa-lightbulb" aria-hidden="true"></i> Ideenticket - keine Zeiterfassung. Auf "Arbeit" umschalten, um Zeit zu buchen.</p>
     {:else}
-      <p class="sec">Zeiterfassung</p>
-      <div class="timer">
-        {#if laeuft}
-          <button class="tbtn an" onclick={() => timerPausieren(karte.id)}><i class="fa-solid fa-pause" aria-hidden="true"></i> Pause</button>
-          <button class="tbtn stopp" onclick={() => timerStoppen(karte.id)}><i class="fa-solid fa-stop" aria-hidden="true"></i> Stopp</button>
-        {:else if pausiert}
-          <button class="tbtn play" onclick={() => timerStarten(karte.id)}><i class="fa-solid fa-play" aria-hidden="true"></i> Fortsetzen</button>
-          <button class="tbtn stopp" onclick={() => timerStoppen(karte.id)}><i class="fa-solid fa-stop" aria-hidden="true"></i> Stopp</button>
-        {:else}
-          <button class="tbtn play" onclick={() => timerStarten(karte.id)}><i class="fa-solid fa-play" aria-hidden="true"></i> Start</button>
-        {/if}
-        <span class="erfasst" title="Ticketzeit gesamt (Summe aller Tage)">{formatDauerVoll(sek)}</span>
-        <label class="plan">Schätzung
-          <input type="number" min="0" step="0.25" value={planMin ? planMin / 60 : ''}
-            onchange={(e) => { const v = parseFloat(e.currentTarget.value); onAendern({ schaetzung_min: Number.isFinite(v) && v > 0 ? Math.round(v * 60) : null }) }} />
-          Std
-        </label>
-      </div>
-      {#if geteilt}
-        <p class="grpzeit"><i class="fa-solid fa-link" aria-hidden="true"></i> Geteilt über {gruppeAnzahl} Aufgaben: {formatDauerVoll(karte.gruppe_sek ?? 0)} - zählt einmal</p>
-      {/if}
-      <p class="zcap">Ticketzeit gesamt (Summe aller Tage). Die Tage darunter bilden die Arbeitszeit des jeweiligen Tages.</p>
-      {#if prozent != null}
-        <div class="fortschritt" class:ueber={prozent > 100}><span style="width:{Math.min(prozent, 100)}%"></span></div>
-        <div class="pinfo" class:ueber={prozent > 100}>{Math.round(prozent)}% von {formatPlan(planMin ?? 0)}{#if prozent > 100} - überschritten{/if}</div>
-      {/if}
-      <div class="tagbuchung">
-        <input type="date" bind:value={nbDatum} aria-label="Datum für Nachtrag" />
-        <input class="tbdauer" placeholder="z.B. 0:30 oder 1,5" bind:value={nbDauer} aria-label="Dauer"
-          onkeydown={(e) => { if (e.key === 'Enter') bucheTag() }} />
-        <button class="mini" onclick={bucheTag}>Tag buchen</button>
-      </div>
-      <p class="taginfo">Zeit für einen beliebigen Tag nachtragen (zusätzlich zu Start/Stopp).</p>
-      {#if kartenZeiten.length}
-        <div class="tageliste">
-          {#each kartenZeiten as e (e.id)}
-            <div class="tagrow">
-              <input type="date" value={e.datum} onchange={(ev) => zeileDatum(e, ev.currentTarget.value)} aria-label="Tag des Eintrags" />
-              <input class="trdauer" value={formatDauerVoll(e.sekunden)} onchange={(ev) => zeileDauer(e, ev.currentTarget.value)} aria-label="Dauer" title="Dauer (z.B. 1:30:00 oder 1,5)" />
-              {#if !e.manuell}<span class="trauto" title="Aus Start/Stopp"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i></span>{/if}
-              <button class="ic" aria-label="Eintrag löschen" onclick={() => zeileLoeschen(e)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-            </div>
-          {/each}
-        </div>
-      {/if}
-
-      <p class="sec">Verknüpfte Aufgaben</p>
-      {#if (karte.gruppe_mitglieder?.length ?? 0)}
-        <div class="vliste">
-          {#each karte.gruppe_mitglieder ?? [] as m (m.id)}
-            <div class="vrow">
-              <button class="vlink" onclick={() => onOeffneKarte?.(m.id)} title="Aufgabe öffnen">
-                {#if m.schluessel}<span class="vkey">{m.schluessel}</span>{/if}<span class="vtitel">{m.titel}</span>
-              </button>
-            </div>
-          {/each}
-        </div>
-        <label class="grpschalter"><input type="checkbox" checked={geteilt} onchange={zeitTeilenUmschalten} /> Zeit teilen (zählt einmal über die Gruppe)</label>
-        <button class="mini geist" onclick={loeseVerknuepfung}><i class="fa-solid fa-link-slash" aria-hidden="true"></i> Diese Karte loslösen</button>
-      {/if}
-      <input class="feld" placeholder="Aufgabe suchen und verknüpfen ..." bind:value={vSuche} aria-label="Aufgabe verknuepfen" />
-      {#if vTreffer.length}
-        <div class="ttreffer">
-          {#each vTreffer as t (t.id)}
-            <button class="ttr" onclick={() => verknuepfeMit(t)}><i class="fa-solid fa-link" aria-hidden="true"></i> <span>{t.schluessel ? t.schluessel + ' ' : ''}{t.titel}</span></button>
-          {/each}
-        </div>
-      {/if}
+      <Zeiterfassung {karte} {onAendern} />
+      <VerknuepfteAufgaben {karte} {boardKarten} {onReload} {onOeffneKarte} />
     {/if}
 
     <p class="sec">Labels <span class="sec-ki"><KiAssistent typ="labels" titel="Labels vorschlagen" platzhalter="Worauf achten? (optional)" uebernehmenText="Hinzufuegen" kontext={kiLabelKontext} onUebernehmen={kiLabelUebernehmen} /></span></p>
@@ -557,44 +252,7 @@
       {/if}
     {/if}
 
-    <p class="sec">Transkript-Verweise</p>
-    {#each marken as m (m.id)}
-      <div class="marke">
-        <div class="mkopf">
-          <i class="fa-solid fa-headphones" aria-hidden="true"></i>
-          <span class="mname">{m.titel || m.transkript_name || 'Transkript'}</span>
-          {#if m.position_sek != null}<span class="mzeit">{mmss(m.position_sek)}</span>{/if}
-          {#if m.sprecher}<span class="mspk">{m.sprecher}</span>{/if}
-          <button class="mini geist" onclick={() => markeOeffnen(m)}><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> Öffnen</button>
-          <button class="ic" aria-label="Verweis entfernen" onclick={() => markeLoeschen(m)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-        </div>
-        {#if m.segment_text}<div class="mseg">{m.segment_text}</div>{/if}
-        <textarea class="mzus" rows="2" placeholder="Zusammenfassung dieses Abschnitts ..." value={m.zusammenfassung ?? ''} oninput={(e) => zusAendern(m, e.currentTarget.value)}></textarea>
-        <div class="mreihe">
-          <button class="mini geist" disabled={kiLaeuft === m.id} onclick={() => kiVorschlag(m)}>
-            <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> {kiLaeuft === m.id ? 'erzeugt ...' : 'KI-Vorschlag'}
-          </button>
-          {#if kiFehler[m.id]}<span class="mfehler">{kiFehler[m.id]}</span>{/if}
-        </div>
-        {#if kiVorschau[m.id] != null}
-          <div class="kivorschau">
-            <div class="kitext">{kiVorschau[m.id]}</div>
-            <div class="mreihe">
-              <button class="mini" onclick={() => kiUebernehmen(m)}>Übernehmen</button>
-              <button class="mini geist" onclick={() => kiVerwerfen(m)}>Verwerfen</button>
-            </div>
-          </div>
-        {/if}
-      </div>
-    {/each}
-    <input class="feld" placeholder="Transkript suchen und als Verweis anhängen ..." bind:value={mSuche} oninput={mSuchen} />
-    {#if mTreffer.length}
-      <div class="ttreffer">
-        {#each mTreffer as t (t.id)}
-          <button class="ttr" onclick={() => markeHinzufuegen(t)}><i class="fa-regular fa-file-audio" aria-hidden="true"></i> <span>{t.name}</span></button>
-        {/each}
-      </div>
-    {/if}
+    <TranskriptVerweise karteId={karte.id} />
 
     <p class="sec">Aktivität</p>
     {#each karte.kommentare as k (k.zeit + k.autor)}
@@ -735,149 +393,6 @@
   .zeiten .warn {
     color: var(--due-rot-fg);
   }
-  .timer {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .tbtn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border: 1px solid var(--hl-primary);
-    background: var(--hl-primary);
-    color: var(--hl-on-primary);
-    border-radius: var(--r-m);
-    padding: 8px 16px;
-    font-size: 13px;
-    font-weight: 600;
-  }
-  .tbtn.an {
-    background: var(--surface-2);
-    color: var(--hl-primary-text);
-  }
-  .tbtn.stopp {
-    background: var(--surface-1);
-    color: var(--text-2);
-    border-color: var(--border-2);
-  }
-  .tbtn.stopp:hover {
-    border-color: var(--gefahr);
-    color: var(--due-rot-fg);
-  }
-  .erfasst {
-    font-family: var(--font-mono);
-    font-size: 18px;
-    font-variant-numeric: tabular-nums;
-    color: var(--text-1);
-  }
-  .zcap {
-    font-size: 10.5px;
-    color: var(--text-3);
-    margin: 6px 0 0;
-  }
-  .tageliste {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    margin-top: 8px;
-  }
-  .tagrow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .tagrow input[type='date'] {
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    color: var(--text-1);
-    border-radius: var(--r-s);
-    padding: 5px 8px;
-    font-size: 12.5px;
-  }
-  .trdauer {
-    width: 96px;
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    color: var(--text-1);
-    border-radius: var(--r-s);
-    padding: 5px 8px;
-    font-size: 12.5px;
-    font-variant-numeric: tabular-nums;
-  }
-  .trauto {
-    color: var(--text-3);
-    font-size: 11px;
-  }
-  .plan {
-    margin-left: auto;
-    font-size: 12px;
-    color: var(--text-3);
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .plan input {
-    width: 60px;
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    color: var(--text-1);
-    border-radius: var(--r-s);
-    padding: 5px 7px;
-    font-size: 12.5px;
-  }
-  .fortschritt {
-    height: 7px;
-    border-radius: 5px;
-    background: var(--border);
-    overflow: hidden;
-    margin: 10px 0 5px;
-  }
-  .fortschritt span {
-    display: block;
-    height: 100%;
-    background: var(--hl-primary);
-  }
-  .fortschritt.ueber span {
-    background: var(--gefahr);
-  }
-  .pinfo {
-    font-size: 12px;
-    color: var(--text-3);
-  }
-  .pinfo.ueber {
-    color: var(--due-rot-fg);
-    font-weight: 600;
-  }
-  .tagbuchung {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 10px;
-  }
-  .tagbuchung input[type='date'] {
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    color: var(--text-1);
-    border-radius: var(--r-s);
-    padding: 6px 8px;
-    font-size: 12.5px;
-  }
-  .tbdauer {
-    flex: 1;
-    min-width: 0;
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    color: var(--text-1);
-    border-radius: var(--r-s);
-    padding: 6px 8px;
-    font-size: 12.5px;
-  }
-  .taginfo {
-    font-size: 10.5px;
-    color: var(--text-3);
-    margin: 4px 0 0;
-  }
   .sec {
     font-family: var(--font-display);
     font-size: 10.5px;
@@ -923,17 +438,6 @@
     padding: 3px 8px;
     font-size: 12px;
     width: 78px;
-  }
-  .desc {
-    width: 100%;
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    color: var(--text-1);
-    border-radius: var(--r-m);
-    padding: 9px 10px;
-    font-size: 12.5px;
-    line-height: 1.5;
-    resize: vertical;
   }
   .feld {
     width: 100%;
@@ -1030,86 +534,6 @@
   .ttr:hover {
     border-color: var(--hl-primary);
   }
-  .marke {
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    border-radius: var(--r-m);
-    padding: 9px 10px;
-    margin-bottom: 7px;
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-  }
-  .mkopf {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text-1);
-    font-size: 12.5px;
-  }
-  .mname {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 500;
-  }
-  .mzeit {
-    font-family: var(--font-mono);
-    font-size: 10.5px;
-    color: var(--hl-primary-text);
-    background: var(--hl-primary-weich);
-    padding: 1px 6px;
-    border-radius: var(--r-s);
-  }
-  .mspk {
-    font-size: 10.5px;
-    color: var(--text-3);
-    white-space: nowrap;
-  }
-  .mseg {
-    font-size: 11.5px;
-    color: var(--text-2);
-    line-height: 1.45;
-    background: var(--surface-1);
-    border-radius: var(--r-s);
-    padding: 5px 8px;
-  }
-  .mzus {
-    width: 100%;
-    border: 1px solid var(--border);
-    background: var(--surface-1);
-    color: var(--text-1);
-    border-radius: var(--r-s);
-    padding: 6px 8px;
-    font-size: 12px;
-    line-height: 1.45;
-    resize: vertical;
-  }
-  .mreihe {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .mfehler {
-    font-size: 10.5px;
-    color: var(--due-rot-fg);
-  }
-  .kivorschau {
-    border: 1px dashed var(--hl-primary);
-    background: var(--hl-primary-weich);
-    border-radius: var(--r-s);
-    padding: 7px 9px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .kitext {
-    font-size: 12px;
-    line-height: 1.5;
-    color: var(--text-1);
-  }
   .ct .cmt-md {
     margin: 3px 0 0;
     color: var(--text-2);
@@ -1159,22 +583,6 @@
     border-top: 1px solid var(--border);
   }
 
-  /* -- Markdown-Beschreibung -- */
-  .sec-reihe {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-  .md-werkzeuge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .gesp {
-    font-size: 10.5px;
-    color: var(--ok);
-  }
   .mini {
     border: 1px solid var(--hl-primary);
     background: var(--hl-primary);
@@ -1189,30 +597,6 @@
     color: var(--text-2);
     border-color: var(--border-2);
   }
-  .md-ansicht {
-    display: block;
-    width: 100%;
-    text-align: left;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: var(--r-m);
-    padding: 10px 11px;
-    cursor: text;
-  }
-  .md-ansicht:hover {
-    border-color: var(--border-2);
-  }
-  .leer-hinweis {
-    display: block;
-    width: 100%;
-    text-align: left;
-    background: transparent;
-    border: 1px dashed var(--border-2);
-    border-radius: var(--r-m);
-    padding: 10px 11px;
-    color: var(--text-3);
-    font-size: 12.5px;
-  }
   .kopf-werkzeuge {
     margin-left: auto;
     display: flex;
@@ -1224,64 +608,9 @@
     color: var(--hl-primary-text);
     border-color: var(--hl-primary);
   }
-  .md-editor .md-split {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-  .md-editor .desc {
-    min-height: 120px;
-  }
-  .md-vorschau {
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    border-radius: var(--r-m);
-    padding: 9px 10px;
-    overflow-y: auto;
-    max-height: 320px;
-  }
-  /* Pro-Feld-Vollbild: nur DIESES Feld gross, fokussiert (Eingabe links, Vorschau rechts). */
-  .md-editor.vollbild {
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    background: var(--surface-col);
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .md-editor.vollbild .md-split {
-    flex: 1;
-    min-height: 0;
-  }
-  .md-editor.vollbild .desc,
-  .md-editor.vollbild .md-vorschau {
-    max-height: none;
-    height: 100%;
-  }
-  .md-editor.vollbild .desc {
-    font-size: 16px;
-    line-height: 1.65;
-    padding: 18px 20px;
-  }
-  .md-editor.vollbild .md-vorschau {
-    padding: 18px 20px;
-  }
-  .md-editor.vollbild .md-vorschau :global(.md-body) {
-    font-size: 16px;
-    line-height: 1.7;
-  }
-  .vb-kopf {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
   .cmt-md {
     font-size: 12.5px;
   }
-
-  /* -- Ideenticket / Zeitgruppe -- */
   .idee-hinweis {
     display: flex;
     align-items: center;
@@ -1293,53 +622,5 @@
     border-radius: var(--r-m);
     color: var(--text-2);
     font-size: 12px;
-  }
-  .grpzeit {
-    margin: 2px 0 0;
-    font-size: 11.5px;
-    color: var(--hl-primary-text);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .vliste {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-bottom: 6px;
-  }
-  .vlink {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    width: 100%;
-    text-align: left;
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    color: var(--text-1);
-    border-radius: var(--r-s);
-    padding: 6px 9px;
-    font-size: 12px;
-  }
-  .vlink:hover {
-    border-color: var(--hl-primary);
-  }
-  .vkey {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text-3);
-  }
-  .vtitel {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .grpschalter {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 12px;
-    color: var(--text-2);
-    margin: 2px 0 8px;
   }
 </style>

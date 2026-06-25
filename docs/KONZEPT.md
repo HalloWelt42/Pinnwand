@@ -106,6 +106,8 @@ Umsetzung: Neue Tabellen abwesenheit_typ (Farbe, reduziert_soll, anrechnen, anwe
 
 17. Zeitmodell sauber getrennt (siehe ZEITMODELL.md): Ticketzeit (Summe je Karte, read-only) und Arbeitszeit (Summe je Tag) speisen sich aus denselben datierten Eintraegen. Die undatierte Gesamt-Eingabe (die still auf heute buchte) entfaellt; im Karten-Detail werden die Zeiten eines Tickets nach Tagen aufgeschluesselt und je Tag korrigierbar.
 
-Noch offen (geplant, weder Backend noch UI): WIP-Durchsetzung beim Verschieben (Blockade bzw. Warnung bei Überschreitung des Limits).
+18. WIP-Durchsetzung: das WIP-Limit einer Spalte wird sichtbar gemacht und weich durchgesetzt. Die Spalte zeigt das Erreichen des Limits (amber) und die Überschreitung (rot) an; schiebt ein Spaltenwechsel die Zielspalte über ihr Limit, erscheint eine Warnung. Bewusst kein harter Block, damit kurzfristiges Überschreiten möglich bleibt.
+
+19. Mehrbenutzer und Anmeldung (siehe ROLLEN.md, LOGIN.md): Rollen (Admin/Mitarbeiter) je Person; optionale echte Anmeldung mit Name oder Kürzel und Passwort, serverseitige Durchsetzung der Admin-Bereiche, Aussperr-Schutz.
 
 Querschnitt: strenge Versionierung (Patch je Änderung, Feature je Ausbaustufe), saubere Commits, README hält den Ist-Zustand.

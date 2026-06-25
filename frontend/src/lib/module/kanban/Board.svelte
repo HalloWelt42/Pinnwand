@@ -272,6 +272,15 @@
     if (pos >= 0) {
       const wechsel = items[pos].spalte !== spalteId
       items[pos].spalte = spalteId
+      // WIP-Durchsetzung (weiche Warnung): schiebt ein Spaltenwechsel die Zielspalte
+      // ueber ihr WIP-Limit, deutlich darauf hinweisen (Karte bleibt, kein harter Block).
+      if (wechsel) {
+        const sp = ansicht[idx].spalte
+        const n = items.filter((k) => k.id !== SHADOW_PLACEHOLDER_ITEM_ID).length
+        if (sp.wip_limit != null && n > sp.wip_limit) {
+          zeigeToast(`Spalte "${sp.titel}" ist über dem WIP-Limit (${n}/${sp.wip_limit}).`)
+        }
+      }
       // Bei Spaltenwechsel neu laden, damit bewegt_am (Abschlussdatum) frisch ist und
       // die Karte sofort korrekt unter dem Fertig-Zeitfilter erscheint.
       verschiebeKarte(info.id, spalteId, pos)

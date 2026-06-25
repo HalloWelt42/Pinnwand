@@ -61,6 +61,8 @@
 
   const anzahl = $derived(karten.filter((k) => k.id !== SHADOW_PLACEHOLDER_ITEM_ID).length)
   const wipVoll = $derived(spalte.wip_limit != null && anzahl >= spalte.wip_limit)
+  // Ueber dem Limit (echte Ueberschreitung) - deutlicher als nur "voll" (genau am Limit).
+  const wipUeber = $derived(spalte.wip_limit != null && anzahl > spalte.wip_limit)
   const fuellung = $derived(spalte.wip_limit ? Math.min(100, (anzahl / spalte.wip_limit) * 100) : 0)
 
   function bearbeiten() {
@@ -132,7 +134,7 @@
           <span class="griff"><i class="fa-solid fa-grip-vertical" aria-hidden="true"></i></span>
           <span class="punkt" style="background:{akzent}"></span>
           <span class="titel">{spalte.titel}</span>
-          <span class="zaehler" class:warn={wipVoll} title={spalte.wip_limit != null ? `${anzahl} Karten / WIP-Limit ${spalte.wip_limit} (Hoechstzahl gleichzeitiger Karten; faerbt sich bei Erreichen)` : `${anzahl} Karten`}>{anzahl}{#if spalte.wip_limit != null}/{spalte.wip_limit}{/if}</span>
+          <span class="zaehler" class:warn={wipVoll} class:ueber={wipUeber} title={spalte.wip_limit != null ? `${anzahl} Karten / WIP-Limit ${spalte.wip_limit} (Hoechstzahl gleichzeitiger Karten; amber am Limit, rot darueber)` : `${anzahl} Karten`}>{anzahl}{#if spalte.wip_limit != null}/{spalte.wip_limit}{/if}</span>
         </div>
         {#if spalte.erledigt}
           <select class="zeitfilter" value={zeitfilter} onchange={(e) => onZeitfilter(e.currentTarget.value)} title="Zeitraum (fertiggestellt)" aria-label="Zeitraum-Filter">
@@ -161,7 +163,7 @@
         {/if}
       </header>
       {#if spalte.wip_limit != null}
-        <div class="wip"><span style="width:{fuellung}%;background:{wipVoll ? 'var(--prio-mittel)' : akzent}"></span></div>
+        <div class="wip"><span style="width:{fuellung}%;background:{wipUeber ? 'var(--gefahr, #e5484d)' : wipVoll ? 'var(--prio-mittel)' : akzent}"></span></div>
       {/if}
     {/if}
 
@@ -351,6 +353,10 @@
   .zaehler.warn {
     color: var(--prio-mittel);
     font-weight: 600;
+  }
+  .zaehler.ueber {
+    color: var(--gefahr, #e5484d);
+    font-weight: 700;
   }
   .zeitfilter {
     border: 1px solid var(--border-2);

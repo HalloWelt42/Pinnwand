@@ -37,9 +37,33 @@ function hashFamilie(label: string): Familie {
   return FAMILIEN[h % FAMILIEN.length]
 }
 
+// Zugewiesene Farben aus der Label-Verwaltung (Name normalisiert -> Familie).
+// Wird beim Start und nach Änderungen aus dem Backend gespiegelt; hat Vorrang
+// vor der semantischen Zuordnung und dem Hash-Fallback.
+let definitionen = new Map<string, Familie>()
+
+export function setzeLabelDefinitionen(defs: { name: string; familie: string }[]): void {
+  definitionen = new Map(defs.map((d) => [d.name.trim().toLowerCase(), d.familie as Familie]))
+}
+
 function familieFuer(label: string): Familie {
   const k = label.trim().toLowerCase()
-  return SEMANTISCH[k] ?? hashFamilie(k)
+  return definitionen.get(k) ?? SEMANTISCH[k] ?? hashFamilie(k)
+}
+
+// Hex (Stufe 500) einer Familie - zum Vorbelegen von FarbWahl.
+export function hexFuerFamilie(familie: string): string {
+  const f = material[familie as Familie]
+  return f ? f[500] : ''
+}
+
+// Umkehrung: Hex einer FarbWahl-Auswahl auf den Familiennamen abbilden.
+export function familieAusHex(hex: string): string | null {
+  const ziel = hex.toLowerCase()
+  for (const name of Object.keys(material) as Familie[]) {
+    if (material[name][500].toLowerCase() === ziel) return name
+  }
+  return null
 }
 
 function rgba(hex: string, alpha: number): string {
@@ -74,10 +98,15 @@ function lesbarerText(bg: string, kandidaten: string[]): string {
   return kandidaten[kandidaten.length - 1]
 }
 
-export function labelFarbe(label: string, dunkel: boolean): LabelFarbe {
-  const familie = material[familieFuer(label)]
+// Chip-Farbe für eine konkrete Familie (auch für Vorschau in der Verwaltung).
+export function labelFarbeFamilie(familie: string, dunkel: boolean): LabelFarbe {
+  const f = material[familie as Familie] ?? material[hashFamilie(familie)]
   if (dunkel) {
-    return { bg: rgba(familie[200], 0.2), fg: familie[200] }
+    return { bg: rgba(f[200], 0.2), fg: f[200] }
   }
-  return { bg: familie[100], fg: lesbarerText(familie[100], [familie[800], familie[900], '#212121']) }
+  return { bg: f[100], fg: lesbarerText(f[100], [f[800], f[900], '#212121']) }
+}
+
+export function labelFarbe(label: string, dunkel: boolean): LabelFarbe {
+  return labelFarbeFamilie(familieFuer(label), dunkel)
 }

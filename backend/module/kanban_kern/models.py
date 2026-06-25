@@ -204,6 +204,26 @@ class SpalteMove(BaseModel):
     richtung: int
 
 
+# -- Label-Definitionen (zentrale Farbe je Label-Name) --------------------
+# karte.labels bleibt eine Liste freier Namens-Strings; diese Definition liefert
+# nur die zugewiesene Material-Farbe und die Verwaltung. Namen ohne Definition
+# färbt das Frontend weiter über den Hash-Fallback (labels.ts).
+class LabelDefinition(BaseModel):
+    id: str
+    name: str
+    familie: str
+
+
+class LabelCreate(BaseModel):
+    name: str
+    familie: str
+
+
+class LabelUpdate(BaseModel):
+    name: str | None = None
+    familie: str | None = None
+
+
 class SpaltenReihenfolge(BaseModel):
     spalten: list[str]
 

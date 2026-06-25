@@ -2,7 +2,8 @@
   import { onMount } from 'svelte'
   import type { Component } from 'svelte'
   import type { Board, Projektmappe } from './lib/types'
-  import { ladeMappen, ladeBoards, ladeErweiterungen, erstelleBoard, benenneBoard, loescheBoard, erstelleMappe, benenneMappe, loescheMappe, serienVorbuchenAlle } from './lib/api'
+  import { ladeMappen, ladeBoards, ladeErweiterungen, erstelleBoard, benenneBoard, loescheBoard, erstelleMappe, benenneMappe, loescheMappe, serienVorbuchenAlle, ladeLabels } from './lib/api'
+  import { setzeLabelDefinitionen } from './lib/labels'
   import { ansichten, komponenteFuer } from './lib/module/registry'
   import { theme, wechsleTheme } from './lib/theme/theme.svelte'
   import { VERSION } from './lib/version'
@@ -64,7 +65,7 @@
   const aktuelleKomponente = $derived(ansichtsListe.find((a) => a.id === aktiveAnsicht)?.komponente)
 
   // Globale Ansichten brauchen keine Board-Navigation; boardgebundene schon.
-  const GLOBALE_ANSICHTEN = new Set(['heute', 'suche', 'transkripte', 'planung', 'jahreskalender', 'wiederkehrendes', 'berichte', 'einstellungen'])
+  const GLOBALE_ANSICHTEN = new Set(['heute', 'suche', 'transkripte', 'planung', 'jahreskalender', 'wiederkehrendes', 'berichte', 'labels', 'einstellungen'])
   const boardgebunden = $derived(!GLOBALE_ANSICHTEN.has(aktiveAnsicht))
   const aktuelleAnsichtMeta = $derived(ansichtsListe.find((a) => a.id === aktiveAnsicht))
 
@@ -241,7 +242,7 @@
     } catch {
       ansichtsListe = ansichten().map((a) => ({ id: a.id, titel: a.titel, icon: a.icon, komponente: a.komponente }))
     }
-    const REIHENFOLGE = ['heute', 'board', 'zeiten', 'kalender', 'jahreskalender', 'wiederkehrendes', 'suche', 'transkripte', 'planung', 'berichte', 'einstellungen']
+    const REIHENFOLGE = ['heute', 'board', 'zeiten', 'kalender', 'jahreskalender', 'wiederkehrendes', 'suche', 'transkripte', 'planung', 'berichte', 'labels', 'einstellungen']
     ansichtsListe.sort((a, b) => ((REIHENFOLGE.indexOf(a.id) + 1) || 99) - ((REIHENFOLGE.indexOf(b.id) + 1) || 99))
     const gespeichert = _ui.ansicht
     aktiveAnsicht = gespeichert && ansichtsListe.some((a) => a.id === gespeichert)
@@ -262,8 +263,19 @@
     }
   }
 
+  // Zugewiesene Label-Farben einmal beim Start in die Farbquelle (labels.ts) spiegeln,
+  // damit Karten-Chips überall die in der Verwaltung gewählte Farbe zeigen.
+  async function ladeLabelFarben(): Promise<void> {
+    try {
+      setzeLabelDefinitionen(await ladeLabels())
+    } catch {
+      /* Label-Farben sind optional; Fallback bleibt die automatische Farbe */
+    }
+  }
+
   onMount(async () => {
     await ladeAnsichten()
+    ladeLabelFarben()
     aktualisiereLaufend()
     serienTagesabgleich()
     try {

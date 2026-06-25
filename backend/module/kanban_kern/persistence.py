@@ -30,6 +30,8 @@ from .models import (
     HeuteUebersicht,
     Karte,
     KarteUpdate,
+    LabelDefinition,
+    LabelUpdate,
     MappeUpdate,
     Projektmappe,
     Spalte,
@@ -93,6 +95,12 @@ CREATE TABLE IF NOT EXISTS kartengruppe (
     zeit_geteilt INTEGER NOT NULL DEFAULT 1,
     erstellt_am TEXT
 );
+CREATE TABLE IF NOT EXISTS label_definition (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    familie TEXT NOT NULL,
+    erstellt_am TEXT
+);
 CREATE TABLE IF NOT EXISTS zeiteintrag (
     id TEXT PRIMARY KEY,
     karte_id TEXT NOT NULL,
@@ -144,6 +152,10 @@ def _migriere(conn: sqlite3.Connection) -> None:
     conn.execute(
         "CREATE TABLE IF NOT EXISTS kartengruppe ("
         "id TEXT PRIMARY KEY, zeit_geteilt INTEGER NOT NULL DEFAULT 1, erstellt_am TEXT)"
+    )
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS label_definition ("
+        "id TEXT PRIMARY KEY, name TEXT NOT NULL, familie TEXT NOT NULL, erstellt_am TEXT)"
     )
     # Altdaten aufraeumen: bestehende Start/Stopp-Fragmente je Karte+Tag zusammenfassen
     # (idempotent, einmalige Roh-Sicherung). Neue Sitzungen fasst _pause_intern direkt zusammen.
@@ -851,6 +863,103 @@ def _kompaktiere_spalten(conn: sqlite3.Connection, board_id: str) -> None:
     rows = conn.execute("SELECT id FROM spalte WHERE board_id = ? ORDER BY reihenfolge, id", (board_id,)).fetchall()
     for index, r in enumerate(rows):
         conn.execute("UPDATE spalte SET reihenfolge = ? WHERE id = ?", (index, r["id"]))
+
+
+# -- Label-Definitionen ---------------------------------------------------
+
+class LabelNameBelegt(Exception):
+    """Ein Label mit diesem Namen existiert bereits (case-insensitiv)."""
+
+
+def liste_labels() -> list[LabelDefinition]:
+    with _verb() as conn:
+        rows = conn.execute(
+            "SELECT id, name, familie FROM label_definition ORDER BY name COLLATE NOCASE"
+        ).fetchall()
+    return [LabelDefinition(id=r["id"], name=r["name"], familie=r["familie"]) for r in rows]
+
+
+def hole_label(label_id: str) -> LabelDefinition | None:
+    with _verb() as conn:
+        r = conn.execute("SELECT id, name, familie FROM label_definition WHERE id = ?", (label_id,)).fetchone()
+    return LabelDefinition(id=r["id"], name=r["name"], familie=r["familie"]) if r else None
+
+
+def erstelle_label(label_id: str, name: str, familie: str) -> LabelDefinition | None:
+    """Legt eine Label-Definition an; None bei bereits belegtem Namen (case-insensitiv)."""
+    with _verb() as conn:
+        belegt = conn.execute(
+            "SELECT 1 FROM label_definition WHERE name = ? COLLATE NOCASE", (name,)
+        ).fetchone()
+        if belegt:
+            return None
+        conn.execute(
+            "INSERT INTO label_definition (id, name, familie, erstellt_am) VALUES (?, ?, ?, ?)",
+            (label_id, name, familie, _jetzt()),
+        )
+    return hole_label(label_id)
+
+
+def aktualisiere_label(label_id: str, aenderungen: dict) -> LabelDefinition | None:
+    felder = {k: v for k, v in aenderungen.items() if k in LabelUpdate.model_fields}
+    with _verb() as conn:
+        row = conn.execute("SELECT name FROM label_definition WHERE id = ?", (label_id,)).fetchone()
+        if row is None:
+            return None
+        alt_name = row["name"]
+        if "name" in felder:
+            neu_name = (felder["name"] or "").strip()
+            if not neu_name:
+                felder.pop("name")  # leere Umbenennung ignorieren
+            else:
+                belegt = conn.execute(
+                    "SELECT 1 FROM label_definition WHERE name = ? COLLATE NOCASE AND id != ?",
+                    (neu_name, label_id),
+                ).fetchone()
+                if belegt:
+                    raise LabelNameBelegt()
+                felder["name"] = neu_name
+        if felder:
+            zuweisung = ", ".join(f"{k} = ?" for k in felder)
+            conn.execute(f"UPDATE label_definition SET {zuweisung} WHERE id = ?", (*felder.values(), label_id))
+        # Namensänderung auf die Label-Strings aller Karten übertragen (JSON-sicher).
+        if "name" in felder and felder["name"].lower() != alt_name.lower():
+            _benenne_label_in_karten(conn, alt_name, felder["name"])
+    return hole_label(label_id)
+
+
+def _benenne_label_in_karten(conn: sqlite3.Connection, alt: str, neu: str) -> None:
+    """Ersetzt in karte.labels jeden (case-insensitiv) gleichen Namen durch den neuen.
+    Liest die JSON-Arrays und schreibt sie zurück - kein blindes SQL-Replace.
+    Dedupliziert case-insensitiv, damit nicht zwei gleiche Namen in anderer
+    Schreibweise auf derselben Karte landen."""
+    alt_l = alt.lower()
+    rows = conn.execute("SELECT id, labels FROM karte").fetchall()
+    for r in rows:
+        liste = json.loads(r["labels"])
+        neu_liste: list[str] = []
+        gesehen: set[str] = set()
+        geaendert = False
+        for l in liste:
+            ist_treffer = isinstance(l, str) and l.lower() == alt_l
+            if ist_treffer:
+                geaendert = True
+            ziel = neu if ist_treffer else l
+            schluessel = ziel.lower() if isinstance(ziel, str) else str(ziel)
+            if schluessel in gesehen:
+                continue
+            gesehen.add(schluessel)
+            neu_liste.append(ziel)
+        if geaendert:
+            conn.execute("UPDATE karte SET labels = ? WHERE id = ?", (json.dumps(neu_liste), r["id"]))
+
+
+def loesche_label(label_id: str) -> bool:
+    """Entfernt nur die Definition; die Label-Strings an Karten bleiben unangetastet
+    (sie fallen dann auf die Hash-Fallbackfarbe zurück)."""
+    with _verb() as conn:
+        cur = conn.execute("DELETE FROM label_definition WHERE id = ?", (label_id,))
+        return cur.rowcount > 0
 
 
 def erstelle_spalte(spalte_id: str, board_id: str, titel: str, wip_limit: int | None) -> Spalte:

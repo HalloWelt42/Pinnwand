@@ -23,6 +23,9 @@ from .models import (
     KarteUpdate,
     KarteVerknuepfen,
     KommentarCreate,
+    LabelCreate,
+    LabelDefinition,
+    LabelUpdate,
     MappeCreate,
     MappeUpdate,
     Projektmappe,
@@ -392,3 +395,38 @@ def spalte_loeschen(spalte_id: str) -> None:
         raise HTTPException(status_code=404, detail="Spalte nicht gefunden")
     if ergebnis == "letzte":
         raise HTTPException(status_code=409, detail="Die letzte Spalte kann nicht gelöscht werden")
+
+
+# -- Label-Verwaltung -----------------------------------------------------
+
+@router.get("/labels", response_model=list[LabelDefinition])
+def labels_liste() -> list[LabelDefinition]:
+    return db.liste_labels()
+
+
+@router.post("/labels", response_model=LabelDefinition, status_code=201)
+def label_anlegen(eingabe: LabelCreate) -> LabelDefinition:
+    name = eingabe.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Der Label-Name darf nicht leer sein")
+    label = db.erstelle_label(f"lbl_{uuid4().hex[:8]}", name, eingabe.familie)
+    if label is None:
+        raise HTTPException(status_code=409, detail="Ein Label mit diesem Namen existiert bereits")
+    return label
+
+
+@router.patch("/labels/{label_id}", response_model=LabelDefinition)
+def label_aendern(label_id: str, eingabe: LabelUpdate) -> LabelDefinition:
+    try:
+        label = db.aktualisiere_label(label_id, eingabe.model_dump(exclude_unset=True))
+    except db.LabelNameBelegt:
+        raise HTTPException(status_code=409, detail="Ein Label mit diesem Namen existiert bereits")
+    if label is None:
+        raise HTTPException(status_code=404, detail="Label nicht gefunden")
+    return label
+
+
+@router.delete("/labels/{label_id}", status_code=204)
+def label_loeschen(label_id: str) -> None:
+    if not db.loesche_label(label_id):
+        raise HTTPException(status_code=404, detail="Label nicht gefunden")

@@ -7,6 +7,7 @@ import type {
   Projektmappe,
   Spalte,
   Zeiteintrag,
+  LabelDefinition,
   Erweiterungen,
   Dokument,
   DokumentKontext,
@@ -102,6 +103,7 @@ export type {
   KiStatusAntwort,
   KiVorschlag,
   KiAntwort,
+  LabelDefinition,
 } from './types'
 
 const BASIS = import.meta.env.VITE_API ?? 'http://localhost:8420'
@@ -238,6 +240,16 @@ export const loescheSpalte = (spalteId: string): Promise<void> =>
   hole(`/api/kanban/spalten/${spalteId}`, { method: 'DELETE' })
 export const setzeErledigtSpalte = (spalteId: string): Promise<Spalte> =>
   hole(`/api/kanban/spalten/${spalteId}/erledigt`, { method: 'POST' })
+
+// --- Label-Verwaltung (zentrale Farbe je Label-Name) ---
+
+export const ladeLabels = (): Promise<LabelDefinition[]> => hole('/api/kanban/labels')
+export const erstelleLabel = (name: string, familie: string): Promise<LabelDefinition> =>
+  hole('/api/kanban/labels', { method: 'POST', body: JSON.stringify({ name, familie }) })
+export const aktualisiereLabel = (id: string, daten: { name?: string; familie?: string }): Promise<LabelDefinition> =>
+  hole(`/api/kanban/labels/${id}`, { method: 'PATCH', body: JSON.stringify(daten) })
+export const loescheLabel = (id: string): Promise<void> =>
+  hole(`/api/kanban/labels/${id}`, { method: 'DELETE' })
 
 // --- Suche ---
 

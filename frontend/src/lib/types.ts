@@ -79,6 +79,14 @@ export interface Projektmappe {
   beschreibung?: string | null
 }
 
+// Zentrale Farbzuweisung je Label-Name (Verwaltung). karte.labels bleibt eine
+// Liste freier Strings; diese Definition liefert nur die Material-Farbe.
+export interface LabelDefinition {
+  id: string
+  name: string
+  familie: string
+}
+
 export interface Zeiteintrag {
   id: string
   karte_id: string

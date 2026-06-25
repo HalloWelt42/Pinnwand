@@ -21,7 +21,21 @@ def _jetzt() -> str:
 def _jetzt_genau() -> str:
     return datetime.now().isoformat(timespec="seconds")
 
-from .models import Board, BoardDetail, Dokument, GruppenMitglied, Karte, Projektmappe, Spalte, Zeiteintrag
+from .models import (
+    Board,
+    BoardDetail,
+    Dokument,
+    DokumentUpdate,
+    GruppenMitglied,
+    Karte,
+    KarteUpdate,
+    MappeUpdate,
+    Projektmappe,
+    Spalte,
+    SpalteUpdate,
+    Zeiteintrag,
+    ZeiteintragUpdate,
+)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS mappe (
@@ -213,7 +227,7 @@ def erstelle_mappe(mappe_id: str, titel: str, beschreibung: str | None = None) -
 
 
 def aktualisiere_mappe(mappe_id: str, felder: dict) -> Projektmappe | None:
-    erlaubt = {k: v for k, v in felder.items() if k in ("titel", "beschreibung")}
+    erlaubt = {k: v for k, v in felder.items() if k in MappeUpdate.model_fields}
     with _verb() as conn:
         if erlaubt:
             sql = ", ".join(f"{k} = ?" for k in erlaubt)
@@ -461,8 +475,8 @@ def verschiebe_karte(karte_id: str, ziel_spalte: str, ziel_reihenfolge: int) -> 
 
 
 def aktualisiere_karte(karte_id: str, aenderungen: dict) -> Karte | None:
-    erlaubt = {"titel", "beschreibung", "notizen", "labels", "prioritaet", "checkliste", "cover", "spalte", "reihenfolge", "start", "faellig", "zustaendig", "schaetzung_min", "transkript_id", "transkript_name", "typ"}
-    felder = {k: v for k, v in aenderungen.items() if k in erlaubt}
+    # KarteUpdate ist die einzige Feldquelle - keine doppelte Whitelist, die driften koennte.
+    felder = {k: v for k, v in aenderungen.items() if k in KarteUpdate.model_fields}
     if not felder:
         return hole_karte(karte_id)
     for json_feld in ("labels", "checkliste"):
@@ -549,7 +563,7 @@ def erstelle_dokument(dokument_id: str, kontext: str, kontext_id: str, titel: st
 
 
 def aktualisiere_dokument(dokument_id: str, felder: dict) -> Dokument | None:
-    erlaubt = {k: v for k, v in felder.items() if k in ("titel", "inhalt")}
+    erlaubt = {k: v for k, v in felder.items() if k in DokumentUpdate.model_fields}
     with _verb() as conn:
         if erlaubt:
             sql = ", ".join(f"{k} = ?" for k in erlaubt)
@@ -791,7 +805,7 @@ def aktualisiere_zeiteintrag(eintrag_id: str, aenderungen: dict) -> Zeiteintrag 
         row = conn.execute("SELECT karte_id FROM zeiteintrag WHERE id = ?", (eintrag_id,)).fetchone()
         if row is None:
             return None
-        felder = {k: v for k, v in aenderungen.items() if k in {"datum", "sekunden", "kommentar"}}
+        felder = {k: v for k, v in aenderungen.items() if k in ZeiteintragUpdate.model_fields}
         if "sekunden" in felder and felder["sekunden"] is not None:
             felder["sekunden"] = max(0, int(felder["sekunden"]))
         if felder:
@@ -834,7 +848,7 @@ def erstelle_spalte(spalte_id: str, board_id: str, titel: str, wip_limit: int | 
 
 
 def aktualisiere_spalte(spalte_id: str, aenderungen: dict) -> Spalte | None:
-    felder = {k: v for k, v in aenderungen.items() if k in {"titel", "wip_limit"}}
+    felder = {k: v for k, v in aenderungen.items() if k in SpalteUpdate.model_fields}
     if not felder:
         return hole_spalte(spalte_id)
     zuweisung = ", ".join(f"{k} = ?" for k in felder)

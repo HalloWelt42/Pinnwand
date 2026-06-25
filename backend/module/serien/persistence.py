@@ -8,6 +8,8 @@ from uuid import uuid4
 
 from app.db import verbindung
 
+from .models import SerieUpdate
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS serie (
     id TEXT PRIMARY KEY,
@@ -102,12 +104,7 @@ def erstelle(daten: dict) -> dict:
 
 
 def aktualisiere(sid: str, aenderungen: dict) -> dict | None:
-    erlaubt = {
-        "titel", "beschreibung", "labels", "zustaendig", "spalte_id", "typ", "intervall",
-        "wochentage", "monatstag", "monatsregel", "uhrzeit", "dauer_min", "wochenenden_ueberspringen",
-        "feiertage_ueberspringen", "vorlauf_tage", "start", "ende", "aktiv",
-    }
-    f = {k: v for k, v in aenderungen.items() if k in erlaubt}
+    f = {k: v for k, v in aenderungen.items() if k in SerieUpdate.model_fields}
     if not f:
         return hole(sid)
     if "labels" in f:

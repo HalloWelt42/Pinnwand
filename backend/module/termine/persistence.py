@@ -7,6 +7,8 @@ from uuid import uuid4
 
 from app.db import verbindung
 
+from .models import TerminSerieUpdate
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS termin_serie (
     id TEXT PRIMARY KEY,
@@ -108,12 +110,7 @@ def erstelle_serie(daten: dict) -> dict:
 
 
 def aktualisiere_serie(sid: str, aenderungen: dict) -> dict | None:
-    erlaubt = {
-        "titel", "beschreibung", "kuerzel", "typ", "intervall", "wochentage", "monatstag",
-        "monatsregel", "uhrzeit", "dauer_min", "wochenenden_ueberspringen", "feiertage_ueberspringen",
-        "urlaub_ueberspringen", "rueckblick_tage", "start", "ende", "aktiv",
-    }
-    f = {k: v for k, v in aenderungen.items() if k in erlaubt}
+    f = {k: v for k, v in aenderungen.items() if k in TerminSerieUpdate.model_fields}
     if not f:
         return hole_serie(sid)
     if "wochentage" in f:

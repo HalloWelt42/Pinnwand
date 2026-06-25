@@ -12,6 +12,8 @@ from uuid import uuid4
 
 from app.db import verbindung
 
+from .models import AbwesenheitTypUpdate, PersonUpdate
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS person (
     id TEXT PRIMARY KEY,
@@ -211,8 +213,7 @@ def erstelle_person(name: str, kuerzel: str | None, wochenstunden: list | None, 
 
 
 def aktualisiere_person(pid: str, aenderungen: dict) -> dict | None:
-    f = {k: v for k, v in aenderungen.items()
-         if k in {"name", "kuerzel", "farbe", "wochenstunden", "bundesland", "urlaubsanspruch", "resturlaub_vorjahr", "aktiv"}}
+    f = {k: v for k, v in aenderungen.items() if k in PersonUpdate.model_fields}
     if not f:
         return hole_person(pid)
     if "wochenstunden" in f:
@@ -421,7 +422,7 @@ def hole_abwesenheitstyp(code: str) -> dict | None:
 
 
 def aktualisiere_abwesenheitstyp(code: str, aenderungen: dict) -> dict | None:
-    f = {k: v for k, v in aenderungen.items() if k in {"name", "farbe", "reduziert_soll", "anrechnen", "anwesend", "reihenfolge"}}
+    f = {k: v for k, v in aenderungen.items() if k in AbwesenheitTypUpdate.model_fields}
     if not f:
         return hole_abwesenheitstyp(code)
     for flag in ("reduziert_soll", "anrechnen", "anwesend"):

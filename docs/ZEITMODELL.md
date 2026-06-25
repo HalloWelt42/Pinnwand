@@ -42,3 +42,24 @@ landete still auf dem heutigen Tag.
 `erfasst_sek` war schon immer die Summe der Einträge; es gibt keinen Datenbruch.
 Früher fälschlich auf heute gebuchte Gesamt-Korrekturen lassen sich jetzt über die
 Tages-Aufschlüsselung auf den richtigen Tag umdatieren.
+
+## Geteilte Zeitgruppe (verknüpfte Aufgaben)
+
+Verknüpfte Aufgaben, die man parallel abarbeitet, sollen die Zeit nur EINMAL zählen.
+Das ist bewusst eine reine Anzeigeschicht über dem Modell oben - das Modell selbst
+bleibt unangetastet:
+
+- Ein `zeiteintrag` gehört weiterhin zu genau EINER Karte. Es wird nichts dupliziert.
+  Alle Auswertungen (Arbeitszeit je Tag, Personenstunden, Berichte, Kalender) summieren
+  aus `zeiteintrag` und zählen damit jede Sekunde von Natur aus genau einmal.
+- Karten mit gleicher `gruppe_id` bilden eine Gruppe (Tabelle `kartengruppe` mit dem
+  Schalter `zeit_geteilt`). Für die Anzeige berechnet `board_detail` je Karte das Feld
+  `gruppe_sek`: bei `zeit_geteilt` die kombinierte `erfasst_sek` aller Mitglieder, sonst
+  die eigene. So sieht man auf jeder verknüpften Karte die gemeinsame Zeit, ohne dass
+  sie irgendwo doppelt zählt.
+- Spezialfall einstellbar: `zeit_geteilt=false` schaltet die geteilte Anzeige ab; dann
+  zeigt jede Karte wieder nur ihre eigene Zeit.
+
+Praktisch: in einer Sitzung, die mehrere Tickets betrifft, verknüpft man sie und trackt
+die Zeit einmal (auf einer der Karten). Alle zeigen die gemeinsame Summe; die
+Personenstunden bleiben korrekt.

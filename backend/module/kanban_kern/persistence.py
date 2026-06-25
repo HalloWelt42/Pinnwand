@@ -21,7 +21,7 @@ def _jetzt() -> str:
 def _jetzt_genau() -> str:
     return datetime.now().isoformat(timespec="seconds")
 
-from .models import Board, BoardDetail, Dokument, Karte, Projektmappe, Spalte, Zeiteintrag
+from .models import Board, BoardDetail, Dokument, GruppenMitglied, Karte, Projektmappe, Spalte, Zeiteintrag
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS mappe (
@@ -69,7 +69,14 @@ CREATE TABLE IF NOT EXISTS karte (
     serie_id TEXT,
     serie_datum TEXT,
     transkript_id TEXT,
-    transkript_name TEXT
+    transkript_name TEXT,
+    typ TEXT NOT NULL DEFAULT 'arbeit',
+    gruppe_id TEXT
+);
+CREATE TABLE IF NOT EXISTS kartengruppe (
+    id TEXT PRIMARY KEY,
+    zeit_geteilt INTEGER NOT NULL DEFAULT 1,
+    erstellt_am TEXT
 );
 CREATE TABLE IF NOT EXISTS zeiteintrag (
     id TEXT PRIMARY KEY,
@@ -115,6 +122,14 @@ def _migriere(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE karte ADD COLUMN transkript_id TEXT")
     if "transkript_name" not in kspalten:
         conn.execute("ALTER TABLE karte ADD COLUMN transkript_name TEXT")
+    if "typ" not in kspalten:
+        conn.execute("ALTER TABLE karte ADD COLUMN typ TEXT NOT NULL DEFAULT 'arbeit'")
+    if "gruppe_id" not in kspalten:
+        conn.execute("ALTER TABLE karte ADD COLUMN gruppe_id TEXT")
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS kartengruppe ("
+        "id TEXT PRIMARY KEY, zeit_geteilt INTEGER NOT NULL DEFAULT 1, erstellt_am TEXT)"
+    )
 
 
 def init_db() -> None:
@@ -162,6 +177,8 @@ def _karte_aus_row(row: sqlite3.Row) -> Karte:
         laeuft_seit=row["laeuft_seit"],
         transkript_id=row["transkript_id"],
         transkript_name=row["transkript_name"],
+        typ=row["typ"] if "typ" in row.keys() else "arbeit",
+        gruppe_id=row["gruppe_id"] if "gruppe_id" in row.keys() else None,
     )
 
 
@@ -255,16 +272,119 @@ def board_detail(board_id: str) -> BoardDetail | None:
             elif r["bewegt_am"]:
                 k.abschluss_am = r["bewegt_am"][:10]
             karten.append(k)
+        _reichere_gruppen_an(conn, karten)
     return BoardDetail(
         id=b["id"], mappe_id=b["mappe_id"], titel=b["titel"], kuerzel=b["kuerzel"],
         spalten=spalten, karten=karten,
     )
 
 
+def _reichere_gruppen_an(conn: sqlite3.Connection, karten: list[Karte]) -> None:
+    """Setzt je verknuepfter Karte gruppe_mitglieder, gruppe_sek und gruppe_zeit_geteilt.
+
+    Zeit zaehlt nur einmal: die echten Zeiteintraege bleiben je Karte; gruppe_sek ist
+    eine reine ANZEIGE (kombinierte erfasst_sek der Gruppe, wenn die Gruppe die Zeit
+    teilt). Mitglieder werden ueber alle Boards hinweg gesucht (eine Gruppe darf
+    boarduebergreifend sein), nicht nur im aktuellen Board.
+    """
+    gids = {k.gruppe_id for k in karten if k.gruppe_id}
+    if not gids:
+        return
+    platz = ",".join("?" for _ in gids)
+    gliste = list(gids)
+    mit_rows = conn.execute(
+        f"SELECT id, schluessel, titel, erfasst_sek, gruppe_id FROM karte WHERE gruppe_id IN ({platz})",
+        gliste,
+    ).fetchall()
+    geteilt_rows = conn.execute(
+        f"SELECT id, zeit_geteilt FROM kartengruppe WHERE id IN ({platz})", gliste
+    ).fetchall()
+    geteilt = {r["id"]: bool(r["zeit_geteilt"]) for r in geteilt_rows}
+    je_gruppe: dict[str, list[sqlite3.Row]] = {}
+    for r in mit_rows:
+        je_gruppe.setdefault(r["gruppe_id"], []).append(r)
+    for k in karten:
+        if not k.gruppe_id:
+            continue
+        mitglieder = je_gruppe.get(k.gruppe_id, [])
+        ist_geteilt = geteilt.get(k.gruppe_id, True)
+        k.gruppe_zeit_geteilt = ist_geteilt
+        k.gruppe_mitglieder = [
+            GruppenMitglied(id=m["id"], schluessel=m["schluessel"], titel=m["titel"])
+            for m in mitglieder if m["id"] != k.id
+        ]
+        if ist_geteilt:
+            k.gruppe_sek = sum(int(m["erfasst_sek"] or 0) for m in mitglieder)
+        else:
+            k.gruppe_sek = k.erfasst_sek
+
+
 def hole_karte(karte_id: str) -> Karte | None:
     with _verb() as conn:
         row = conn.execute("SELECT * FROM karte WHERE id = ?", (karte_id,)).fetchone()
-    return _karte_aus_row(row) if row else None
+        karte = _karte_aus_row(row) if row else None
+        if karte and karte.gruppe_id:
+            _reichere_gruppen_an(conn, [karte])
+    return karte
+
+
+# -- Verknuepfung / Zeitgruppe -------------------------------------------
+
+def verknuepfe_karten(karte_id: str, ziel_id: str) -> Karte | None:
+    """Legt beide Karten in EINE Gruppe. Bestehende Gruppe(n) werden verwendet bzw.
+    zusammengefuehrt; sonst entsteht eine neue Gruppe (Zeit teilen = Standard an)."""
+    if karte_id == ziel_id:
+        return hole_karte(karte_id)
+    with _verb() as conn:
+        a = conn.execute("SELECT gruppe_id FROM karte WHERE id = ?", (karte_id,)).fetchone()
+        b = conn.execute("SELECT gruppe_id FROM karte WHERE id = ?", (ziel_id,)).fetchone()
+        if a is None or b is None:
+            return None
+        ga, gb = a["gruppe_id"], b["gruppe_id"]
+        if ga and gb and ga != gb:
+            # Beide haben Gruppen -> b-Gruppe in a-Gruppe ueberfuehren.
+            conn.execute("UPDATE karte SET gruppe_id = ? WHERE gruppe_id = ?", (ga, gb))
+            conn.execute("DELETE FROM kartengruppe WHERE id = ?", (gb,))
+            ziel_gruppe = ga
+        elif ga:
+            ziel_gruppe = ga
+            conn.execute("UPDATE karte SET gruppe_id = ? WHERE id = ?", (ga, ziel_id))
+        elif gb:
+            ziel_gruppe = gb
+            conn.execute("UPDATE karte SET gruppe_id = ? WHERE id = ?", (gb, karte_id))
+        else:
+            ziel_gruppe = "g_" + uuid4().hex[:8]
+            conn.execute(
+                "INSERT INTO kartengruppe (id, zeit_geteilt, erstellt_am) VALUES (?, 1, ?)",
+                (ziel_gruppe, _jetzt()),
+            )
+            conn.execute("UPDATE karte SET gruppe_id = ? WHERE id IN (?, ?)", (ziel_gruppe, karte_id, ziel_id))
+    return hole_karte(karte_id)
+
+
+def loese_verknuepfung(karte_id: str) -> Karte | None:
+    """Loest die Karte aus ihrer Gruppe. Bleibt danach < 2 Mitglieder, wird die Gruppe
+    (und der Rest-Verweis) aufgeloest."""
+    with _verb() as conn:
+        row = conn.execute("SELECT gruppe_id FROM karte WHERE id = ?", (karte_id,)).fetchone()
+        if row is None:
+            return None
+        gid = row["gruppe_id"]
+        conn.execute("UPDATE karte SET gruppe_id = NULL WHERE id = ?", (karte_id,))
+        if gid:
+            rest = conn.execute("SELECT id FROM karte WHERE gruppe_id = ?", (gid,)).fetchall()
+            if len(rest) < 2:
+                conn.execute("UPDATE karte SET gruppe_id = NULL WHERE gruppe_id = ?", (gid,))
+                conn.execute("DELETE FROM kartengruppe WHERE id = ?", (gid,))
+    return hole_karte(karte_id)
+
+
+def setze_gruppe_zeit_geteilt(gruppe_id: str, geteilt: bool) -> bool:
+    with _verb() as conn:
+        cur = conn.execute(
+            "UPDATE kartengruppe SET zeit_geteilt = ? WHERE id = ?", (1 if geteilt else 0, gruppe_id)
+        )
+        return cur.rowcount > 0
 
 
 def hole_spalte(spalte_id: str) -> Spalte | None:
@@ -295,6 +415,7 @@ def erstelle_karte(
     karte_id: str, board_id: str, spalte: str, titel: str,
     beschreibung: str | None, labels: list[str], prioritaet: str | None,
     cover: str | None, start: str | None, faellig: str | None, zustaendig: str | None,
+    typ: str = "arbeit",
 ) -> Karte:
     with _verb() as conn:
         b = conn.execute("SELECT kuerzel, laufnummer FROM board WHERE id = ?", (board_id,)).fetchone()
@@ -305,10 +426,11 @@ def erstelle_karte(
         jetzt = _jetzt()
         conn.execute(
             "INSERT INTO karte (id, board_id, spalte, titel, schluessel, beschreibung, labels, prioritaet,"
-            " checkliste, kommentare, cover, reihenfolge, start, faellig, zustaendig, erstellt_am, bewegt_am)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, '[]', '[]', ?, ?, ?, ?, ?, ?, ?)",
+            " checkliste, kommentare, cover, reihenfolge, start, faellig, zustaendig, erstellt_am, bewegt_am, typ)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, '[]', '[]', ?, ?, ?, ?, ?, ?, ?, ?)",
             (karte_id, board_id, spalte, titel, f"{kuerzel}-{nummer}", beschreibung, json.dumps(labels),
-             prioritaet, cover, reihenfolge, start, faellig, zustaendig, jetzt, jetzt),
+             prioritaet, cover, reihenfolge, start, faellig, zustaendig, jetzt, jetzt,
+             "idee" if typ == "idee" else "arbeit"),
         )
     karte = hole_karte(karte_id)
     assert karte is not None
@@ -336,7 +458,7 @@ def verschiebe_karte(karte_id: str, ziel_spalte: str, ziel_reihenfolge: int) -> 
 
 
 def aktualisiere_karte(karte_id: str, aenderungen: dict) -> Karte | None:
-    erlaubt = {"titel", "beschreibung", "notizen", "labels", "prioritaet", "checkliste", "cover", "spalte", "reihenfolge", "start", "faellig", "zustaendig", "schaetzung_min", "transkript_id", "transkript_name"}
+    erlaubt = {"titel", "beschreibung", "notizen", "labels", "prioritaet", "checkliste", "cover", "spalte", "reihenfolge", "start", "faellig", "zustaendig", "schaetzung_min", "transkript_id", "transkript_name", "typ"}
     felder = {k: v for k, v in aenderungen.items() if k in erlaubt}
     if not felder:
         return hole_karte(karte_id)
@@ -371,12 +493,19 @@ def _loesche_marken(conn: sqlite3.Connection, wo: str, params: tuple) -> None:
 
 def loesche_karte(karte_id: str) -> None:
     with _verb() as conn:
-        row = conn.execute("SELECT board_id, spalte FROM karte WHERE id = ?", (karte_id,)).fetchone()
+        row = conn.execute("SELECT board_id, spalte, gruppe_id FROM karte WHERE id = ?", (karte_id,)).fetchone()
         conn.execute("DELETE FROM karte WHERE id = ?", (karte_id,))
         conn.execute("DELETE FROM dokument WHERE kontext = 'karte' AND kontext_id = ?", (karte_id,))
         # Zeiteintraege der Karte mitloeschen, sonst verfaelschen Waisen die Ist-Summen.
         conn.execute("DELETE FROM zeiteintrag WHERE karte_id = ?", (karte_id,))
         _loesche_marken(conn, "WHERE karte_id = ?", (karte_id,))
+        # Verwaiste Zeitgruppe aufloesen, wenn nach dem Loeschen < 2 Mitglieder bleiben.
+        if row is not None and row["gruppe_id"]:
+            gid = row["gruppe_id"]
+            rest = conn.execute("SELECT id FROM karte WHERE gruppe_id = ?", (gid,)).fetchall()
+            if len(rest) < 2:
+                conn.execute("UPDATE karte SET gruppe_id = NULL WHERE gruppe_id = ?", (gid,))
+                conn.execute("DELETE FROM kartengruppe WHERE id = ?", (gid,))
         if row is not None:
             _kompaktiere(conn, row["board_id"], row["spalte"])
 

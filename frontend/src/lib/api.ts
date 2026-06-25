@@ -112,10 +112,21 @@ export interface KarteEingabe {
   start?: string | null
   faellig?: string | null
   zustaendig?: string | null
+  typ?: 'arbeit' | 'idee'
 }
 
 export const erstelleKarte = (eingabe: KarteEingabe): Promise<Karte> =>
   hole('/api/kanban/karten', { method: 'POST', body: JSON.stringify(eingabe) })
+
+// Verknuepfte Aufgaben (geteilte Zeitgruppe)
+export const karteVerknuepfen = (id: string, zielKarteId: string): Promise<Karte> =>
+  hole(`/api/kanban/karten/${id}/verknuepfen`, { method: 'POST', body: JSON.stringify({ ziel_karte_id: zielKarteId }) })
+
+export const verknuepfungLoesen = (id: string): Promise<Karte> =>
+  hole(`/api/kanban/karten/${id}/verknuepfung-loesen`, { method: 'POST' })
+
+export const gruppeZeitTeilen = (gruppeId: string, geteilt: boolean): Promise<void> =>
+  hole(`/api/kanban/gruppen/${gruppeId}`, { method: 'PATCH', body: JSON.stringify({ zeit_geteilt: geteilt }) })
 
 export interface KarteAenderung {
   titel?: string
@@ -132,6 +143,7 @@ export interface KarteAenderung {
   schaetzung_min?: number | null
   transkript_id?: string | null
   transkript_name?: string | null
+  typ?: 'arbeit' | 'idee'
 }
 
 export const aktualisiereKarte = (id: string, daten: KarteAenderung): Promise<Karte> =>

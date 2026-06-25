@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Karte, Prioritaet, Spalte, Zeiteintrag } from '../../types'
   import type { KarteAenderung, TranskriptTreffer, Person, TranskriptMarke, KiVorschlag } from '../../api'
-  import { transkripteSuche, ladePersonen, ladeMarken, erstelleMarke, aktualisiereMarke, loescheMarke, zusammenfassungVorschlag, erstelleZeiteintrag, ladeKartenZeiten, aktualisiereZeiteintrag, loescheZeiteintrag } from '../../api'
+  import { transkripteSuche, ladePersonen, ladeMarken, erstelleMarke, aktualisiereMarke, loescheMarke, zusammenfassungVorschlag, erstelleZeiteintrag, ladeKartenZeiten, aktualisiereZeiteintrag, loescheZeiteintrag, karteVerknuepfen, verknuepfungLoesen, gruppeZeitTeilen } from '../../api'
   import KiAssistent from '../../ki/KiAssistent.svelte'
   import { merkeKuerzel } from '../../zuletztKuerzel.svelte'
   import { oeffneTranskript } from '../../navigation.svelte'
@@ -16,20 +16,36 @@
   let {
     karte,
     spalten,
+    boardKarten = [],
     onSchliessen,
     onAendern,
     onKommentar,
     onLoeschen,
+    onReload,
+    onOeffneKarte,
   }: {
     karte: Karte
     spalten: Spalte[]
+    boardKarten?: Karte[]
     onSchliessen: () => void
     onAendern: (daten: KarteAenderung) => void
     onKommentar: (text: string) => void
     onLoeschen: () => void
+    onReload?: () => void | Promise<void>
+    onOeffneKarte?: (id: string) => void
   } = $props()
 
   const dunkel = $derived(theme.modus === 'dunkel')
+
+  // Lese- (Standard) vs. Bearbeitungsmodus. Vollbild erzwingt Bearbeiten des
+  // ganzen Tickets. Kleine Dinge (Checkboxen, Zeit-/Zeileneintraege, Labels,
+  // Kommentar) bleiben in BEIDEN Modi direkt bearbeitbar.
+  let modus = $state<'lesen' | 'bearbeiten'>('lesen')
+  let vollbild = $state(false)
+  const bearbeiten = $derived(modus === 'bearbeiten' || vollbild)
+  const istIdee = $derived(karte.typ === 'idee')
+  function zuBearbeiten(): void { if (modus === 'lesen') modus = 'bearbeiten' }
+  function typUmschalten(): void { onAendern({ typ: istIdee ? 'arbeit' : 'idee' }) }
 
   // Personen fuer die Zustaendig-Auswahl (echtes Dropdown statt Freitext, verhindert
   // Tippfehler/leeres Kuerzel). Einmalig beim Oeffnen laden.
@@ -56,13 +72,10 @@
   let neuerPunkt = $state('')
   let neuesLabel = $state('')
   let kommentar = $state('')
-  let bearbeiten = $state(false)
-  let vollbild = $state(false)
   let gespeichert = $state(false)
   let spTimer: ReturnType<typeof setTimeout> | null = null
 
   let notiz = $state('')
-  let notizVollbild = $state(false)
   let notizGespeichert = $state(false)
   let notizTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -168,8 +181,10 @@
   function bearbeitenFertig() {
     if (spTimer) clearTimeout(spTimer)
     onAendern({ beschreibung: beschr || null })
-    bearbeiten = false
+    if (notizTimer) clearTimeout(notizTimer)
+    onAendern({ notizen: notiz || null })
     vollbild = false
+    modus = 'lesen'
   }
   function vorlesenUmschalten() {
     if (tts.laeuft) stoppeVorlesen()
@@ -183,11 +198,15 @@
       zuletzt = karte.id
       beschr = karte.beschreibung ?? ''
       notiz = karte.notizen ?? ''
-      notizVollbild = false
       notizGespeichert = false
       mSuche = ''
       mTreffer = []
       kiVorschau = {}
+      modus = 'lesen'
+      vollbild = false
+      punktEdit = null
+      vSuche = ''
+      vTreffer = []
       ladeMarkenFuer()
       ladeKartenZeitenFuer()
     }
@@ -207,6 +226,43 @@
   }
   function punktEntfernen(i: number) {
     onAendern({ checkliste: karte.checkliste.filter((_, idx) => idx !== i) })
+  }
+  // Checklisten-Punkt umbenennen: betroffene Zeile als Eingabe, neues Array senden.
+  let punktEdit = $state<number | null>(null)
+  function punktText(i: number, wert: string) {
+    const t = wert.trim()
+    punktEdit = null
+    if (!t || t === karte.checkliste[i]?.text) return
+    onAendern({ checkliste: karte.checkliste.map((c, idx) => (idx === i ? { ...c, text: t } : c)) })
+  }
+
+  // -- Verknuepfte Aufgaben (geteilte Zeitgruppe) --
+  let vSuche = $state('')
+  const vTrefferRoh = $derived.by(() => {
+    const q = vSuche.trim().toLowerCase()
+    if (!q) return []
+    const drin = new Set([karte.id, ...(karte.gruppe_mitglieder ?? []).map((m) => m.id)])
+    return boardKarten
+      .filter((k) => !drin.has(k.id) && k.typ !== 'idee')
+      .filter((k) => k.titel.toLowerCase().includes(q) || (k.schluessel ?? '').toLowerCase().includes(q))
+      .slice(0, 8)
+  })
+  let vTreffer = $state<Karte[]>([])
+  $effect(() => { vTreffer = vTrefferRoh })
+  async function verknuepfeMit(ziel: Karte): Promise<void> {
+    vSuche = ''
+    vTreffer = []
+    await karteVerknuepfen(karte.id, ziel.id)
+    await onReload?.()
+  }
+  async function loeseVerknuepfung(): Promise<void> {
+    await verknuepfungLoesen(karte.id)
+    await onReload?.()
+  }
+  async function zeitTeilenUmschalten(): Promise<void> {
+    if (!karte.gruppe_id) return
+    await gruppeZeitTeilen(karte.gruppe_id, !(karte.gruppe_zeit_geteilt !== false))
+    await onReload?.()
   }
   function labelHinzufuegen() {
     const l = neuesLabel.trim()
@@ -307,98 +363,117 @@
   const sek = $derived(laeuft ? erfassteSekunden(karte, timer.jetzt) : (karte.erfasst_sek ?? 0))
   const planMin = $derived(karte.schaetzung_min ?? null)
   const prozent = $derived(planMin && planMin > 0 ? (sek / 60 / planMin) * 100 : null)
+  // Geteilte Zeitgruppe: kombinierte Zeit nur zur Anzeige (zaehlt einmal).
+  const geteilt = $derived(!!karte.gruppe_id && karte.gruppe_zeit_geteilt !== false)
+  const gruppeAnzahl = $derived((karte.gruppe_mitglieder?.length ?? 0) + 1)
+  const spalteTitel = $derived(spalten.find((s) => s.id === karte.spalte)?.titel ?? '')
+  const prioText: Record<string, string> = { hoch: 'Hoch', mittel: 'Mittel', niedrig: 'Niedrig' }
 </script>
 
 <div class="backdrop" role="presentation" onclick={onSchliessen}></div>
-<aside class="drawer" aria-label="Kartendetails">
+<aside class="drawer" class:vollbild aria-label="Kartendetails">
   <header>
     {#if karte.schluessel}<span class="key">{karte.schluessel}</span>{/if}
-    <span class="pfad">{spalten.find((s) => s.id === karte.spalte)?.titel ?? ''}</span>
-    <button class="ib" aria-label="Schließen" onclick={onSchliessen}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    <span class="pfad">{spalteTitel}</span>
+    <span class="kopf-werkzeuge">
+      <button class="mini geist" class:an={istIdee} title="Zwischen Arbeit und Idee umschalten" onclick={typUmschalten}>
+        <i class="fa-{istIdee ? 'regular fa-lightbulb' : 'solid fa-briefcase'}" aria-hidden="true"></i> {istIdee ? 'Idee' : 'Arbeit'}
+      </button>
+      {#if !vollbild}
+        <button class="mini geist" class:an={modus === 'bearbeiten'} onclick={() => (modus = modus === 'bearbeiten' ? 'lesen' : 'bearbeiten')}>
+          <i class="fa-solid {modus === 'bearbeiten' ? 'fa-book-open' : 'fa-pen'}" aria-hidden="true"></i> {modus === 'bearbeiten' ? 'Lesen' : 'Bearbeiten'}
+        </button>
+      {/if}
+      <button class="mini geist" title={vollbild ? 'Vollbild schliessen' : 'Vollbild bearbeiten'} onclick={() => { if (vollbild) bearbeitenFertig(); else vollbild = true }}>
+        <i class="fa-solid {vollbild ? 'fa-compress' : 'fa-expand'}" aria-hidden="true"></i>
+      </button>
+      <button class="ib" aria-label="Schließen" onclick={onSchliessen}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </span>
   </header>
 
-  <div class="body">
-    <input class="titel" value={karte.titel} aria-label="Titel" onchange={(e) => onAendern({ titel: e.currentTarget.value })} />
+  <div class="body" class:lesen={!bearbeiten}>
+    {#if bearbeiten}
+      <input class="titel" value={karte.titel} aria-label="Titel" onchange={(e) => onAendern({ titel: e.currentTarget.value })} />
+    {:else}
+      <button class="titel-h" title="Zum Bearbeiten klicken" onclick={zuBearbeiten}>{karte.titel}</button>
+    {/if}
 
     <div class="sec-reihe">
       <p class="sec">Beschreibung</p>
       <span class="md-werkzeuge">
-        {#if bearbeiten}
-          {#if gespeichert}<span class="gesp">gespeichert</span>{/if}
-          <button class="mini geist" onclick={() => (vollbild = !vollbild)}><i class="fa-solid {vollbild ? 'fa-compress' : 'fa-expand'}" aria-hidden="true"></i> {vollbild ? 'Verkleinern' : 'Vollbild'}</button>
-          <button class="mini" onclick={bearbeitenFertig}>Fertig</button>
-        {:else}
-          {#if beschr.trim()}
-            <button class="mini geist" onclick={vorlesenUmschalten}><i class="fa-solid {tts.laeuft ? 'fa-stop' : 'fa-volume-high'}" aria-hidden="true"></i> {tts.laeuft ? 'Stopp' : 'Vorlesen'}</button>
-          {/if}
-          <button class="mini geist" onclick={() => (bearbeiten = true)}><i class="fa-solid fa-pen" aria-hidden="true"></i> Bearbeiten</button>
+        {#if bearbeiten && gespeichert}<span class="gesp">gespeichert</span>{/if}
+        {#if !bearbeiten && beschr.trim()}
+          <button class="mini geist" onclick={vorlesenUmschalten}><i class="fa-solid {tts.laeuft ? 'fa-stop' : 'fa-volume-high'}" aria-hidden="true"></i> {tts.laeuft ? 'Stopp' : 'Vorlesen'}</button>
         {/if}
       </span>
     </div>
     {#if bearbeiten}
-      <div class="md-editor" class:vollbild>
-        {#if vollbild}
-          <div class="vb-kopf"><b>Beschreibung bearbeiten</b><button class="mini" onclick={bearbeitenFertig}>Fertig</button></div>
-        {/if}
-        <div class="md-split">
-          <textarea class="desc" placeholder="Markdown ... (Überschriften, Listen, Code, Tabellen, $Mathe$, Mermaid)" bind:value={beschr} oninput={autoSpeichern}></textarea>
-          <div class="md-vorschau"><Markdown md={beschr || '*Vorschau*'} /></div>
-        </div>
+      <div class="md-split">
+        <textarea class="desc" placeholder="Markdown ... (Überschriften, Listen, Code, Tabellen, $Mathe$, Mermaid)" bind:value={beschr} oninput={autoSpeichern}></textarea>
+        <div class="md-vorschau"><Markdown md={beschr || '*Vorschau*'} /></div>
       </div>
     {:else if beschr.trim()}
-      <button class="md-ansicht" onclick={() => (bearbeiten = true)} title="Zum Bearbeiten klicken"><Markdown md={beschr} /></button>
+      <button class="md-ansicht" title="Zum Bearbeiten klicken" onclick={zuBearbeiten}><Markdown md={beschr} /></button>
     {:else}
-      <button class="leer-hinweis" onclick={() => (bearbeiten = true)}>Keine Beschreibung. Klicken zum Bearbeiten.</button>
+      <button class="leer-hinweis" onclick={zuBearbeiten}>Keine Beschreibung. Klicken zum Bearbeiten.</button>
     {/if}
 
-    <div class="sec-reihe">
-      <p class="sec">Notizen</p>
-      <span class="md-werkzeuge">
-        {#if notizGespeichert}<span class="gesp">gespeichert</span>{/if}
-        <button class="mini geist" onclick={() => (notizVollbild = !notizVollbild)}><i class="fa-solid {notizVollbild ? 'fa-compress' : 'fa-expand'}" aria-hidden="true"></i> {notizVollbild ? 'Verkleinern' : 'Vollbild'}</button>
-      </span>
-    </div>
-    <div class="md-editor" class:vollbild={notizVollbild}>
-      {#if notizVollbild}
-        <div class="vb-kopf"><b>Notizen</b><button class="mini" onclick={() => (notizVollbild = false)}>Fertig</button></div>
-      {/if}
+    <p class="sec">Notizen {#if bearbeiten && notizGespeichert}<span class="gesp">gespeichert</span>{/if}</p>
+    {#if bearbeiten}
       <div class="md-split">
         <textarea class="desc" placeholder="Notizen (Markdown) ..." bind:value={notiz} oninput={notizAuto}></textarea>
         <div class="md-vorschau"><Markdown md={notiz || '*Vorschau*'} /></div>
       </div>
-    </div>
+    {:else if notiz.trim()}
+      <button class="md-ansicht" title="Zum Bearbeiten klicken" onclick={zuBearbeiten}><Markdown md={notiz} /></button>
+    {:else}
+      <button class="leer-hinweis" onclick={zuBearbeiten}>Keine Notizen. Klicken zum Bearbeiten.</button>
+    {/if}
 
-    <div class="zeile"><span class="lbl"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Status</span>
-      <select value={karte.spalte} onchange={(e) => onAendern({ spalte: e.currentTarget.value })}>
-        {#each spalten as s (s.id)}<option value={s.id}>{s.titel}</option>{/each}
-      </select>
-    </div>
-    <div class="zeile"><span class="lbl"><i class="fa-solid fa-flag" aria-hidden="true"></i> Priorität</span>
-      <select value={karte.prioritaet ?? ''} onchange={(e) => onAendern({ prioritaet: (e.currentTarget.value || null) as Prioritaet | null })}>
-        <option value="">keine</option>
-        <option value="hoch">Hoch</option>
-        <option value="mittel">Mittel</option>
-        <option value="niedrig">Niedrig</option>
-      </select>
-    </div>
-    <div class="zeile"><span class="lbl"><i class="fa-solid fa-play" aria-hidden="true"></i> Start</span>
-      <input type="date" value={karte.start ?? ''} onchange={(e) => onAendern({ start: e.currentTarget.value || null })} />
-    </div>
-    <div class="zeile"><span class="lbl"><i class="fa-solid fa-calendar" aria-hidden="true"></i> Fällig</span>
-      <input type="date" value={karte.faellig ?? ''} onchange={(e) => onAendern({ faellig: e.currentTarget.value || null })} />
-    </div>
-    <div class="zeile"><span class="lbl"><i class="fa-solid fa-user" aria-hidden="true"></i> Zuständig</span>
-      <select value={karte.zustaendig ?? ''} onchange={(e) => zustaendigSetzen(e.currentTarget.value)}>
-        <option value="">(niemand)</option>
-        {#each kuerzelWahl as p (p.id)}<option value={p.kuerzel}>{p.kuerzel} - {p.name}</option>{/each}
-      </select>
-    </div>
-
-    <div class="zeile"><span class="lbl"><i class="fa-solid fa-palette" aria-hidden="true"></i> Cover</span>
-      <span class="coverwahl">
-        <input class="cfarbe" type="color" value={karte.cover ?? '#4f9be8'} onchange={(e) => onAendern({ cover: e.currentTarget.value })} aria-label="Cover-Farbe" />
-        {#if karte.cover}<button class="mini geist" onclick={() => onAendern({ cover: null })}>Entfernen</button>{:else}<span class="cleer">keiner</span>{/if}
-      </span>
+    <div class="meta">
+      <div class="zeile"><span class="lbl"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Status</span>
+        {#if bearbeiten}
+          <select value={karte.spalte} onchange={(e) => onAendern({ spalte: e.currentTarget.value })}>
+            {#each spalten as s (s.id)}<option value={s.id}>{s.titel}</option>{/each}
+          </select>
+        {:else}<span class="wert">{spalteTitel}</span>{/if}
+      </div>
+      <div class="zeile"><span class="lbl"><i class="fa-solid fa-flag" aria-hidden="true"></i> Priorität</span>
+        {#if bearbeiten}
+          <select value={karte.prioritaet ?? ''} onchange={(e) => onAendern({ prioritaet: (e.currentTarget.value || null) as Prioritaet | null })}>
+            <option value="">keine</option>
+            <option value="hoch">Hoch</option>
+            <option value="mittel">Mittel</option>
+            <option value="niedrig">Niedrig</option>
+          </select>
+        {:else}<span class="wert">{karte.prioritaet ? prioText[karte.prioritaet] : '-'}</span>{/if}
+      </div>
+      <div class="zeile"><span class="lbl"><i class="fa-solid fa-play" aria-hidden="true"></i> Start</span>
+        {#if bearbeiten}
+          <input type="date" value={karte.start ?? ''} onchange={(e) => onAendern({ start: e.currentTarget.value || null })} />
+        {:else}<span class="wert">{datum(karte.start)}</span>{/if}
+      </div>
+      <div class="zeile"><span class="lbl"><i class="fa-solid fa-calendar" aria-hidden="true"></i> Fällig</span>
+        {#if bearbeiten}
+          <input type="date" value={karte.faellig ?? ''} onchange={(e) => onAendern({ faellig: e.currentTarget.value || null })} />
+        {:else}<span class="wert">{datum(karte.faellig)}</span>{/if}
+      </div>
+      <div class="zeile"><span class="lbl"><i class="fa-solid fa-user" aria-hidden="true"></i> Zuständig</span>
+        {#if bearbeiten}
+          <select value={karte.zustaendig ?? ''} onchange={(e) => zustaendigSetzen(e.currentTarget.value)}>
+            <option value="">(niemand)</option>
+            {#each kuerzelWahl as p (p.id)}<option value={p.kuerzel}>{p.kuerzel} - {p.name}</option>{/each}
+          </select>
+        {:else}<span class="wert">{karte.zustaendig || '(niemand)'}</span>{/if}
+      </div>
+      <div class="zeile"><span class="lbl"><i class="fa-solid fa-palette" aria-hidden="true"></i> Cover</span>
+        {#if bearbeiten}
+          <span class="coverwahl">
+            <input class="cfarbe" type="color" value={karte.cover ?? '#4f9be8'} onchange={(e) => onAendern({ cover: e.currentTarget.value })} aria-label="Cover-Farbe" />
+            {#if karte.cover}<button class="mini geist" onclick={() => onAendern({ cover: null })}>Entfernen</button>{:else}<span class="cleer">keiner</span>{/if}
+          </span>
+        {:else if karte.cover}<span class="cswatch" style="background:{karte.cover}"></span>{:else}<span class="wert">-</span>{/if}
+      </div>
     </div>
 
     <div class="zeiten">
@@ -407,47 +482,77 @@
       <span><i class="fa-regular fa-calendar-plus" aria-hidden="true"></i> Erstellt: {datum(karte.erstellt_am)}</span>
     </div>
 
-    <p class="sec">Zeiterfassung</p>
-    <div class="timer">
-      {#if laeuft}
-        <button class="tbtn an" onclick={() => timerPausieren(karte.id)}><i class="fa-solid fa-pause" aria-hidden="true"></i> Pause</button>
-        <button class="tbtn stopp" onclick={() => timerStoppen(karte.id)}><i class="fa-solid fa-stop" aria-hidden="true"></i> Stopp</button>
-      {:else if pausiert}
-        <button class="tbtn play" onclick={() => timerStarten(karte.id)}><i class="fa-solid fa-play" aria-hidden="true"></i> Fortsetzen</button>
-        <button class="tbtn stopp" onclick={() => timerStoppen(karte.id)}><i class="fa-solid fa-stop" aria-hidden="true"></i> Stopp</button>
-      {:else}
-        <button class="tbtn play" onclick={() => timerStarten(karte.id)}><i class="fa-solid fa-play" aria-hidden="true"></i> Start</button>
-      {/if}
-      <span class="erfasst" title="Ticketzeit gesamt (Summe aller Tage)">{formatDauerVoll(sek)}</span>
-      <label class="plan">Schätzung
-        <input type="number" min="0" step="0.25" value={planMin ? planMin / 60 : ''}
-          onchange={(e) => { const v = parseFloat(e.currentTarget.value); onAendern({ schaetzung_min: Number.isFinite(v) && v > 0 ? Math.round(v * 60) : null }) }} />
-        Std
-      </label>
-    </div>
-    <p class="zcap">Ticketzeit gesamt (Summe aller Tage). Die Tage darunter bilden die Arbeitszeit des jeweiligen Tages.</p>
-    {#if prozent != null}
-      <div class="fortschritt" class:ueber={prozent > 100}><span style="width:{Math.min(prozent, 100)}%"></span></div>
-      <div class="pinfo" class:ueber={prozent > 100}>{Math.round(prozent)}% von {formatPlan(planMin ?? 0)}{#if prozent > 100} - überschritten{/if}</div>
-    {/if}
-    <div class="tagbuchung">
-      <input type="date" bind:value={nbDatum} aria-label="Datum für Nachtrag" />
-      <input class="tbdauer" placeholder="z.B. 0:30 oder 1,5" bind:value={nbDauer} aria-label="Dauer"
-        onkeydown={(e) => { if (e.key === 'Enter') bucheTag() }} />
-      <button class="mini" onclick={bucheTag}>Tag buchen</button>
-    </div>
-    <p class="taginfo">Zeit für einen beliebigen Tag nachtragen (zusätzlich zu Start/Stopp).</p>
-    {#if kartenZeiten.length}
-      <div class="tageliste">
-        {#each kartenZeiten as e (e.id)}
-          <div class="tagrow">
-            <input type="date" value={e.datum} onchange={(ev) => zeileDatum(e, ev.currentTarget.value)} aria-label="Tag des Eintrags" />
-            <input class="trdauer" value={formatDauerVoll(e.sekunden)} onchange={(ev) => zeileDauer(e, ev.currentTarget.value)} aria-label="Dauer" title="Dauer (z.B. 1:30:00 oder 1,5)" />
-            {#if !e.manuell}<span class="trauto" title="Aus Start/Stopp"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i></span>{/if}
-            <button class="ic" aria-label="Eintrag löschen" onclick={() => zeileLoeschen(e)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-          </div>
-        {/each}
+    {#if istIdee}
+      <p class="idee-hinweis"><i class="fa-regular fa-lightbulb" aria-hidden="true"></i> Ideenticket - keine Zeiterfassung. Auf "Arbeit" umschalten, um Zeit zu buchen.</p>
+    {:else}
+      <p class="sec">Zeiterfassung</p>
+      <div class="timer">
+        {#if laeuft}
+          <button class="tbtn an" onclick={() => timerPausieren(karte.id)}><i class="fa-solid fa-pause" aria-hidden="true"></i> Pause</button>
+          <button class="tbtn stopp" onclick={() => timerStoppen(karte.id)}><i class="fa-solid fa-stop" aria-hidden="true"></i> Stopp</button>
+        {:else if pausiert}
+          <button class="tbtn play" onclick={() => timerStarten(karte.id)}><i class="fa-solid fa-play" aria-hidden="true"></i> Fortsetzen</button>
+          <button class="tbtn stopp" onclick={() => timerStoppen(karte.id)}><i class="fa-solid fa-stop" aria-hidden="true"></i> Stopp</button>
+        {:else}
+          <button class="tbtn play" onclick={() => timerStarten(karte.id)}><i class="fa-solid fa-play" aria-hidden="true"></i> Start</button>
+        {/if}
+        <span class="erfasst" title="Ticketzeit gesamt (Summe aller Tage)">{formatDauerVoll(sek)}</span>
+        <label class="plan">Schätzung
+          <input type="number" min="0" step="0.25" value={planMin ? planMin / 60 : ''}
+            onchange={(e) => { const v = parseFloat(e.currentTarget.value); onAendern({ schaetzung_min: Number.isFinite(v) && v > 0 ? Math.round(v * 60) : null }) }} />
+          Std
+        </label>
       </div>
+      {#if geteilt}
+        <p class="grpzeit"><i class="fa-solid fa-link" aria-hidden="true"></i> Geteilt über {gruppeAnzahl} Aufgaben: {formatDauerVoll(karte.gruppe_sek ?? 0)} - zählt einmal</p>
+      {/if}
+      <p class="zcap">Ticketzeit gesamt (Summe aller Tage). Die Tage darunter bilden die Arbeitszeit des jeweiligen Tages.</p>
+      {#if prozent != null}
+        <div class="fortschritt" class:ueber={prozent > 100}><span style="width:{Math.min(prozent, 100)}%"></span></div>
+        <div class="pinfo" class:ueber={prozent > 100}>{Math.round(prozent)}% von {formatPlan(planMin ?? 0)}{#if prozent > 100} - überschritten{/if}</div>
+      {/if}
+      <div class="tagbuchung">
+        <input type="date" bind:value={nbDatum} aria-label="Datum für Nachtrag" />
+        <input class="tbdauer" placeholder="z.B. 0:30 oder 1,5" bind:value={nbDauer} aria-label="Dauer"
+          onkeydown={(e) => { if (e.key === 'Enter') bucheTag() }} />
+        <button class="mini" onclick={bucheTag}>Tag buchen</button>
+      </div>
+      <p class="taginfo">Zeit für einen beliebigen Tag nachtragen (zusätzlich zu Start/Stopp).</p>
+      {#if kartenZeiten.length}
+        <div class="tageliste">
+          {#each kartenZeiten as e (e.id)}
+            <div class="tagrow">
+              <input type="date" value={e.datum} onchange={(ev) => zeileDatum(e, ev.currentTarget.value)} aria-label="Tag des Eintrags" />
+              <input class="trdauer" value={formatDauerVoll(e.sekunden)} onchange={(ev) => zeileDauer(e, ev.currentTarget.value)} aria-label="Dauer" title="Dauer (z.B. 1:30:00 oder 1,5)" />
+              {#if !e.manuell}<span class="trauto" title="Aus Start/Stopp"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i></span>{/if}
+              <button class="ic" aria-label="Eintrag löschen" onclick={() => zeileLoeschen(e)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <p class="sec">Verknüpfte Aufgaben</p>
+      {#if (karte.gruppe_mitglieder?.length ?? 0)}
+        <div class="vliste">
+          {#each karte.gruppe_mitglieder ?? [] as m (m.id)}
+            <div class="vrow">
+              <button class="vlink" onclick={() => onOeffneKarte?.(m.id)} title="Aufgabe öffnen">
+                {#if m.schluessel}<span class="vkey">{m.schluessel}</span>{/if}<span class="vtitel">{m.titel}</span>
+              </button>
+            </div>
+          {/each}
+        </div>
+        <label class="grpschalter"><input type="checkbox" checked={geteilt} onchange={zeitTeilenUmschalten} /> Zeit teilen (zählt einmal über die Gruppe)</label>
+        <button class="mini geist" onclick={loeseVerknuepfung}><i class="fa-solid fa-link-slash" aria-hidden="true"></i> Diese Karte loslösen</button>
+      {/if}
+      <input class="feld" placeholder="Aufgabe suchen und verknüpfen ..." bind:value={vSuche} aria-label="Aufgabe verknuepfen" />
+      {#if vTreffer.length}
+        <div class="ttreffer">
+          {#each vTreffer as t (t.id)}
+            <button class="ttr" onclick={() => verknuepfeMit(t)}><i class="fa-solid fa-link" aria-hidden="true"></i> <span>{t.schluessel ? t.schluessel + ' ' : ''}{t.titel}</span></button>
+          {/each}
+        </div>
+      {/if}
     {/if}
 
     <p class="sec">Labels <span class="sec-ki"><KiAssistent typ="labels" titel="Labels vorschlagen" platzhalter="Worauf achten? (optional)" uebernehmenText="Hinzufuegen" kontext={kiLabelKontext} onUebernehmen={kiLabelUebernehmen} /></span></p>
@@ -468,7 +573,14 @@
         <button class="box" aria-label="Umschalten" onclick={() => punktUmschalten(i)}>
           <i class="fa-{punkt.erledigt ? 'solid fa-square-check' : 'regular fa-square'}" aria-hidden="true"></i>
         </button>
-        <span>{punkt.text}</span>
+        {#if punktEdit === i}
+          <!-- svelte-ignore a11y_autofocus -->
+          <input class="chkedit" value={punkt.text} autofocus aria-label="Punkt-Text"
+            onblur={(e) => punktText(i, e.currentTarget.value)}
+            onkeydown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); else if (e.key === 'Escape') punktEdit = null }} />
+        {:else}
+          <button class="chktext" title="Zum Umbenennen klicken" onclick={() => (punktEdit = i)}>{punkt.text}</button>
+        {/if}
         <button class="del" aria-label="Punkt entfernen" onclick={() => punktEntfernen(i)}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
       </div>
     {/each}
@@ -591,7 +703,6 @@
     color: var(--text-3);
   }
   .ib {
-    margin-left: auto;
     width: 28px;
     height: 28px;
     border-radius: var(--r-s);
@@ -918,7 +1029,7 @@
     color: var(--text-1);
     padding: 4px 0;
   }
-  .chk.done span {
+  .chk.done .chktext {
     color: var(--text-3);
     text-decoration: line-through;
   }
@@ -931,9 +1042,6 @@
   }
   .chk.done .box {
     color: var(--ok);
-  }
-  .chk span {
-    flex: 1;
   }
   .chk .del {
     border: none;
@@ -1223,12 +1331,13 @@
     color: var(--text-3);
     font-size: 12.5px;
   }
-  .md-editor .md-split {
+  .md-split {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
+    margin-bottom: 4px;
   }
-  .md-editor .desc {
+  .md-split .desc {
     min-height: 120px;
   }
   .md-vorschau {
@@ -1239,44 +1348,158 @@
     overflow-y: auto;
     max-height: 320px;
   }
-  .md-editor.vollbild {
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    background: var(--surface-col);
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+  .cmt-md {
+    font-size: 12.5px;
   }
-  .md-editor.vollbild .md-split {
-    flex: 1;
-    min-height: 0;
-  }
-  .md-editor.vollbild .desc,
-  .md-editor.vollbild .md-vorschau {
-    max-height: none;
-    height: 100%;
-  }
-  /* Im Vollbild komfortabel grosse Schrift in Eingabe und Vorschau. */
-  .md-editor.vollbild .desc {
-    font-size: 16px;
-    line-height: 1.65;
-    padding: 18px 20px;
-  }
-  .md-editor.vollbild .md-vorschau {
-    padding: 18px 20px;
-  }
-  .md-editor.vollbild .md-vorschau :global(.md-body) {
-    font-size: 16px;
-    line-height: 1.7;
-  }
-  .vb-kopf {
+
+  /* -- Lese-/Bearbeitungsmodus + Vollbild -- */
+  .kopf-werkzeuge {
+    margin-left: auto;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 6px;
   }
-  .cmt-md {
+  .mini.an {
+    background: var(--hl-primary-weich);
+    color: var(--hl-primary-text);
+    border-color: var(--hl-primary);
+  }
+  .titel-h {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-1);
+    margin: 0 0 12px;
+    line-height: 1.3;
+    cursor: text;
+  }
+  .md-ansicht :global(.md-body) {
+    font-size: 13px;
+  }
+  /* Vollbild: ganzes Ticket im Bearbeitungsmodus, breit und ruhig. */
+  .drawer.vollbild {
+    width: 100vw;
+    max-width: 100vw;
+    border-left: none;
+  }
+  .drawer.vollbild .body {
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .drawer.vollbild .md-split {
+    grid-template-columns: 1fr 1fr;
+  }
+  .drawer.vollbild .md-split .desc {
+    min-height: 240px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .drawer.vollbild .md-vorschau {
+    max-height: 360px;
+  }
+
+  /* -- Kompaktes, einheitliches Meta-Raster -- */
+  .meta {
+    margin: 4px 0 12px;
+  }
+  .wert {
+    flex: 1;
+    color: var(--text-1);
+    font-size: 12.5px;
+  }
+  .cswatch {
+    width: 30px;
+    height: 16px;
+    border-radius: var(--r-s);
+    border: 1px solid var(--border-2);
+  }
+
+  /* -- Ideenticket / Zeitgruppe -- */
+  .idee-hinweis {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0;
+    padding: 8px 11px;
+    border: 1px solid var(--border-2);
+    background: var(--surface-2);
+    border-radius: var(--r-m);
+    color: var(--text-2);
+    font-size: 12px;
+  }
+  .grpzeit {
+    margin: 2px 0 0;
+    font-size: 11.5px;
+    color: var(--hl-primary-text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .vliste {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+  .vlink {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    text-align: left;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-1);
+    border-radius: var(--r-s);
+    padding: 6px 9px;
+    font-size: 12px;
+  }
+  .vlink:hover {
+    border-color: var(--hl-primary);
+  }
+  .vkey {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+  }
+  .vtitel {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .grpschalter {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--text-2);
+    margin: 2px 0 8px;
+  }
+
+  /* -- Checkliste: Inline-Umbenennen -- */
+  .chktext {
+    flex: 1;
+    cursor: text;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    padding: 0;
+  }
+  .chkedit {
+    flex: 1;
+    border: 1px solid var(--hl-primary);
+    background: var(--surface-2);
+    color: var(--text-1);
+    border-radius: var(--r-s);
+    padding: 3px 6px;
     font-size: 12.5px;
   }
 </style>

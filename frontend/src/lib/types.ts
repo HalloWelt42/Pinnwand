@@ -1,10 +1,17 @@
 // Spiegelt backend/module/kanban_kern/models.py 1:1. Beide Seiten zusammen pflegen.
 
 export type Prioritaet = 'hoch' | 'mittel' | 'niedrig'
+export type KartenTyp = 'arbeit' | 'idee'
 
 export interface ChecklistPunkt {
   text: string
   erledigt: boolean
+}
+
+export interface GruppenMitglied {
+  id: string
+  schluessel?: string | null
+  titel: string
 }
 
 export interface Kommentar {
@@ -38,6 +45,11 @@ export interface Karte {
   transkript_id?: string | null
   transkript_name?: string | null
   abschluss_am?: string | null
+  typ?: KartenTyp
+  gruppe_id?: string | null
+  gruppe_sek?: number | null
+  gruppe_mitglieder?: GruppenMitglied[]
+  gruppe_zeit_geteilt?: boolean
 }
 
 export interface Spalte {

@@ -41,7 +41,7 @@
     onCardsFinalize: (items: Karte[], info: { id: string }) => void
     onOeffnen: (id: string) => void
     onLoeschenKarte: (id: string) => void
-    onKarteAnlegen: (titel: string) => void
+    onKarteAnlegen: (titel: string, typ?: 'arbeit' | 'idee') => void
     onGriffDown: () => void
     onToggleEinklappen: () => void
     onSpalteUmbenennen: (daten: { titel: string; wip_limit: number | null }) => void
@@ -57,6 +57,7 @@
   let wipEntwurf = $state<number | null>(null)
   let neueKarte = $state(false)
   let karteTitel = $state('')
+  let alsIdee = $state(false)
 
   const anzahl = $derived(karten.filter((k) => k.id !== SHADOW_PLACEHOLDER_ITEM_ID).length)
   const wipVoll = $derived(spalte.wip_limit != null && anzahl >= spalte.wip_limit)
@@ -78,8 +79,9 @@
   function karteAbschicken() {
     const titel = karteTitel.trim()
     if (!titel) return
-    onKarteAnlegen(titel)
+    onKarteAnlegen(titel, alsIdee ? 'idee' : 'arbeit')
     karteTitel = ''
+    alsIdee = false
   }
 </script>
 
@@ -184,9 +186,10 @@
         <!-- svelte-ignore a11y_autofocus -->
         <textarea class="feld" rows="2" placeholder="Titel der Karte ..." bind:value={karteTitel} aria-label="Neue Karte" autofocus
           onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); karteAbschicken() } if (e.key === 'Escape') { neueKarte = false; karteTitel = '' } }}></textarea>
+        <label class="ideewahl"><input type="checkbox" bind:checked={alsIdee} /> Ideenticket (Notiz, ohne Zeiten)</label>
         <div class="reihe">
           <button class="btn primaer" onclick={karteAbschicken}>Hinzufügen</button>
-          <button class="btn geist" onclick={() => { neueKarte = false; karteTitel = '' }}>Abbrechen</button>
+          <button class="btn geist" onclick={() => { neueKarte = false; karteTitel = ''; alsIdee = false }}>Abbrechen</button>
         </div>
       </div>
     {:else}
@@ -466,6 +469,14 @@
   .reihe {
     display: flex;
     gap: 7px;
+  }
+  .ideewahl {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    color: var(--text-3);
+    margin: 6px 0;
   }
   .btn {
     border: 1px solid var(--border);

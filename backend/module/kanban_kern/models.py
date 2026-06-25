@@ -12,11 +12,19 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 Prioritaet = Literal["hoch", "mittel", "niedrig"]
+KartenTyp = Literal["arbeit", "idee"]
 
 
 class ChecklistPunkt(BaseModel):
     text: str
     erledigt: bool = False
+
+
+class GruppenMitglied(BaseModel):
+    """Eine andere Karte derselben Verknuepfungs-/Zeitgruppe (zur Anzeige)."""
+    id: str
+    schluessel: str | None = None
+    titel: str
 
 
 class Kommentar(BaseModel):
@@ -53,6 +61,17 @@ class Karte(BaseModel):
     # das feste geplante Datum (faellig), sonst der Erledigt-Zeitpunkt (bewegt_am).
     # Die erfassten Zeiten (zeiteintrag) spielen hier bewusst keine Rolle.
     abschluss_am: str | None = None
+    # Karten-Typ: "arbeit" (mit Zeiterfassung) oder "idee" (Notiz, keine Zeiten, kein Play).
+    typ: KartenTyp = "arbeit"
+    # Verknuepfungs-/Zeitgruppe: Karten mit gleicher gruppe_id gehoeren zusammen.
+    gruppe_id: str | None = None
+    # Berechnet (board_detail): kombinierte Zeit der Gruppe, wenn die Gruppe die Zeit
+    # teilt; sonst die eigene erfasst_sek. None, wenn die Karte in keiner Gruppe ist.
+    gruppe_sek: int | None = None
+    # Berechnet (board_detail): die anderen Karten der Gruppe.
+    gruppe_mitglieder: list[GruppenMitglied] = Field(default_factory=list)
+    # Berechnet (board_detail): teilt die Gruppe die Zeit (Spezialfall abschaltbar)?
+    gruppe_zeit_geteilt: bool = True
 
 
 class Spalte(BaseModel):
@@ -131,6 +150,7 @@ class KarteCreate(BaseModel):
     start: date | None = None
     faellig: date | None = None
     zustaendig: str | None = None
+    typ: KartenTyp = "arbeit"
 
 
 class KarteUpdate(BaseModel):
@@ -149,6 +169,15 @@ class KarteUpdate(BaseModel):
     schaetzung_min: int | None = None
     transkript_id: str | None = None
     transkript_name: str | None = None
+    typ: KartenTyp | None = None
+
+
+class KarteVerknuepfen(BaseModel):
+    ziel_karte_id: str
+
+
+class GruppeUpdate(BaseModel):
+    zeit_geteilt: bool
 
 
 class KarteMove(BaseModel):

@@ -15,10 +15,12 @@ from .models import (
     Dokument,
     DokumentCreate,
     DokumentUpdate,
+    GruppeUpdate,
     Karte,
     KarteCreate,
     KarteMove,
     KarteUpdate,
+    KarteVerknuepfen,
     KommentarCreate,
     MappeCreate,
     MappeUpdate,
@@ -198,6 +200,7 @@ def karte_anlegen(eingabe: KarteCreate) -> Karte:
         start=eingabe.start.isoformat() if eingabe.start else None,
         faellig=eingabe.faellig.isoformat() if eingabe.faellig else None,
         zustaendig=eingabe.zustaendig,
+        typ=eingabe.typ,
     )
     _index(karte.id)
     return karte
@@ -244,10 +247,39 @@ def laufend() -> Karte | None:
 
 @router.post("/karten/{karte_id}/timer/start", response_model=Karte)
 def timer_start(karte_id: str) -> Karte:
+    vorhanden = db.hole_karte(karte_id)
+    if vorhanden is None:
+        raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    if vorhanden.typ == "idee":
+        raise HTTPException(status_code=409, detail="Ideentickets erfassen keine Zeit")
     karte = db.timer_start(karte_id)
     if karte is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
     return karte
+
+
+@router.post("/karten/{karte_id}/verknuepfen", response_model=Karte)
+def karte_verknuepfen(karte_id: str, eingabe: KarteVerknuepfen) -> Karte:
+    """Legt diese Karte und die Ziel-Karte in eine gemeinsame Zeitgruppe."""
+    karte = db.verknuepfe_karten(karte_id, eingabe.ziel_karte_id)
+    if karte is None:
+        raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    return karte
+
+
+@router.post("/karten/{karte_id}/verknuepfung-loesen", response_model=Karte)
+def karte_verknuepfung_loesen(karte_id: str) -> Karte:
+    karte = db.loese_verknuepfung(karte_id)
+    if karte is None:
+        raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    return karte
+
+
+@router.patch("/gruppen/{gruppe_id}", status_code=204)
+def gruppe_aendern(gruppe_id: str, eingabe: GruppeUpdate) -> None:
+    """Spezialfall-Schalter: teilt die Gruppe die Zeit (Anzeige) oder zaehlt getrennt?"""
+    if not db.setze_gruppe_zeit_geteilt(gruppe_id, eingabe.zeit_geteilt):
+        raise HTTPException(status_code=404, detail="Gruppe nicht gefunden")
 
 
 @router.post("/karten/{karte_id}/timer/pause", response_model=Karte)

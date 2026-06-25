@@ -2,14 +2,23 @@
   import type { Karte } from '../../types'
   import { labelFarbe } from '../../labels'
   import { theme } from '../../theme/theme.svelte'
-  import { timer, timerStarten, timerPausieren, erfassteSekunden, formatDauer } from '../../timer.svelte'
+  import { timer, timerStarten, timerPausieren, formatDauer } from '../../timer.svelte'
 
   let { karte, onOeffnen, onLoeschen }: { karte: Karte; onOeffnen: (id: string) => void; onLoeschen: (id: string) => void } = $props()
 
   const dunkel = $derived(theme.modus === 'dunkel')
+  const istIdee = $derived(karte.typ === 'idee')
   const laeuft = $derived(!!karte.laeuft_seit)
-  const sek = $derived(laeuft ? erfassteSekunden(karte, timer.jetzt) : (karte.erfasst_sek ?? 0))
+  // Verknuepfte Aufgaben mit geteilter Zeit zeigen die kombinierte Gruppen-Zeit.
+  const geteilt = $derived(!!karte.gruppe_id && karte.gruppe_zeit_geteilt !== false)
+  const basisSek = $derived(geteilt ? (karte.gruppe_sek ?? karte.erfasst_sek ?? 0) : (karte.erfasst_sek ?? 0))
+  const sek = $derived.by(() => {
+    if (!laeuft || !karte.laeuft_seit) return basisSek
+    const t = new Date(karte.laeuft_seit).getTime()
+    return Number.isNaN(t) ? basisSek : basisSek + Math.max(0, Math.floor((timer.jetzt - t) / 1000))
+  })
   const zeitUeber = $derived(karte.schaetzung_min ? sek / 60 > karte.schaetzung_min : false)
+  const gruppeAnzahl = $derived((karte.gruppe_mitglieder?.length ?? 0) + 1)
   function zeitToggle() {
     if (laeuft) timerPausieren(karte.id)
     else timerStarten(karte.id)
@@ -84,10 +93,17 @@
     <p class="desc">{karte.beschreibung}</p>
   {/if}
   <div class="foot">
-    <button class="zeit" class:laeuft class:ueber={zeitUeber} title={laeuft ? 'Pausieren' : 'Starten'} onclick={(e) => { e.stopPropagation(); zeitToggle() }}>
-      <i class="fa-solid {laeuft ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
-      {#if laeuft || sek > 0}<span>{formatDauer(sek)}</span>{/if}
-    </button>
+    {#if istIdee}
+      <span class="notiz" title="Ideenticket (keine Zeiterfassung)"><i class="fa-regular fa-lightbulb" aria-hidden="true"></i> Idee</span>
+    {:else}
+      <button class="zeit" class:laeuft class:ueber={zeitUeber} title={laeuft ? 'Pausieren' : (geteilt ? 'Starten (Zeit geteilt)' : 'Starten')} onclick={(e) => { e.stopPropagation(); zeitToggle() }}>
+        <i class="fa-solid {laeuft ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
+        {#if laeuft || sek > 0}<span>{formatDauer(sek)}</span>{/if}
+      </button>
+    {/if}
+    {#if karte.gruppe_id}
+      <span class="grp" title="Verknuepft mit {gruppeAnzahl - 1} weiteren{geteilt ? ' - Zeit geteilt' : ''}"><i class="fa-solid fa-link" aria-hidden="true"></i> {gruppeAnzahl}</span>
+    {/if}
     {#if karte.schluessel}<span class="key">{karte.schluessel}</span>{/if}
     {#if karte.faellig}
       <span class="due {faelligKlasse}"><i class="fa-regular fa-clock" aria-hidden="true"></i> {kurz(karte.faellig)}</span>
@@ -230,6 +246,26 @@
     border-color: var(--gefahr);
     color: var(--due-rot-fg);
     background: var(--due-rot-bg);
+  }
+  .notiz {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid var(--border-2);
+    background: var(--surface-2);
+    color: var(--text-3);
+    border-radius: 5px;
+    padding: 1px 7px;
+    font-size: 11px;
+  }
+  .grp {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-3);
+  }
+  .grp i {
+    font-size: 10px;
   }
   .key {
     font-family: var(--font-mono);

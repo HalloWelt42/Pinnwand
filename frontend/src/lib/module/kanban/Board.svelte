@@ -333,8 +333,8 @@
   }
 
   // -- Anlegen / Spaltenpflege --
-  async function karteAnlegen(spalteId: string, titel: string) {
-    await erstelleKarte({ board_id: boardId, spalte: spalteId, titel, zustaendig: standardKuerzel })
+  async function karteAnlegen(spalteId: string, titel: string, typ: 'arbeit' | 'idee' = 'arbeit') {
+    await erstelleKarte({ board_id: boardId, spalte: spalteId, titel, zustaendig: standardKuerzel, typ })
     await laden()
   }
   async function spalteAnlegen() {
@@ -409,7 +409,7 @@
               onCardsFinalize={(items, info) => cardsFinalize(idx, items, info)}
               onOeffnen={oeffnen}
               onLoeschenKarte={karteSchnellLoeschen}
-              onKarteAnlegen={(titel) => karteAnlegen(eintrag.spalte.id, titel)}
+              onKarteAnlegen={(titel, typ) => karteAnlegen(eintrag.spalte.id, titel, typ)}
               onGriffDown={() => (spaltenDragAus = false)}
               onToggleEinklappen={() => toggleEinklappen(eintrag.spalte.id)}
               onSpalteUmbenennen={(daten) => spalteUmbenennen(eintrag.spalte.id, daten)}
@@ -441,10 +441,13 @@
     <CardDrawer
       karte={ausgewaehlt}
       spalten={board.spalten}
+      boardKarten={board.karten}
       onSchliessen={() => (ausgewaehlt = null)}
       onAendern={karteAendern}
       onKommentar={karteKommentar}
       onLoeschen={karteLoeschen}
+      onReload={laden}
+      onOeffneKarte={oeffnen}
     />
   {/if}
 {/if}

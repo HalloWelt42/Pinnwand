@@ -6,40 +6,20 @@ Karte mit einer Stelle im Transkript samt editierbarer Zusammenfassung.
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
 
 from . import dienst, marken
+from .models import (
+    MarkeCreate,
+    MarkenAntwort,
+    MarkenJeTranskriptAntwort,
+    MarkeUpdate,
+    PoolAntwort,
+    PoolEingabe,
+    TranskriptMarke,
+    VorschlagEingabe,
+)
 
 router = APIRouter(prefix="/api/transkripte", tags=["transkripte"])
-
-
-class MarkeCreate(BaseModel):
-    karte_id: str
-    transkript_id: str
-    transkript_name: str | None = None
-    position_sek: float | None = None
-    segment_text: str | None = None
-    sprecher: str | None = None
-    titel: str | None = None
-    zusammenfassung: str | None = None
-
-
-class MarkeUpdate(BaseModel):
-    titel: str | None = None
-    zusammenfassung: str | None = None
-    position_sek: float | None = None
-    segment_text: str | None = None
-    sprecher: str | None = None
-
-
-class VorschlagEingabe(BaseModel):
-    transkript_id: str
-    position_sek: float | None = None
-
-
-class PoolEingabe(BaseModel):
-    transkript_id: str
-    transkript_name: str | None = None
 
 
 @router.get("/status")
@@ -57,17 +37,17 @@ def suche(q: str = Query(default=""), limit: int = Query(default=30)) -> dict:
 # -- Transkript-Marken (Karte <-> Transkript-Stelle) ----------------------
 # WICHTIG: vor der Catch-all-Route /{tid} definieren, sonst faengt diese "marken".
 
-@router.get("/marken")
+@router.get("/marken", response_model=MarkenAntwort)
 def marken_liste(karte_id: str = Query(...)) -> dict:
     return {"marken": marken.liste(karte_id)}
 
 
-@router.post("/marken", status_code=201)
+@router.post("/marken", response_model=TranskriptMarke, status_code=201)
 def marke_anlegen(eingabe: MarkeCreate) -> dict:
     return marken.erstelle(eingabe.model_dump())
 
 
-@router.patch("/marken/{mid}")
+@router.patch("/marken/{mid}", response_model=TranskriptMarke)
 def marke_aendern(mid: str, eingabe: MarkeUpdate) -> dict:
     m = marken.aktualisiere(mid, eingabe.model_dump(exclude_unset=True))
     if m is None:
@@ -91,7 +71,7 @@ def zusammenfassung_vorschlag(eingabe: VorschlagEingabe) -> dict:
 # -- Arbeitspool (Vorfilter relevanter Transkripte) -----------------------
 # WICHTIG: vor der Catch-all-Route /{tid} definieren.
 
-@router.get("/pool")
+@router.get("/pool", response_model=PoolAntwort)
 def pool_liste() -> dict:
     return {"pool": marken.pool_liste()}
 
@@ -107,7 +87,7 @@ def pool_entfernen(tid: str) -> None:
     marken.pool_entfernen(tid)
 
 
-@router.get("/{tid}/marken")
+@router.get("/{tid}/marken", response_model=MarkenJeTranskriptAntwort)
 def marken_je_transkript(tid: str) -> dict:
     return {"marken": marken.je_transkript(tid)}
 

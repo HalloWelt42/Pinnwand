@@ -38,14 +38,8 @@
 
   const dunkel = $derived(theme.modus === 'dunkel')
 
-  // Lese- (Standard) vs. Bearbeitungsmodus. Vollbild erzwingt Bearbeiten des
-  // ganzen Tickets. Kleine Dinge (Checkboxen, Zeit-/Zeileneintraege, Labels,
-  // Kommentar) bleiben in BEIDEN Modi direkt bearbeitbar.
-  let modus = $state<'lesen' | 'bearbeiten'>('lesen')
-  let vollbild = $state(false)
-  const bearbeiten = $derived(modus === 'bearbeiten' || vollbild)
+  // Arbeit vs. Idee (Notiz ohne Zeiterfassung).
   const istIdee = $derived(karte.typ === 'idee')
-  function zuBearbeiten(): void { if (modus === 'lesen') modus = 'bearbeiten' }
   function typUmschalten(): void { onAendern({ typ: istIdee ? 'arbeit' : 'idee' }) }
 
   // Personen fuer die Zustaendig-Auswahl (echtes Dropdown statt Freitext, verhindert
@@ -73,10 +67,13 @@
   let neuerPunkt = $state('')
   let neuesLabel = $state('')
   let kommentar = $state('')
+  let bearbeiten = $state(false)
+  let vollbild = $state(false)
   let gespeichert = $state(false)
   let spTimer: ReturnType<typeof setTimeout> | null = null
 
   let notiz = $state('')
+  let notizVollbild = $state(false)
   let notizGespeichert = $state(false)
   let notizTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -182,10 +179,8 @@
   function bearbeitenFertig() {
     if (spTimer) clearTimeout(spTimer)
     onAendern({ beschreibung: beschr || null })
-    if (notizTimer) clearTimeout(notizTimer)
-    onAendern({ notizen: notiz || null })
+    bearbeiten = false
     vollbild = false
-    modus = 'lesen'
   }
   function vorlesenUmschalten() {
     if (tts.laeuft) stoppeVorlesen()
@@ -199,11 +194,12 @@
       zuletzt = karte.id
       beschr = karte.beschreibung ?? ''
       notiz = karte.notizen ?? ''
+      notizVollbild = false
       notizGespeichert = false
       mSuche = ''
       mTreffer = []
       kiVorschau = {}
-      modus = 'lesen'
+      bearbeiten = false
       vollbild = false
       punktEdit = null
       vSuche = ''
@@ -368,11 +364,10 @@
   const geteilt = $derived(!!karte.gruppe_id && karte.gruppe_zeit_geteilt !== false)
   const gruppeAnzahl = $derived((karte.gruppe_mitglieder?.length ?? 0) + 1)
   const spalteTitel = $derived(spalten.find((s) => s.id === karte.spalte)?.titel ?? '')
-  const prioText: Record<string, string> = { hoch: 'Hoch', mittel: 'Mittel', niedrig: 'Niedrig' }
 </script>
 
 <div class="backdrop" role="presentation" onclick={onSchliessen}></div>
-<aside class="drawer" class:vollbild aria-label="Kartendetails">
+<aside class="drawer" aria-label="Kartendetails">
   <header>
     {#if karte.schluessel}<span class="key">{karte.schluessel}</span>{/if}
     <span class="pfad">{spalteTitel}</span>
@@ -380,98 +375,88 @@
       <button class="mini geist" class:an={istIdee} title="Zwischen Arbeit und Idee umschalten" onclick={typUmschalten}>
         <i class="fa-{istIdee ? 'regular fa-lightbulb' : 'solid fa-briefcase'}" aria-hidden="true"></i> {istIdee ? 'Idee' : 'Arbeit'}
       </button>
-      {#if !vollbild}
-        <button class="mini geist" class:an={modus === 'bearbeiten'} onclick={() => (modus = modus === 'bearbeiten' ? 'lesen' : 'bearbeiten')}>
-          <i class="fa-solid {modus === 'bearbeiten' ? 'fa-book-open' : 'fa-pen'}" aria-hidden="true"></i> {modus === 'bearbeiten' ? 'Lesen' : 'Bearbeiten'}
-        </button>
-      {/if}
-      <button class="mini geist" title={vollbild ? 'Vollbild schliessen' : 'Vollbild bearbeiten'} onclick={() => { if (vollbild) bearbeitenFertig(); else vollbild = true }}>
-        <i class="fa-solid {vollbild ? 'fa-compress' : 'fa-expand'}" aria-hidden="true"></i>
-      </button>
       <button class="ib" aria-label="Schließen" onclick={onSchliessen}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     </span>
   </header>
 
-  <div class="body" class:lesen={!bearbeiten}>
-    {#if bearbeiten}
-      <input class="titel" value={karte.titel} aria-label="Titel" onchange={(e) => onAendern({ titel: e.currentTarget.value })} />
-    {:else}
-      <button class="titel-h" title="Zum Bearbeiten klicken" onclick={zuBearbeiten}>{karte.titel}</button>
-    {/if}
+  <div class="body">
+    <input class="titel" value={karte.titel} aria-label="Titel" onchange={(e) => onAendern({ titel: e.currentTarget.value })} />
 
     <div class="sec-reihe">
       <p class="sec">Beschreibung</p>
       <span class="md-werkzeuge">
-        {#if bearbeiten && gespeichert}<span class="gesp">gespeichert</span>{/if}
-        {#if !bearbeiten && beschr.trim()}
-          <button class="mini geist" onclick={vorlesenUmschalten}><i class="fa-solid {tts.laeuft ? 'fa-stop' : 'fa-volume-high'}" aria-hidden="true"></i> {tts.laeuft ? 'Stopp' : 'Vorlesen'}</button>
+        {#if bearbeiten}
+          {#if gespeichert}<span class="gesp">gespeichert</span>{/if}
+          <button class="mini geist" onclick={() => (vollbild = !vollbild)}><i class="fa-solid {vollbild ? 'fa-compress' : 'fa-expand'}" aria-hidden="true"></i> {vollbild ? 'Verkleinern' : 'Vollbild'}</button>
+          <button class="mini" onclick={bearbeitenFertig}>Fertig</button>
+        {:else}
+          {#if beschr.trim()}
+            <button class="mini geist" onclick={vorlesenUmschalten}><i class="fa-solid {tts.laeuft ? 'fa-stop' : 'fa-volume-high'}" aria-hidden="true"></i> {tts.laeuft ? 'Stopp' : 'Vorlesen'}</button>
+          {/if}
+          <button class="mini geist" onclick={() => (bearbeiten = true)}><i class="fa-solid fa-pen" aria-hidden="true"></i> Bearbeiten</button>
         {/if}
       </span>
     </div>
     {#if bearbeiten}
-      <div class="md-split">
-        <textarea class="desc" placeholder="Markdown ... (Überschriften, Listen, Code, Tabellen, $Mathe$, Mermaid)" bind:value={beschr} oninput={autoSpeichern}></textarea>
-        <div class="md-vorschau"><Markdown md={beschr || '*Vorschau*'} /></div>
+      <div class="md-editor" class:vollbild>
+        {#if vollbild}
+          <div class="vb-kopf"><b>Beschreibung bearbeiten</b><button class="mini" onclick={bearbeitenFertig}>Fertig</button></div>
+        {/if}
+        <div class="md-split">
+          <textarea class="desc" placeholder="Markdown ... (Überschriften, Listen, Code, Tabellen, $Mathe$, Mermaid)" bind:value={beschr} oninput={autoSpeichern}></textarea>
+          <div class="md-vorschau"><Markdown md={beschr || '*Vorschau*'} /></div>
+        </div>
       </div>
     {:else if beschr.trim()}
-      <button class="md-ansicht" title="Zum Bearbeiten klicken" onclick={zuBearbeiten}><Markdown md={beschr} /></button>
+      <button class="md-ansicht" onclick={() => (bearbeiten = true)} title="Zum Bearbeiten klicken"><Markdown md={beschr} /></button>
     {:else}
-      <button class="leer-hinweis" onclick={zuBearbeiten}>Keine Beschreibung. Klicken zum Bearbeiten.</button>
+      <button class="leer-hinweis" onclick={() => (bearbeiten = true)}>Keine Beschreibung. Klicken zum Bearbeiten.</button>
     {/if}
 
-    <p class="sec">Notizen {#if bearbeiten && notizGespeichert}<span class="gesp">gespeichert</span>{/if}</p>
-    {#if bearbeiten}
+    <div class="sec-reihe">
+      <p class="sec">Notizen</p>
+      <span class="md-werkzeuge">
+        {#if notizGespeichert}<span class="gesp">gespeichert</span>{/if}
+        <button class="mini geist" onclick={() => (notizVollbild = !notizVollbild)}><i class="fa-solid {notizVollbild ? 'fa-compress' : 'fa-expand'}" aria-hidden="true"></i> {notizVollbild ? 'Verkleinern' : 'Vollbild'}</button>
+      </span>
+    </div>
+    <div class="md-editor" class:vollbild={notizVollbild}>
+      {#if notizVollbild}
+        <div class="vb-kopf"><b>Notizen</b><button class="mini" onclick={() => (notizVollbild = false)}>Fertig</button></div>
+      {/if}
       <div class="md-split">
         <textarea class="desc" placeholder="Notizen (Markdown) ..." bind:value={notiz} oninput={notizAuto}></textarea>
         <div class="md-vorschau"><Markdown md={notiz || '*Vorschau*'} /></div>
       </div>
-    {:else if notiz.trim()}
-      <button class="md-ansicht" title="Zum Bearbeiten klicken" onclick={zuBearbeiten}><Markdown md={notiz} /></button>
-    {:else}
-      <button class="leer-hinweis" onclick={zuBearbeiten}>Keine Notizen. Klicken zum Bearbeiten.</button>
-    {/if}
+    </div>
 
-    <div class="meta">
-      <div class="zeile"><span class="lbl"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Status</span>
-        {#if bearbeiten}
-          <select value={karte.spalte} onchange={(e) => onAendern({ spalte: e.currentTarget.value })}>
-            {#each spalten as s (s.id)}<option value={s.id}>{s.titel}</option>{/each}
-          </select>
-        {:else}<span class="wert">{spalteTitel}</span>{/if}
-      </div>
-      <div class="zeile"><span class="lbl"><i class="fa-solid fa-flag" aria-hidden="true"></i> Priorität</span>
-        {#if bearbeiten}
-          <select value={karte.prioritaet ?? ''} onchange={(e) => onAendern({ prioritaet: (e.currentTarget.value || null) as Prioritaet | null })}>
-            <option value="">keine</option>
-            <option value="hoch">Hoch</option>
-            <option value="mittel">Mittel</option>
-            <option value="niedrig">Niedrig</option>
-          </select>
-        {:else}<span class="wert">{karte.prioritaet ? prioText[karte.prioritaet] : '-'}</span>{/if}
-      </div>
-      <div class="zeile"><span class="lbl"><i class="fa-solid fa-play" aria-hidden="true"></i> Start</span>
-        {#if bearbeiten}
-          <input type="date" value={karte.start ?? ''} onchange={(e) => onAendern({ start: e.currentTarget.value || null })} />
-        {:else}<span class="wert">{datum(karte.start)}</span>{/if}
-      </div>
-      <div class="zeile"><span class="lbl"><i class="fa-solid fa-calendar" aria-hidden="true"></i> Fällig</span>
-        {#if bearbeiten}
-          <input type="date" value={karte.faellig ?? ''} onchange={(e) => onAendern({ faellig: e.currentTarget.value || null })} />
-        {:else}<span class="wert">{datum(karte.faellig)}</span>{/if}
-      </div>
-      <div class="zeile"><span class="lbl"><i class="fa-solid fa-user" aria-hidden="true"></i> Zuständig</span>
-        {#if bearbeiten}
-          <select value={karte.zustaendig ?? ''} onchange={(e) => zustaendigSetzen(e.currentTarget.value)}>
-            <option value="">(niemand)</option>
-            {#each kuerzelWahl as p (p.id)}<option value={p.kuerzel}>{p.kuerzel} - {p.name}</option>{/each}
-          </select>
-        {:else}<span class="wert">{karte.zustaendig || '(niemand)'}</span>{/if}
-      </div>
-      <div class="zeile"><span class="lbl"><i class="fa-solid fa-palette" aria-hidden="true"></i> Cover</span>
-        {#if bearbeiten}
-          <FarbWahl value={karte.cover ?? null} onWahl={(c) => onAendern({ cover: c })} />
-        {:else if karte.cover}<span class="cswatch" style="background:{karte.cover}"></span>{:else}<span class="wert">-</span>{/if}
-      </div>
+    <div class="zeile"><span class="lbl"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Status</span>
+      <select value={karte.spalte} onchange={(e) => onAendern({ spalte: e.currentTarget.value })}>
+        {#each spalten as s (s.id)}<option value={s.id}>{s.titel}</option>{/each}
+      </select>
+    </div>
+    <div class="zeile"><span class="lbl"><i class="fa-solid fa-flag" aria-hidden="true"></i> Priorität</span>
+      <select value={karte.prioritaet ?? ''} onchange={(e) => onAendern({ prioritaet: (e.currentTarget.value || null) as Prioritaet | null })}>
+        <option value="">keine</option>
+        <option value="hoch">Hoch</option>
+        <option value="mittel">Mittel</option>
+        <option value="niedrig">Niedrig</option>
+      </select>
+    </div>
+    <div class="zeile"><span class="lbl"><i class="fa-solid fa-play" aria-hidden="true"></i> Start</span>
+      <input type="date" value={karte.start ?? ''} onchange={(e) => onAendern({ start: e.currentTarget.value || null })} />
+    </div>
+    <div class="zeile"><span class="lbl"><i class="fa-solid fa-calendar" aria-hidden="true"></i> Fällig</span>
+      <input type="date" value={karte.faellig ?? ''} onchange={(e) => onAendern({ faellig: e.currentTarget.value || null })} />
+    </div>
+    <div class="zeile"><span class="lbl"><i class="fa-solid fa-user" aria-hidden="true"></i> Zuständig</span>
+      <select value={karte.zustaendig ?? ''} onchange={(e) => zustaendigSetzen(e.currentTarget.value)}>
+        <option value="">(niemand)</option>
+        {#each kuerzelWahl as p (p.id)}<option value={p.kuerzel}>{p.kuerzel} - {p.name}</option>{/each}
+      </select>
+    </div>
+    <div class="zeile"><span class="lbl"><i class="fa-solid fa-palette" aria-hidden="true"></i> Cover</span>
+      <FarbWahl value={karte.cover ?? null} onWahl={(c) => onAendern({ cover: c })} />
     </div>
 
     <div class="zeiten">
@@ -1311,28 +1296,6 @@
     color: var(--text-3);
     font-size: 12.5px;
   }
-  .md-split {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-bottom: 4px;
-  }
-  .md-split .desc {
-    min-height: 120px;
-  }
-  .md-vorschau {
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    border-radius: var(--r-m);
-    padding: 9px 10px;
-    overflow-y: auto;
-    max-height: 320px;
-  }
-  .cmt-md {
-    font-size: 12.5px;
-  }
-
-  /* -- Lese-/Bearbeitungsmodus + Vollbild -- */
   .kopf-werkzeuge {
     margin-left: auto;
     display: flex;
@@ -1344,60 +1307,61 @@
     color: var(--hl-primary-text);
     border-color: var(--hl-primary);
   }
-  .titel-h {
-    display: block;
-    width: 100%;
-    text-align: left;
-    border: none;
-    background: transparent;
-    font-family: var(--font-display);
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-1);
-    margin: 0 0 12px;
-    line-height: 1.3;
-    cursor: text;
-  }
-  .md-ansicht :global(.md-body) {
-    font-size: 13px;
-  }
-  /* Vollbild: ganzes Ticket im Bearbeitungsmodus, breit und ruhig. */
-  .drawer.vollbild {
-    width: 100vw;
-    max-width: 100vw;
-    border-left: none;
-  }
-  .drawer.vollbild .body {
-    max-width: 1100px;
-    width: 100%;
-    margin: 0 auto;
-  }
-  .drawer.vollbild .md-split {
+  .md-editor .md-split {
+    display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
-  .drawer.vollbild .md-split .desc {
-    min-height: 240px;
-    font-size: 15px;
-    line-height: 1.6;
+  .md-editor .desc {
+    min-height: 120px;
   }
-  .drawer.vollbild .md-vorschau {
-    max-height: 360px;
+  .md-vorschau {
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    border-radius: var(--r-m);
+    padding: 9px 10px;
+    overflow-y: auto;
+    max-height: 320px;
   }
-
-  /* -- Kompaktes, einheitliches Meta-Raster -- */
-  .meta {
-    margin: 4px 0 12px;
+  /* Pro-Feld-Vollbild: nur DIESES Feld gross, fokussiert (Eingabe links, Vorschau rechts). */
+  .md-editor.vollbild {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: var(--surface-col);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
-  .wert {
+  .md-editor.vollbild .md-split {
     flex: 1;
-    color: var(--text-1);
-    font-size: 12.5px;
+    min-height: 0;
   }
-  .cswatch {
-    width: 30px;
-    height: 16px;
-    border-radius: var(--r-s);
-    border: 1px solid var(--border-2);
+  .md-editor.vollbild .desc,
+  .md-editor.vollbild .md-vorschau {
+    max-height: none;
+    height: 100%;
+  }
+  .md-editor.vollbild .desc {
+    font-size: 16px;
+    line-height: 1.65;
+    padding: 18px 20px;
+  }
+  .md-editor.vollbild .md-vorschau {
+    padding: 18px 20px;
+  }
+  .md-editor.vollbild .md-vorschau :global(.md-body) {
+    font-size: 16px;
+    line-height: 1.7;
+  }
+  .vb-kopf {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cmt-md {
+    font-size: 12.5px;
   }
 
   /* -- Ideenticket / Zeitgruppe -- */

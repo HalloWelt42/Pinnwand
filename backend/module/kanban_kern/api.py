@@ -34,6 +34,8 @@ from .models import (
     LabelUpdate,
     MappeCreate,
     MappeUpdate,
+    ProjektAufwand,
+    ProjektDetail,
     Projektmappe,
     SchnellErfassen,
     Spalte,
@@ -128,6 +130,23 @@ def mappe_aendern(mappe_id: str, eingabe: MappeUpdate) -> Projektmappe:
 def mappe_loeschen(mappe_id: str) -> None:
     if not db.loesche_mappe(mappe_id):
         raise HTTPException(status_code=400, detail="Die letzte Mappe kann nicht geloescht werden")
+
+
+@router.get("/projekte", response_model=list[ProjektAufwand])
+def projekte(akteur: Akteur = Depends(aktueller_akteur)) -> list[ProjektAufwand]:
+    # Mappe = Projekt: Aufwand (Ist/Soll/Budget) je Projekt. Mitarbeiter sehen nur
+    # ihre eigenen Projekte (Mappen ohne Mitglieder bleiben geteilt); Admin alle.
+    return db.projekt_aufwand_liste(person_id=akteur.person_id, alle=akteur.ist_admin)
+
+
+@router.get("/projekte/{mappe_id}", response_model=ProjektDetail)
+def projekt(mappe_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> ProjektDetail:
+    if not akteur.ist_admin and not db.mappe_sichtbar_fuer(mappe_id, akteur.person_id):
+        raise HTTPException(status_code=403, detail="Kein Zugriff auf dieses Projekt.")
+    detail = db.projekt_detail(mappe_id)
+    if detail is None:
+        raise HTTPException(status_code=404, detail="Projekt nicht gefunden")
+    return detail
 
 
 @router.get("/boards/{board_id}", response_model=BoardDetail)

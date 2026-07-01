@@ -112,10 +112,18 @@ class KanbanEinstellungenUpdate(BaseModel):
     archiv_tage: int = Field(ge=1, le=100000)
 
 
+# Eine Mappe ist zugleich ein Projekt (Board = Phase). Der Status steuert nur die
+# Darstellung/Auswertung, nicht die Sichtbarkeit (die haengt an der Mitgliedschaft).
+ProjektStatus = Literal["aktiv", "pausiert", "abgeschlossen"]
+
+
 class Projektmappe(BaseModel):
     id: str
     titel: str
     beschreibung: str | None = None
+    owner: str | None = None
+    budget_min: int | None = None
+    status: ProjektStatus = "aktiv"
 
 
 class MappeCreate(BaseModel):
@@ -126,6 +134,49 @@ class MappeCreate(BaseModel):
 class MappeUpdate(BaseModel):
     titel: str | None = None
     beschreibung: str | None = None
+    owner: str | None = None
+    budget_min: int | None = None
+    status: ProjektStatus | None = None
+
+
+class ProjektAufwand(BaseModel):
+    """Aufwand je Projekt (Mappe). Ist = tatsaechlich erfasste Zeit (Sekunden, aus
+    zeiteintrag als SSOT), Soll = Summe der Karten-Schaetzungen (Minuten), Budget =
+    optionale Planungsobergrenze (Minuten). Ist/Soll/Budget bleiben bewusst getrennt."""
+    mappe_id: str
+    titel: str
+    status: ProjektStatus = "aktiv"
+    owner: str | None = None
+    budget_min: int | None = None
+    ist_sekunden: int = 0
+    soll_minuten: int = 0
+    karten: int = 0
+    boards: int = 0
+
+
+class ProjektBoardAufwand(BaseModel):
+    board_id: str
+    titel: str
+    ist_sekunden: int = 0
+    soll_minuten: int = 0
+    karten: int = 0
+
+
+class ProjektPersonAufwand(BaseModel):
+    kuerzel: str | None = None
+    ist_sekunden: int = 0
+
+
+class ProjektDetail(BaseModel):
+    mappe_id: str
+    titel: str
+    status: ProjektStatus = "aktiv"
+    owner: str | None = None
+    budget_min: int | None = None
+    ist_sekunden: int = 0
+    soll_minuten: int = 0
+    boards: list[ProjektBoardAufwand] = []
+    personen: list[ProjektPersonAufwand] = []
 
 
 KontextTyp = Literal["karte", "mappe"]

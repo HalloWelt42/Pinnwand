@@ -7,6 +7,8 @@ import type {
   KanbanEinstellungen,
   Karte,
   Projektmappe,
+  ProjektAufwand,
+  ProjektDetail,
   Spalte,
   Zeiteintrag,
   LabelDefinition,
@@ -201,8 +203,20 @@ export const erstelleMappe = (titel: string, beschreibung?: string): Promise<Pro
 export const benenneMappe = (mappeId: string, titel: string): Promise<Projektmappe> =>
   hole(`/api/kanban/mappen/${mappeId}`, { method: 'PATCH', body: JSON.stringify({ titel }) })
 
+// Allgemeines Aendern der Projektfelder (Titel, Owner, Budget, Status).
+export const aktualisiereMappe = (
+  mappeId: string,
+  patch: Partial<Pick<Projektmappe, 'titel' | 'beschreibung' | 'owner' | 'budget_min' | 'status'>>,
+): Promise<Projektmappe> =>
+  hole(`/api/kanban/mappen/${mappeId}`, { method: 'PATCH', body: JSON.stringify(patch) })
+
 export const loescheMappe = (mappeId: string): Promise<void> =>
   hole(`/api/kanban/mappen/${mappeId}`, { method: 'DELETE' })
+
+// Projekt-Aufwand (Mappe = Projekt): Ist/Soll/Budget je Projekt bzw. je Board/Person.
+export const ladeProjekte = (): Promise<ProjektAufwand[]> => hole('/api/kanban/projekte')
+export const ladeProjektDetail = (mappeId: string): Promise<ProjektDetail> =>
+  hole(`/api/kanban/projekte/${mappeId}`)
 
 // --- Dokumente (Karten- und Mappen-Dokumente) ---
 export const ladeDokumente = (kontext: DokumentKontext, kontextId: string): Promise<Dokument[]> =>

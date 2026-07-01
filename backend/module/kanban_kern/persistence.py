@@ -33,6 +33,10 @@ from .models import (
     LabelDefinition,
     LabelUpdate,
     MappeUpdate,
+    ProjektAufwand,
+    ProjektBoardAufwand,
+    ProjektDetail,
+    ProjektPersonAufwand,
     Projektmappe,
     Spalte,
     SpalteUpdate,
@@ -44,7 +48,10 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS mappe (
     id TEXT PRIMARY KEY,
     titel TEXT NOT NULL,
-    beschreibung TEXT
+    beschreibung TEXT,
+    owner TEXT,
+    budget_min INTEGER,
+    status TEXT NOT NULL DEFAULT 'aktiv'
 );
 CREATE TABLE IF NOT EXISTS mappe_mitglied (
     mappe_id TEXT NOT NULL,
@@ -158,6 +165,21 @@ def _migriere(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE karte ADD COLUMN typ TEXT NOT NULL DEFAULT 'arbeit'")
     if "gruppe_id" not in kspalten:
         conn.execute("ALTER TABLE karte ADD COLUMN gruppe_id TEXT")
+    # Mappe = Projekt: Projektfelder fuer den Aufwands-Ueberblick.
+    mspalten = {r["name"] for r in conn.execute("PRAGMA table_info(mappe)").fetchall()}
+    if "owner" not in mspalten:
+        conn.execute("ALTER TABLE mappe ADD COLUMN owner TEXT")
+    if "budget_min" not in mspalten:
+        conn.execute("ALTER TABLE mappe ADD COLUMN budget_min INTEGER")
+    if "status" not in mspalten:
+        conn.execute("ALTER TABLE mappe ADD COLUMN status TEXT NOT NULL DEFAULT 'aktiv'")
+    # Defensiver Backfill: alte Zeiteintraege ohne mappe_id ueber ihr Board zuordnen,
+    # damit die Ist-Summe je Projekt vollstaendig ist (idempotent).
+    conn.execute(
+        "UPDATE zeiteintrag SET mappe_id = ("
+        " SELECT b.mappe_id FROM board b WHERE b.id = zeiteintrag.board_id)"
+        " WHERE mappe_id IS NULL AND board_id IS NOT NULL"
+    )
     conn.execute(
         "CREATE TABLE IF NOT EXISTS kartengruppe ("
         "id TEXT PRIMARY KEY, zeit_geteilt INTEGER NOT NULL DEFAULT 1, erstellt_am TEXT)"
@@ -311,6 +333,79 @@ def aktualisiere_mappe(mappe_id: str, felder: dict) -> Projektmappe | None:
             conn.execute(f"UPDATE mappe SET {sql} WHERE id = ?", (*erlaubt.values(), mappe_id))
         r = conn.execute("SELECT * FROM mappe WHERE id = ?", (mappe_id,)).fetchone()
     return Projektmappe(**dict(r)) if r else None
+
+
+# -- Projekt-Aufwand (Mappe = Projekt) --------------------------------------------
+# Ist = tatsaechlich erfasste Zeit (zeiteintrag.sekunden als SSOT), Soll = Summe der
+# Karten-Schaetzungen (karte.schaetzung_min). Bewusst getrennt gehalten. Die
+# Sichtbarkeit folgt derselben Mitgliedschaftsregel wie liste_mappen.
+
+def _sichtbarkeits_klausel(alle: bool, person_id: str | None) -> tuple[str, tuple]:
+    if alle or not person_id:
+        return "", ()
+    return (
+        " WHERE NOT EXISTS (SELECT 1 FROM mappe_mitglied x WHERE x.mappe_id = m.id)"
+        " OR EXISTS (SELECT 1 FROM mappe_mitglied x WHERE x.mappe_id = m.id AND x.person_id = ?)",
+        (person_id,),
+    )
+
+
+def projekt_aufwand_liste(person_id: str | None = None, alle: bool = True) -> list[ProjektAufwand]:
+    klausel, params = _sichtbarkeits_klausel(alle, person_id)
+    sql = (
+        "SELECT m.id AS mappe_id, m.titel, COALESCE(m.status, 'aktiv') AS status,"
+        " m.owner, m.budget_min,"
+        " (SELECT COALESCE(SUM(z.sekunden), 0) FROM zeiteintrag z WHERE z.mappe_id = m.id) AS ist_sekunden,"
+        " (SELECT COALESCE(SUM(k.schaetzung_min), 0) FROM karte k JOIN board b ON k.board_id = b.id"
+        "  WHERE b.mappe_id = m.id) AS soll_minuten,"
+        " (SELECT COUNT(*) FROM karte k JOIN board b ON k.board_id = b.id WHERE b.mappe_id = m.id) AS karten,"
+        " (SELECT COUNT(*) FROM board b WHERE b.mappe_id = m.id) AS boards"
+        " FROM mappe m" + klausel + " ORDER BY m.titel"
+    )
+    with _verb() as conn:
+        rows = conn.execute(sql, params).fetchall()
+    return [ProjektAufwand(**dict(r)) for r in rows]
+
+
+def projekt_detail(mappe_id: str) -> ProjektDetail | None:
+    with _verb() as conn:
+        m = conn.execute(
+            "SELECT id, titel, COALESCE(status, 'aktiv') AS status, owner, budget_min"
+            " FROM mappe WHERE id = ?", (mappe_id,)
+        ).fetchone()
+        if not m:
+            return None
+        ist = conn.execute(
+            "SELECT COALESCE(SUM(sekunden), 0) FROM zeiteintrag WHERE mappe_id = ?", (mappe_id,)
+        ).fetchone()[0]
+        soll = conn.execute(
+            "SELECT COALESCE(SUM(k.schaetzung_min), 0) FROM karte k JOIN board b ON k.board_id = b.id"
+            " WHERE b.mappe_id = ?", (mappe_id,)
+        ).fetchone()[0]
+        boards = conn.execute(
+            "SELECT b.id AS board_id, b.titel,"
+            " (SELECT COALESCE(SUM(z.sekunden), 0) FROM zeiteintrag z WHERE z.board_id = b.id) AS ist_sekunden,"
+            " (SELECT COALESCE(SUM(k.schaetzung_min), 0) FROM karte k WHERE k.board_id = b.id) AS soll_minuten,"
+            " (SELECT COUNT(*) FROM karte k WHERE k.board_id = b.id) AS karten"
+            " FROM board b WHERE b.mappe_id = ? ORDER BY b.laufnummer, b.titel", (mappe_id,)
+        ).fetchall()
+        personen = conn.execute(
+            "SELECT k.zustaendig AS kuerzel, COALESCE(SUM(z.sekunden), 0) AS ist_sekunden"
+            " FROM zeiteintrag z JOIN karte k ON z.karte_id = k.id"
+            " WHERE z.mappe_id = ? GROUP BY k.zustaendig ORDER BY ist_sekunden DESC", (mappe_id,)
+        ).fetchall()
+    d = dict(m)
+    return ProjektDetail(
+        mappe_id=d["id"],
+        titel=d["titel"],
+        status=d["status"],
+        owner=d["owner"],
+        budget_min=d["budget_min"],
+        ist_sekunden=ist,
+        soll_minuten=soll,
+        boards=[ProjektBoardAufwand(**dict(b)) for b in boards],
+        personen=[ProjektPersonAufwand(**dict(p)) for p in personen],
+    )
 
 
 def loesche_mappe(mappe_id: str) -> bool:

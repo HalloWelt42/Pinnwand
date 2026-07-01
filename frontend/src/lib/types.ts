@@ -86,10 +86,55 @@ export interface KanbanEinstellungen {
   archiv_tage: number
 }
 
+export type ProjektStatus = 'aktiv' | 'pausiert' | 'abgeschlossen'
+
+// Eine Mappe ist zugleich ein Projekt (Board = Phase).
 export interface Projektmappe {
   id: string
   titel: string
   beschreibung?: string | null
+  owner?: string | null
+  budget_min?: number | null
+  status?: ProjektStatus
+}
+
+// Aufwand je Projekt: Ist (erfasste Sekunden), Soll (geschaetzte Minuten) und
+// Budget (Planungsobergrenze in Minuten) bleiben getrennt.
+export interface ProjektAufwand {
+  mappe_id: string
+  titel: string
+  status: ProjektStatus
+  owner?: string | null
+  budget_min?: number | null
+  ist_sekunden: number
+  soll_minuten: number
+  karten: number
+  boards: number
+}
+
+export interface ProjektBoardAufwand {
+  board_id: string
+  titel: string
+  ist_sekunden: number
+  soll_minuten: number
+  karten: number
+}
+
+export interface ProjektPersonAufwand {
+  kuerzel?: string | null
+  ist_sekunden: number
+}
+
+export interface ProjektDetail {
+  mappe_id: string
+  titel: string
+  status: ProjektStatus
+  owner?: string | null
+  budget_min?: number | null
+  ist_sekunden: number
+  soll_minuten: number
+  boards: ProjektBoardAufwand[]
+  personen: ProjektPersonAufwand[]
 }
 
 // Zentrale Farbzuweisung je Label-Name (Verwaltung). karte.labels bleibt eine

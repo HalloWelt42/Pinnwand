@@ -23,7 +23,7 @@
   const aktiv = $derived((value ?? '').toLowerCase())
 </script>
 
-<div class="palette" role="group" aria-label="Farbe waehlen">
+<div class="palette" role="group" aria-label="Farbe wählen">
   {#if mitKeine}
     <button
       type="button"

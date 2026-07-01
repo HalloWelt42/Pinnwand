@@ -10,6 +10,7 @@
   } from '../../api'
   import FarbWahl from '../../FarbWahl.svelte'
   import { personSicht, rolleAus } from '../../personSicht.svelte'
+  import { auth } from '../../auth.svelte'
   import { zeigeToast } from '../../toaster.svelte'
 
   let { boardId }: { boardId: string } = $props()
@@ -19,8 +20,13 @@
   const jahr = new Date().getFullYear()
 
   let personen = $state<Person[]>([])
-  // Nur Admins duerfen Rollen zuweisen (Planung ist ohnehin admin-nur; doppelt abgesichert).
-  const istAdmin = $derived(rolleAus(personen, personSicht.id) === 'admin')
+  // Rolle/Identitaet konsistent zur App: bei aktivem Login zaehlt die angemeldete
+  // Person, sonst die gewaehlte Personen-Sicht ("Alle" == Admin-Vollsicht).
+  const eigenePersonId = $derived(auth.erforderlich ? auth.personId : (personSicht.id || null))
+  const istAdmin = $derived(auth.erforderlich ? auth.rolle === 'admin' : rolleAus(personen, personSicht.id) === 'admin')
+  // Mitarbeiter pflegen ausschliesslich ihre eigenen Planungsdaten (Self-Service).
+  const nurEigene = $derived(!istAdmin && eigenePersonId !== null)
+  const sichtbarePersonen = $derived(nurEigene ? personen.filter((p) => p.id === eigenePersonId) : personen)
   let neuerName = $state('')
   let neuesKuerzel = $state('')
   let konten = $state<Record<string, Urlaubskonto>>({})
@@ -91,6 +97,9 @@
   async function bundeslandAendern(p: Person, wert: string): Promise<void> {
     await aktualisierePerson(p.id, { bundesland: wert || null })
     await ladenPersonen()
+    // Das Backend stellt beim Bundesland-Wechsel die regionalen Feiertage sicher -
+    // die Liste hier direkt nachladen, damit die Anzeige nicht veraltet.
+    feiertage = await ladeFeiertage(`${jahr}-01-01`, `${jahr}-12-31`).catch(() => feiertage)
   }
   // Passwoerter (fuer das echte Login). Entwurf je Person bis zum Speichern.
   let pwEntwurf = $state<Record<string, string>>({})
@@ -159,6 +168,13 @@
     if (!ovPerson && personen[0]) ovPerson = personen[0].id
   })
   $effect(() => { void ovPerson; void personen.length; ladenOv() })
+  // Mitarbeiter pflegen nur die eigene Person - Auswahlfelder fest darauf setzen.
+  $effect(() => {
+    if (nurEigene && eigenePersonId) {
+      if (urlaubPerson !== eigenePersonId) urlaubPerson = eigenePersonId
+      if (ovPerson !== eigenePersonId) ovPerson = eigenePersonId
+    }
+  })
   $effect(() => { ladenKonfig() })
 
   async function ladenKonfig(): Promise<void> {
@@ -269,21 +285,23 @@
     <p class="sec">Personen und Wochen-Soll (Stunden je Wochentag)</p>
     <div class="tab">
       <div class="kopf"><span class="pn">Person</span>{#each WD as w (w)}<span class="wd">{w}</span>{/each}<span class="pw"></span></div>
-      {#each personen as p (p.id)}
+      {#each sichtbarePersonen as p (p.id)}
         <div class="zeile">
           <span class="pn"><b>{p.kuerzel ?? ''}</b> {p.name}</span>
           {#each p.wochenstunden as h, i (i)}
             <input class="hw" type="number" min="0" max="24" step="0.5" value={h} onchange={(e) => stundeAendern(p, i, parseFloat(e.currentTarget.value) || 0)} />
           {/each}
-          <span class="pw"><button class="del" aria-label="Person löschen" onclick={() => personEntfernen(p)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button></span>
+          <span class="pw">{#if !nurEigene}<button class="del" aria-label="Person löschen" onclick={() => personEntfernen(p)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>{/if}</span>
         </div>
       {/each}
     </div>
-    <div class="neu">
-      <input placeholder="Name" bind:value={neuerName} />
-      <input class="kz" placeholder="Kürzel" bind:value={neuesKuerzel} />
-      <button class="btn primaer" onclick={personAnlegen}>Person hinzufügen</button>
-    </div>
+    {#if !nurEigene}
+      <div class="neu">
+        <input placeholder="Name" bind:value={neuerName} />
+        <input class="kz" placeholder="Kürzel" bind:value={neuesKuerzel} />
+        <button class="btn primaer" onclick={personAnlegen}>Person hinzufügen</button>
+      </div>
+    {/if}
   </section>
 
   {#if istAdmin}
@@ -325,7 +343,7 @@
   <section class="block">
     <p class="sec">Wochen-Override (einzelne Woche abweichend vom Wochen-Soll)</p>
     <div class="neu">
-      <select class="ovsel" bind:value={ovPerson} aria-label="Person">{#each personen as p (p.id)}<option value={p.id}>{p.name}</option>{/each}</select>
+      <select class="ovsel" bind:value={ovPerson} aria-label="Person" disabled={nurEigene}>{#each sichtbarePersonen as p (p.id)}<option value={p.id}>{p.name}</option>{/each}</select>
       <label class="ovk">Jahr <input class="ovnum jahr" type="number" min="2000" max="2100" bind:value={ovJahr} /></label>
       <label class="ovk">KW <input class="ovnum" type="number" min="1" max="53" bind:value={ovKw} /></label>
     </div>
@@ -359,7 +377,7 @@
     <p class="sec">Urlaubsanspruch {jahr} (Bundesland, Tage je Jahr, Resturlaub Vorjahr)</p>
     <div class="utab">
       <div class="ukopf"><span class="pn">Person</span><span>Bundesland</span><span>Anspruch</span><span>Rest Vorjahr</span><span>genommen</span><span>verbleibend</span><span></span></div>
-      {#each personen as p (p.id)}
+      {#each sichtbarePersonen as p (p.id)}
         {@const k = konten[p.id]}
         <div class="uzeile">
           <span class="pn"><b>{p.kuerzel ?? ''}</b> {p.name}</span>
@@ -382,8 +400,8 @@
   <section class="block">
     <p class="sec">Urlaub</p>
     <div class="reihe">
-      <select bind:value={urlaubPerson}>
-        {#each personen as p (p.id)}<option value={p.id}>{p.name}</option>{/each}
+      <select bind:value={urlaubPerson} disabled={nurEigene}>
+        {#each sichtbarePersonen as p (p.id)}<option value={p.id}>{p.name}</option>{/each}
       </select>
       <label class="mini">von <input type="date" bind:value={uVon} /></label>
       <label class="mini">bis <input type="date" bind:value={uBis} /></label>
@@ -398,6 +416,7 @@
     </div>
   </section>
 
+  {#if istAdmin}
   <section class="block">
     <p class="sec">Feiertage</p>
     <div class="reihe">
@@ -492,6 +511,7 @@
       <button class="btn primaer" onclick={regelHinzufuegen}>Regel hinzufügen</button>
     </div>
   </section>
+  {/if}
 </div>
 
 <style>

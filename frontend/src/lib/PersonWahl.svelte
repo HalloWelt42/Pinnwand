@@ -17,7 +17,7 @@
       return
     }
     if (personen.length) sichtbar = true
-    else merkeIdentitaetGewaehlt() // ohne Personen nichts zu waehlen
+    else merkeIdentitaetGewaehlt() // ohne Personen nichts zu wählen
   })
 
   function waehle(id: string): void {
@@ -31,7 +31,7 @@
   <div class="tor" role="dialog" aria-label="Wer bist du?">
     <div class="box">
       <h2><i class="fa-solid fa-user" aria-hidden="true"></i> Wer bist du?</h2>
-      <p class="hint">Waehle deine Person - dann zeigen die Stunden-Leiste und der Tab-Titel deine eigenen Werte. Du kannst das jederzeit oben in der Stunden-Leiste umstellen.</p>
+      <p class="hint">Wähle deine Person - dann zeigen die Stunden-Leiste und der Tab-Titel deine eigenen Werte. Du kannst das jederzeit oben in der Stunden-Leiste umstellen.</p>
       <div class="liste">
         {#each personen as p (p.id)}
           <button class="wahl" onclick={() => waehle(p.id)}>

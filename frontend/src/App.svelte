@@ -72,7 +72,9 @@
   // verwaltenden Bereiche nicht. Rolle leitet sich aus der aktiven Person ab; ohne
   // gewaehlte Person gilt 'admin' (Bestand/frische Installation bleibt voll sichtbar).
   let personen = $state<Person[]>([])
-  const ADMIN_ANSICHTEN = new Set(['einstellungen', 'planung', 'labels'])
+  // Planung ist fuer alle sichtbar, aber intern rollenbewusst: Mitarbeiter sehen/pflegen
+  // nur ihre eigenen Daten (Self-Service), globale Konfig bleibt Admins vorbehalten.
+  const ADMIN_ANSICHTEN = new Set(['einstellungen', 'labels'])
   // Bei aktivem Login ist die Rolle serverseitig bestimmt (autoritativ), sonst aus
   // der gewaehlten Person abgeleitet (Phase-1-Verhalten).
   const aktiveRolle = $derived(auth.erforderlich ? (auth.rolle ?? 'mitarbeiter') : rolleAus(personen, personSicht.id))

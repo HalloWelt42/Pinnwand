@@ -28,6 +28,14 @@ def darf_zeiteintrag_bearbeiten(akteur: Akteur, karte_zustaendig: str | None) ->
     )
 
 
+def darf_zeit_buchen(akteur: Akteur, karte_zustaendig: str | None) -> bool:
+    """Zeit BUCHEN darf: Admin ueberall, die zustaendige Person auf ihrer Karte -
+    und jede Person mit Kuerzel auch auf fremden/gemeinsamen Karten, weil der
+    Eintrag ihr selbst zugeschrieben wird (Kuerzel-Snapshot am Eintrag).
+    Fail-closed: ohne Kuerzel keine Fremd-Buchung."""
+    return akteur.ist_admin or akteur.kuerzel is not None
+
+
 def verlange(erlaubt: bool, detail: str = "Keine Berechtigung für diese Aktion.") -> None:
     """Wirft 403, wenn die Aktion nicht erlaubt ist. Haelt die Endpunkte einzeilig."""
     if not erlaubt:

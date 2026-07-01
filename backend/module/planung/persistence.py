@@ -323,8 +323,9 @@ def _kaskadiere_kuerzel(conn: sqlite3.Connection, alt: str, neu: str | None) -> 
     Personen-Bezug speichern - sonst verlieren Eigentum und Auswertungen still
     den Bezug. Fremde Modul-Tabellen defensiv (Modul evtl. nicht geladen)."""
     conn.execute("UPDATE karte SET zustaendig = ? WHERE zustaendig = ?", (neu, alt))
-    for tabelle, spalte in (("serie", "zustaendig"), ("termin_serie", "kuerzel"),
-                            ("termin_instanz", "kuerzel"), ("mappe", "owner")):
+    for tabelle, spalte in (("zeiteintrag", "kuerzel"), ("serie", "zustaendig"),
+                            ("termin_serie", "kuerzel"), ("termin_instanz", "kuerzel"),
+                            ("mappe", "owner")):
         try:
             conn.execute(f"UPDATE {tabelle} SET {spalte} = ? WHERE {spalte} = ?", (neu, alt))
         except sqlite3.OperationalError:

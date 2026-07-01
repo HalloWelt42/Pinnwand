@@ -18,7 +18,8 @@
     personSicht.id ? (personen.find((p) => p.id === personSicht.id)?.kuerzel ?? null) : null,
   )
   function istFremd(e: Zeiteintrag): boolean {
-    return !!personSicht.id && (e.karte_zustaendig ?? null) !== aktivKuerzel
+    // Eigentum haengt am Eintrags-Kuerzel (Snapshot); Fallback Karten-Kuerzel.
+    return !!personSicht.id && ((e.kuerzel ?? e.karte_zustaendig) ?? null) !== aktivKuerzel
   }
 
   let anker = $state(new Date())

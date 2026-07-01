@@ -156,6 +156,7 @@ export interface Zeiteintrag {
   sekunden: number
   kommentar?: string | null
   manuell: boolean
+  kuerzel?: string | null  // Person des Eintrags (Snapshot beim Buchen)
   karte_titel?: string | null
   karte_schluessel?: string | null
   karte_zustaendig?: string | null

@@ -26,9 +26,9 @@ def _ist_sek_je_tag(von: str, bis: str) -> dict[tuple[str, str], int]:
     """Geleistete Sekunden je (Person-Kürzel, Datum). Person über karte.zustaendig."""
     with verbindung() as conn:
         rows = conn.execute(
-            "SELECT z.datum AS datum, k.zustaendig AS kuerzel, COALESCE(SUM(z.sekunden), 0) AS sek "
+            "SELECT z.datum AS datum, COALESCE(z.kuerzel, k.zustaendig) AS kuerzel, COALESCE(SUM(z.sekunden), 0) AS sek "
             "FROM zeiteintrag z LEFT JOIN karte k ON k.id = z.karte_id "
-            "WHERE z.datum >= ? AND z.datum <= ? GROUP BY z.datum, k.zustaendig",
+            "WHERE z.datum >= ? AND z.datum <= ? GROUP BY z.datum, COALESCE(z.kuerzel, k.zustaendig)",
             (von, bis),
         ).fetchall()
     out: dict[tuple[str, str], int] = {}

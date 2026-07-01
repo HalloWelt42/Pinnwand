@@ -7,7 +7,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException
 
 from module.auth.akteur import Akteur, aktueller_akteur
-from module.auth.rechte import darf_zeiteintrag_bearbeiten, verlange
+from module.auth.rechte import darf_zeit_buchen, darf_zeiteintrag_bearbeiten, verlange
 
 from . import persistence as db
 from .models import (
@@ -411,14 +411,18 @@ def zeiteintraege(von: str | None = None, bis: str | None = None, karte_id: str 
 
 @router.post("/zeiteintraege", response_model=Zeiteintrag, status_code=201)
 def zeiteintrag_anlegen(eingabe: ZeiteintragCreate, akteur: Akteur = Depends(aktueller_akteur)) -> Zeiteintrag:
-    # Zeit bucht man nur auf eigene Karten (Eigentum ueber karte.zustaendig) oder als Admin.
+    # Gebucht wird immer die EIGENE Zeit (Kuerzel-Snapshot am Eintrag) - darum ist
+    # das Buchen auch auf gemeinsamen/fremden Karten erlaubt; Admin ohnehin.
     karte = db.hole_karte(eingabe.karte_id)
     if karte is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
-    verlange(darf_zeiteintrag_bearbeiten(akteur, karte.zustaendig), "Zeit nur auf eigene Karten buchen.")
+    verlange(darf_zeit_buchen(akteur, karte.zustaendig), "Zeit buchen erfordert ein eigenes Kürzel.")
     if karte.typ == "idee":
         raise HTTPException(status_code=409, detail="Ideentickets erfassen keine Zeit")
-    eintrag = db.erstelle_zeiteintrag(f"z_{uuid4().hex[:8]}", eingabe.karte_id, eingabe.datum, eingabe.sekunden, eingabe.kommentar)
+    eintrag = db.erstelle_zeiteintrag(
+        f"z_{uuid4().hex[:8]}", eingabe.karte_id, eingabe.datum, eingabe.sekunden, eingabe.kommentar,
+        kuerzel=akteur.kuerzel,
+    )
     if eintrag is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
     return eintrag
@@ -429,7 +433,7 @@ def zeiteintrag_aendern(eintrag_id: str, eingabe: ZeiteintragUpdate, akteur: Akt
     vorhanden = db.hole_zeiteintrag(eintrag_id)
     if vorhanden is None:
         raise HTTPException(status_code=404, detail="Zeiteintrag nicht gefunden")
-    verlange(darf_zeiteintrag_bearbeiten(akteur, vorhanden.karte_zustaendig), "Nur eigene Zeiteinträge ändern.")
+    verlange(darf_zeiteintrag_bearbeiten(akteur, vorhanden.kuerzel or vorhanden.karte_zustaendig), "Nur eigene Zeiteinträge ändern.")
     eintrag = db.aktualisiere_zeiteintrag(eintrag_id, eingabe.model_dump(exclude_unset=True))
     if eintrag is None:
         raise HTTPException(status_code=404, detail="Zeiteintrag nicht gefunden")
@@ -441,7 +445,7 @@ def zeiteintrag_loeschen(eintrag_id: str, akteur: Akteur = Depends(aktueller_akt
     vorhanden = db.hole_zeiteintrag(eintrag_id)
     if vorhanden is None:
         raise HTTPException(status_code=404, detail="Zeiteintrag nicht gefunden")
-    verlange(darf_zeiteintrag_bearbeiten(akteur, vorhanden.karte_zustaendig), "Nur eigene Zeiteinträge löschen.")
+    verlange(darf_zeiteintrag_bearbeiten(akteur, vorhanden.kuerzel or vorhanden.karte_zustaendig), "Nur eigene Zeiteinträge löschen.")
     db.loesche_zeiteintrag(eintrag_id)
 
 

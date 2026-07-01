@@ -34,14 +34,14 @@ def _personen_namen() -> dict[str, str]:
 
 def stundenzettel(von: str, bis: str, person: str | None = None) -> dict:
     namen = _personen_namen()
-    bedingung = "AND k.zustaendig = ?" if person else ""
+    bedingung = "AND COALESCE(z.kuerzel, k.zustaendig) = ?" if person else ""
     args: tuple = (von, bis, person) if person else (von, bis)
     with verbindung() as conn:
         rows = conn.execute(
-            "SELECT z.datum, z.sekunden, z.kommentar, k.schluessel, k.titel, k.zustaendig "
+            "SELECT z.datum, z.sekunden, z.kommentar, k.schluessel, k.titel, COALESCE(z.kuerzel, k.zustaendig) AS zustaendig "
             "FROM zeiteintrag z LEFT JOIN karte k ON k.id = z.karte_id "
             f"WHERE z.datum >= ? AND z.datum <= ? {bedingung} "
-            "ORDER BY k.zustaendig, z.datum, z.id",
+            "ORDER BY COALESCE(z.kuerzel, k.zustaendig), z.datum, z.id",
             args,
         ).fetchall()
     gruppen: dict[str, list] = {}
@@ -88,9 +88,9 @@ def soll_ist(board_id: str | None = None) -> dict:
 
 def _ist_je_person(conn, von: str, bis: str) -> dict[str, int]:
     rows = conn.execute(
-        "SELECT k.zustaendig AS p, COALESCE(SUM(z.sekunden),0) AS s "
+        "SELECT COALESCE(z.kuerzel, k.zustaendig) AS p, COALESCE(SUM(z.sekunden),0) AS s "
         "FROM zeiteintrag z LEFT JOIN karte k ON k.id = z.karte_id "
-        "WHERE z.datum >= ? AND z.datum <= ? GROUP BY k.zustaendig",
+        "WHERE z.datum >= ? AND z.datum <= ? GROUP BY COALESCE(z.kuerzel, k.zustaendig)",
         (von, bis),
     ).fetchall()
     out = {r["p"]: int(r["s"]) for r in rows if r["p"]}

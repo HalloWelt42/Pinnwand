@@ -123,7 +123,8 @@ CREATE TABLE IF NOT EXISTS zeiteintrag (
     ende TEXT,
     sekunden INTEGER NOT NULL DEFAULT 0,
     kommentar TEXT,
-    manuell INTEGER NOT NULL DEFAULT 0
+    manuell INTEGER NOT NULL DEFAULT 0,
+    kuerzel TEXT
 );
 CREATE TABLE IF NOT EXISTS dokument (
     id TEXT PRIMARY KEY,
@@ -165,6 +166,16 @@ def _migriere(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE karte ADD COLUMN typ TEXT NOT NULL DEFAULT 'arbeit'")
     if "gruppe_id" not in kspalten:
         conn.execute("ALTER TABLE karte ADD COLUMN gruppe_id TEXT")
+    # Person am Zeiteintrag (Snapshot beim Buchen): macht die Zuordnung historiefest -
+    # Karten-Uebergaben oder Umbenennungen verschieben Alt-Zeiten nicht mehr.
+    zspalten = {r["name"] for r in conn.execute("PRAGMA table_info(zeiteintrag)").fetchall()}
+    if "kuerzel" not in zspalten:
+        conn.execute("ALTER TABLE zeiteintrag ADD COLUMN kuerzel TEXT")
+    conn.execute(
+        "UPDATE zeiteintrag SET kuerzel = ("
+        " SELECT k.zustaendig FROM karte k WHERE k.id = zeiteintrag.karte_id)"
+        " WHERE kuerzel IS NULL"
+    )
     # Mappe = Projekt: Projektfelder fuer den Aufwands-Ueberblick.
     mspalten = {r["name"] for r in conn.execute("PRAGMA table_info(mappe)").fetchall()}
     if "owner" not in mspalten:
@@ -390,9 +401,9 @@ def projekt_detail(mappe_id: str) -> ProjektDetail | None:
             " FROM board b WHERE b.mappe_id = ? ORDER BY b.laufnummer, b.titel", (mappe_id,)
         ).fetchall()
         personen = conn.execute(
-            "SELECT k.zustaendig AS kuerzel, COALESCE(SUM(z.sekunden), 0) AS ist_sekunden"
-            " FROM zeiteintrag z JOIN karte k ON z.karte_id = k.id"
-            " WHERE z.mappe_id = ? GROUP BY k.zustaendig ORDER BY ist_sekunden DESC", (mappe_id,)
+            "SELECT COALESCE(z.kuerzel, k.zustaendig) AS kuerzel, COALESCE(SUM(z.sekunden), 0) AS ist_sekunden"
+            " FROM zeiteintrag z LEFT JOIN karte k ON z.karte_id = k.id"
+            " WHERE z.mappe_id = ? GROUP BY COALESCE(z.kuerzel, k.zustaendig) ORDER BY ist_sekunden DESC", (mappe_id,)
         ).fetchall()
     d = dict(m)
     return ProjektDetail(
@@ -1084,7 +1095,7 @@ def _pause_intern(conn: sqlite3.Connection, karte_id: str) -> None:
     damit die Uebersichten nicht mit vielen Fragmenten volllaufen. Die erfasste Zeit
     bleibt exakt gleich - es ist eine Zusammenfassung, kein Verlust. Siehe ZEITMODELL.md.
     """
-    row = conn.execute("SELECT laeuft_seit, board_id FROM karte WHERE id = ?", (karte_id,)).fetchone()
+    row = conn.execute("SELECT laeuft_seit, board_id, zustaendig FROM karte WHERE id = ?", (karte_id,)).fetchone()
     if row is None or not row["laeuft_seit"]:
         return
     start = row["laeuft_seit"]
@@ -1109,9 +1120,9 @@ def _pause_intern(conn: sqlite3.Connection, karte_id: str) -> None:
             )
         else:
             conn.execute(
-                "INSERT INTO zeiteintrag (id, karte_id, board_id, mappe_id, datum, start, ende, sekunden, kommentar, manuell)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, 0)",
-                (f"z_{uuid4().hex[:8]}", karte_id, row["board_id"], mappe_id, datum, seg_start, seg_ende, sek),
+                "INSERT INTO zeiteintrag (id, karte_id, board_id, mappe_id, datum, start, ende, sekunden, kommentar, manuell, kuerzel)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, 0, ?)",
+                (f"z_{uuid4().hex[:8]}", karte_id, row["board_id"], mappe_id, datum, seg_start, seg_ende, sek, row["zustaendig"]),
             )
     _recompute_erfasst(conn, karte_id)
 
@@ -1160,7 +1171,7 @@ def _zeiteintrag_aus_row(row: sqlite3.Row) -> Zeiteintrag:
     return Zeiteintrag(
         id=row["id"], karte_id=row["karte_id"], board_id=row["board_id"], mappe_id=row["mappe_id"],
         datum=row["datum"], start=row["start"], ende=row["ende"], sekunden=row["sekunden"],
-        kommentar=row["kommentar"], manuell=bool(row["manuell"]),
+        kommentar=row["kommentar"], manuell=bool(row["manuell"]), kuerzel=row["kuerzel"],
         karte_titel=row["karte_titel"], karte_schluessel=row["karte_schluessel"],
         karte_zustaendig=row["karte_zustaendig"],
     )
@@ -1195,16 +1206,20 @@ def hole_zeiteintrag(eintrag_id: str) -> Zeiteintrag | None:
     return _zeiteintrag_aus_row(r) if r else None
 
 
-def erstelle_zeiteintrag(eintrag_id: str, karte_id: str, datum: str, sekunden: int, kommentar: str | None) -> Zeiteintrag | None:
+def erstelle_zeiteintrag(eintrag_id: str, karte_id: str, datum: str, sekunden: int, kommentar: str | None,
+                         kuerzel: str | None = None) -> Zeiteintrag | None:
+    """kuerzel = Person, der die Zeit gehoert (Akteur beim Buchen); ohne Angabe
+    faellt es auf die Karten-Zustaendigkeit zurueck (offener Modus, Timer)."""
     with _verb() as conn:
-        b = conn.execute("SELECT board_id FROM karte WHERE id = ?", (karte_id,)).fetchone()
+        b = conn.execute("SELECT board_id, zustaendig FROM karte WHERE id = ?", (karte_id,)).fetchone()
         if b is None:
             return None
         board_id = b["board_id"]
         conn.execute(
-            "INSERT INTO zeiteintrag (id, karte_id, board_id, mappe_id, datum, start, ende, sekunden, kommentar, manuell)"
-            " VALUES (?, ?, ?, ?, ?, NULL, NULL, ?, ?, 1)",
-            (eintrag_id, karte_id, board_id, _mappe_fuer_board(conn, board_id), datum, max(0, sekunden), kommentar),
+            "INSERT INTO zeiteintrag (id, karte_id, board_id, mappe_id, datum, start, ende, sekunden, kommentar, manuell, kuerzel)"
+            " VALUES (?, ?, ?, ?, ?, NULL, NULL, ?, ?, 1, ?)",
+            (eintrag_id, karte_id, board_id, _mappe_fuer_board(conn, board_id), datum, max(0, sekunden), kommentar,
+             kuerzel or b["zustaendig"]),
         )
         _recompute_erfasst(conn, karte_id)
     return hole_zeiteintrag(eintrag_id)

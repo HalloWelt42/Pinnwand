@@ -316,6 +316,7 @@ class Zeiteintrag(BaseModel):
     sekunden: int
     kommentar: str | None = None
     manuell: bool = False
+    kuerzel: str | None = None  # Person des Eintrags (Snapshot beim Buchen)
     karte_titel: str | None = None
     karte_schluessel: str | None = None
     karte_zustaendig: str | None = None

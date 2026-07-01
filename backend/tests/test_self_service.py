@@ -104,9 +104,14 @@ def test_mitarbeiter_nur_eigene_daten(client):
     # Globale Konfig (Feiertage) bleibt admin-only (Middleware) -> 403 fuer Mitarbeiter
     assert client.delete("/api/planung/feiertage?jahr=2026", headers=kopf).status_code == 403
 
-    # Zeiteintrag: eigene Karte ok, fremde Karte verboten
+    # Zeiteintrag: eigene Karte ok. Auf einer fremden/gemeinsamen Karte darf man
+    # ebenfalls buchen - aber es ist die EIGENE Zeit (Kuerzel-Snapshot am Eintrag).
     assert client.post("/api/kanban/zeiteintraege", json={"karte_id": meine_karte, "datum": "2026-08-05", "sekunden": 600}, headers=kopf).status_code == 201
-    assert client.post("/api/kanban/zeiteintraege", json={"karte_id": fremde_karte, "datum": "2026-08-05", "sekunden": 600}, headers=kopf).status_code == 403
+    fremd = client.post("/api/kanban/zeiteintraege", json={"karte_id": fremde_karte, "datum": "2026-08-05", "sekunden": 600}, headers=kopf)
+    assert fremd.status_code == 201, fremd.text
+    assert fremd.json()["kuerzel"] == "SSI"  # gehoert dem Buchenden, nicht dem Karteninhaber
+    # Den Eintrag eines ANDEREN darf der Mitarbeiter weiterhin nicht anfassen:
+    # der Admin bucht unten auf dieselbe Karte; siehe Folge-Asserts.
 
     # Admin darf fremde Karte bebuchen
     kopf_admin = _login(client, "SSC", "chef-geheim-1")

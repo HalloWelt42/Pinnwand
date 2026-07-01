@@ -43,8 +43,8 @@ def _ist_sek_gesamt(von: str, bis: str, kuerzel: str | None = None) -> int:
         if kuerzel:
             r = conn.execute(
                 "SELECT COALESCE(SUM(z.sekunden), 0) AS s FROM zeiteintrag z "
-                "JOIN karte k ON k.id = z.karte_id "
-                "WHERE z.datum >= ? AND z.datum <= ? AND k.zustaendig = ?",
+                "LEFT JOIN karte k ON k.id = z.karte_id "
+                "WHERE z.datum >= ? AND z.datum <= ? AND COALESCE(z.kuerzel, k.zustaendig) = ?",
                 (von, bis, kuerzel),
             ).fetchone()
         else:

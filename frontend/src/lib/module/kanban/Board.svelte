@@ -26,7 +26,7 @@
   import { zeigeToast } from '../../toaster.svelte'
   import { timer } from '../../timer.svelte'
   import { nav, setzeOffeneKarte } from '../../navigation.svelte'
-  import { neuKarteAus } from '../../restore'
+  import { neuKarteAus, verlustHinweis } from '../../restore'
   import { personSicht } from '../../personSicht.svelte'
   import { zuletztKuerzel } from '../../zuletztKuerzel.svelte'
   import { leseJson, schreibeJson } from '../../uiSpeicher'
@@ -413,7 +413,7 @@
     if (timer.aktiv?.id === snap.id) timer.aktiv = null
     await loescheKarte(snap.id)
     await laden()
-    zeigeToast(`Karte "${snap.titel}" gelöscht`, async () => {
+    zeigeToast(`Karte "${snap.titel}" gelöscht${verlustHinweis(snap)}`, async () => {
       await neuKarteAus(boardId, spalteId, snap)
       await laden()
     })
@@ -458,9 +458,31 @@
     await setzeErledigtSpalte(id)
     await laden()
   }
+  // Erledigt-Spalten sind gefenstert: der Undo-Snapshot saehe nur die geladene
+  // Seite, waehrend der Server ALLE fertigen Karten samt Zeiten loescht. Darum
+  // gibt es hier eine echte Bestaetigung mit Gesamtzahl statt eines Undo-Toasts.
+  let loeschErledigt = $state<{ id: string; titel: string; gesamt: number } | null>(null)
+  async function erledigtSpalteLoeschenBestaetigt() {
+    if (!loeschErledigt) return
+    const { id, titel } = loeschErledigt
+    loeschErledigt = null
+    try {
+      await loescheSpalte(id)
+    } catch (e) {
+      zeigeToast(e instanceof Error ? e.message : 'Spalte konnte nicht gelöscht werden.')
+      return
+    }
+    await laden()
+    zeigeToast(`Erledigt-Spalte "${titel}" endgültig gelöscht.`)
+  }
   async function spalteLoeschen(id: string) {
     const eintrag = ansicht.find((e) => e.spalte.id === id)
     if (!eintrag) return
+    if (eintrag.spalte.erledigt) {
+      const seite = await ladeFertige(id, { zeitraum: 'alle', offset: 0, limit: 1 })
+      loeschErledigt = { id, titel: eintrag.spalte.titel, gesamt: seite.gesamt }
+      return
+    }
     const snap = {
       titel: eintrag.spalte.titel,
       wip: eintrag.spalte.wip_limit ?? null,
@@ -568,9 +590,35 @@
       onOeffneKarte={oeffnen}
     />
   {/if}
+
+  {#if loeschErledigt}
+    <div class="warn-huelle" role="button" tabindex="-1" onclick={() => (loeschErledigt = null)}
+      onkeydown={(e) => { if (e.key === 'Escape') loeschErledigt = null }}>
+      <div class="warn-fenster" role="dialog" aria-label="Erledigt-Spalte löschen" tabindex="-1"
+        onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
+        <p class="warn-kopf"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Erledigt-Spalte "{loeschErledigt.titel}" löschen?</p>
+        <p class="warn-text">
+          Dabei werden <b>{loeschErledigt.gesamt} fertige Karten</b> (einschließlich archivierter
+          und nicht geladener) samt ihrer erfassten Zeiten <b>endgültig</b> gelöscht.
+          Es gibt kein Rückgängig.
+        </p>
+        <div class="warn-aktion">
+          <button class="wbtn" onclick={() => (loeschErledigt = null)}>Abbrechen</button>
+          <button class="wbtn gefahr" onclick={erledigtSpalteLoeschenBestaetigt}>Endgültig löschen</button>
+        </div>
+      </div>
+    </div>
+  {/if}
 {/if}
 
 <style>
+  .warn-huelle { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: flex; align-items: center; justify-content: center; z-index: 70; padding: 24px; }
+  .warn-fenster { width: min(440px, 100%); background: var(--surface-1, #1b1b1f); border: 1px solid var(--border); border-radius: var(--r-xl, 14px); box-shadow: var(--schatten-lift, 0 12px 40px rgba(0, 0, 0, 0.4)); padding: 16px 18px; }
+  .warn-kopf { display: flex; align-items: center; gap: 9px; color: var(--gefahr); font-weight: 600; font-size: 14px; margin: 0 0 8px; }
+  .warn-text { color: var(--text-2); font-size: 12.5px; line-height: 1.55; margin: 0 0 14px; }
+  .warn-aktion { display: flex; justify-content: flex-end; gap: 8px; }
+  .wbtn { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); border-radius: var(--r-m); padding: 7px 12px; font-size: 12.5px; cursor: pointer; }
+  .wbtn.gefahr { background: var(--gefahr); border-color: transparent; color: #fff; font-weight: 600; }
   .flaeche {
     flex: 1;
     min-height: 0;

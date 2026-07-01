@@ -7,6 +7,7 @@
   import type { KarteAenderung } from '../../api'
   import { ymd } from '../../zeit'
   import { timer, timerStarten, timerPausieren, timerStoppen, erfassteSekunden, formatDauerVoll, formatPlan, parseZeit } from '../../timer.svelte'
+  import { zeigeToast } from '../../toaster.svelte'
 
   let { karte, onAendern }: { karte: Karte; onAendern: (daten: KarteAenderung) => void } = $props()
 
@@ -58,9 +59,17 @@
     await ladeKartenZeitenFuer()
   }
   async function zeileLoeschen(e: Zeiteintrag): Promise<void> {
+    const snap = { datum: e.datum, sekunden: e.sekunden, kommentar: e.kommentar ?? null }
     await loescheZeiteintrag(e.id)
     timer.stand++
     await ladeKartenZeitenFuer()
+    // Zeiteintraege sind abrechnungsrelevant: Loeschen bekommt dasselbe
+    // Undo-Schutznetz wie Karten und Spalten.
+    zeigeToast(`Zeiteintrag (${formatDauerVoll(snap.sekunden)}, ${snap.datum}) gelöscht`, async () => {
+      await erstelleZeiteintrag({ karte_id: karte.id, datum: snap.datum, sekunden: snap.sekunden, kommentar: snap.kommentar })
+      timer.stand++
+      await ladeKartenZeitenFuer()
+    })
   }
   async function bucheTag(): Promise<void> {
     const s = parseZeit(nbDauer)

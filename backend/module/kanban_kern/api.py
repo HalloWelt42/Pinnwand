@@ -128,8 +128,11 @@ def mappe_aendern(mappe_id: str, eingabe: MappeUpdate) -> Projektmappe:
 
 @router.delete("/mappen/{mappe_id}", status_code=204)
 def mappe_loeschen(mappe_id: str) -> None:
-    if not db.loesche_mappe(mappe_id):
+    ok, karten = db.loesche_mappe(mappe_id)
+    if not ok:
         raise HTTPException(status_code=400, detail="Die letzte Mappe kann nicht geloescht werden")
+    for kid in karten:
+        _index_weg(kid)
 
 
 @router.get("/projekte", response_model=list[ProjektAufwand])
@@ -466,7 +469,8 @@ def board_aendern(board_id: str, eingabe: BoardUpdate) -> Board:
 
 @router.delete("/boards/{board_id}", status_code=204)
 def board_loeschen(board_id: str) -> None:
-    db.loesche_board(board_id)
+    for kid in db.loesche_board(board_id):
+        _index_weg(kid)
 
 
 @router.patch("/boards/{board_id}/spalten-reihenfolge", status_code=204)
@@ -509,11 +513,13 @@ def spalte_verschieben(spalte_id: str, ziel: SpalteMove) -> Spalte:
 
 @router.delete("/spalten/{spalte_id}", status_code=204)
 def spalte_loeschen(spalte_id: str) -> None:
-    ergebnis = db.loesche_spalte(spalte_id)
+    ergebnis, karten = db.loesche_spalte(spalte_id)
     if ergebnis == "fehlt":
         raise HTTPException(status_code=404, detail="Spalte nicht gefunden")
     if ergebnis == "letzte":
         raise HTTPException(status_code=409, detail="Die letzte Spalte kann nicht gelöscht werden")
+    for kid in karten:
+        _index_weg(kid)
 
 
 # -- Label-Verwaltung -----------------------------------------------------

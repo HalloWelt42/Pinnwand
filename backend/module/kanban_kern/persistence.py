@@ -408,7 +408,7 @@ def projekt_detail(mappe_id: str) -> ProjektDetail | None:
     )
 
 
-def loesche_mappe(mappe_id: str) -> bool:
+def loesche_mappe(mappe_id: str) -> tuple[bool, list[str]]:
     """Loescht die Mappe samt aller Boards, Spalten, Karten und Zeiteintraege.
 
     Die letzte verbliebene Mappe bleibt erhalten, damit die Anwendung immer eine
@@ -416,20 +416,22 @@ def loesche_mappe(mappe_id: str) -> bool:
     """
     with _verb() as conn:
         if conn.execute("SELECT COUNT(*) FROM mappe").fetchone()[0] <= 1:
-            return False
+            return False, []
         board_ids = [r[0] for r in conn.execute("SELECT id FROM board WHERE mappe_id = ?", (mappe_id,)).fetchall()]
+        alle_karten: list[str] = []
         for bid in board_ids:
             karten = [r[0] for r in conn.execute("SELECT id FROM karte WHERE board_id = ?", (bid,)).fetchall()]
-            for kid in karten:
-                conn.execute("DELETE FROM dokument WHERE kontext = 'karte' AND kontext_id = ?", (kid,))
+            alle_karten.extend(karten)
+            _raeume_karten_restdaten(conn, karten)
             conn.execute("DELETE FROM karte WHERE board_id = ?", (bid,))
             conn.execute("DELETE FROM spalte WHERE board_id = ?", (bid,))
+        _loesche_serien_fuer_boards(conn, board_ids)
         conn.execute("DELETE FROM dokument WHERE kontext = 'mappe' AND kontext_id = ?", (mappe_id,))
         conn.execute("DELETE FROM zeiteintrag WHERE mappe_id = ?", (mappe_id,))
         conn.execute("DELETE FROM board WHERE mappe_id = ?", (mappe_id,))
         conn.execute("DELETE FROM mappe_mitglied WHERE mappe_id = ?", (mappe_id,))
         conn.execute("DELETE FROM mappe WHERE id = ?", (mappe_id,))
-    return True
+    return True, alle_karten
 
 
 def liste_boards(mappe_id: str) -> list[Board]:
@@ -1512,29 +1514,61 @@ def setze_spalten_reihenfolge(board_id: str, spalten_ids: list[str]) -> bool:
     return True
 
 
-def loesche_spalte(spalte_id: str) -> str:
-    """Löscht eine Spalte samt ihrer Karten. 'ok' | 'letzte' | 'fehlt'."""
+def _raeume_karten_restdaten(conn: sqlite3.Connection, karten_ids: list[str]) -> None:
+    """Alles, was an Karten haengt, konsistent mitloeschen - EIN Pfad fuer alle
+    Massen-Loeschungen (Spalte/Board/Mappe): Dokumente, Zeiteintraege,
+    Transkript-Marken und verwaiste Zeitgruppen."""
+    if not karten_ids:
+        return
+    platz = ",".join("?" for _ in karten_ids)
+    conn.execute(f"DELETE FROM dokument WHERE kontext = 'karte' AND kontext_id IN ({platz})", karten_ids)
+    conn.execute(f"DELETE FROM zeiteintrag WHERE karte_id IN ({platz})", karten_ids)
+    _loesche_marken(conn, f"WHERE karte_id IN ({platz})", tuple(karten_ids))
+    gruppen = [r[0] for r in conn.execute(
+        f"SELECT DISTINCT gruppe_id FROM karte WHERE id IN ({platz}) AND gruppe_id IS NOT NULL", karten_ids
+    ).fetchall()]
+    for gid in gruppen:
+        rest = conn.execute(
+            f"SELECT COUNT(*) FROM karte WHERE gruppe_id = ? AND id NOT IN ({platz})", (gid, *karten_ids)
+        ).fetchone()[0]
+        if rest < 2:
+            conn.execute(
+                f"UPDATE karte SET gruppe_id = NULL WHERE gruppe_id = ? AND id NOT IN ({platz})", (gid, *karten_ids)
+            )
+            conn.execute("DELETE FROM kartengruppe WHERE id = ?", (gid,))
+
+
+def _loesche_serien_fuer_boards(conn: sqlite3.Connection, board_ids: list[str]) -> None:
+    """Serien geloeschter Boards mitloeschen - sonst materialisieren sie weiter
+    Geisterkarten in ein Board, das es nicht mehr gibt (Tabelle des serien-Moduls,
+    defensiv falls nicht geladen)."""
+    if not board_ids:
+        return
+    platz = ",".join("?" for _ in board_ids)
+    try:
+        conn.execute(f"DELETE FROM serie WHERE board_id IN ({platz})", board_ids)
+    except sqlite3.OperationalError:
+        pass
+
+
+def loesche_spalte(spalte_id: str) -> tuple[str, list[str]]:
+    """Löscht eine Spalte samt ihrer Karten. Liefert ('ok'|'letzte'|'fehlt', karten_ids)."""
     with _verb() as conn:
         r = conn.execute("SELECT board_id FROM spalte WHERE id = ?", (spalte_id,)).fetchone()
         if r is None:
-            return "fehlt"
+            return "fehlt", []
         board_id = r["board_id"]
         anzahl = conn.execute("SELECT COUNT(*) AS n FROM spalte WHERE board_id = ?", (board_id,)).fetchone()["n"]
         if anzahl <= 1:
-            return "letzte"
-        conn.execute(
-            "DELETE FROM zeiteintrag WHERE karte_id IN (SELECT id FROM karte WHERE board_id = ? AND spalte = ?)",
-            (board_id, spalte_id),
-        )
-        _loesche_marken(
-            conn,
-            "WHERE karte_id IN (SELECT id FROM karte WHERE board_id = ? AND spalte = ?)",
-            (board_id, spalte_id),
-        )
+            return "letzte", []
+        karten = [x[0] for x in conn.execute(
+            "SELECT id FROM karte WHERE board_id = ? AND spalte = ?", (board_id, spalte_id)
+        ).fetchall()]
+        _raeume_karten_restdaten(conn, karten)
         conn.execute("DELETE FROM karte WHERE board_id = ? AND spalte = ?", (board_id, spalte_id))
         conn.execute("DELETE FROM spalte WHERE id = ?", (spalte_id,))
         _kompaktiere_spalten(conn, board_id)
-    return "ok"
+    return "ok", karten
 
 
 # -- Boards schreiben -----------------------------------------------------
@@ -1572,16 +1606,17 @@ def aktualisiere_board(board_id: str, titel: str) -> Board | None:
     return Board(id=r["id"], mappe_id=r["mappe_id"], titel=r["titel"], kuerzel=r["kuerzel"], spalten=spalten)
 
 
-def loesche_board(board_id: str) -> None:
+def loesche_board(board_id: str) -> list[str]:
+    """Loescht das Board samt Spalten/Karten/Restdaten; liefert die Karten-IDs."""
     with _verb() as conn:
         karten = [r[0] for r in conn.execute("SELECT id FROM karte WHERE board_id = ?", (board_id,)).fetchall()]
-        for kid in karten:
-            conn.execute("DELETE FROM dokument WHERE kontext = 'karte' AND kontext_id = ?", (kid,))
+        _raeume_karten_restdaten(conn, karten)
         conn.execute("DELETE FROM zeiteintrag WHERE board_id = ?", (board_id,))
-        _loesche_marken(conn, "WHERE karte_id IN (SELECT id FROM karte WHERE board_id = ?)", (board_id,))
         conn.execute("DELETE FROM karte WHERE board_id = ?", (board_id,))
         conn.execute("DELETE FROM spalte WHERE board_id = ?", (board_id,))
+        _loesche_serien_fuer_boards(conn, [board_id])
         conn.execute("DELETE FROM board WHERE id = ?", (board_id,))
+    return karten
 
 
 # -- Seed -----------------------------------------------------------------

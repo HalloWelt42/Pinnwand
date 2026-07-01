@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { BoardDetail, Zeiteintrag } from '../../types'
+  import { zeigeToast } from '../../toaster.svelte'
   import { ladeBoard, ladeZeiteintraege, erstelleZeiteintrag, aktualisiereZeiteintrag, loescheZeiteintrag, ladeTerminInstanzen, ladePersonen, type TerminInstanz, type Person, type KiVorschlag } from '../../api'
   import { ymd, addTage, montagDer, isoWoche, formatStd, stdDezimal, wochentag, tagKurz } from '../../zeit'
   import { formatDauerVoll, parseZeit } from '../../timer.svelte'
@@ -79,8 +80,14 @@
     await laden()
   }
   async function loeschen(e: Zeiteintrag) {
+    const snap = { karte_id: e.karte_id, datum: e.datum, sekunden: e.sekunden, kommentar: e.kommentar ?? null }
     await loescheZeiteintrag(e.id)
     await laden()
+    // Abrechnungsrelevante Daten bekommen dasselbe Undo-Schutznetz wie Karten.
+    zeigeToast('Zeiteintrag gelöscht', async () => {
+      await erstelleZeiteintrag(snap)
+      await laden()
+    })
   }
   async function hinzufuegen() {
     const sek = parseZeit(nDauer)

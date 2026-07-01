@@ -83,3 +83,32 @@ def test_idee_wechsel_stoppt_timer_und_buchung_abgelehnt(client):
     # Manuelle Buchung auf ein Ideenticket wird abgewiesen.
     z = client.post("/api/kanban/zeiteintraege", json={"karte_id": k["id"], "datum": "2026-03-02", "sekunden": 600})
     assert z.status_code == 409
+
+
+def test_spalte_loeschen_raeumt_dokumente_und_zeiten(client):
+    b = _board(client, "Kaskade-Spalte")
+    quelle = b["spalten"][0]["id"]
+    ziel = _spalte(client, b["id"], "Wegwerf")["id"]
+    k = _karte(client, b["id"], ziel, "Mit Anhang")
+    d = client.post("/api/kanban/dokumente", json={"kontext": "karte", "kontext_id": k["id"], "titel": "Notiz"})
+    assert d.status_code == 201
+    z = client.post("/api/kanban/zeiteintraege", json={"karte_id": k["id"], "datum": "2026-03-02", "sekunden": 600})
+    assert z.status_code == 201
+
+    assert client.delete(f"/api/kanban/spalten/{ziel}").status_code == 204
+    assert client.get(f"/api/kanban/dokumente?kontext=karte&kontext_id={k['id']}").json() == []
+    assert client.get(f"/api/kanban/zeiteintraege?karte_id={k['id']}").json() == []
+    # Die Wegwerf-Spalte ist weg, die uebrigen Spalten bleiben bestehen.
+    bd = client.get(f"/api/kanban/boards/{b['id']}").json()
+    ids = [s["id"] for s in bd["spalten"]]
+    assert ziel not in ids and quelle in ids
+
+
+def test_board_loeschen_loescht_serien_mit(client):
+    b = _board(client, "Kaskade-Serie")
+    s = client.post("/api/serien", json={"board_id": b["id"], "titel": "Taegliche Runde", "typ": "taeglich"})
+    assert s.status_code == 201, s.text
+    sid = s.json()["id"]
+    assert client.delete(f"/api/kanban/boards/{b['id']}").status_code == 204
+    verbleibend = {x["id"] for x in client.get("/api/serien").json()}
+    assert sid not in verbleibend

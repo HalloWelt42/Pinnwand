@@ -241,12 +241,17 @@
     await aktualisierePerson(p.id, { wochenstunden: ws })
     await ladenPersonen()
   }
+  // Loeschen ist endgueltig (inkl. Urlaubshistorie) - darum ein echter
+  // Zwei-Schritt statt Sofort-Loeschung am Papierkorb-Icon.
+  let loeschPersonId = $state<string | null>(null)
   async function personEntfernen(p: Person): Promise<void> {
     try {
       await loeschePerson(p.id)
       await ladenPersonen()
     } catch (e) {
       zeigeToast(e instanceof Error ? e.message : 'Person konnte nicht gelöscht werden.')
+    } finally {
+      loeschPersonId = null
     }
   }
 
@@ -291,8 +296,15 @@
           {#each p.wochenstunden as h, i (i)}
             <input class="hw" type="number" min="0" max="24" step="0.5" value={h} onchange={(e) => stundeAendern(p, i, parseFloat(e.currentTarget.value) || 0)} />
           {/each}
-          <span class="pw">{#if !nurEigene}<button class="del" aria-label="Person löschen" onclick={() => personEntfernen(p)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>{/if}</span>
+          <span class="pw">{#if !nurEigene}<button class="del" aria-label="Person löschen" onclick={() => (loeschPersonId = loeschPersonId === p.id ? null : p.id)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>{/if}</span>
         </div>
+        {#if loeschPersonId === p.id}
+          <div class="ploeschen">
+            <span>"{p.name}" samt Urlaubshistorie und Planungsdaten endgültig löschen?</span>
+            <button class="btn geist" onclick={() => (loeschPersonId = null)}>Abbrechen</button>
+            <button class="btn gefahr" onclick={() => personEntfernen(p)}>Endgültig löschen</button>
+          </div>
+        {/if}
       {/each}
     </div>
     {#if !nurEigene}
@@ -561,6 +573,9 @@
   .btn { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); border-radius: var(--r-m); padding: 7px 12px; font-size: 12.5px; }
   .btn.primaer { background: var(--hl-primary); color: var(--hl-on-primary); border-color: transparent; font-weight: 500; }
   .btn.geist { background: transparent; color: var(--text-2); }
+  .btn.gefahr { background: var(--gefahr); border-color: transparent; color: #fff; font-weight: 500; }
+  .ploeschen { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--gefahr); background: color-mix(in srgb, var(--gefahr) 7%, transparent); }
+  .ploeschen span { flex: 1; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
   .chip button { border: none; background: transparent; color: var(--text-3); font-size: 10px; }

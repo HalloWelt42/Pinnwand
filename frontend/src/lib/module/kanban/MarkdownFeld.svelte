@@ -22,7 +22,7 @@
     titel: string
     text: string
     schluessel: string // wechselt bei Kartenwechsel -> Entwurf neu laden
-    onSpeichern: (wert: string | null) => void
+    onSpeichern: (wert: string | null) => void | Promise<void>
     nurVollbild?: boolean
     ohneVorschau?: boolean
     ohneKnopf?: boolean
@@ -36,6 +36,7 @@
   let bearbeiten = $state(false)
   let vollbild = $state(false)
   let gespeichert = $state(false)
+  let fehler = $state(false)
   let timer: ReturnType<typeof setTimeout> | null = null
 
   // Entwurf folgt der Karte (Wechsel ueber schluessel), nicht jeder Tasteneingabe.
@@ -54,15 +55,24 @@
     if (timer) clearTimeout(timer)
     gespeichert = false
     timer = setTimeout(() => {
-      onSpeichern(wert || null)
-      gespeichert = true
+      // "gespeichert" erst, wenn der Server bestaetigt hat - nie rein zeitgesteuert.
+      Promise.resolve(onSpeichern(wert || null)).then(
+        () => { gespeichert = true; fehler = false },
+        () => { fehler = true },
+      )
     }, 600)
   }
-  function fertig(): void {
+  async function fertig(): Promise<void> {
     if (timer) clearTimeout(timer)
-    onSpeichern(wert || null)
-    bearbeiten = false
-    vollbild = false
+    try {
+      await onSpeichern(wert || null)
+      fehler = false
+      bearbeiten = false
+      vollbild = false
+    } catch {
+      // Editor offen lassen, damit der Text nicht verloren geht.
+      fehler = true
+    }
   }
   function oeffneEdit(): void {
     bearbeiten = true
@@ -73,7 +83,7 @@
 <div class="sec-reihe">
   <p class="sec">{titel}</p>
   <span class="md-werkzeuge">
-    {#if gespeichert}<span class="gesp">gespeichert</span>{/if}
+    {#if fehler}<span class="gesp nicht">nicht gespeichert</span>{:else if gespeichert}<span class="gesp">gespeichert</span>{/if}
     {#if bearbeiten}
       {#if !nurVollbild}
         <button class="mini geist" onclick={() => (vollbild = !vollbild)}><i class="fa-solid {vollbild ? 'fa-compress' : 'fa-expand'}" aria-hidden="true"></i> {vollbild ? 'Verkleinern' : 'Vollbild'}</button>
@@ -113,6 +123,7 @@
   .sec-reihe { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .md-werkzeuge { display: flex; align-items: center; gap: 6px; }
   .gesp { font-size: 10.5px; color: var(--ok); }
+  .gesp.nicht { color: var(--gefahr); font-weight: 600; }
   .mini { border: 1px solid var(--hl-primary); background: var(--hl-primary); color: var(--hl-on-primary); border-radius: var(--r-s); padding: 4px 9px; font-size: 11.5px; white-space: nowrap; cursor: pointer; }
   .mini.geist { background: transparent; color: var(--text-2); border-color: var(--border-2); }
   .desc { width: 100%; box-sizing: border-box; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-1); border-radius: var(--r-m); padding: 9px 10px; font-size: 12.5px; line-height: 1.5; resize: vertical; }

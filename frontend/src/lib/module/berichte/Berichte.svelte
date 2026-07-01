@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    ladeBerichtTypen, ladeArchiv, erzeugeBericht, archivDownloadUrl, ladePersonen,
+    ladeBerichtTypen, ladeArchiv, erzeugeBericht, archivHerunterladen, ladePersonen,
     type BerichtTyp, type ArchivEintrag, type Person, type KiVorschlag,
   } from '../../api'
   import { ymd, montagDer, addTage, isoDatumZeit } from '../../zeit'
@@ -118,7 +118,7 @@
     <p class="sec">Berichts-Archiv (Nachweise)</p>
     {#if !archiv.length}<p class="leer">Noch keine archivierten Berichte.</p>{/if}
     {#each archiv as b (b.id)}
-      <a class="eintrag" href={archivDownloadUrl(b.id)} download>
+      <a class="eintrag" href="#dl" onclick={(e) => { e.preventDefault(); archivHerunterladen(b.id) }}>
         <span class="bt">{b.titel}</span>
         <span class="bz">{b.zeitraum}</span>
         <span class="bf">{b.format.toUpperCase()}</span>

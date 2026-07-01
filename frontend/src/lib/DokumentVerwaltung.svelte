@@ -16,6 +16,7 @@
   let loeschId = $state<string | null>(null)
   let vollbild = $state(false)
   let gespeichert = $state(false)
+  let speicherfehler = $state(false)
   let spTimer: ReturnType<typeof setTimeout> | null = null
 
   // Dokumentliste laedt neu, sobald sich der Kontext (Karte/Mappe) aendert.
@@ -51,9 +52,16 @@
     gespeichert = false
     const id = aktiv.id
     spTimer = setTimeout(async () => {
-      await aktualisiereDokument(id, { inhalt })
-      if (aktiv && aktiv.id === id) aktiv.inhalt = inhalt
-      gespeichert = true
+      // Speicherfehler NICHT verschlucken: der Text bleibt im Editor, der Zustand
+      // wird deutlich rot markiert; der naechste Tastendruck versucht es erneut.
+      try {
+        await aktualisiereDokument(id, { inhalt })
+        if (aktiv && aktiv.id === id) aktiv.inhalt = inhalt
+        gespeichert = true
+        speicherfehler = false
+      } catch {
+        speicherfehler = true
+      }
     }, 600)
   }
   async function titelSpeichern() {
@@ -75,7 +83,7 @@
   {#if aktiv}
     <div class="kopf">
       <button class="zurueck" onclick={() => (aktiv = null)}><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Liste</button>
-      {#if gespeichert}<span class="gesp">gespeichert</span>{/if}
+      {#if speicherfehler}<span class="gesp nicht">nicht gespeichert - Text bleibt im Editor</span>{:else if gespeichert}<span class="gesp">gespeichert</span>{/if}
       <button class="ic" aria-label={vollbild ? 'Verkleinern' : 'Vollbild'} onclick={() => (vollbild = !vollbild)}><i class="fa-solid {vollbild ? 'fa-compress' : 'fa-expand'}" aria-hidden="true"></i></button>
     </div>
     <input class="dtitel" bind:value={aktiv.titel} aria-label="Dokumenttitel" onblur={titelSpeichern} onkeydown={(e) => { if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur() }} />
@@ -164,6 +172,7 @@
     border-radius: var(--r-s); padding: 4px 9px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 6px;
   }
   .zurueck:hover { color: var(--text-1); }
+  .gesp.nicht { color: var(--gefahr); font-weight: 600; }
   .gesp { font-size: 10.5px; color: var(--ok); margin-left: auto; }
   .kopf .ic { margin-left: auto; }
   .kopf .gesp + .ic { margin-left: 0; }

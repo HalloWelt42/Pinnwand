@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     ladeSnapshots, backupZustand, erzeugeSnapshot, snapshotVorschau,
-    snapshotDownloadUrl, stelleSnapshotWiederHer, loescheSnapshot, datenZuruecksetzen,
+    snapshotHerunterladen, stelleSnapshotWiederHer, loescheSnapshot, datenZuruecksetzen,
     ladeAgentTokens, erstelleAgentToken, widerrufeAgentToken, AuthFehler,
     setzeLoginModus, ladeAuthStatus,
     ladeKanbanEinstellungen, setzeKanbanEinstellungen,
@@ -29,6 +29,7 @@
   let loeschBestaetigung = $state<string | null>(null)
   // Daten-Reset: Bestätigung je Modus.
   let resetBestaetigung = $state<'beispiel' | 'leer' | null>(null)
+  let ladeproblem = $state(false)
   let resetMeldung = $state('')
 
   const ART_LABEL: Record<string, string> = {
@@ -40,7 +41,14 @@
   $effect(() => { neuLaden() })
 
   async function neuLaden(): Promise<void> {
-    snapshots = await ladeSnapshots().catch(() => [])
+    // Fehler != leer: Ladeprobleme nicht als "keine Snapshots" ausgeben.
+    try {
+      snapshots = await ladeSnapshots()
+      ladeproblem = false
+    } catch {
+      snapshots = []
+      ladeproblem = true
+    }
     zustand = await backupZustand().catch(() => null)
   }
 
@@ -302,7 +310,8 @@
 
   <section class="block">
     <p class="sec">Snapshots</p>
-    {#if !snapshots.length}<p class="leer">Noch keine Snapshots vorhanden.</p>{/if}
+    {#if ladeproblem}<p class="leer fehler">Snapshots konnten nicht geladen werden. <button class="btn geist" onclick={neuLaden}>Nochmal versuchen</button></p>
+    {:else if !snapshots.length}<p class="leer">Noch keine Snapshots vorhanden.</p>{/if}
     {#each snapshots as s (s.id)}
       <div class="snap" class:auf={offen === s.id}>
         <div class="kopf">
@@ -315,9 +324,9 @@
             <button class="ibtn" title="Vorschau und Wiederherstellung" aria-label="Vorschau" onclick={() => vorschauOeffnen(s.id)}>
               <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
             </button>
-            <a class="ibtn" href={snapshotDownloadUrl(s.id)} download title="Herunterladen" aria-label="Herunterladen">
+            <button class="ibtn" title="Herunterladen" aria-label="Herunterladen" onclick={() => snapshotHerunterladen(s.id)}>
               <i class="fa-solid fa-download" aria-hidden="true"></i>
-            </a>
+            </button>
             <button class="ibtn gefahr" title="Löschen" aria-label="Löschen" onclick={() => (loeschBestaetigung = loeschBestaetigung === s.id ? null : s.id)}>
               <i class="fa-solid fa-trash" aria-hidden="true"></i>
             </button>
@@ -481,6 +490,7 @@
   .btn.gefahr { color: var(--gefahr, #e5484d); border-color: var(--gefahr, #e5484d); background: transparent; }
   .meldung { margin-top: 9px; font-size: 12px; color: var(--ok); }
   .leer { color: var(--text-3); font-size: 12.5px; }
+  .leer.fehler { color: var(--gefahr); display: flex; align-items: center; gap: 10px; }
 
   .snap { border: 1px solid var(--border); background: var(--surface-col); border-radius: var(--r-m); margin-bottom: 6px; }
   .snap.auf { border-color: var(--border-2); }

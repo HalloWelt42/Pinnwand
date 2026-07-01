@@ -338,7 +338,11 @@
             ladeFertigSpalte(spalteId, true)  // Umsortieren in einer Fertig-Spalte
           }
         })
-        .catch(() => laden())
+        .catch((e) => {
+          // Rollback nicht kommentarlos: sagen, warum die Karte zurueckspringt.
+          zeigeToast(`Verschieben fehlgeschlagen: ${e instanceof Error ? e.message : e}`)
+          laden()
+        })
     }
     zuletztGezogen = Date.now()
   }
@@ -464,8 +468,11 @@
     }
     try {
       await loescheSpalte(id)
-    } catch {
-      /* letzte Spalte geschützt */
+    } catch (e) {
+      // Server-Ablehnung (z.B. letzte Spalte) ehrlich melden - sonst folgt ein
+      // falscher Erfolgs-Toast, dessen Undo die Karten dupliziert.
+      zeigeToast(e instanceof Error ? e.message : 'Spalte konnte nicht gelöscht werden.')
+      return
     }
     await laden()
     zeigeToast(`Spalte "${snap.titel}" gelöscht`, async () => {

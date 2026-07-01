@@ -23,6 +23,7 @@
   // Alle Zeiteintraege dieser Karte (alle Tage); Korrekturen laufen ueber datierte
   // Eintraege, damit die Arbeitszeit dem richtigen Tag gutgeschrieben wird.
   let kartenZeiten = $state<Zeiteintrag[]>([])
+  let zeitenFehler = $state(false)
   let nbDatum = $state(ymd(new Date()))
   let nbDauer = $state('')
 
@@ -34,10 +35,13 @@
     }
   })
   async function ladeKartenZeitenFuer(): Promise<void> {
+    // Fehler != leer: bei Lade-Problemen nicht so tun, als gaebe es keine Zeiten.
     try {
       kartenZeiten = (await ladeKartenZeiten(karte.id)).sort((a, b) => b.datum.localeCompare(a.datum))
+      zeitenFehler = false
     } catch {
       kartenZeiten = []
+      zeitenFehler = true
     }
   }
   async function zeileDatum(e: Zeiteintrag, datum: string): Promise<void> {
@@ -136,6 +140,12 @@
   <button class="mini" onclick={bucheTag}>Tag buchen</button>
 </div>
 <p class="taginfo">Zeit für einen beliebigen Tag nachtragen (zusätzlich zu Start/Stopp).</p>
+{#if zeitenFehler}
+  <p class="ladefehler">
+    Zeiteinträge konnten nicht geladen werden.
+    <button class="mini geist" onclick={ladeKartenZeitenFuer}>Nochmal versuchen</button>
+  </p>
+{/if}
 {#if kartenZeiten.length}
   <div class="tageliste">
     {#each kartenZeiten as e (e.id)}
@@ -150,6 +160,7 @@
 {/if}
 
 <style>
+  .ladefehler { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--gefahr); margin: 8px 0 0; }
   .sec { font-family: var(--font-display); font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3); margin: 18px 0 8px; }
   .timer { display: flex; align-items: center; gap: 12px; }
   .tbtn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--hl-primary); background: var(--hl-primary); color: var(--hl-on-primary); border-radius: var(--r-m); padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
@@ -180,5 +191,6 @@
   .trauto { color: var(--text-3); font-size: 11px; }
   .ic { border: none; background: transparent; color: var(--text-3); cursor: pointer; padding: 2px 4px; }
   .ic:hover { color: var(--text-1); }
+  .mini.geist { background: transparent; color: var(--text-2); border-color: var(--border-2); }
   .mini { border: 1px solid var(--hl-primary); background: var(--hl-primary); color: var(--hl-on-primary); border-radius: var(--r-s); padding: 4px 9px; font-size: 11.5px; white-space: nowrap; cursor: pointer; }
 </style>

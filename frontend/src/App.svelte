@@ -225,8 +225,12 @@
     bearbeiteMappeId = null
   }
   async function mappeLoeschenBestaetigt(id: string) {
-    await loescheMappe(id)
-    loescheMappeId = null
+    // Dialog auch bei Server-Ablehnung schliessen (Meldung kommt zentral als Toast).
+    try {
+      await loescheMappe(id)
+    } finally {
+      loescheMappeId = null
+    }
     mappen = await ladeMappen()
     if (aktiveMappe?.id === id) {
       const ziel = mappen[0] ?? null
@@ -253,8 +257,11 @@
     bearbeiteBoardId = null
   }
   async function boardLoeschenBestaetigt(id: string) {
-    await loescheBoard(id)
-    loescheBoardId = null
+    try {
+      await loescheBoard(id)
+    } finally {
+      loescheBoardId = null
+    }
     await ladeBoardListe()
     if (aktivesBoard?.id === id) aktivesBoard = boards[0] ?? null
   }

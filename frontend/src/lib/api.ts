@@ -118,14 +118,20 @@ const BASIS = import.meta.env.VITE_API ?? 'http://localhost:8420'
 async function hole<T>(pfad: string, init?: RequestInit): Promise<T> {
   const t = uiToken()
   const s = authToken()
-  const antwort = await fetch(`${BASIS}${pfad}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(t ? { 'X-Pinnwand-Token': t } : {}),
-      ...(s ? { 'X-Pinnwand-Sitzung': s } : {}),
-    },
-    ...init,
-  })
+  let antwort: Response
+  try {
+    antwort = await fetch(`${BASIS}${pfad}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(t ? { 'X-Pinnwand-Token': t } : {}),
+        ...(s ? { 'X-Pinnwand-Sitzung': s } : {}),
+      },
+      ...init,
+    })
+  } catch {
+    // Netzfehler verstaendlich machen ("Failed to fetch" hilft niemandem).
+    throw new Error('Server nicht erreichbar')
+  }
   if (antwort.status === 401) {
     // Zwei Quellen einer 401 unterscheiden: optionales UI-Token vs. echte Anmeldung.
     let detail = ''
@@ -376,10 +382,18 @@ export const sucheInhalte = (q: string, limit = 15): Promise<SuchErgebnis> =>
 
 export const sucheStatus = (): Promise<SuchStatus> => hole('/api/suche/status')
 
+// Auth-Kopfzeilen fuer Aufrufe abseits von hole() (FormData, Blob, Downloads):
+// ohne sie brechen diese Pfade bei aktivem Login mit 401.
+function authKopf(): Record<string, string> {
+  const t = uiToken()
+  const s = authToken()
+  return { ...(t ? { 'X-Pinnwand-Token': t } : {}), ...(s ? { 'X-Pinnwand-Sitzung': s } : {}) }
+}
+
 export async function transkribiere(audio: Blob): Promise<{ text: string }> {
   const daten = new FormData()
   daten.append('datei', audio, 'aufnahme.webm')
-  const antwort = await fetch(`${BASIS}/api/suche/sprache`, { method: 'POST', body: daten })
+  const antwort = await fetch(`${BASIS}/api/suche/sprache`, { method: 'POST', headers: authKopf(), body: daten })
   if (!antwort.ok) throw new Error('Spracheingabe nicht verfügbar')
   return antwort.json()
 }
@@ -506,12 +520,26 @@ export const leereTag = (person_id: string, datum: string): Promise<{ geloescht:
 
 export const ladeBerichtTypen = (): Promise<{ typen: BerichtTyp[] }> => hole('/api/berichte/typen')
 export const ladeArchiv = (): Promise<ArchivEintrag[]> => hole('/api/berichte/archiv')
-export const archivDownloadUrl = (id: string): string => `${BASIS}/api/berichte/archiv/${id}`
+// Download mit Auth-Kopfzeilen: ein nacktes <a href> sendet nie die Sitzung.
+export async function ladeDateiHerunter(pfad: string, fallbackName: string): Promise<void> {
+  const r = await fetch(`${BASIS}${pfad}`, { headers: authKopf() })
+  if (!r.ok) throw new Error('Download fehlgeschlagen')
+  const cd = r.headers.get('Content-Disposition') || ''
+  const m = cd.match(/filename="(.+?)"/)
+  const url = URL.createObjectURL(await r.blob())
+  const a = document.createElement('a')
+  a.href = url
+  a.download = m ? m[1] : fallbackName
+  a.click()
+  URL.revokeObjectURL(url)
+}
+export const archivHerunterladen = (id: string): Promise<void> =>
+  ladeDateiHerunter(`/api/berichte/archiv/${id}`, 'bericht')
 
 export async function erzeugeBericht(anfrage: BerichtAnfrage): Promise<{ blob: Blob; dateiname: string }> {
   const r = await fetch(`${BASIS}/api/berichte/erzeugen`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authKopf() },
     body: JSON.stringify(anfrage),
   })
   if (!r.ok) throw new Error('Bericht konnte nicht erzeugt werden')
@@ -528,7 +556,8 @@ export const erzeugeSnapshot = (notiz: string): Promise<SnapshotInfo> =>
   hole('/api/backup/erzeugen', { method: 'POST', body: JSON.stringify({ notiz }) })
 export const snapshotVorschau = (id: string): Promise<BackupVorschau> =>
   hole(`/api/backup/${id}/vorschau`)
-export const snapshotDownloadUrl = (id: string): string => `${BASIS}/api/backup/${id}/datei`
+export const snapshotHerunterladen = (id: string): Promise<void> =>
+  ladeDateiHerunter(`/api/backup/${id}/datei`, 'snapshot.zip')
 export const stelleSnapshotWiederHer = (id: string): Promise<WiederherstellenErgebnis> =>
   hole(`/api/backup/${id}/wiederherstellen`, { method: 'POST' })
 export const loescheSnapshot = (id: string): Promise<void> =>
@@ -565,7 +594,7 @@ export const widerrufeAgentToken = (adminToken: string, id: string): Promise<voi
 export async function vorleseAudio(text: string, stimme?: string): Promise<Blob> {
   const antwort = await fetch(`${BASIS}/api/tts`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authKopf() },
     body: JSON.stringify({ text, stimme }),
   })
   if (!antwort.ok) throw new Error('Vorlesen nicht verfügbar')

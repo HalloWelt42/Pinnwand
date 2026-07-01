@@ -33,7 +33,7 @@
     spalten: Spalte[]
     boardKarten?: Karte[]
     onSchliessen: () => void
-    onAendern: (daten: KarteAenderung) => void
+    onAendern: (daten: KarteAenderung) => void | Promise<void>
     onKommentar: (text: string) => void
     onLoeschen: () => void
     onReload?: () => void | Promise<void>

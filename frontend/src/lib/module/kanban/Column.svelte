@@ -46,7 +46,7 @@
     onOeffnen: (id: string) => void
     onLoeschenKarte: (id: string) => void
     onVerknuepfen?: (quelleId: string, zielId: string) => void
-    onKarteAnlegen: (titel: string, typ?: 'arbeit' | 'idee') => void
+    onKarteAnlegen: (titel: string, typ?: 'arbeit' | 'idee') => void | Promise<void>
     onToggleEinklappen: () => void
     onSpalteUmbenennen: (daten: { titel: string; wip_limit: number | null }) => void
     onSpalteVerschieben: (richtung: -1 | 1) => void
@@ -94,10 +94,11 @@
     onSpalteUmbenennen({ titel, wip_limit: wip })
     modus = 'normal'
   }
-  function karteAbschicken() {
+  async function karteAbschicken() {
     const titel = karteTitel.trim()
     if (!titel) return
-    onKarteAnlegen(titel, alsIdee ? 'idee' : 'arbeit')
+    // Eingabe erst nach Server-Erfolg leeren - bei Fehlern bleibt der Titel erhalten.
+    await onKarteAnlegen(titel, alsIdee ? 'idee' : 'arbeit')
     karteTitel = ''
     alsIdee = false
   }

@@ -106,8 +106,23 @@ def _migriere(conn: sqlite3.Connection) -> None:
     # normalisieren. Trifft bewusst NICHT NULL (der Aussperr-Schutz oben setzt NULL frisch
     # migrierter Bestaende zu 'admin') - nur echte Muellwerte.
     conn.execute("UPDATE person SET rolle = 'mitarbeiter' WHERE rolle IS NOT NULL AND rolle NOT IN ('admin', 'mitarbeiter')")
+    # In migrierten Datenbanken hat die rolle-Spalte keinen Default: spaeter angelegte
+    # Personen konnten NULL bekommen. Der Aussperr-Schutz oben (NULL -> 'admin') lief
+    # bereits beim Anlegen der Spalte; alles, was jetzt noch NULL ist, wurde danach
+    # ohne Rolle angelegt und wird sicher zu 'mitarbeiter'.
+    conn.execute("UPDATE person SET rolle = 'mitarbeiter' WHERE rolle IS NULL")
     if "passwort_hash" not in spalten:
         conn.execute("ALTER TABLE person ADD COLUMN passwort_hash TEXT")
+    # Kuerzel sind Identitaet (Karten-Eigentum, Auswertungen, Login-Kennung) und muessen
+    # eindeutig sein. Defensiv: scheitert der Index an Altdaten-Duplikaten, greift
+    # weiterhin die API-Pruefung; der Start darf daran nicht scheitern.
+    try:
+        conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ux_person_kuerzel"
+            " ON person(kuerzel COLLATE NOCASE) WHERE kuerzel IS NOT NULL"
+        )
+    except (sqlite3.OperationalError, sqlite3.IntegrityError):
+        pass
 
 
 def init_db() -> None:
@@ -267,19 +282,53 @@ def hat_admin_mit_passwort() -> bool:
     return admin_mit_passwort_existiert()
 
 
+class KuerzelVergeben(Exception):
+    """Das gewuenschte Kuerzel gehoert bereits einer anderen Person."""
+
+
+def _pruefe_kuerzel_frei(conn: sqlite3.Connection, kuerzel: str | None, ausser_pid: str | None = None) -> None:
+    if not kuerzel:
+        return
+    r = conn.execute(
+        "SELECT id FROM person WHERE kuerzel = ? COLLATE NOCASE AND id != COALESCE(?, '')",
+        (kuerzel, ausser_pid),
+    ).fetchone()
+    if r is not None:
+        raise KuerzelVergeben(f"Kürzel '{kuerzel}' ist bereits vergeben.")
+
+
 def erstelle_person(name: str, kuerzel: str | None, wochenstunden: list | None, farbe: str | None,
                     bundesland: str | None = None, urlaubsanspruch: float = 30,
                     resturlaub_vorjahr: float = 0) -> dict:
     pid = "p_" + uuid4().hex[:8]
     with verbindung() as conn:
+        _pruefe_kuerzel_frei(conn, kuerzel)
+        # Rolle explizit setzen (migrierte Datenbanken haben keinen Spalten-Default).
+        # Bootstrap: die allererste Person einer Installation wird Admin, damit die
+        # Verwaltung nie ohne Admin dasteht; alle weiteren sind Mitarbeiter.
+        admins = conn.execute("SELECT COUNT(*) FROM person WHERE rolle = 'admin'").fetchone()[0]
+        rolle = "admin" if admins == 0 else "mitarbeiter"
         conn.execute(
-            "INSERT INTO person (id, name, kuerzel, farbe, wochenstunden, bundesland, urlaubsanspruch, resturlaub_vorjahr, aktiv)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)",
-            (pid, name, kuerzel, farbe, json.dumps(wochenstunden or _STD_WOCHE), bundesland, urlaubsanspruch, resturlaub_vorjahr),
+            "INSERT INTO person (id, name, kuerzel, farbe, wochenstunden, bundesland, urlaubsanspruch, resturlaub_vorjahr, aktiv, rolle)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)",
+            (pid, name, kuerzel, farbe, json.dumps(wochenstunden or _STD_WOCHE), bundesland, urlaubsanspruch, resturlaub_vorjahr, rolle),
         )
     if bundesland:
         _feiertage_nachladen()
     return hole_person(pid)  # type: ignore[return-value]
+
+
+def _kaskadiere_kuerzel(conn: sqlite3.Connection, alt: str, neu: str | None) -> None:
+    """Eine Kuerzel-Umbenennung zieht alle Stellen mit, die das Kuerzel als
+    Personen-Bezug speichern - sonst verlieren Eigentum und Auswertungen still
+    den Bezug. Fremde Modul-Tabellen defensiv (Modul evtl. nicht geladen)."""
+    conn.execute("UPDATE karte SET zustaendig = ? WHERE zustaendig = ?", (neu, alt))
+    for tabelle, spalte in (("serie", "zustaendig"), ("termin_serie", "kuerzel"),
+                            ("termin_instanz", "kuerzel"), ("mappe", "owner")):
+        try:
+            conn.execute(f"UPDATE {tabelle} SET {spalte} = ? WHERE {spalte} = ?", (neu, alt))
+        except sqlite3.OperationalError:
+            pass
 
 
 def aktualisiere_person(pid: str, aenderungen: dict) -> dict | None:
@@ -292,7 +341,14 @@ def aktualisiere_person(pid: str, aenderungen: dict) -> dict | None:
         f["aktiv"] = 1 if f["aktiv"] else 0
     zuweisung = ", ".join(f"{k} = ?" for k in f)
     with verbindung() as conn:
+        altes_kuerzel: str | None = None
+        if "kuerzel" in f:
+            _pruefe_kuerzel_frei(conn, f["kuerzel"], ausser_pid=pid)
+            r = conn.execute("SELECT kuerzel FROM person WHERE id = ?", (pid,)).fetchone()
+            altes_kuerzel = r["kuerzel"] if r else None
         conn.execute(f"UPDATE person SET {zuweisung} WHERE id = ?", (*f.values(), pid))
+        if altes_kuerzel and altes_kuerzel != f.get("kuerzel"):
+            _kaskadiere_kuerzel(conn, altes_kuerzel, f.get("kuerzel"))
     if f.get("bundesland"):
         _feiertage_nachladen()
     return hole_person(pid)
@@ -301,6 +357,14 @@ def aktualisiere_person(pid: str, aenderungen: dict) -> dict | None:
 def loesche_person(pid: str) -> bool:
     with verbindung() as conn:
         conn.execute("DELETE FROM urlaub WHERE person_id = ?", (pid,))
+        conn.execute("DELETE FROM wochen_override WHERE person_id = ?", (pid,))
+        conn.execute("DELETE FROM tagesregel WHERE person_id = ?", (pid,))
+        # Projekt-Mitgliedschaften mitloeschen: eine Waise haelt die Mappe sonst
+        # dauerhaft im Nur-Mitglieder-Modus und macht sie fuer alle unsichtbar.
+        try:
+            conn.execute("DELETE FROM mappe_mitglied WHERE person_id = ?", (pid,))
+        except sqlite3.OperationalError:
+            pass
         cur = conn.execute("DELETE FROM person WHERE id = ?", (pid,))
     return cur.rowcount > 0
 

@@ -42,10 +42,13 @@ def personen() -> list[dict]:
 @router.post("/personen", response_model=Person, status_code=201)
 def person_anlegen(e: PersonCreate, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
     verlange(akteur.ist_admin, "Nur Admins dürfen Personen anlegen.")
-    return db.erstelle_person(
-        e.name, e.kuerzel, e.wochenstunden, e.farbe,
-        bundesland=e.bundesland, urlaubsanspruch=e.urlaubsanspruch, resturlaub_vorjahr=e.resturlaub_vorjahr,
-    )
+    try:
+        return db.erstelle_person(
+            e.name, e.kuerzel, e.wochenstunden, e.farbe,
+            bundesland=e.bundesland, urlaubsanspruch=e.urlaubsanspruch, resturlaub_vorjahr=e.resturlaub_vorjahr,
+        )
+    except db.KuerzelVergeben as fehler:
+        raise HTTPException(status_code=409, detail=str(fehler))
 
 
 @router.get("/urlaubskonten", response_model=list[Urlaubskonto])
@@ -79,7 +82,10 @@ def person_aendern(pid: str, e: PersonUpdate, akteur: Akteur = Depends(aktueller
             status_code=409,
             detail="Der letzte Admin kann bei aktiver Anmeldung nicht herabgestuft oder deaktiviert werden.",
         )
-    p = db.aktualisiere_person(pid, daten)
+    try:
+        p = db.aktualisiere_person(pid, daten)
+    except db.KuerzelVergeben as fehler:
+        raise HTTPException(status_code=409, detail=str(fehler))
     if p is None:
         raise HTTPException(status_code=404, detail="Person nicht gefunden")
     if daten.get("aktiv") is False:

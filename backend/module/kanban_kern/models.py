@@ -94,6 +94,24 @@ class BoardDetail(Board):
     karten: list[Karte] = Field(default_factory=list)
 
 
+class KartenSeite(BaseModel):
+    """Eine gefensterte Seite Karten (fertige Spalte oder Archiv) mit Nachlade-Info."""
+    karten: list[Karte] = Field(default_factory=list)
+    gesamt: int = 0
+    hat_mehr: bool = False
+
+
+class KanbanEinstellungen(BaseModel):
+    """Anzeige-/Ladegrenzen fuer fertige Karten - in der UI einstellbar."""
+    fertig_seitengroesse: int = 50
+    archiv_tage: int = 365
+
+
+class KanbanEinstellungenUpdate(BaseModel):
+    fertig_seitengroesse: int = Field(ge=1, le=500)
+    archiv_tage: int = Field(ge=1, le=100000)
+
+
 class Projektmappe(BaseModel):
     id: str
     titel: str

@@ -4,6 +4,7 @@
     snapshotDownloadUrl, stelleSnapshotWiederHer, loescheSnapshot, datenZuruecksetzen,
     ladeAgentTokens, erstelleAgentToken, widerrufeAgentToken, AuthFehler,
     setzeLoginModus, ladeAuthStatus,
+    ladeKanbanEinstellungen, setzeKanbanEinstellungen,
     type SnapshotInfo, type BackupZustand, type BackupVorschau, type AgentToken,
   } from '../../api'
   import { auth } from '../../auth.svelte'
@@ -145,6 +146,31 @@
     }
   }
 
+  // --- Fertig-Karten / Archiv (serverseitige Ladegrenzen) ---
+  let fertigSeite = $state(50)
+  let archivTage = $state(365)
+  let kanbanMeldung = $state('')
+  let kanbanArbeitet = $state(false)
+  $effect(() => {
+    ladeKanbanEinstellungen()
+      .then((e) => { fertigSeite = e.fertig_seitengroesse; archivTage = e.archiv_tage })
+      .catch(() => {})
+  })
+  async function kanbanSpeichern(): Promise<void> {
+    kanbanArbeitet = true
+    kanbanMeldung = ''
+    try {
+      const e = await setzeKanbanEinstellungen({ fertig_seitengroesse: fertigSeite, archiv_tage: archivTage })
+      fertigSeite = e.fertig_seitengroesse
+      archivTage = e.archiv_tage
+      kanbanMeldung = 'Gespeichert - wirkt beim nächsten Laden der Boards.'
+    } catch {
+      kanbanMeldung = 'Speichern nicht möglich (nur Admins).'
+    } finally {
+      kanbanArbeitet = false
+    }
+  }
+
   let adminToken = $state(leseText('pw_admin_token'))
   let tokens = $state<AgentToken[]>([])
   let tokenGeladen = $state(false)
@@ -227,6 +253,30 @@
       Anmeldung erforderlich
     </label>
     {#if loginFehler}<p class="fehler">{loginFehler}</p>{/if}
+  </section>
+
+  <section class="block">
+    <p class="sec">Fertig-Karten und Archiv</p>
+    <p class="hint">
+      Erledigt-Spalten laden nicht alle Karten auf einmal, sondern serverseitig gefiltert
+      (nach dem Zeitraum je Spalte) und gedeckelt; der Rest wird beim Scrollen nachgeladen.
+      Fertige Karten, die aelter sind als die Archiv-Schwelle, wandern automatisch ins
+      Archiv (ueber den Archiv-Knopf am Board erreichbar) und belasten das Board nicht mehr.
+    </p>
+    <div class="zahlform">
+      <label>
+        Karten je Ladeschritt
+        <input type="number" min="1" max="500" bind:value={fertigSeite} aria-label="Karten je Ladeschritt" />
+      </label>
+      <label>
+        Archiv ab (Tage)
+        <input type="number" min="1" max="100000" bind:value={archivTage} aria-label="Archiv-Schwelle in Tagen" />
+      </label>
+      <button class="btn primaer" onclick={kanbanSpeichern} disabled={kanbanArbeitet}>
+        <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Speichern
+      </button>
+    </div>
+    {#if kanbanMeldung}<p class="meldung">{kanbanMeldung}</p>{/if}
   </section>
 
   <section class="block">
@@ -421,6 +471,9 @@
   .hint { font-size: 12px; color: var(--text-3); line-height: 1.55; margin: 0 0 10px; max-width: 70ch; }
   .stand { font-size: 12.5px; color: var(--text-2); margin: 0 0 10px; }
   .form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .zahlform { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+  .zahlform label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--text-2); }
+  .zahlform input { width: 130px; border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-1); border-radius: var(--r-m); padding: 8px 10px; font-size: 12.5px; }
   .notiz { flex: 1; min-width: 220px; border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-1); border-radius: var(--r-m); padding: 8px 10px; font-size: 12.5px; }
   .btn { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); border-radius: var(--r-m); padding: 8px 13px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 7px; }
   .btn.primaer { background: var(--hl-primary); color: var(--hl-on-primary); border-color: transparent; font-weight: 500; }

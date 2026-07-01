@@ -3,6 +3,8 @@
 import type {
   Board,
   BoardDetail,
+  KartenSeite,
+  KanbanEinstellungen,
   Karte,
   Projektmappe,
   Spalte,
@@ -211,6 +213,42 @@ export const loescheDokument = (id: string): Promise<void> =>
 export const schnellErfassen = (text: string, dryRun: boolean): Promise<ErfassenErgebnis> =>
   hole('/api/kanban/schnell-erfassen', { method: 'POST', body: JSON.stringify({ text, dry_run: dryRun }) })
 export const ladeBoard = (boardId: string): Promise<BoardDetail> => hole(`/api/kanban/boards/${boardId}`)
+
+// Eine einzelne Karte (Fallback, wenn eine fertige Karte nicht im gefensterten Board liegt).
+export const ladeKarte = (id: string): Promise<Karte> => hole(`/api/kanban/karten/${id}`)
+
+// Gefensterte Seite fertiger Karten EINER Erledigt-Spalte (Zeitfenster + Deckel + Nachladen).
+export const ladeFertige = (
+  spalteId: string,
+  opts: { zeitraum?: string; offset?: number; limit?: number; q?: string; labels?: string[]; prioritaet?: string | null } = {},
+): Promise<KartenSeite> => {
+  const p = new URLSearchParams()
+  if (opts.zeitraum) p.set('zeitraum', opts.zeitraum)
+  if (opts.offset) p.set('offset', String(opts.offset))
+  if (opts.limit != null) p.set('limit', String(opts.limit))
+  if (opts.q && opts.q.trim()) p.set('q', opts.q.trim())
+  if (opts.labels && opts.labels.length) p.set('labels', opts.labels.join(','))
+  if (opts.prioritaet) p.set('prioritaet', opts.prioritaet)
+  const qs = p.toString()
+  return hole(`/api/kanban/spalten/${spalteId}/fertige${qs ? '?' + qs : ''}`)
+}
+
+// Archivierte fertige Karten eines Boards (aelter als die Archiv-Schwelle), paginiert.
+export const ladeKartenArchiv = (
+  boardId: string,
+  opts: { offset?: number; limit?: number; q?: string } = {},
+): Promise<KartenSeite> => {
+  const p = new URLSearchParams()
+  if (opts.offset) p.set('offset', String(opts.offset))
+  if (opts.limit != null) p.set('limit', String(opts.limit))
+  if (opts.q && opts.q.trim()) p.set('q', opts.q.trim())
+  const qs = p.toString()
+  return hole(`/api/kanban/boards/${boardId}/archiv${qs ? '?' + qs : ''}`)
+}
+
+export const ladeKanbanEinstellungen = (): Promise<KanbanEinstellungen> => hole('/api/kanban/einstellungen')
+export const setzeKanbanEinstellungen = (e: KanbanEinstellungen): Promise<KanbanEinstellungen> =>
+  hole('/api/kanban/einstellungen', { method: 'PUT', body: JSON.stringify(e) })
 
 export const ladeHeute = (): Promise<HeuteUebersicht> => hole('/api/kanban/heute')
 

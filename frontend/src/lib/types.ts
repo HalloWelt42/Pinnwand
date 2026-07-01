@@ -73,6 +73,19 @@ export interface BoardDetail extends Board {
   karten: Karte[]
 }
 
+// Eine gefensterte Seite Karten (fertige Spalte oder Archiv) mit Nachlade-Info.
+export interface KartenSeite {
+  karten: Karte[]
+  gesamt: number
+  hat_mehr: boolean
+}
+
+// In der UI einstellbare Grenzen fuer fertige Karten (Deckel + Archiv-Schwelle).
+export interface KanbanEinstellungen {
+  fertig_seitengroesse: number
+  archiv_tage: number
+}
+
 export interface Projektmappe {
   id: string
   titel: string

@@ -26,6 +26,10 @@
     onSpalteVerschieben,
     onSpalteLoeschen,
     onSpalteErledigt,
+    fertigMehr = false,
+    fertigLaden = false,
+    fertigGesamt = 0,
+    onNachladen,
   }: {
     spalte: Spalte
     karten: Karte[]
@@ -48,7 +52,19 @@
     onSpalteVerschieben: (richtung: -1 | 1) => void
     onSpalteLoeschen: () => void
     onSpalteErledigt: () => void
+    // Erledigt-Spalten: gefenstertes Nachladen beim Scrollen.
+    fertigMehr?: boolean
+    fertigLaden?: boolean
+    fertigGesamt?: number
+    onNachladen?: () => void
   } = $props()
+
+  // Beim Scrollen ans Ende einer Erledigt-Spalte die naechste Seite nachladen.
+  function aufScroll(e: Event): void {
+    if (!spalte.erledigt || !fertigMehr || fertigLaden || !onNachladen) return
+    const el = e.currentTarget as HTMLElement
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 80) onNachladen()
+  }
 
   let modus = $state<'normal' | 'edit'>('normal')
   let menuOffen = $state(false)
@@ -172,6 +188,7 @@
       use:dndzone={{ items: karten, type: 'karte', dragDisabled, flipDurationMs: 160, dropTargetStyle: {} }}
       onconsider={(e) => onCardsConsider(e.detail.items)}
       onfinalize={(e) => onCardsFinalize(e.detail.items, e.detail.info)}
+      onscroll={aufScroll}
     >
       {#each karten as karte (karte.id)}
         <div animate:flip={{ duration: 160 }}>
@@ -183,6 +200,17 @@
         </div>
       {/each}
     </div>
+
+    {#if spalte.erledigt && (fertigMehr || fertigGesamt > 0)}
+      <div class="fertiginfo">
+        <span>{karten.filter((k) => k.id !== SHADOW_PLACEHOLDER_ITEM_ID).length} von {fertigGesamt}</span>
+        {#if fertigMehr}
+          <button class="mehr" onclick={() => onNachladen?.()} disabled={fertigLaden}>
+            {fertigLaden ? 'Lädt ...' : 'Mehr laden'}
+          </button>
+        {/if}
+      </div>
+    {/if}
 
     {#if neueKarte}
       <div class="composer">
@@ -451,6 +479,32 @@
     gap: 8px;
     padding: 2px;
     margin: 0 -2px;
+  }
+  .fertiginfo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 2px 2px;
+    font-size: 11px;
+    color: var(--text-3);
+  }
+  .fertiginfo .mehr {
+    border: 1px solid var(--border);
+    background: var(--surface-1, transparent);
+    color: var(--text-2);
+    border-radius: var(--r-m, 6px);
+    padding: 3px 10px;
+    font: inherit;
+    cursor: pointer;
+  }
+  .fertiginfo .mehr:hover:not(:disabled) {
+    color: var(--hl-primary-text);
+    border-color: var(--hl-primary);
+  }
+  .fertiginfo .mehr:disabled {
+    opacity: 0.6;
+    cursor: default;
   }
   .platzhalter {
     border: 2px dashed var(--hl-primary);

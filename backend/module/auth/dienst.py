@@ -74,6 +74,8 @@ def _admin_only(method: str, pfad: str) -> bool:
         return True
     if method in _SCHREIB and (pfad == "/api/kanban/labels" or pfad.startswith("/api/kanban/labels/")):
         return True
+    if method in _SCHREIB and pfad == "/api/kanban/einstellungen":
+        return True
     return False
 
 

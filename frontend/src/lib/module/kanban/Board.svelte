@@ -1,9 +1,12 @@
 <script lang="ts">
-  import { dndzone, dragHandleZone, SHADOW_PLACEHOLDER_ITEM_ID, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action'
+  import { dndzone, dragHandleZone, SHADOW_PLACEHOLDER_ITEM_ID } from 'svelte-dnd-action'
   import { flip } from 'svelte/animate'
+  import { untrack } from 'svelte'
   import type { BoardDetail, Karte, Prioritaet, Spalte } from '../../types'
   import {
     ladeBoard,
+    ladeFertige,
+    ladeKarte,
     verschiebeKarte,
     erstelleKarte,
     aktualisiereKarte,
@@ -30,6 +33,7 @@
   import Column from './Column.svelte'
   import Toolbar from './Toolbar.svelte'
   import CardDrawer from './CardDrawer.svelte'
+  import Archiv from './Archiv.svelte'
 
   let { boardId }: { boardId: string } = $props()
 
@@ -47,12 +51,16 @@
   // Zeitraum-Filter je erledigter Spalte (Schluessel = Spalten-ID, Wert = Zeitraum).
   let fertigFilter = $state<Record<string, string>>({})
 
-  // Die gerade per Drag in eine Spalte gezogene Karte markiert svelte-dnd-action mit
-  // dieser Eigenschaft. So bleibt sie im Zeitfilter der Fertig-Spalte sichtbar, ohne
-  // den ganzen Filter auszusetzen (sonst tauchten bei JEDEM Zug alle erledigten Karten auf).
-  function istZiehSchatten(k: Karte): boolean {
-    return !!(k as unknown as Record<string, unknown>)[SHADOW_ITEM_MARKER_PROPERTY_NAME]
+  // Gefensterte Fertig-Karten je Erledigt-Spalte: geladene Seite + Nachlade-Info.
+  // board.karten enthaelt KEINE Erledigt-Karten mehr (das Backend liefert sie gefenstert).
+  interface FertigDaten {
+    karten: Karte[]
+    gesamt: number
+    hatMehr: boolean
+    laden: boolean
   }
+  let fertigDaten = $state<Record<string, FertigDaten>>({})
+  let archivOffen = $state(false)
 
   let suche = $state('')
   let sortModus = $state<'manuell' | 'faellig' | 'prioritaet'>('manuell')
@@ -79,13 +87,22 @@
     const ziel = nav.ziel
     if (ziel && ziel.boardId === boardId && board) {
       const k = ziel.karteId
-        ? board.karten.find((x) => x.id === ziel.karteId)
+        ? findeKarte(ziel.karteId)
         : ziel.schluessel
-          ? board.karten.find((x) => x.schluessel === ziel.schluessel)
-          : null
+          ? [board, ...Object.values(fertigDaten).map((d) => ({ karten: d.karten }))]
+              .flatMap((q) => q.karten)
+              .find((x) => x.schluessel === ziel.schluessel)
+          : undefined
       if (k) {
         ausgewaehlt = k
         nav.ziel = { boardId }
+      } else if (ziel.karteId) {
+        // Deep-Link auf eine fertige Karte, die (noch) nicht gefenstert geladen ist:
+        // die Karte einzeln nachladen und oeffnen.
+        const zid = ziel.karteId
+        ladeKarte(zid).then((karte) => {
+          if (nav.ziel?.karteId === zid) { ausgewaehlt = karte; nav.ziel = { boardId } }
+        }).catch(() => {})
       }
     }
   })
@@ -101,15 +118,62 @@
     ansicht = board.spalten.map((s) => ({
       id: s.id,
       spalte: s,
-      karten: board!.karten.filter((k) => k.spalte === s.id).sort((a, b) => a.reihenfolge - b.reihenfolge),
+      // Erledigt-Spalten kommen gefenstert aus fertigDaten; offene Spalten aus board.karten.
+      karten: s.erledigt
+        ? (fertigDaten[s.id]?.karten ?? [])
+        : board!.karten.filter((k) => k.spalte === s.id).sort((a, b) => a.reihenfolge - b.reihenfolge),
     }))
+  }
+
+  // Ladeparameter einer Erledigt-Spalte: bei aktiver Suche/Sortierung greift die
+  // serverseitige Suche (Zeitfenster ausgesetzt), sonst der Zeitfilter der Spalte.
+  function fertigParams(spalteId: string): { zeitraum?: string; q?: string; labels?: string[]; prioritaet?: string | null } {
+    if (kartenDragAus) {
+      return { q: suche || undefined, labels: filterLabels, prioritaet: filterPrio }
+    }
+    return { zeitraum: fertigFilter[spalteId] ?? 'heute' }
+  }
+
+  async function ladeFertigSpalte(spalteId: string, reset = true): Promise<void> {
+    const vorher = fertigDaten[spalteId]
+    if (vorher?.laden) return
+    const offset = reset ? 0 : (vorher?.karten.length ?? 0)
+    fertigDaten = { ...fertigDaten, [spalteId]: { karten: vorher?.karten ?? [], gesamt: vorher?.gesamt ?? 0, hatMehr: vorher?.hatMehr ?? false, laden: true } }
+    try {
+      const seite = await ladeFertige(spalteId, { ...fertigParams(spalteId), offset })
+      const bestehend = reset ? [] : (vorher?.karten ?? [])
+      // Dubletten vermeiden (falls sich zwischen zwei Seiten etwas verschoben hat).
+      const bekannt = new Set(bestehend.map((k) => k.id))
+      const neu = seite.karten.filter((k) => !bekannt.has(k.id))
+      fertigDaten = { ...fertigDaten, [spalteId]: { karten: [...bestehend, ...neu], gesamt: seite.gesamt, hatMehr: seite.hat_mehr, laden: false } }
+    } catch {
+      fertigDaten = { ...fertigDaten, [spalteId]: { karten: vorher?.karten ?? [], gesamt: vorher?.gesamt ?? 0, hatMehr: vorher?.hatMehr ?? false, laden: false } }
+    }
+    baueAnsicht()
+  }
+
+  async function ladeAlleFertig(): Promise<void> {
+    const spalten = (board?.spalten ?? []).filter((s) => s.erledigt)
+    await Promise.all(spalten.map((s) => ladeFertigSpalte(s.id, true)))
+  }
+
+  // Karte ueber offene UND gefensterte Fertig-Spalten finden.
+  function findeKarte(id: string): Karte | undefined {
+    const offen = board?.karten.find((k) => k.id === id)
+    if (offen) return offen
+    for (const d of Object.values(fertigDaten)) {
+      const k = d.karten.find((x) => x.id === id)
+      if (k) return k
+    }
+    return undefined
   }
 
   async function laden() {
     board = await ladeBoard(boardId)
     baueAnsicht()
+    await ladeAlleFertig()
     // Offene Detailansicht auf den frischen Stand spiegeln (Timer-Start/Pause/Stopp, erfasste Zeit).
-    if (ausgewaehlt) ausgewaehlt = board?.karten.find((k) => k.id === ausgewaehlt!.id) ?? ausgewaehlt
+    if (ausgewaehlt) ausgewaehlt = findeKarte(ausgewaehlt.id) ?? ausgewaehlt
   }
 
   // Spalten-/Filterzustand je Board im Browser merken.
@@ -143,6 +207,19 @@
     void eingeklappt
     void fertigFilter
     _merkeBoardUi()
+  })
+
+  // Aendert sich Suche/Label/Prio/Sortierung, aendern sich die Server-Parameter der
+  // Fertig-Spalten -> erste Seite serverseitig neu laden (entprellt gegen Tippen).
+  let refetchTimer: ReturnType<typeof setTimeout> | null = null
+  $effect(() => {
+    void suche
+    void filterLabels
+    void filterPrio
+    void sortModus
+    if (!untrack(() => board)) return
+    if (refetchTimer) clearTimeout(refetchTimer)
+    refetchTimer = setTimeout(() => ladeAlleFertig(), 250)
   })
 
   // Timer-Änderungen (Start/Pause irgendwo) -> Board neu laden, damit der Lauf-Status stimmt.
@@ -189,39 +266,10 @@
     return true
   }
 
-  function _pad(n: number): string {
-    return String(n).padStart(2, '0')
-  }
-  function _isoTag(d: Date): string {
-    return `${d.getFullYear()}-${_pad(d.getMonth() + 1)}-${_pad(d.getDate())}`
-  }
-  // Faellt das Abschlussdatum (bewegt_am, gesetzt beim Verschieben) in den Zeitraum?
-  function imZeitraum(iso: string | null | undefined, zeitraum: string): boolean {
-    if (zeitraum === 'alle') return true
-    if (!iso) return false
-    const tag = iso.slice(0, 10)
-    const heute = new Date()
-    const heuteTag = _isoTag(heute)
-    if (zeitraum === 'heute') return tag === heuteTag
-    if (zeitraum === 'gestern') {
-      const g = new Date(heute)
-      g.setDate(heute.getDate() - 1)
-      return tag === _isoTag(g)
-    }
-    if (zeitraum === 'woche') {
-      const mo = new Date(heute)
-      mo.setDate(heute.getDate() - ((heute.getDay() + 6) % 7))
-      const so = new Date(mo)
-      so.setDate(mo.getDate() + 6)
-      return tag >= _isoTag(mo) && tag <= _isoTag(so)
-    }
-    if (zeitraum === 'monat') return tag.slice(0, 7) === heuteTag.slice(0, 7)
-    if (zeitraum === 'jahr') return tag.slice(0, 4) === heuteTag.slice(0, 4)
-    return true
-  }
-
   function anzeige(eintrag: Eintrag): Karte[] {
-    // Aktive Board-Suche/Filter: ueber den gesamten Bestand suchen (Zeitfilter ausgesetzt).
+    // Erledigt-Spalten sind bereits serverseitig gefiltert/gefenstert (inkl. Suche).
+    if (eintrag.spalte.erledigt) return eintrag.karten
+    // Offene Spalten: Suche/Sortierung clientseitig ueber die voll geladenen Karten.
     if (kartenDragAus) {
       let liste = eintrag.karten.filter(passt)
       if (sortModus === 'faellig') {
@@ -231,48 +279,12 @@
       }
       return liste
     }
-    // Standardsicht: erledigte Spalten nach Abschlussdatum filtern (Default heute).
-    if (eintrag.spalte.erledigt) {
-      const z = fertigFilter[eintrag.spalte.id] ?? 'heute'
-      if (z !== 'alle') {
-        // Abschlussdatum: Serien/REKO = festes faellig, sonst Erledigt-Datum (bewegt_am).
-        // Platzhalter und die gerade hereingezogene Karte bleiben immer sichtbar.
-        return eintrag.karten.filter(
-          (k) => k.id === SHADOW_PLACEHOLDER_ITEM_ID || istZiehSchatten(k) || imZeitraum(k.abschluss_am ?? k.bewegt_am, z),
-        )
-      }
-    }
     return eintrag.karten
   }
 
   function setzeFertigFilter(spalteId: string, zeitraum: string): void {
     fertigFilter = { ...fertigFilter, [spalteId]: zeitraum }
-  }
-  // Erledigte Spalte mit aktivem Zeitfilter: die Spalte zeigt nur eine Teilmenge (nach
-  // Abschlussdatum). Ziehen bleibt erlaubt - die Drop-Position wird in cardsFinalize aus
-  // der sichtbaren Teilmenge auf die absolute Position in der vollen Spalte umgerechnet,
-  // damit verborgene Karten nicht umsortiert werden.
-  function gefiltertErledigt(eintrag: Eintrag): boolean {
-    return !!eintrag.spalte.erledigt && (fertigFilter[eintrag.spalte.id] ?? 'heute') !== 'alle'
-  }
-
-  // Sichtbaren Drop-Index einer gefilterten Spalte auf die absolute reihenfolge-Position
-  // in der vollen Spalte abbilden: an den sichtbaren Nachbarn andocken, sonst ans Ende.
-  function absolutePosition(spalteId: string, items: Karte[], bewegtId: string): number {
-    const voll = (board?.karten ?? [])
-      .filter((k) => k.spalte === spalteId && k.id !== bewegtId)
-      .sort((a, b) => a.reihenfolge - b.reihenfolge)
-    const sichtbar = items.filter((k) => k.id !== SHADOW_PLACEHOLDER_ITEM_ID)
-    const j = sichtbar.findIndex((k) => k.id === bewegtId)
-    for (let d = j - 1; d >= 0; d--) {
-      const vi = voll.findIndex((k) => k.id === sichtbar[d].id)
-      if (vi >= 0) return vi + 1
-    }
-    for (let d = j + 1; d < sichtbar.length; d++) {
-      const vi = voll.findIndex((k) => k.id === sichtbar[d].id)
-      if (vi >= 0) return vi
-    }
-    return voll.length
+    ladeFertigSpalte(spalteId, true)  // neuer Zeitraum -> erste Seite serverseitig neu laden
   }
 
   function toggleEinklappen(id: string) {
@@ -303,14 +315,18 @@
           zeigeToast(`Spalte "${sp.titel}" ist über dem WIP-Limit (${n}/${sp.wip_limit}).`)
         }
       }
-      // Ist die Zielspalte gefiltert (erledigt + Zeitraum != alle), zeigt sie nur eine
-      // Teilmenge - der sichtbare Index muss auf die absolute Position umgerechnet werden,
-      // sonst springt die Karte vor verborgene Karten. Danach neu laden, damit bewegt_am
-      // (Abschlussdatum) frisch ist und die Karte korrekt unter dem Zeitfilter erscheint.
-      const zielGefiltert = gefiltertErledigt(eintrag)
-      const zielPos = zielGefiltert ? absolutePosition(spalteId, items, info.id) : pos
+      // Erledigt-Spalten sind nach Abschlussdatum sortiert (nicht manuell) und nur
+      // gefenstert geladen; darum wird die Karte dort ans Ende gehaengt (Datum ordnet neu)
+      // und die betroffene(n) Fertig-Spalte(n) frisch nachgeladen.
+      const zielPos = eintrag.spalte.erledigt ? 1_000_000 : pos
       verschiebeKarte(info.id, spalteId, zielPos)
-        .then(() => { if (wechsel || zielGefiltert) laden() })
+        .then(() => {
+          if (wechsel) {
+            laden()  // Spaltenwechsel: offene Spalten + alle Fertig-Spalten auffrischen
+          } else if (eintrag.spalte.erledigt) {
+            ladeFertigSpalte(spalteId, true)  // Umsortieren in einer Fertig-Spalte
+          }
+        })
         .catch(() => laden())
     }
     zuletztGezogen = Date.now()
@@ -331,11 +347,18 @@
   // -- Karte öffnen / bearbeiten --
   function oeffnen(id: string) {
     if (Date.now() - zuletztGezogen < 160) return
-    ausgewaehlt = board?.karten.find((k) => k.id === id) ?? null
+    ausgewaehlt = findeKarte(id) ?? null
   }
   function ersetzeKarte(k: Karte) {
     if (!board) return
+    // Karte kann in einer offenen Spalte (board.karten) ODER einer gefensterten
+    // Fertig-Spalte (fertigDaten) liegen - an beiden Stellen aktualisieren.
     board.karten = board.karten.map((x) => (x.id === k.id ? k : x))
+    for (const [sid, d] of Object.entries(fertigDaten)) {
+      if (d.karten.some((x) => x.id === k.id)) {
+        fertigDaten = { ...fertigDaten, [sid]: { ...d, karten: d.karten.map((x) => (x.id === k.id ? k : x)) } }
+      }
+    }
     baueAnsicht()
     if (ausgewaehlt?.id === k.id) ausgewaehlt = k
   }
@@ -362,7 +385,7 @@
     if (ausgewaehlt) loescheKarteMitUndo(ausgewaehlt)
   }
   function karteSchnellLoeschen(id: string) {
-    const k = board?.karten.find((x) => x.id === id)
+    const k = findeKarte(id)
     if (k) loescheKarteMitUndo(k)
   }
 
@@ -456,6 +479,10 @@
               onSpalteVerschieben={(richtung) => spalteVerschieben(eintrag.spalte.id, richtung)}
               onSpalteLoeschen={() => spalteLoeschen(eintrag.spalte.id)}
               onSpalteErledigt={() => spalteErledigt(eintrag.spalte.id)}
+              fertigMehr={eintrag.spalte.erledigt ? (fertigDaten[eintrag.spalte.id]?.hatMehr ?? false) : false}
+              fertigLaden={fertigDaten[eintrag.spalte.id]?.laden ?? false}
+              fertigGesamt={eintrag.spalte.erledigt ? (fertigDaten[eintrag.spalte.id]?.gesamt ?? 0) : 0}
+              onNachladen={() => ladeFertigSpalte(eintrag.spalte.id, false)}
             />
           {/if}
         </div>
@@ -473,9 +500,19 @@
         </div>
       {:else}
         <button class="add-btn" onclick={() => (neueSpalte = true)}><i class="fa-solid fa-plus" aria-hidden="true"></i> Spalte</button>
+        <button class="add-btn archiv" onclick={() => (archivOffen = true)} title="Archivierte fertige Karten"><i class="fa-solid fa-box-archive" aria-hidden="true"></i> Archiv</button>
       {/if}
     </div>
   </div>
+
+  {#if archivOffen && board}
+    <Archiv
+      {boardId}
+      titel={board.titel}
+      onSchliessen={() => (archivOffen = false)}
+      onOeffneKarte={(k) => { ausgewaehlt = k; archivOffen = false }}
+    />
+  {/if}
 
   {#if ausgewaehlt}
     <CardDrawer

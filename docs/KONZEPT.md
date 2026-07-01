@@ -110,4 +110,6 @@ Umsetzung: Neue Tabellen abwesenheit_typ (Farbe, reduziert_soll, anrechnen, anwe
 
 19. Mehrbenutzer und Anmeldung (siehe ROLLEN.md, LOGIN.md): Rollen (Admin/Mitarbeiter) je Person; optionale echte Anmeldung mit Name oder Kürzel und Passwort, serverseitige Durchsetzung der Admin-Bereiche, Aussperr-Schutz.
 
+20. Fertige Karten: Fenster, Nachladen und Archiv (siehe FERTIG_ARCHIV.md): Erledigt-Spalten laden serverseitig gefiltert (Zeitfenster je Spalte) und gedeckelt, der Rest wird beim Scrollen nachgeladen - das Board wird nicht mehr geflutet. Fertige Karten älter als eine einstellbare Schwelle (Standard ein Jahr) wandern automatisch ins Archiv (eigene Archiv-Ansicht am Board, durchsuchbar); Deckelgröße und Schwelle sind in den Einstellungen editierbar. Reine Ladegrenze, kein Datenumbau; Auswertungen bleiben unberührt.
+
 Querschnitt: strenge Versionierung (Patch je Änderung, Feature je Ausbaustufe), saubere Commits, README hält den Ist-Zustand.

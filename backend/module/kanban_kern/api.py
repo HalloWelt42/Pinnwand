@@ -17,9 +17,12 @@ from .models import (
     DokumentUpdate,
     GruppeUpdate,
     HeuteUebersicht,
+    KanbanEinstellungen,
+    KanbanEinstellungenUpdate,
     Karte,
     KarteCreate,
     KarteMove,
+    KartenSeite,
     KarteUpdate,
     KarteVerknuepfen,
     KommentarCreate,
@@ -103,6 +106,44 @@ def board(board_id: str) -> BoardDetail:
     if detail is None:
         raise HTTPException(status_code=404, detail="Board nicht gefunden")
     return detail
+
+
+def _als_seite(karten: list[Karte], gesamt: int, offset: int) -> KartenSeite:
+    return KartenSeite(karten=karten, gesamt=gesamt, hat_mehr=(offset + len(karten)) < gesamt)
+
+
+@router.get("/spalten/{spalte_id}/fertige", response_model=KartenSeite)
+def fertige(
+    spalte_id: str,
+    zeitraum: str = "heute",
+    offset: int = 0,
+    limit: int | None = None,
+    q: str | None = None,
+    labels: str | None = None,
+    prioritaet: str | None = None,
+) -> KartenSeite:
+    """Eine gefensterte Seite fertiger Karten einer Erledigt-Spalte (nur nicht-archivierte)."""
+    lab = [t.strip() for t in labels.split(",") if t.strip()] if labels else None
+    karten, gesamt = db.fertige_seite(spalte_id, zeitraum, offset, limit, q, lab, prioritaet)
+    return _als_seite(karten, gesamt, max(0, offset))
+
+
+@router.get("/boards/{board_id}/archiv", response_model=KartenSeite)
+def archiv(board_id: str, offset: int = 0, limit: int | None = None, q: str | None = None) -> KartenSeite:
+    """Archivierte fertige Karten eines Boards (Abschluss aelter als die Schwelle)."""
+    karten, gesamt = db.archiv_seite(board_id, offset, limit, q)
+    return _als_seite(karten, gesamt, max(0, offset))
+
+
+@router.get("/einstellungen", response_model=KanbanEinstellungen)
+def kanban_einstellungen() -> KanbanEinstellungen:
+    return KanbanEinstellungen(**db.hole_kanban_einstellungen())
+
+
+@router.put("/einstellungen", response_model=KanbanEinstellungen)
+def kanban_einstellungen_setzen(eingabe: KanbanEinstellungenUpdate) -> KanbanEinstellungen:
+    werte = db.setze_kanban_einstellungen(eingabe.fertig_seitengroesse, eingabe.archiv_tage)
+    return KanbanEinstellungen(**werte)
 
 
 @router.get("/heute", response_model=HeuteUebersicht)
@@ -243,6 +284,16 @@ def karte_loeschen(karte_id: str) -> None:
 
 
 # -- Zeiterfassung --------------------------------------------------------
+
+@router.get("/karten/{karte_id}", response_model=Karte)
+def karte_holen(karte_id: str) -> Karte:
+    """Einzelne Karte - Fallback fuer Deep-Links auf fertige Karten, die nicht im
+    gefensterten Board geladen sind."""
+    k = db.hole_karte(karte_id)
+    if k is None:
+        raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    return k
+
 
 @router.get("/laufend", response_model=Karte | None)
 def laufend() -> Karte | None:

@@ -122,6 +122,10 @@ CREATE TABLE IF NOT EXISTS dokument (
     erstellt_am TEXT,
     bewegt_am TEXT
 );
+CREATE TABLE IF NOT EXISTS kanban_einstellung (
+    schluessel TEXT PRIMARY KEY,
+    wert TEXT NOT NULL
+);
 """
 
 
@@ -156,6 +160,10 @@ def _migriere(conn: sqlite3.Connection) -> None:
     conn.execute(
         "CREATE TABLE IF NOT EXISTS label_definition ("
         "id TEXT PRIMARY KEY, name TEXT NOT NULL, familie TEXT NOT NULL, erstellt_am TEXT)"
+    )
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS kanban_einstellung ("
+        "schluessel TEXT PRIMARY KEY, wert TEXT NOT NULL)"
     )
     # Altdaten aufraeumen: bestehende Start/Stopp-Fragmente je Karte+Tag zusammenfassen
     # (idempotent, einmalige Roh-Sicherung). Neue Sitzungen fasst _pause_intern direkt zusammen.
@@ -287,26 +295,210 @@ def board_detail(board_id: str) -> BoardDetail | None:
         if b is None:
             return None
         spalten = _spalten(conn, board_id)
-        rows = conn.execute("SELECT * FROM karte WHERE board_id = ? ORDER BY reihenfolge, id", (board_id,)).fetchall()
-        karten = []
-        for r in rows:
-            k = _karte_aus_row(r)
-            # Abschlussdatum fuer den Fertig-Zeitfilter:
-            # - Serien-/REKO-Karten haben ein FESTES Datum (faellig = geplanter Tag),
-            #   egal wann sie als erledigt verschoben werden.
-            # - Alle anderen Karten zaehlen ab dem Erledigt-Zeitpunkt (bewegt_am).
-            # Die erfassten Zeiten (zeiteintrag) sind reine Tages-Summen und bleiben
-            # hier bewusst aussen vor.
-            if r["serie_id"] and r["faellig"]:
-                k.abschluss_am = r["faellig"]
-            elif r["bewegt_am"]:
-                k.abschluss_am = r["bewegt_am"][:10]
-            karten.append(k)
+        # Karten in Erledigt-Spalten werden hier NICHT geladen - sie kommen gefenstert
+        # ueber fertige_seite() (Zeitfilter + Anzahl-Deckel + Nachladen), damit das Board
+        # bei vielen fertigen Karten nicht geflutet wird. Sehr alte fertige Karten liegen
+        # ausserdem im Archiv (archiv_seite). Offene Spalten werden voll geladen.
+        rows = conn.execute(
+            "SELECT k.* FROM karte k JOIN spalte s ON k.spalte = s.id "
+            "WHERE k.board_id = ? AND s.erledigt = 0 ORDER BY k.reihenfolge, k.id",
+            (board_id,),
+        ).fetchall()
+        karten = [_karte_aus_row(r) for r in rows]
         _reichere_gruppen_an(conn, karten)
     return BoardDetail(
         id=b["id"], mappe_id=b["mappe_id"], titel=b["titel"], kuerzel=b["kuerzel"],
         spalten=spalten, karten=karten,
     )
+
+
+# -- Fertig-Karten: Fenster, Deckel, Nachladen + Archiv --------------------
+# Erledigt-Spalten werden nicht komplett geladen, sondern serverseitig gefiltert
+# (Zeitfenster), gedeckelt (Seitengroesse) und beim Scrollen nachgeladen. Karten,
+# deren Abschluss aelter als die Archiv-Schwelle ist, erscheinen nur im Archiv.
+
+# Abschlussdatum (YYYY-MM-DD) als SQL-Ausdruck, konsistent zu Karte.abschluss_am:
+# Serien-/REKO-Karten haben ein FESTES Datum (faellig), alle anderen zaehlen ab dem
+# Erledigt-Zeitpunkt (bewegt_am). Ohne beides bleibt der Abschluss NULL.
+_ABSCHLUSS_SQL = (
+    "CASE WHEN serie_id IS NOT NULL AND faellig IS NOT NULL THEN faellig "
+    "WHEN bewegt_am IS NOT NULL THEN substr(bewegt_am, 1, 10) ELSE NULL END"
+)
+
+# Volltext ueber alle durchsuchbaren Felder (labels/checkliste/kommentare sind JSON-Text
+# und enthalten die Begriffe im Klartext) - spiegelt die Tiefensuche des Frontends.
+_VOLLTEXT_SQL = (
+    "LOWER(COALESCE(titel,'') || ' ' || COALESCE(schluessel,'') || ' ' || "
+    "COALESCE(beschreibung,'') || ' ' || COALESCE(notizen,'') || ' ' || "
+    "COALESCE(zustaendig,'') || ' ' || COALESCE(prioritaet,'') || ' ' || "
+    "COALESCE(labels,'') || ' ' || COALESCE(checkliste,'') || ' ' || COALESCE(kommentare,''))"
+)
+
+
+def _als_int(wert, standard: int, minimum: int, maximum: int) -> int:
+    try:
+        n = int(wert)
+    except (TypeError, ValueError):
+        return standard
+    return max(minimum, min(n, maximum))
+
+
+def hole_kanban_einstellungen() -> dict[str, int]:
+    with _verb() as conn:
+        rows = conn.execute("SELECT schluessel, wert FROM kanban_einstellung").fetchall()
+    roh = {r["schluessel"]: r["wert"] for r in rows}
+    return {
+        "fertig_seitengroesse": _als_int(roh.get("fertig_seitengroesse"), 50, 1, 500),
+        "archiv_tage": _als_int(roh.get("archiv_tage"), 365, 1, 100000),
+    }
+
+
+def setze_kanban_einstellungen(fertig_seitengroesse: int, archiv_tage: int) -> dict[str, int]:
+    seiten = _als_int(fertig_seitengroesse, 50, 1, 500)
+    tage = _als_int(archiv_tage, 365, 1, 100000)
+    with _verb() as conn:
+        for schluessel, wert in (("fertig_seitengroesse", seiten), ("archiv_tage", tage)):
+            conn.execute(
+                "INSERT INTO kanban_einstellung (schluessel, wert) VALUES (?, ?) "
+                "ON CONFLICT(schluessel) DO UPDATE SET wert = excluded.wert",
+                (schluessel, str(wert)),
+            )
+    return {"fertig_seitengroesse": seiten, "archiv_tage": tage}
+
+
+def _karte_mit_abschluss(row: sqlite3.Row) -> Karte:
+    k = _karte_aus_row(row)
+    if row["serie_id"] and row["faellig"]:
+        k.abschluss_am = row["faellig"]
+    elif row["bewegt_am"]:
+        k.abschluss_am = row["bewegt_am"][:10]
+    return k
+
+
+def _zeitfenster(zeitraum: str) -> tuple[str | None, str | None]:
+    """(von, bis) als ISO-Datum fuer den Fertig-Zeitfilter; (None, None) = alle."""
+    heute = datetime.now().date()
+    if zeitraum == "heute":
+        return heute.isoformat(), heute.isoformat()
+    if zeitraum == "gestern":
+        g = heute - timedelta(days=1)
+        return g.isoformat(), g.isoformat()
+    if zeitraum == "woche":
+        mo = heute - timedelta(days=heute.weekday())
+        return mo.isoformat(), (mo + timedelta(days=6)).isoformat()
+    if zeitraum == "monat":
+        von = heute.replace(day=1)
+        naechster = (von + timedelta(days=32)).replace(day=1)
+        return von.isoformat(), (naechster - timedelta(days=1)).isoformat()
+    if zeitraum == "jahr":
+        return heute.replace(month=1, day=1).isoformat(), heute.replace(month=12, day=31).isoformat()
+    return None, None
+
+
+def _archiv_grenze(archiv_tage: int) -> str:
+    return (datetime.now().date() - timedelta(days=archiv_tage)).isoformat()
+
+
+def _suchbedingung(
+    q: str | None, labels: list[str] | None, prioritaet: str | None
+) -> tuple[list[str], list]:
+    """WHERE-Teilbedingungen + Argumente fuer Suche/Label/Prio (alle als UND verknuepft;
+    innerhalb der Suche muss jedes Wort vorkommen, Labels sind ODER-verknuepft)."""
+    bed: list[str] = []
+    args: list = []
+    if q and q.strip():
+        for wort in q.strip().lower().split():
+            bed.append(f"{_VOLLTEXT_SQL} LIKE ?")
+            args.append(f"%{wort}%")
+    if labels:
+        teil = ["labels LIKE ?" for _ in labels]
+        args += [f'%"{name}"%' for name in labels]
+        bed.append("(" + " OR ".join(teil) + ")")
+    if prioritaet:
+        bed.append("prioritaet = ?")
+        args.append(prioritaet)
+    return bed, args
+
+
+def fertige_seite(
+    spalte_id: str,
+    zeitraum: str = "heute",
+    offset: int = 0,
+    limit: int | None = None,
+    q: str | None = None,
+    labels: list[str] | None = None,
+    prioritaet: str | None = None,
+) -> tuple[list[Karte], int]:
+    """Eine Seite fertiger Karten EINER Erledigt-Spalte: nach Abschlussdatum (neueste
+    zuerst), ohne archivierte (aelter als die Schwelle), gedeckelt + per Offset nachladbar.
+    Sind Suche/Label/Prio aktiv, wird das Zeitfenster ausgesetzt (wie im Frontend)."""
+    conf = hole_kanban_einstellungen()
+    seite = _als_int(limit, conf["fertig_seitengroesse"], 1, 500)
+    offset = max(0, int(offset))
+    grenze = _archiv_grenze(conf["archiv_tage"])
+    such_bed, such_args = _suchbedingung(q, labels, prioritaet)
+    where = ["spalte = ?", f"({_ABSCHLUSS_SQL} IS NULL OR {_ABSCHLUSS_SQL} >= ?)"]
+    args: list = [spalte_id, grenze]
+    if not such_bed and zeitraum != "alle":
+        von, bis = _zeitfenster(zeitraum)
+        if von and bis:
+            where.append(f"{_ABSCHLUSS_SQL} BETWEEN ? AND ?")
+            args += [von, bis]
+    where += such_bed
+    args += such_args
+    wsql = " AND ".join(where)
+    with _verb() as conn:
+        gesamt = conn.execute(f"SELECT COUNT(*) AS n FROM karte WHERE {wsql}", args).fetchone()["n"]
+        rows = conn.execute(
+            f"SELECT * FROM karte WHERE {wsql} ORDER BY {_ABSCHLUSS_SQL} DESC, reihenfolge, id LIMIT ? OFFSET ?",
+            args + [seite, offset],
+        ).fetchall()
+        karten = [_karte_mit_abschluss(r) for r in rows]
+        _reichere_gruppen_an(conn, karten)
+    return karten, int(gesamt)
+
+
+def archiv_seite(
+    board_id: str,
+    offset: int = 0,
+    limit: int | None = None,
+    q: str | None = None,
+) -> tuple[list[Karte], int]:
+    """Archivierte fertige Karten eines Boards (Abschluss aelter als die Schwelle), ueber
+    alle Erledigt-Spalten, neueste zuerst, gedeckelt + nachladbar, optional durchsucht."""
+    conf = hole_kanban_einstellungen()
+    seite = _als_int(limit, conf["fertig_seitengroesse"], 1, 500)
+    offset = max(0, int(offset))
+    grenze = _archiv_grenze(conf["archiv_tage"])
+    such_bed, such_args = _suchbedingung(q, None, None)
+    with _verb() as conn:
+        erledigt = [
+            r["id"]
+            for r in conn.execute(
+                "SELECT id FROM spalte WHERE board_id = ? AND erledigt = 1", (board_id,)
+            ).fetchall()
+        ]
+        if not erledigt:
+            return [], 0
+        platz = ",".join("?" for _ in erledigt)
+        where = [
+            "board_id = ?",
+            f"spalte IN ({platz})",
+            f"{_ABSCHLUSS_SQL} IS NOT NULL",
+            f"{_ABSCHLUSS_SQL} < ?",
+        ]
+        args: list = [board_id, *erledigt, grenze]
+        where += such_bed
+        args += such_args
+        wsql = " AND ".join(where)
+        gesamt = conn.execute(f"SELECT COUNT(*) AS n FROM karte WHERE {wsql}", args).fetchone()["n"]
+        rows = conn.execute(
+            f"SELECT * FROM karte WHERE {wsql} ORDER BY {_ABSCHLUSS_SQL} DESC, id LIMIT ? OFFSET ?",
+            args + [seite, offset],
+        ).fetchall()
+        karten = [_karte_mit_abschluss(r) for r in rows]
+        _reichere_gruppen_an(conn, karten)
+    return karten, int(gesamt)
 
 
 def _reichere_gruppen_an(conn: sqlite3.Connection, karten: list[Karte]) -> None:

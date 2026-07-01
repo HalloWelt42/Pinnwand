@@ -170,6 +170,8 @@ def test_fertig_abschlussdatum_nicht_serie_ist_verschiebe_tag(client, szenario):
     gestern = (date.today() - timedelta(days=1)).isoformat()
     _buche(client, k["id"], gestern, 600)
     assert client.post(f"/api/kanban/karten/{k['id']}/move", json={"spalte": fertig, "reihenfolge": 0}).status_code == 200
-    bd2 = _board_detail(client, szenario["board"]["id"])
-    karte = next(x for x in bd2["karten"] if x["id"] == k["id"])
+    # Erledigt-Karten kommen jetzt gefenstert ueber den fertige-Endpunkt (nicht mehr
+    # ueber board_detail); dort traegt die Karte das Abschlussdatum = Verschiebe-Tag.
+    seite = client.get(f"/api/kanban/spalten/{fertig}/fertige", params={"zeitraum": "heute"}).json()
+    karte = next(x for x in seite["karten"] if x["id"] == k["id"])
     assert karte["abschluss_am"] == date.today().isoformat()

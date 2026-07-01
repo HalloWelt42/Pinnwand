@@ -586,6 +586,17 @@
     box-shadow: var(--schatten-lift);
     cursor: grabbing;
   }
+  /* svelte-dnd-action fokussiert das schwebende Klon-Element - der (blaue, eckige)
+     Fokusrahmen um die abgehobene Karte ist hier unerwuenscht; der Lift-Schatten genuegt.
+     Wrapper zusaetzlich abrunden, falls ein Browser doch einen Rahmen zeichnet. */
+  :global(#dnd-action-dragged-el) {
+    border-radius: var(--r-l);
+  }
+  :global(#dnd-action-dragged-el),
+  :global(#dnd-action-dragged-el:focus),
+  :global(#dnd-action-dragged-el:focus-visible) {
+    outline: none !important;
+  }
   .add-col {
     flex: 0 0 270px;
   }

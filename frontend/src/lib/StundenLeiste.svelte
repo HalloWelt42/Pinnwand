@@ -4,6 +4,7 @@
   // Einklappbar; der Zustand wird im Browser gemerkt.
   import { ladeStundenUebersicht, ladePersonen, type StundenUebersicht, type Person } from './api'
   import { personSicht, setzePersonSicht } from './personSicht.svelte'
+  import { auth } from './auth.svelte'
   import { formatStd } from './zeit'
   import { timer, formatDauerVoll } from './timer.svelte'
   import { leseJson, schreibeJson } from './uiSpeicher'
@@ -15,6 +16,17 @@
   const aktivKuerzel = $derived(
     personSicht.id ? (personen.find((p) => p.id === personSicht.id)?.kuerzel ?? null) : null,
   )
+
+  // Bei aktivem Login ist die Identitaet fix: ein Mitarbeiter sieht nur die EIGENEN
+  // Kennzahlen - kein Wechsel auf andere Personen oder "Alle". Der Umschalter wird dann
+  // gesperrt und die Sicht auf die eigene Person gezwungen. Admin behaelt den Umschalter
+  // als Team-/Personen-Filter; ohne aktiven Login bleibt er wie bisher frei.
+  const gesperrt = $derived(auth.erforderlich && auth.rolle === 'mitarbeiter')
+  $effect(() => {
+    if (gesperrt && auth.personId && personSicht.id !== auth.personId) {
+      setzePersonSicht(auth.personId)
+    }
+  })
 
   $effect(() => {
     ladePersonen().then((p) => (personen = p.filter((x) => x.aktiv))).catch(() => {})
@@ -109,7 +121,9 @@
         </span>
       {/each}
     </div>
-    {#if personen.length}
+    {#if gesperrt}
+      <span class="psel-fix" title="Deine Sicht">{auth.kuerzel ?? auth.name ?? 'Ich'}</span>
+    {:else if personen.length}
       <select class="psel" value={personSicht.id} onchange={(e) => setzePersonSicht(e.currentTarget.value)}
         title="Sicht auf eine Person (Alle = Team-Gesamt)">
         <option value="">Alle</option>
@@ -185,5 +199,12 @@
     border-radius: var(--r-s);
     padding: 3px 6px;
     font-size: 11.5px;
+  }
+  /* Feste eigene Sicht (Mitarbeiter bei aktivem Login): kein Umschalter, nur das Kuerzel. */
+  .psel-fix {
+    margin-left: auto;
+    color: var(--text-3);
+    font-size: 11.5px;
+    padding: 3px 6px;
   }
 </style>

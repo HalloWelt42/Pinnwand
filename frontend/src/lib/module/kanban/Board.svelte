@@ -102,7 +102,7 @@
         const zid = ziel.karteId
         ladeKarte(zid).then((karte) => {
           if (nav.ziel?.karteId === zid) { ausgewaehlt = karte; nav.ziel = { boardId } }
-        }).catch(() => {})
+        }).catch(() => zeigeToast('Karte konnte nicht geladen werden.'))
       }
     }
   })
@@ -134,20 +134,30 @@
     return { zeitraum: fertigFilter[spalteId] ?? 'heute' }
   }
 
+  // Generationszaehler je Spalte: eine spaetere Anfrage (z.B. Zeitfilter-Wechsel oder
+  // Board-Wechsel) ueberholt eine noch laufende; deren Ergebnis wird dann verworfen.
+  const fertigGen: Record<string, number> = {}
   async function ladeFertigSpalte(spalteId: string, reset = true): Promise<void> {
     const vorher = fertigDaten[spalteId]
-    if (vorher?.laden) return
+    // Nachladen (Anhaengen) nicht doppelt starten; ein Reset (Filterwechsel) hat aber
+    // immer Vorrang und darf eine laufende Anfrage ueberholen.
+    if (!reset && vorher?.laden) return
+    const gen = (fertigGen[spalteId] = (fertigGen[spalteId] ?? 0) + 1)
+    const meinBoard = boardId
     const offset = reset ? 0 : (vorher?.karten.length ?? 0)
     fertigDaten = { ...fertigDaten, [spalteId]: { karten: vorher?.karten ?? [], gesamt: vorher?.gesamt ?? 0, hatMehr: vorher?.hatMehr ?? false, laden: true } }
     try {
       const seite = await ladeFertige(spalteId, { ...fertigParams(spalteId), offset })
+      if (fertigGen[spalteId] !== gen || boardId !== meinBoard) return  // ueberholt / Board gewechselt -> verwerfen
       const bestehend = reset ? [] : (vorher?.karten ?? [])
       // Dubletten vermeiden (falls sich zwischen zwei Seiten etwas verschoben hat).
       const bekannt = new Set(bestehend.map((k) => k.id))
       const neu = seite.karten.filter((k) => !bekannt.has(k.id))
       fertigDaten = { ...fertigDaten, [spalteId]: { karten: [...bestehend, ...neu], gesamt: seite.gesamt, hatMehr: seite.hat_mehr, laden: false } }
     } catch {
-      fertigDaten = { ...fertigDaten, [spalteId]: { karten: vorher?.karten ?? [], gesamt: vorher?.gesamt ?? 0, hatMehr: vorher?.hatMehr ?? false, laden: false } }
+      if (fertigGen[spalteId] === gen && boardId === meinBoard) {
+        fertigDaten = { ...fertigDaten, [spalteId]: { karten: vorher?.karten ?? [], gesamt: vorher?.gesamt ?? 0, hatMehr: vorher?.hatMehr ?? false, laden: false } }
+      }
     }
     baueAnsicht()
   }
@@ -196,6 +206,7 @@
     ausgewaehlt = null
     eingeklappt = new Set(s.eingeklappt ?? [])
     fertigFilter = s.fertigFilter ?? {}
+    fertigDaten = {}  // Board-Wechsel: gefensterte Fertig-Daten des alten Boards verwerfen
     laden()
   })
 

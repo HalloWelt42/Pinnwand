@@ -3,10 +3,12 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from module.auth import dienst as authdienst
 from module.auth import persistence as authdb
+from module.auth.akteur import Akteur, aktueller_akteur
+from module.auth.rechte import darf_person_bearbeiten, verlange
 
 from . import feiertage, kalender, kapazitaet
 from . import persistence as db
@@ -38,7 +40,8 @@ def personen() -> list[dict]:
 
 
 @router.post("/personen", response_model=Person, status_code=201)
-def person_anlegen(e: PersonCreate) -> dict:
+def person_anlegen(e: PersonCreate, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
+    verlange(akteur.ist_admin, "Nur Admins duerfen Personen anlegen.")
     return db.erstelle_person(
         e.name, e.kuerzel, e.wochenstunden, e.farbe,
         bundesland=e.bundesland, urlaubsanspruch=e.urlaubsanspruch, resturlaub_vorjahr=e.resturlaub_vorjahr,
@@ -59,8 +62,15 @@ def urlaubskonto(person: str = Query(...), jahr: int = Query(...)) -> dict:
 
 
 @router.patch("/personen/{pid}", response_model=Person)
-def person_aendern(pid: str, e: PersonUpdate) -> dict:
+def person_aendern(pid: str, e: PersonUpdate, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
     daten = e.model_dump(exclude_unset=True)
+    # Rechte-relevante Felder darf nur ein Admin aendern; persoenliche Felder (Bundesland,
+    # Wochenstunden, Urlaubsanspruch, Farbe) darf die Person auch selbst pflegen.
+    _ADMIN_FELDER = {"rolle", "aktiv", "name", "kuerzel"}
+    if _ADMIN_FELDER & daten.keys():
+        verlange(akteur.ist_admin, "Diese Felder darf nur ein Admin aendern.")
+    else:
+        verlange(darf_person_bearbeiten(akteur, pid), "Nur die eigene Person oder ein Admin.")
     # Aussperr-Schutz: bei aktiver Anmeldung den letzten Admin (mit Passwort) nicht
     # herabstufen oder deaktivieren.
     entzieht_admin = daten.get("rolle") == "mitarbeiter" or daten.get("aktiv") is False
@@ -78,7 +88,8 @@ def person_aendern(pid: str, e: PersonUpdate) -> dict:
 
 
 @router.delete("/personen/{pid}", status_code=204)
-def person_loeschen(pid: str) -> None:
+def person_loeschen(pid: str, akteur: Akteur = Depends(aktueller_akteur)) -> None:
+    verlange(akteur.ist_admin, "Nur Admins duerfen Personen loeschen.")
     # Aussperr-Schutz: bei aktiver Anmeldung den letzten Admin mit Passwort nicht loeschen.
     if authdienst.login_aktiv() and not db.admin_mit_passwort_existiert(ausser_pid=pid):
         raise HTTPException(
@@ -90,9 +101,9 @@ def person_loeschen(pid: str) -> None:
 
 
 @router.post("/personen/{pid}/passwort", response_model=Person)
-def person_passwort(pid: str, eingabe: PasswortEingabe) -> dict:
-    """Setzt oder entfernt (leer) das Passwort einer Person. Bei aktivem Login
-    nur fuer Admins (serverseitig durchgesetzt)."""
+def person_passwort(pid: str, eingabe: PasswortEingabe, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
+    """Setzt oder entfernt (leer) das Passwort einer Person. Nur fuer Admins."""
+    verlange(akteur.ist_admin, "Nur Admins duerfen Passwoerter setzen.")
     neu = eingabe.passwort.strip() or None
     # Aussperr-Schutz: bei aktiver Anmeldung das letzte Admin-Passwort nicht entfernen.
     if authdienst.login_aktiv() and neu is None and not db.admin_mit_passwort_existiert(ausser_pid=pid):
@@ -115,7 +126,8 @@ def urlaub(person: str | None = Query(default=None), von: str = Query(...), bis:
 
 
 @router.post("/urlaub")
-def urlaub_setzen(e: UrlaubSetzen) -> dict:
+def urlaub_setzen(e: UrlaubSetzen, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
+    verlange(darf_person_bearbeiten(akteur, e.person_id), "Nur der eigene Urlaub oder ein Admin.")
     bis = e.bis or e.von
     p = db.hole_person(e.person_id)
     ws = p["wochenstunden"] if p else [8, 8, 8, 8, 8, 0, 0]
@@ -143,9 +155,12 @@ def urlaub_setzen(e: UrlaubSetzen) -> dict:
 
 
 @router.delete("/urlaub/{uid}", status_code=204)
-def urlaub_loeschen(uid: str) -> None:
-    if not db.loesche_urlaub(uid):
+def urlaub_loeschen(uid: str, akteur: Akteur = Depends(aktueller_akteur)) -> None:
+    eintrag = db.hole_urlaub(uid)
+    if eintrag is None:
         raise HTTPException(status_code=404, detail="Urlaubseintrag nicht gefunden")
+    verlange(darf_person_bearbeiten(akteur, eintrag["person_id"]), "Nur der eigene Urlaub oder ein Admin.")
+    db.loesche_urlaub(uid)
 
 
 # -- Feiertage ------------------------------------------------------------
@@ -232,20 +247,27 @@ def tagesregeln(person: str | None = Query(default=None)) -> list[dict]:
 
 
 @router.post("/tagesregeln", response_model=Tagesregel, status_code=201)
-def tagesregel_anlegen(e: TagesregelCreate) -> dict:
+def tagesregel_anlegen(e: TagesregelCreate, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
+    # Persoenliche Regel (person_id gesetzt) = self-or-admin; globale Regel (person_id None)
+    # = admin-only. darf_person_bearbeiten deckt beides ab (None -> nur Admin).
+    verlange(darf_person_bearbeiten(akteur, e.person_id), "Eigene Regel oder Admin (globale Regeln nur Admin).")
     return db.setze_tagesregel(e.model_dump(exclude_unset=True))
 
 
 @router.delete("/tagesregeln/{rid}", status_code=204)
-def tagesregel_loeschen(rid: str) -> None:
-    if not db.loesche_tagesregel(rid):
+def tagesregel_loeschen(rid: str, akteur: Akteur = Depends(aktueller_akteur)) -> None:
+    regel = db.hole_tagesregel(rid)
+    if regel is None:
         raise HTTPException(status_code=404, detail="Regel nicht gefunden")
+    verlange(darf_person_bearbeiten(akteur, regel["person_id"]), "Eigene Regel oder Admin (globale Regeln nur Admin).")
+    db.loesche_tagesregel(rid)
 
 
 # -- Komfort: einen Tag einer Person leeren (alle Abwesenheiten entfernen) -
 
 @router.post("/tag-leeren")
-def tag_leeren(e: TagLeeren) -> dict:
+def tag_leeren(e: TagLeeren, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
+    verlange(darf_person_bearbeiten(akteur, e.person_id), "Nur den eigenen Tag oder ein Admin.")
     geloescht = 0
     for u in db.liste_urlaub(e.person_id, e.datum, e.datum):
         if db.loesche_urlaub(u["id"]):
@@ -261,7 +283,8 @@ def wochen_override(person_id: str) -> list[dict]:
 
 
 @router.post("/personen/{person_id}/wochen-override", response_model=WochenOverride)
-def wochen_override_setzen(person_id: str, e: WochenOverrideSetzen) -> dict:
+def wochen_override_setzen(person_id: str, e: WochenOverrideSetzen, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
+    verlange(darf_person_bearbeiten(akteur, person_id), "Nur die eigenen Arbeitszeiten oder ein Admin.")
     if len(e.wochenstunden) != 7:
         raise HTTPException(status_code=400, detail="Sieben Werte (Mo-So) noetig")
     if not (1 <= e.kw <= 53):
@@ -270,6 +293,7 @@ def wochen_override_setzen(person_id: str, e: WochenOverrideSetzen) -> dict:
 
 
 @router.delete("/personen/{person_id}/wochen-override/{jahr}/{kw}", status_code=204)
-def wochen_override_loeschen(person_id: str, jahr: int, kw: int) -> None:
+def wochen_override_loeschen(person_id: str, jahr: int, kw: int, akteur: Akteur = Depends(aktueller_akteur)) -> None:
+    verlange(darf_person_bearbeiten(akteur, person_id), "Nur die eigenen Arbeitszeiten oder ein Admin.")
     if not db.loesche_wochen_override(person_id, jahr, kw):
         raise HTTPException(status_code=404, detail="Kein Override fuer diese Woche")

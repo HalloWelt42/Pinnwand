@@ -102,6 +102,10 @@ def _migriere(conn: sqlite3.Connection) -> None:
         # setzen - so wird beim Einfuehren der Rollen niemand aus der Verwaltung ausgesperrt.
         conn.execute("ALTER TABLE person ADD COLUMN rolle TEXT")
         conn.execute("UPDATE person SET rolle = 'admin' WHERE rolle IS NULL")
+    # Ungueltige Rollenwerte (z.B. leerer String aus Altdaten) auf 'mitarbeiter'
+    # normalisieren. Trifft bewusst NICHT NULL (der Aussperr-Schutz oben setzt NULL frisch
+    # migrierter Bestaende zu 'admin') - nur echte Muellwerte.
+    conn.execute("UPDATE person SET rolle = 'mitarbeiter' WHERE rolle IS NOT NULL AND rolle NOT IN ('admin', 'mitarbeiter')")
     if "passwort_hash" not in spalten:
         conn.execute("ALTER TABLE person ADD COLUMN passwort_hash TEXT")
 
@@ -341,6 +345,16 @@ def loesche_urlaub(uid: str) -> bool:
     return cur.rowcount > 0
 
 
+def hole_urlaub(uid: str) -> dict | None:
+    """Einzelner Urlaubseintrag (fuer die Eigentumspruefung beim Loeschen)."""
+    with verbindung() as conn:
+        r = conn.execute("SELECT * FROM urlaub WHERE id = ?", (uid,)).fetchone()
+    if r is None:
+        return None
+    return {"id": r["id"], "person_id": r["person_id"], "datum": r["datum"],
+            "anteil": r["anteil"], "typ": r["typ"], "notiz": r["notiz"]}
+
+
 def _genommen(person: dict, jahr: int) -> float:
     """Im Jahr verbrauchte Urlaubstage, gewichtet mit der echten Soll-Wirkung des Tages
     (Feiertag/freier Tag = 0, Halbtag = halb). Anrechenbare Arten = anrechnen=1."""
@@ -548,6 +562,13 @@ def setze_tagesregel(daten: dict) -> dict:
         )
         r = conn.execute("SELECT * FROM tagesregel WHERE id = ?", (rid,)).fetchone()
     return _tagesregel(r)
+
+
+def hole_tagesregel(rid: str) -> dict | None:
+    """Einzelne Tagesregel (fuer die Eigentumspruefung beim Loeschen)."""
+    with verbindung() as conn:
+        r = conn.execute("SELECT * FROM tagesregel WHERE id = ?", (rid,)).fetchone()
+    return _tagesregel(r) if r else None
 
 
 def loesche_tagesregel(rid: str) -> bool:

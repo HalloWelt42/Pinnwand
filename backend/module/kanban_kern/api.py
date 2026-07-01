@@ -4,7 +4,10 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+
+from module.auth.akteur import Akteur, aktueller_akteur
+from module.auth.rechte import darf_zeiteintrag_bearbeiten, verlange
 
 from . import persistence as db
 from .models import (
@@ -353,7 +356,12 @@ def zeiteintraege(von: str | None = None, bis: str | None = None, karte_id: str 
 
 
 @router.post("/zeiteintraege", response_model=Zeiteintrag, status_code=201)
-def zeiteintrag_anlegen(eingabe: ZeiteintragCreate) -> Zeiteintrag:
+def zeiteintrag_anlegen(eingabe: ZeiteintragCreate, akteur: Akteur = Depends(aktueller_akteur)) -> Zeiteintrag:
+    # Zeit bucht man nur auf eigene Karten (Eigentum ueber karte.zustaendig) oder als Admin.
+    karte = db.hole_karte(eingabe.karte_id)
+    if karte is None:
+        raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    verlange(darf_zeiteintrag_bearbeiten(akteur, karte.zustaendig), "Zeit nur auf eigene Karten buchen.")
     eintrag = db.erstelle_zeiteintrag(f"z_{uuid4().hex[:8]}", eingabe.karte_id, eingabe.datum, eingabe.sekunden, eingabe.kommentar)
     if eintrag is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
@@ -361,7 +369,11 @@ def zeiteintrag_anlegen(eingabe: ZeiteintragCreate) -> Zeiteintrag:
 
 
 @router.patch("/zeiteintraege/{eintrag_id}", response_model=Zeiteintrag)
-def zeiteintrag_aendern(eintrag_id: str, eingabe: ZeiteintragUpdate) -> Zeiteintrag:
+def zeiteintrag_aendern(eintrag_id: str, eingabe: ZeiteintragUpdate, akteur: Akteur = Depends(aktueller_akteur)) -> Zeiteintrag:
+    vorhanden = db.hole_zeiteintrag(eintrag_id)
+    if vorhanden is None:
+        raise HTTPException(status_code=404, detail="Zeiteintrag nicht gefunden")
+    verlange(darf_zeiteintrag_bearbeiten(akteur, vorhanden.karte_zustaendig), "Nur eigene Zeiteintraege aendern.")
     eintrag = db.aktualisiere_zeiteintrag(eintrag_id, eingabe.model_dump(exclude_unset=True))
     if eintrag is None:
         raise HTTPException(status_code=404, detail="Zeiteintrag nicht gefunden")
@@ -369,9 +381,12 @@ def zeiteintrag_aendern(eintrag_id: str, eingabe: ZeiteintragUpdate) -> Zeiteint
 
 
 @router.delete("/zeiteintraege/{eintrag_id}", status_code=204)
-def zeiteintrag_loeschen(eintrag_id: str) -> None:
-    if not db.loesche_zeiteintrag(eintrag_id):
+def zeiteintrag_loeschen(eintrag_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> None:
+    vorhanden = db.hole_zeiteintrag(eintrag_id)
+    if vorhanden is None:
         raise HTTPException(status_code=404, detail="Zeiteintrag nicht gefunden")
+    verlange(darf_zeiteintrag_bearbeiten(akteur, vorhanden.karte_zustaendig), "Nur eigene Zeiteintraege loeschen.")
+    db.loesche_zeiteintrag(eintrag_id)
 
 
 # -- Boards ---------------------------------------------------------------

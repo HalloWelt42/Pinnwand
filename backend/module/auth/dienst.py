@@ -65,17 +65,27 @@ def status(token: str) -> AuthStatus:
     )
 
 
+# Rein-globale Bereiche, deren Admin-Pflicht schon am Pfad (ohne Kenntnis des
+# Zielobjekts) feststeht. methoden=None bedeutet "alle Methoden".
+# Zielbezogene Rechte (self-or-admin fuer persoenliche Planung, Eigentum an
+# Zeiteintraegen) sind hier bewusst NICHT enthalten - sie pruefen die Endpunkte
+# selbst ueber den Akteur (akteur.py/rechte.py), weil das Ziel erst dort bekannt ist.
+_ADMIN_REGELN: tuple[tuple[tuple[str, ...] | None, str], ...] = (
+    (None, "/api/backup"),                          # Backup/Restore komplett
+    (None, "/api/auth/login-modus"),                # Anmeldepflicht schalten
+    (_SCHREIB, "/api/planung/abwesenheitstypen"),   # globale Abwesenheits-Konfig
+    (_SCHREIB, "/api/planung/feiertage"),           # globaler Feiertags-Import/-Loesch
+    (_SCHREIB, "/api/kanban/labels"),               # globale Label-Verwaltung
+    (_SCHREIB, "/api/kanban/einstellungen"),        # globale Kanban-Einstellungen
+)
+
+
 def _admin_only(method: str, pfad: str) -> bool:
-    if pfad.startswith("/api/backup"):
-        return True
-    if pfad.startswith("/api/auth/login-modus"):
-        return True
-    if method in _SCHREIB and pfad.startswith("/api/planung/"):
-        return True
-    if method in _SCHREIB and (pfad == "/api/kanban/labels" or pfad.startswith("/api/kanban/labels/")):
-        return True
-    if method in _SCHREIB and pfad == "/api/kanban/einstellungen":
-        return True
+    for methoden, praefix in _ADMIN_REGELN:
+        if methoden is not None and method not in methoden:
+            continue
+        if pfad == praefix or pfad.startswith(praefix + "/"):
+            return True
     return False
 
 

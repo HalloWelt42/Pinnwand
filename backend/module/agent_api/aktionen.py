@@ -58,6 +58,8 @@ class Aktionen:
     def zeit_buchen(self, karte_ref: str, dauer: str | int, datum: str | None = None,
                     kommentar: str | None = None, dry_run: bool = False) -> dict:
         kt = self._karte_oder_fehler(karte_ref)
+        if kt.typ == "idee":
+            raise AktionsFehler("Ideentickets erfassen keine Zeit", status=409)
         sek = dauer if isinstance(dauer, int) else nlp.parse_dauer(str(dauer))
         if not sek or sek <= 0:
             raise AktionsFehler(f"Dauer '{dauer}' nicht verstanden (z.B. '1:30', '90min', '1,5h')")

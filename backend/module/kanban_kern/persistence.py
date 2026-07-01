@@ -845,6 +845,17 @@ def verschiebe_karte(karte_id: str, ziel_spalte: str, ziel_reihenfolge: int) -> 
                     (ziel_spalte, ziel_pos, jetzt, m["id"]),
                 )
                 betroffene.add(m["spalte"])
+        # Erledigen stoppt laufende Timer sauber (bucht die Sitzung) - fuer die Karte
+        # selbst und fuer mitgezogene Gruppenmitglieder.
+        if quelle != ziel_spalte:
+            ziel = conn.execute("SELECT erledigt FROM spalte WHERE id = ?", (ziel_spalte,)).fetchone()
+            if ziel is not None and ziel["erledigt"]:
+                laufende = conn.execute(
+                    "SELECT id FROM karte WHERE board_id = ? AND spalte = ? AND laeuft_seit IS NOT NULL",
+                    (board_id, ziel_spalte),
+                ).fetchall()
+                for r in laufende:
+                    _pause_intern(conn, r["id"])
         for spalte in betroffene:
             _kompaktiere(conn, board_id, spalte)
     return hole_karte(karte_id)
@@ -853,6 +864,27 @@ def verschiebe_karte(karte_id: str, ziel_spalte: str, ziel_reihenfolge: int) -> 
 def aktualisiere_karte(karte_id: str, aenderungen: dict) -> Karte | None:
     # KarteUpdate ist die einzige Feldquelle - keine doppelte Whitelist, die driften koennte.
     felder = {k: v for k, v in aenderungen.items() if k in KarteUpdate.model_fields}
+    if not felder:
+        return hole_karte(karte_id)
+    # Ein Spaltenwechsel ist ein echtes Verschieben und laeuft ueber verschiebe_karte,
+    # damit bewegt_am, Gruppen-Mitzug und Kompaktierung auf JEDEM Weg greifen
+    # (Drawer-Status, Agenten-API) - nicht nur beim Drag ueber den Move-Endpunkt.
+    neue_spalte = felder.pop("spalte", None)
+    if neue_spalte is not None:
+        with _verb() as conn:
+            row = conn.execute("SELECT board_id, spalte FROM karte WHERE id = ?", (karte_id,)).fetchone()
+            if row is None:
+                return None
+            ziel_pos = _naechste_reihenfolge(conn, row["board_id"], neue_spalte)
+        if row["spalte"] != neue_spalte:
+            verschiebe_karte(karte_id, neue_spalte, ziel_pos)
+    # Wechsel auf 'idee' stoppt einen laufenden Timer sauber (bucht die Sitzung),
+    # sonst tickt die Zeit unsichtbar auf einem Ticket weiter, das keine erfasst.
+    if felder.get("typ") == "idee":
+        with _verb() as conn:
+            r = conn.execute("SELECT laeuft_seit FROM karte WHERE id = ?", (karte_id,)).fetchone()
+            if r is not None and r["laeuft_seit"]:
+                _pause_intern(conn, karte_id)
     if not felder:
         return hole_karte(karte_id)
     for json_feld in ("labels", "checkliste"):

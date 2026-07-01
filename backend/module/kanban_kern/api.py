@@ -413,6 +413,8 @@ def zeiteintrag_anlegen(eingabe: ZeiteintragCreate, akteur: Akteur = Depends(akt
     if karte is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
     verlange(darf_zeiteintrag_bearbeiten(akteur, karte.zustaendig), "Zeit nur auf eigene Karten buchen.")
+    if karte.typ == "idee":
+        raise HTTPException(status_code=409, detail="Ideentickets erfassen keine Zeit")
     eintrag = db.erstelle_zeiteintrag(f"z_{uuid4().hex[:8]}", eingabe.karte_id, eingabe.datum, eingabe.sekunden, eingabe.kommentar)
     if eintrag is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")

@@ -373,9 +373,29 @@
     baueAnsicht()
     if (ausgewaehlt?.id === k.id) ausgewaehlt = k
   }
+  // WIP-Warnung auch abseits des Drags (Statuswechsel im Drawer, Anlegen).
+  function warneWip(spalteId: string) {
+    const eintrag = ansicht.find((e) => e.spalte.id === spalteId)
+    if (!eintrag) return
+    const sp = eintrag.spalte
+    const n = eintrag.karten.length
+    if (sp.wip_limit != null && n > sp.wip_limit) {
+      zeigeToast(`Spalte "${sp.titel}" ist über dem WIP-Limit (${n}/${sp.wip_limit}).`)
+    }
+  }
   async function karteAendern(daten: KarteAenderung) {
     if (!ausgewaehlt) return
-    ersetzeKarte(await aktualisiereKarte(ausgewaehlt.id, daten))
+    const neu = await aktualisiereKarte(ausgewaehlt.id, daten)
+    // Ein Spaltenwechsel (Status-Select im Drawer) ist ein echtes Verschieben:
+    // Board und Fertig-Fenster neu laden, damit die Karte in der Zielspalte
+    // auftaucht statt still aus der Ansicht zu verschwinden.
+    if (daten.spalte !== undefined && daten.spalte !== null) {
+      if (ausgewaehlt?.id === neu.id) ausgewaehlt = neu
+      await laden()
+      warneWip(neu.spalte)
+      return
+    }
+    ersetzeKarte(neu)
   }
   async function karteKommentar(text: string) {
     if (!ausgewaehlt) return
@@ -385,6 +405,8 @@
     const snap = $state.snapshot(k) as Karte
     const spalteId = snap.spalte
     if (ausgewaehlt?.id === snap.id) ausgewaehlt = null
+    // Zombie-Leiste vermeiden: laeuft der Timer auf dieser Karte, Leiste schliessen.
+    if (timer.aktiv?.id === snap.id) timer.aktiv = null
     await loescheKarte(snap.id)
     await laden()
     zeigeToast(`Karte "${snap.titel}" gelöscht`, async () => {
@@ -404,6 +426,7 @@
   async function karteAnlegen(spalteId: string, titel: string, typ: 'arbeit' | 'idee' = 'arbeit') {
     await erstelleKarte({ board_id: boardId, spalte: spalteId, titel, zustaendig: standardKuerzel, typ })
     await laden()
+    warneWip(spalteId)
   }
   // Zeit-Verknuepfung per Drag-and-Drop (Kette auf eine andere Karte gezogen).
   async function verknuepfeKarten(quelleId: string, zielId: string) {

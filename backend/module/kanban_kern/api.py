@@ -69,21 +69,48 @@ def _index_weg(karte_id: str) -> None:
 
 
 @router.get("/mappen", response_model=list[Projektmappe])
-def mappen() -> list[Projektmappe]:
-    return db.liste_mappen()
+def mappen(akteur: Akteur = Depends(aktueller_akteur)) -> list[Projektmappe]:
+    # Mitarbeiter sehen nur ihre Projekte (Mappen ohne Mitglieder bleiben geteilt); Admin alle.
+    return db.liste_mappen(person_id=akteur.person_id, alle=akteur.ist_admin)
 
 
 @router.get("/mappen/{mappe_id}/boards", response_model=list[Board])
-def boards(mappe_id: str) -> list[Board]:
+def boards(mappe_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> list[Board]:
+    verlange(akteur.ist_admin or db.mappe_sichtbar_fuer(mappe_id, akteur.person_id), "Kein Zugriff auf dieses Projekt.")
     return db.liste_boards(mappe_id)
 
 
 @router.post("/mappen", response_model=Projektmappe, status_code=201)
-def mappe_anlegen(eingabe: MappeCreate) -> Projektmappe:
+def mappe_anlegen(eingabe: MappeCreate, akteur: Akteur = Depends(aktueller_akteur)) -> Projektmappe:
     titel = eingabe.titel.strip()
     if not titel:
         raise HTTPException(status_code=400, detail="Titel darf nicht leer sein")
-    return db.erstelle_mappe(f"m_{uuid4().hex[:8]}", titel, eingabe.beschreibung)
+    mappe = db.erstelle_mappe(f"m_{uuid4().hex[:8]}", titel, eingabe.beschreibung)
+    # Die anlegende Person wird Mitglied ihres neuen Projekts (im offenen Modus ohne
+    # Person bleibt es memberlos = geteilt). Andere kommen ueber die Mitglieder-Verwaltung dazu.
+    if akteur.person_id:
+        db.setze_mappe_mitglied(mappe.id, akteur.person_id)
+    return mappe
+
+
+# -- Projekt-Mitglieder (wer sieht das Projekt) - Verwaltung nur fuer Admins -------
+
+@router.get("/mappen/{mappe_id}/mitglieder", response_model=list[str])
+def mappe_mitglieder(mappe_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> list[str]:
+    verlange(akteur.ist_admin or db.mappe_sichtbar_fuer(mappe_id, akteur.person_id), "Kein Zugriff auf dieses Projekt.")
+    return db.mappe_mitglieder(mappe_id)
+
+
+@router.put("/mappen/{mappe_id}/mitglieder/{person_id}", status_code=204)
+def mappe_mitglied_setzen(mappe_id: str, person_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> None:
+    verlange(akteur.ist_admin, "Nur Admins verwalten Projekt-Mitglieder.")
+    db.setze_mappe_mitglied(mappe_id, person_id)
+
+
+@router.delete("/mappen/{mappe_id}/mitglieder/{person_id}", status_code=204)
+def mappe_mitglied_entfernen(mappe_id: str, person_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> None:
+    verlange(akteur.ist_admin, "Nur Admins verwalten Projekt-Mitglieder.")
+    db.entferne_mappe_mitglied(mappe_id, person_id)
 
 
 @router.patch("/mappen/{mappe_id}", response_model=Projektmappe)
@@ -104,7 +131,12 @@ def mappe_loeschen(mappe_id: str) -> None:
 
 
 @router.get("/boards/{board_id}", response_model=BoardDetail)
-def board(board_id: str) -> BoardDetail:
+def board(board_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> BoardDetail:
+    # Zugriff nur, wenn das Projekt (Mappe) fuer den Nutzer sichtbar ist.
+    if not akteur.ist_admin:
+        mid = db.board_mappe_id(board_id)
+        if mid is not None and not db.mappe_sichtbar_fuer(mid, akteur.person_id):
+            raise HTTPException(status_code=403, detail="Kein Zugriff auf dieses Projekt.")
     detail = db.board_detail(board_id)
     if detail is None:
         raise HTTPException(status_code=404, detail="Board nicht gefunden")
@@ -373,7 +405,7 @@ def zeiteintrag_aendern(eintrag_id: str, eingabe: ZeiteintragUpdate, akteur: Akt
     vorhanden = db.hole_zeiteintrag(eintrag_id)
     if vorhanden is None:
         raise HTTPException(status_code=404, detail="Zeiteintrag nicht gefunden")
-    verlange(darf_zeiteintrag_bearbeiten(akteur, vorhanden.karte_zustaendig), "Nur eigene Zeiteintraege aendern.")
+    verlange(darf_zeiteintrag_bearbeiten(akteur, vorhanden.karte_zustaendig), "Nur eigene Zeiteinträge ändern.")
     eintrag = db.aktualisiere_zeiteintrag(eintrag_id, eingabe.model_dump(exclude_unset=True))
     if eintrag is None:
         raise HTTPException(status_code=404, detail="Zeiteintrag nicht gefunden")
@@ -385,7 +417,7 @@ def zeiteintrag_loeschen(eintrag_id: str, akteur: Akteur = Depends(aktueller_akt
     vorhanden = db.hole_zeiteintrag(eintrag_id)
     if vorhanden is None:
         raise HTTPException(status_code=404, detail="Zeiteintrag nicht gefunden")
-    verlange(darf_zeiteintrag_bearbeiten(akteur, vorhanden.karte_zustaendig), "Nur eigene Zeiteintraege loeschen.")
+    verlange(darf_zeiteintrag_bearbeiten(akteur, vorhanden.karte_zustaendig), "Nur eigene Zeiteinträge löschen.")
     db.loesche_zeiteintrag(eintrag_id)
 
 

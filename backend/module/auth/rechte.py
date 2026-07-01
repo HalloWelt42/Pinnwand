@@ -28,7 +28,7 @@ def darf_zeiteintrag_bearbeiten(akteur: Akteur, karte_zustaendig: str | None) ->
     )
 
 
-def verlange(erlaubt: bool, detail: str = "Keine Berechtigung fuer diese Aktion.") -> None:
+def verlange(erlaubt: bool, detail: str = "Keine Berechtigung für diese Aktion.") -> None:
     """Wirft 403, wenn die Aktion nicht erlaubt ist. Haelt die Endpunkte einzeilig."""
     if not erlaubt:
         raise HTTPException(status_code=403, detail=detail)

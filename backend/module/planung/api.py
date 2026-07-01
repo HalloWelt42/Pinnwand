@@ -41,7 +41,7 @@ def personen() -> list[dict]:
 
 @router.post("/personen", response_model=Person, status_code=201)
 def person_anlegen(e: PersonCreate, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
-    verlange(akteur.ist_admin, "Nur Admins duerfen Personen anlegen.")
+    verlange(akteur.ist_admin, "Nur Admins dürfen Personen anlegen.")
     return db.erstelle_person(
         e.name, e.kuerzel, e.wochenstunden, e.farbe,
         bundesland=e.bundesland, urlaubsanspruch=e.urlaubsanspruch, resturlaub_vorjahr=e.resturlaub_vorjahr,
@@ -68,7 +68,7 @@ def person_aendern(pid: str, e: PersonUpdate, akteur: Akteur = Depends(aktueller
     # Wochenstunden, Urlaubsanspruch, Farbe) darf die Person auch selbst pflegen.
     _ADMIN_FELDER = {"rolle", "aktiv", "name", "kuerzel"}
     if _ADMIN_FELDER & daten.keys():
-        verlange(akteur.ist_admin, "Diese Felder darf nur ein Admin aendern.")
+        verlange(akteur.ist_admin, "Diese Felder darf nur ein Admin ändern.")
     else:
         verlange(darf_person_bearbeiten(akteur, pid), "Nur die eigene Person oder ein Admin.")
     # Aussperr-Schutz: bei aktiver Anmeldung den letzten Admin (mit Passwort) nicht
@@ -89,7 +89,7 @@ def person_aendern(pid: str, e: PersonUpdate, akteur: Akteur = Depends(aktueller
 
 @router.delete("/personen/{pid}", status_code=204)
 def person_loeschen(pid: str, akteur: Akteur = Depends(aktueller_akteur)) -> None:
-    verlange(akteur.ist_admin, "Nur Admins duerfen Personen loeschen.")
+    verlange(akteur.ist_admin, "Nur Admins dürfen Personen löschen.")
     # Aussperr-Schutz: bei aktiver Anmeldung den letzten Admin mit Passwort nicht loeschen.
     if authdienst.login_aktiv() and not db.admin_mit_passwort_existiert(ausser_pid=pid):
         raise HTTPException(
@@ -103,7 +103,7 @@ def person_loeschen(pid: str, akteur: Akteur = Depends(aktueller_akteur)) -> Non
 @router.post("/personen/{pid}/passwort", response_model=Person)
 def person_passwort(pid: str, eingabe: PasswortEingabe, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
     """Setzt oder entfernt (leer) das Passwort einer Person. Nur fuer Admins."""
-    verlange(akteur.ist_admin, "Nur Admins duerfen Passwoerter setzen.")
+    verlange(akteur.ist_admin, "Nur Admins dürfen Passwörter setzen.")
     neu = eingabe.passwort.strip() or None
     # Aussperr-Schutz: bei aktiver Anmeldung das letzte Admin-Passwort nicht entfernen.
     if authdienst.login_aktiv() and neu is None and not db.admin_mit_passwort_existiert(ausser_pid=pid):
@@ -296,4 +296,4 @@ def wochen_override_setzen(person_id: str, e: WochenOverrideSetzen, akteur: Akte
 def wochen_override_loeschen(person_id: str, jahr: int, kw: int, akteur: Akteur = Depends(aktueller_akteur)) -> None:
     verlange(darf_person_bearbeiten(akteur, person_id), "Nur die eigenen Arbeitszeiten oder ein Admin.")
     if not db.loesche_wochen_override(person_id, jahr, kw):
-        raise HTTPException(status_code=404, detail="Kein Override fuer diese Woche")
+        raise HTTPException(status_code=404, detail="Kein Override für diese Woche")

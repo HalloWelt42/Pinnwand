@@ -46,6 +46,11 @@ CREATE TABLE IF NOT EXISTS mappe (
     titel TEXT NOT NULL,
     beschreibung TEXT
 );
+CREATE TABLE IF NOT EXISTS mappe_mitglied (
+    mappe_id TEXT NOT NULL,
+    person_id TEXT NOT NULL,
+    PRIMARY KEY (mappe_id, person_id)
+);
 CREATE TABLE IF NOT EXISTS board (
     id TEXT PRIMARY KEY,
     mappe_id TEXT NOT NULL,
@@ -227,10 +232,61 @@ def _spalten(conn: sqlite3.Connection, board_id: str) -> list[Spalte]:
     return [Spalte(id=r["id"], titel=r["titel"], wip_limit=r["wip_limit"], reihenfolge=r["reihenfolge"], erledigt=bool(r["erledigt"])) for r in rows]
 
 
-def liste_mappen() -> list[Projektmappe]:
+def liste_mappen(person_id: str | None = None, alle: bool = True) -> list[Projektmappe]:
+    """Projektmappen. alle=True (Admin/offener Modus): alle. Sonst nur Mappen, die
+    entweder KEINE Mitglieder haben (geteilt) ODER in denen die Person Mitglied ist."""
     with _verb() as conn:
-        rows = conn.execute("SELECT * FROM mappe ORDER BY titel").fetchall()
+        if alle or not person_id:
+            rows = conn.execute("SELECT * FROM mappe ORDER BY titel").fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM mappe m WHERE"
+                " NOT EXISTS (SELECT 1 FROM mappe_mitglied x WHERE x.mappe_id = m.id)"
+                " OR EXISTS (SELECT 1 FROM mappe_mitglied x WHERE x.mappe_id = m.id AND x.person_id = ?)"
+                " ORDER BY titel",
+                (person_id,),
+            ).fetchall()
     return [Projektmappe(**dict(r)) for r in rows]
+
+
+# -- Projekt-Mitgliedschaft (Sichtbarkeit von Mappen/Projekten je Person) --------
+# Regel: eine Mappe OHNE Mitglieder ist fuer alle sichtbar (geteilt, rueckwaerts-
+# kompatibel). Sobald Mitglieder hinterlegt sind, sehen nur diese (plus Admin) sie.
+
+def mappe_mitglieder(mappe_id: str) -> list[str]:
+    with _verb() as conn:
+        rows = conn.execute("SELECT person_id FROM mappe_mitglied WHERE mappe_id = ?", (mappe_id,)).fetchall()
+    return [r[0] for r in rows]
+
+
+def mappe_sichtbar_fuer(mappe_id: str, person_id: str | None) -> bool:
+    with _verb() as conn:
+        anzahl = conn.execute("SELECT COUNT(*) FROM mappe_mitglied WHERE mappe_id = ?", (mappe_id,)).fetchone()[0]
+        if anzahl == 0:
+            return True
+        if not person_id:
+            return False
+        treffer = conn.execute(
+            "SELECT 1 FROM mappe_mitglied WHERE mappe_id = ? AND person_id = ?", (mappe_id, person_id)
+        ).fetchone()
+    return treffer is not None
+
+
+def setze_mappe_mitglied(mappe_id: str, person_id: str) -> None:
+    with _verb() as conn:
+        conn.execute("INSERT OR IGNORE INTO mappe_mitglied (mappe_id, person_id) VALUES (?, ?)", (mappe_id, person_id))
+
+
+def entferne_mappe_mitglied(mappe_id: str, person_id: str) -> bool:
+    with _verb() as conn:
+        cur = conn.execute("DELETE FROM mappe_mitglied WHERE mappe_id = ? AND person_id = ?", (mappe_id, person_id))
+    return cur.rowcount > 0
+
+
+def board_mappe_id(board_id: str) -> str | None:
+    with _verb() as conn:
+        r = conn.execute("SELECT mappe_id FROM board WHERE id = ?", (board_id,)).fetchone()
+    return r[0] if r else None
 
 
 def zaehle_mappen() -> int:
@@ -276,6 +332,7 @@ def loesche_mappe(mappe_id: str) -> bool:
         conn.execute("DELETE FROM dokument WHERE kontext = 'mappe' AND kontext_id = ?", (mappe_id,))
         conn.execute("DELETE FROM zeiteintrag WHERE mappe_id = ?", (mappe_id,))
         conn.execute("DELETE FROM board WHERE mappe_id = ?", (mappe_id,))
+        conn.execute("DELETE FROM mappe_mitglied WHERE mappe_id = ?", (mappe_id,))
         conn.execute("DELETE FROM mappe WHERE id = ?", (mappe_id,))
     return True
 

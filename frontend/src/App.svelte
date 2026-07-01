@@ -26,6 +26,7 @@
   import SerienErinnerung from './lib/SerienErinnerung.svelte'
   import LoginTor from './lib/LoginTor.svelte'
   import PersonWahl from './lib/PersonWahl.svelte'
+  import MappenMitglieder from './lib/MappenMitglieder.svelte'
 
   interface Ansicht {
     id: string
@@ -58,6 +59,7 @@
 
   let mappen = $state<Projektmappe[]>([])
   let aktiveMappe = $state<Projektmappe | null>(null)
+  let mitgliederMappe = $state<Projektmappe | null>(null)  // offene Mitglieder-Verwaltung
   let boards = $state<Board[]>([])
   let aktivesBoard = $state<Board | null>(null)
   let boardsGeladen = $state(false)
@@ -74,6 +76,7 @@
   // Bei aktivem Login ist die Rolle serverseitig bestimmt (autoritativ), sonst aus
   // der gewaehlten Person abgeleitet (Phase-1-Verhalten).
   const aktiveRolle = $derived(auth.erforderlich ? (auth.rolle ?? 'mitarbeiter') : rolleAus(personen, personSicht.id))
+  const istAdmin = $derived(aktiveRolle === 'admin')
   const sichtbareAnsichten = $derived(
     aktiveRolle === 'mitarbeiter' ? ansichtsListe.filter((a) => !ADMIN_ANSICHTEN.has(a.id)) : ansichtsListe,
   )
@@ -374,6 +377,9 @@
               <i class="fa-solid {aktiveMappe?.id === m.id ? 'fa-folder-open' : 'fa-folder'}" aria-hidden="true"></i><span>{m.titel}</span>
             </button>
             <div class="aktionen">
+              {#if istAdmin}
+                <button class="ic" aria-label="Projekt-Mitglieder" title="Wer sieht dieses Projekt" onclick={() => (mitgliederMappe = m)}><i class="fa-solid fa-users" aria-hidden="true"></i></button>
+              {/if}
               <button class="ic" aria-label="Mappe umbenennen" onclick={() => { bearbeiteMappeId = m.id; mappeEntwurf = m.titel }}><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
               {#if mappen.length > 1}
                 <button class="ic" aria-label="Mappe löschen" onclick={() => (loescheMappeId = m.id)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
@@ -497,6 +503,10 @@
 <LoginTor />
 <Login />
 {#if !auth.erforderlich}<PersonWahl />{/if}
+
+{#if mitgliederMappe}
+  <MappenMitglieder mappeId={mitgliederMappe.id} titel={mitgliederMappe.titel} {personen} onSchliessen={() => (mitgliederMappe = null)} />
+{/if}
 {#if hilfeOffen}<Hilfe onSchliessen={() => (hilfeOffen = false)} />{/if}
 {#if onboardingOffen}<Onboarding onFertig={onboardingFertig} onGeheZu={geheZuAnsicht} />{/if}
 {#if mappeDokOffen && aktiveMappe}

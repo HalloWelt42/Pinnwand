@@ -187,6 +187,14 @@ export const ladeErweiterungen = (): Promise<Erweiterungen> => hole('/api/erweit
 export const ladeMappen = (): Promise<Projektmappe[]> => hole('/api/kanban/mappen')
 export const ladeBoards = (mappeId: string): Promise<Board[]> => hole(`/api/kanban/mappen/${mappeId}/boards`)
 
+// Projekt-Mitglieder (wer sieht das Projekt). Verwaltung nur fuer Admins.
+export const ladeMappenMitglieder = (mappeId: string): Promise<string[]> =>
+  hole(`/api/kanban/mappen/${mappeId}/mitglieder`)
+export const setzeMappenMitglied = (mappeId: string, personId: string): Promise<void> =>
+  hole(`/api/kanban/mappen/${mappeId}/mitglieder/${personId}`, { method: 'PUT' })
+export const entferneMappenMitglied = (mappeId: string, personId: string): Promise<void> =>
+  hole(`/api/kanban/mappen/${mappeId}/mitglieder/${personId}`, { method: 'DELETE' })
+
 export const erstelleMappe = (titel: string, beschreibung?: string): Promise<Projektmappe> =>
   hole('/api/kanban/mappen', { method: 'POST', body: JSON.stringify({ titel, beschreibung }) })
 

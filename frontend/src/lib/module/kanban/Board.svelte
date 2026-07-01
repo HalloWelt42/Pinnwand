@@ -248,10 +248,31 @@
   function setzeFertigFilter(spalteId: string, zeitraum: string): void {
     fertigFilter = { ...fertigFilter, [spalteId]: zeitraum }
   }
-  // Erledigte Spalte mit aktivem Zeitfilter: Umsortieren per Drag sperren (sonst
-  // schreibt das Neuordnen Positionen relativ zur gefilterten Teilmenge).
+  // Erledigte Spalte mit aktivem Zeitfilter: die Spalte zeigt nur eine Teilmenge (nach
+  // Abschlussdatum). Ziehen bleibt erlaubt - die Drop-Position wird in cardsFinalize aus
+  // der sichtbaren Teilmenge auf die absolute Position in der vollen Spalte umgerechnet,
+  // damit verborgene Karten nicht umsortiert werden.
   function gefiltertErledigt(eintrag: Eintrag): boolean {
     return !!eintrag.spalte.erledigt && (fertigFilter[eintrag.spalte.id] ?? 'heute') !== 'alle'
+  }
+
+  // Sichtbaren Drop-Index einer gefilterten Spalte auf die absolute reihenfolge-Position
+  // in der vollen Spalte abbilden: an den sichtbaren Nachbarn andocken, sonst ans Ende.
+  function absolutePosition(spalteId: string, items: Karte[], bewegtId: string): number {
+    const voll = (board?.karten ?? [])
+      .filter((k) => k.spalte === spalteId && k.id !== bewegtId)
+      .sort((a, b) => a.reihenfolge - b.reihenfolge)
+    const sichtbar = items.filter((k) => k.id !== SHADOW_PLACEHOLDER_ITEM_ID)
+    const j = sichtbar.findIndex((k) => k.id === bewegtId)
+    for (let d = j - 1; d >= 0; d--) {
+      const vi = voll.findIndex((k) => k.id === sichtbar[d].id)
+      if (vi >= 0) return vi + 1
+    }
+    for (let d = j + 1; d < sichtbar.length; d++) {
+      const vi = voll.findIndex((k) => k.id === sichtbar[d].id)
+      if (vi >= 0) return vi
+    }
+    return voll.length
   }
 
   function toggleEinklappen(id: string) {
@@ -267,7 +288,8 @@
   }
   function cardsFinalize(idx: number, items: Karte[], info: { id: string }) {
     ansicht[idx].karten = items
-    const spalteId = ansicht[idx].spalte.id
+    const eintrag = ansicht[idx]
+    const spalteId = eintrag.spalte.id
     const pos = items.findIndex((k) => k.id === info.id)
     if (pos >= 0) {
       const wechsel = items[pos].spalte !== spalteId
@@ -275,16 +297,20 @@
       // WIP-Durchsetzung (weiche Warnung): schiebt ein Spaltenwechsel die Zielspalte
       // ueber ihr WIP-Limit, deutlich darauf hinweisen (Karte bleibt, kein harter Block).
       if (wechsel) {
-        const sp = ansicht[idx].spalte
+        const sp = eintrag.spalte
         const n = items.filter((k) => k.id !== SHADOW_PLACEHOLDER_ITEM_ID).length
         if (sp.wip_limit != null && n > sp.wip_limit) {
           zeigeToast(`Spalte "${sp.titel}" ist über dem WIP-Limit (${n}/${sp.wip_limit}).`)
         }
       }
-      // Bei Spaltenwechsel neu laden, damit bewegt_am (Abschlussdatum) frisch ist und
-      // die Karte sofort korrekt unter dem Fertig-Zeitfilter erscheint.
-      verschiebeKarte(info.id, spalteId, pos)
-        .then(() => { if (wechsel) laden() })
+      // Ist die Zielspalte gefiltert (erledigt + Zeitraum != alle), zeigt sie nur eine
+      // Teilmenge - der sichtbare Index muss auf die absolute Position umgerechnet werden,
+      // sonst springt die Karte vor verborgene Karten. Danach neu laden, damit bewegt_am
+      // (Abschlussdatum) frisch ist und die Karte korrekt unter dem Zeitfilter erscheint.
+      const zielGefiltert = gefiltertErledigt(eintrag)
+      const zielPos = zielGefiltert ? absolutePosition(spalteId, items, info.id) : pos
+      verschiebeKarte(info.id, spalteId, zielPos)
+        .then(() => { if (wechsel || zielGefiltert) laden() })
         .catch(() => laden())
     }
     zuletztGezogen = Date.now()
@@ -411,7 +437,7 @@
             <Column
               spalte={eintrag.spalte}
               karten={anzeige(eintrag)}
-              dragDisabled={kartenDragAus || gefiltertErledigt(eintrag)}
+              dragDisabled={kartenDragAus}
               zeitfilter={fertigFilter[eintrag.spalte.id] ?? 'heute'}
               onZeitfilter={(z) => setzeFertigFilter(eintrag.spalte.id, z)}
               akzent={AKZENTE[idx % AKZENTE.length]}

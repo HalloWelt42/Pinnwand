@@ -514,37 +514,34 @@
     flex: none;
   }
 
-  /* Drop-Vorschau (svelte-dnd-action): das an Ort und Stelle gehaltene Original wird
-     nicht mehr unsichtbar ausgeblendet, sondern als abgerundete, gestrichelte Stichlinie
-     dargestellt - so bekommt das Ziel einen sichtbaren Platz, passend zum Kartenradius
-     (kein eckiger Rahmen). Die echte Karte darin bleibt verborgen. */
+  /* Drop-Vorschau (svelte-dnd-action): das an Ort und Stelle gehaltene Original haelt die
+     Bibliothek per Inline-Stil auf visibility:hidden - dadurch bleibt der Platz reserviert
+     und die echte Karte verborgen. Statt diesen Inline-Stil zu ueberschreiben (was nur mit
+     !important ginge), wird die Stichlinie als eigenes ::before gezeichnet: dessen
+     visibility setzen wir per Regel auf visible (ein Pseudo-Element hat keinen
+     konkurrierenden Inline-Stil), sodass nur die abgerundete gestrichelte Vorschau
+     erscheint - passend zum Kartenradius, kein eckiger Rahmen. */
   .liste :global([data-is-dnd-shadow-item-internal]) {
-    visibility: visible !important;
     position: relative;
-  }
-  .liste :global([data-is-dnd-shadow-item-internal] > *) {
-    visibility: hidden;
   }
   .liste :global([data-is-dnd-shadow-item-internal]::before) {
     content: '';
     position: absolute;
     inset: 0;
+    visibility: visible;
     border: 2px dashed var(--hl-primary);
     border-radius: var(--r-l);
     background: var(--hl-primary-weich);
     pointer-events: none;
   }
   .zuliste :global([data-is-dnd-shadow-item-internal]) {
-    visibility: visible !important;
     position: relative;
-  }
-  .zuliste :global([data-is-dnd-shadow-item-internal] > *) {
-    visibility: hidden;
   }
   .zuliste :global([data-is-dnd-shadow-item-internal]::before) {
     content: '';
     position: absolute;
     inset: 0;
+    visibility: visible;
     border: 1.5px dashed var(--hl-primary);
     border-radius: var(--r-s);
     background: var(--hl-primary-weich);

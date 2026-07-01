@@ -358,7 +358,7 @@
     gap: 1px;
   }
   .mtag.mleer {
-    background: transparent !important;
+    background: transparent;
     border-color: transparent;
   }
   .mtag.heute {

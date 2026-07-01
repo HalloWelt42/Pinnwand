@@ -588,14 +588,12 @@
   }
   /* svelte-dnd-action fokussiert das schwebende Klon-Element - der (blaue, eckige)
      Fokusrahmen um die abgehobene Karte ist hier unerwuenscht; der Lift-Schatten genuegt.
+     Der ID-Selektor schlaegt die globale :focus-visible-Regel ueber die Spezifitaet
+     (kein !important noetig); Autor-outline:none unterdrueckt auch den UA-Fokusring.
      Wrapper zusaetzlich abrunden, falls ein Browser doch einen Rahmen zeichnet. */
   :global(#dnd-action-dragged-el) {
     border-radius: var(--r-l);
-  }
-  :global(#dnd-action-dragged-el),
-  :global(#dnd-action-dragged-el:focus),
-  :global(#dnd-action-dragged-el:focus-visible) {
-    outline: none !important;
+    outline: none;
   }
   .add-col {
     flex: 0 0 270px;

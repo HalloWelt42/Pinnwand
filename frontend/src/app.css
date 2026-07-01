@@ -73,13 +73,6 @@ select {
   border: 0;
 }
 
-/* Drag-and-drop: angehobenes Element deutlich abheben */
-#dnd-action-dragged-el {
-  box-shadow: var(--schatten-lift) !important;
-  cursor: grabbing !important;
-  opacity: 0.97;
-}
-
 /* Druck: jede Ansicht sauber ausdruckbar. Bedienelemente und Seitenleiste raus,
    Buehne ueber die volle Breite, helle Druckpalette ueber die Theme-Variablen. */
 @media print {

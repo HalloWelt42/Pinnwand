@@ -112,4 +112,8 @@ Umsetzung: Neue Tabellen abwesenheit_typ (Farbe, reduziert_soll, anrechnen, anwe
 
 20. Fertige Karten: Fenster, Nachladen und Archiv (siehe FERTIG_ARCHIV.md): Erledigt-Spalten laden serverseitig gefiltert (Zeitfenster je Spalte) und gedeckelt, der Rest wird beim Scrollen nachgeladen - das Board wird nicht mehr geflutet. Fertige Karten älter als eine einstellbare Schwelle (Standard ein Jahr) wandern automatisch ins Archiv (eigene Archiv-Ansicht am Board, durchsuchbar); Deckelgröße und Schwelle sind in den Einstellungen editierbar. Reine Ladegrenze, kein Datenumbau; Auswertungen bleiben unberührt.
 
+21. Rechte, Eigentum und Self-Service (siehe ROLLEN.md): typisierte Berechtigungs-Schicht (`auth/akteur.py`, `auth/rechte.py`); die Planung ist für alle sichtbar, aber rollenbewusst - Mitarbeiter pflegen nur ihre eigenen Daten (Wochen-Soll, Urlaub, eigenes Bundesland, Wochen-Override), die globale Konfiguration bleibt Admins vorbehalten. Zeiteinträge gehören der zuständigen Person (nur eigene editierbar). Projekte pro Mitglied: über `mappe_mitglied` sehen Mitarbeiter nur zugeordnete Mappen (Mappen ohne Mitglieder bleiben geteilt), serverseitig gescoped; Mitglieder-Verwaltung admin-nur.
+
+22. Projekt-Aufwand (Mappe = Projekt, siehe PROJEKTE.md): jede Mappe ist ein Projekt, jedes Board eine Phase. Ist (erfasste Zeit als einzige Wahrheit), Soll (Summe der Karten-Schätzungen) und Budget (optional) bleiben getrennt; keine Doppelzählung. Neue globale Ansicht Projekte mit Ist/Soll/Budget/Rest, Fortschrittsbalken, Owner/Budget/Status-Bearbeitung und Aufschlüsselung je Phase und Person.
+
 Querschnitt: strenge Versionierung (Patch je Änderung, Feature je Ausbaustufe), saubere Commits, README hält den Ist-Zustand.

@@ -116,7 +116,7 @@
     </div>
     <div
       class="zuliste"
-      use:dndzone={{ items: karten, type: 'karte', dragDisabled, flipDurationMs: 160, dropTargetStyle: { outline: '2px dashed var(--hl-primary)', outlineOffset: '-3px', borderRadius: '8px' } }}
+      use:dndzone={{ items: karten, type: 'karte', dragDisabled, flipDurationMs: 160, dropTargetStyle: {} }}
       onconsider={(e) => onCardsConsider(e.detail.items)}
       onfinalize={(e) => onCardsFinalize(e.detail.items, e.detail.info)}
     >
@@ -512,6 +512,43 @@
     border-radius: var(--r-l);
     height: 58px;
     flex: none;
+  }
+
+  /* Drop-Vorschau (svelte-dnd-action): das an Ort und Stelle gehaltene Original wird
+     nicht mehr unsichtbar ausgeblendet, sondern als abgerundete, gestrichelte Stichlinie
+     dargestellt - so bekommt das Ziel einen sichtbaren Platz, passend zum Kartenradius
+     (kein eckiger Rahmen). Die echte Karte darin bleibt verborgen. */
+  .liste :global([data-is-dnd-shadow-item-internal]) {
+    visibility: visible !important;
+    position: relative;
+  }
+  .liste :global([data-is-dnd-shadow-item-internal] > *) {
+    visibility: hidden;
+  }
+  .liste :global([data-is-dnd-shadow-item-internal]::before) {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px dashed var(--hl-primary);
+    border-radius: var(--r-l);
+    background: var(--hl-primary-weich);
+    pointer-events: none;
+  }
+  .zuliste :global([data-is-dnd-shadow-item-internal]) {
+    visibility: visible !important;
+    position: relative;
+  }
+  .zuliste :global([data-is-dnd-shadow-item-internal] > *) {
+    visibility: hidden;
+  }
+  .zuliste :global([data-is-dnd-shadow-item-internal]::before) {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1.5px dashed var(--hl-primary);
+    border-radius: var(--r-s);
+    background: var(--hl-primary-weich);
+    pointer-events: none;
   }
   .add {
     margin-top: 8px;

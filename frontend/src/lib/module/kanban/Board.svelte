@@ -581,6 +581,11 @@
     outline: 2px solid var(--hl-primary);
     outline-offset: -2px;
   }
+  /* Gezogene Karte: nur anheben (Schatten folgt dem runden Rahmen), KEIN eckiges Outline. */
+  :global(#dnd-action-dragged-el .card) {
+    box-shadow: var(--schatten-lift);
+    cursor: grabbing;
+  }
   .add-col {
     flex: 0 0 270px;
   }

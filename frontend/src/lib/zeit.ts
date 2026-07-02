@@ -85,3 +85,18 @@ export function isoGesprochen(iso: string): string {
   const [j, m, t] = iso.slice(0, 10).split('-')
   return `${Number(t)}. ${MONATE_LANG[Number(m) - 1]} ${j}`
 }
+
+// Kurze Wochentags-Kuerzel (Mo..So) - zentral statt in Komponenten kopiert.
+export const WOCHENTAGE_KURZ = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] as const
+
+// ISO-Datum (YYYY-MM-DD) als deutsches Kurzdatum TT.MM.JJJJ.
+export function dmy(iso: string): string {
+  const [j, m, t] = iso.slice(0, 10).split('-')
+  return `${t}.${m}.${j}`
+}
+
+// Wochentags-Kuerzel eines ISO-Datums.
+export function wtagKurz(iso: string): string {
+  const d = new Date(iso + 'T00:00:00')
+  return WOCHENTAGE_KURZ[(d.getDay() + 6) % 7]
+}

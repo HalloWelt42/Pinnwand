@@ -329,6 +329,10 @@ class ZeiteintragCreate(BaseModel):
     kommentar: str | None = None
 
 
+class TicketzeitSetzen(BaseModel):
+    sekunden: int = Field(ge=0)
+
+
 class ZeiteintragUpdate(BaseModel):
     datum: str | None = None
     sekunden: int | None = None

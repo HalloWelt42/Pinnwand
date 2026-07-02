@@ -58,60 +58,9 @@ import type {
 import { uiAuth, uiToken } from './uiAuth.svelte'
 import { auth, authToken, setzeAuthToken } from './auth.svelte'
 
-// Datenmodelle bleiben ueber api.ts erreichbar (viele Komponenten importieren von hier).
-export type {
-  AnsichtMeta,
-  Erweiterungen,
-  DokumentKontext,
-  Dokument,
-  ErfassenErgebnis,
-  HeuteEintrag,
-  HeuteUebersicht,
-  KarteEingabe,
-  KarteAenderung,
-  SuchTreffer,
-  SuchErgebnis,
-  SuchStatus,
-  Dienst,
-  Stimmen,
-  TranskriptTreffer,
-  TranskriptDetail,
-  TranskriptSegment,
-  TranskriptMarke,
-  MarkeEingabe,
-  MarkeAenderung,
-  Serie,
-  SerienNachtrag,
-  Person,
-  Urlaubskonto,
-  Urlaubstag,
-  Feiertag,
-  PlanTag,
-  WochenOverride,
-  Region,
-  AbwesenheitTyp,
-  Tagesregel,
-  KalenderZelle,
-  KalenderAntwort,
-  StundenSumme,
-  StundenUebersicht,
-  BerichtTyp,
-  ArchivEintrag,
-  BerichtAnfrage,
-  SnapshotInfo,
-  BackupZustand,
-  SchemaTabelle,
-  BackupVorschau,
-  WiederherstellenErgebnis,
-  AgentToken,
-  TerminSerie,
-  TerminInstanz,
-  KiStatusAntwort,
-  KiVorschlag,
-  KiAntwort,
-  LabelDefinition,
-  AuthStatus,
-} from './types'
+// Datenmodelle bleiben ueber api.ts erreichbar (viele Komponenten importieren von
+// hier). EINE Quelle statt einer von Hand gespiegelten Namensliste.
+export type * from './types'
 
 const BASIS = import.meta.env.VITE_API ?? 'http://localhost:8420'
 
@@ -329,6 +278,10 @@ export const ladeKartenZeiten = (karteId: string): Promise<Zeiteintrag[]> =>
 
 export const erstelleZeiteintrag = (eingabe: { karte_id: string; datum: string; sekunden: number; kommentar?: string | null }): Promise<Zeiteintrag> =>
   hole('/api/kanban/zeiteintraege', { method: 'POST', body: JSON.stringify(eingabe) })
+
+// Gesamt-Ticketzeit atomar setzen (Korrektur in EINER Transaktion serverseitig).
+export const setzeTicketzeit = (karteId: string, sekunden: number): Promise<Karte> =>
+  hole(`/api/kanban/karten/${karteId}/ticketzeit`, { method: 'POST', body: JSON.stringify({ sekunden }) })
 
 export const aktualisiereZeiteintrag = (id: string, daten: { datum?: string; sekunden?: number; kommentar?: string | null }): Promise<Zeiteintrag> =>
   hole(`/api/kanban/zeiteintraege/${id}`, { method: 'PATCH', body: JSON.stringify(daten) })

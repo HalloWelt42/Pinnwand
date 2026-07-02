@@ -12,11 +12,12 @@
   import { personSicht, rolleAus } from '../../personSicht.svelte'
   import { auth } from '../../auth.svelte'
   import { zeigeToast } from '../../toaster.svelte'
+  import { WOCHENTAGE_KURZ, dmy, wtagKurz } from '../../zeit'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
 
-  const WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+  const WD = WOCHENTAGE_KURZ
   const jahr = new Date().getFullYear()
 
   let personen = $state<Person[]>([])
@@ -207,7 +208,7 @@
     await ladenKonfig()
   }
   const MON = ['', 'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
-  const WDV = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+  const WDV = WOCHENTAGE_KURZ
   function regelText(r: Tagesregel): string {
     if (r.art === 'jahrestag') return `${r.tag}. ${MON[r.monat ?? 0]} (jährlich)`
     if (r.art === 'wochentag') return `jeden ${WDV[r.wochentag ?? 0]}`
@@ -218,15 +219,6 @@
   const regionNamen = $derived(new Map((laender[ftLand] ?? laender['DE'] ?? []).map((r) => [r.code, r.name])))
   const regionName = (code: string | null | undefined): string => (code ? (regionNamen.get(code) ?? code) : 'bundesweit')
 
-  const WTAG = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-  function wtag(iso: string): string {
-    const d = new Date(iso + 'T00:00:00')
-    return WTAG[(d.getDay() + 6) % 7]
-  }
-  function dmy(iso: string): string {
-    const [j, m, t] = iso.slice(0, 10).split('-')
-    return `${t}.${m}.${j}`
-  }
 
   async function personAnlegen(): Promise<void> {
     if (!neuerName.trim()) return
@@ -451,7 +443,7 @@
           {#each vorschau as f (f.datum + (f.region ?? ''))}
             <div class="ftz vs">
               <span class="ftd">{dmy(f.datum)}</span>
-              <span class="ftw">{wtag(f.datum)}</span>
+              <span class="ftw">{wtagKurz(f.datum)}</span>
               <span class="ftn">{f.name}</span>
               <span class="ftg" class:land={f.region}>{regionName(f.region)}</span>
             </div>
@@ -467,7 +459,7 @@
           {#each feiertage as f (f.datum + (f.region ?? ''))}
             <div class="ftz">
               <span class="ftd">{dmy(f.datum)}</span>
-              <span class="ftw">{wtag(f.datum)}</span>
+              <span class="ftw">{wtagKurz(f.datum)}</span>
               <span class="ftn">{f.name}</span>
               <span class="ftg" class:land={f.region}>{regionName(f.region)}</span>
             </div>

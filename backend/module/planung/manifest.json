@@ -4,8 +4,22 @@
   "version": "0.2.0",
   "extends": {
     "views": [
-      { "id": "planung", "titel": "Planung", "icon": "fa-solid fa-users" },
-      { "id": "jahreskalender", "titel": "Jahreskalender", "icon": "fa-solid fa-calendar" }
+      {
+        "id": "planung",
+        "titel": "Planung",
+        "icon": "fa-solid fa-users",
+        "reihenfolge": 100,
+        "global": true,
+        "adminOnly": false
+      },
+      {
+        "id": "jahreskalender",
+        "titel": "Jahreskalender",
+        "icon": "fa-solid fa-calendar",
+        "reihenfolge": 60,
+        "global": true,
+        "adminOnly": false
+      }
     ],
     "cardFields": [],
     "mappeTabs": [],

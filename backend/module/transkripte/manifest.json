@@ -4,7 +4,14 @@
   "version": "0.1.0",
   "extends": {
     "views": [
-      { "id": "transkripte", "titel": "Transkripte", "icon": "fa-solid fa-headphones" }
+      {
+        "id": "transkripte",
+        "titel": "Transkripte",
+        "icon": "fa-solid fa-headphones",
+        "reihenfolge": 90,
+        "global": true,
+        "adminOnly": false
+      }
     ],
     "cardFields": [],
     "mappeTabs": [],

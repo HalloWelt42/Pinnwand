@@ -169,6 +169,10 @@ export interface AnsichtMeta {
   id: string
   titel: string
   icon: string
+  // Aus dem Modul-Manifest: Sortierung, board-unabhaengig, nur fuer Admins.
+  reihenfolge?: number
+  global?: boolean
+  adminOnly?: boolean
 }
 export interface Erweiterungen {
   views: { modul: string; wert: AnsichtMeta }[]

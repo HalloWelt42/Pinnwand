@@ -32,6 +32,10 @@ _GUELTIG_TAGE = 30
 def init_db() -> None:
     with verbindung() as conn:
         conn.executescript(SCHEMA)
+    # Hygiene: abgelaufene Sitzungen wachsen sonst unbegrenzt. Vergleich mit
+    # lokaler Zeit, weil ablauf mit datetime.now() (lokal) geschrieben wird.
+    with verbindung() as conn:
+        conn.execute("DELETE FROM sitzung WHERE ablauf < ?", (datetime.now().isoformat(timespec="seconds"),))
 
 
 def _hash(token: str) -> str:

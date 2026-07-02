@@ -112,15 +112,13 @@
     arbeitet = true
     meldung = ''
     try {
-      const e = await stelleSnapshotWiederHer(id)
-      meldung = `Wiederhergestellt. Vorheriger Stand wurde als Sicherheits-Snapshot gesichert.`
-      void e
-      offen = null
-      vorschau = null
-      await neuLaden()
+      await stelleSnapshotWiederHer(id)
+      // Die Oberflaeche haelt sonst den Vor-Restore-Stand im Speicher und
+      // arbeitet gegen die neue Datenbank - kompletter Neustart der App.
+      meldung = 'Wiederhergestellt - die Anwendung lädt neu ...'
+      setTimeout(() => window.location.reload(), 600)
     } catch {
       meldung = 'Wiederherstellung fehlgeschlagen.'
-    } finally {
       arbeitet = false
     }
   }

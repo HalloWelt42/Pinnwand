@@ -95,11 +95,17 @@ export function parseZeit(s: string): number | null {
   s = s.trim().replace(',', '.')
   if (!s) return null
   if (s.includes(':')) {
+    if (!/^\d{0,3}(:\d{0,2}){1,2}$/.test(s)) return null
     const [h, m, sek] = s.split(':')
     return (parseInt(h || '0', 10) || 0) * 3600 + (parseInt(m || '0', 10) || 0) * 60 + (parseInt(sek || '0', 10) || 0)
   }
-  const std = parseFloat(s)
-  return Number.isNaN(std) ? null : Math.round(std * 3600)
+  // Einheiten-Suffixe verstehen statt raten: '90m' hiess sonst 90 STUNDEN.
+  const einheit = s.match(/^(\d+(?:\.\d+)?)\s*(h|std|m|min)?$/i)
+  if (!einheit) return null
+  const wert = parseFloat(einheit[1])
+  if (Number.isNaN(wert)) return null
+  const suffix = (einheit[2] || 'h').toLowerCase()
+  return Math.round(suffix === 'm' || suffix === 'min' ? wert * 60 : wert * 3600)
 }
 
 // Kurze Position als M:SS (ohne Stunden) - fuer Sprechpositionen/Marken im

@@ -43,6 +43,7 @@ from .models import (
     SpalteMove,
     SpaltenReihenfolge,
     SpalteUpdate,
+    TicketzeitSetzen,
     Zeiteintrag,
     ZeiteintragCreate,
     ZeiteintragUpdate,
@@ -468,6 +469,23 @@ def zeiteintrag_anlegen(eingabe: ZeiteintragCreate, akteur: Akteur = Depends(akt
     if eintrag is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
     return eintrag
+
+
+@router.post("/karten/{karte_id}/ticketzeit", response_model=Karte)
+def ticketzeit_setzen(karte_id: str, eingabe: TicketzeitSetzen, akteur: Akteur = Depends(aktueller_akteur)) -> Karte:
+    """Setzt die Gesamt-Ticketzeit atomar (Korrektur gegen die aktuelle Summe).
+    Veraendert bestehende Eintraege - darum nur Karteninhaber oder Admin."""
+    karte = db.hole_karte(karte_id)
+    if karte is None:
+        raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    _projekt_zugriff(akteur, db.karte_mappe_id(karte_id))
+    verlange(darf_zeiteintrag_bearbeiten(akteur, karte.zustaendig), "Nur eigene Ticketzeit korrigieren.")
+    if karte.typ == "idee":
+        raise HTTPException(status_code=409, detail="Ideentickets erfassen keine Zeit")
+    db.setze_ticketzeit(karte_id, eingabe.sekunden, kuerzel=akteur.kuerzel)
+    neu = db.hole_karte(karte_id)
+    assert neu is not None
+    return neu
 
 
 @router.patch("/zeiteintraege/{eintrag_id}", response_model=Zeiteintrag)

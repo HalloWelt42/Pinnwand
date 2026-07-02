@@ -4,12 +4,54 @@
   "version": "0.1.0",
   "extends": {
     "views": [
-      { "id": "heute", "titel": "Heute", "icon": "fa-solid fa-bolt" },
-      { "id": "board", "titel": "Board", "icon": "fa-solid fa-table-columns" },
-      { "id": "projekte", "titel": "Projekte", "icon": "fa-solid fa-diagram-project" },
-      { "id": "zeiten", "titel": "Zeiten", "icon": "fa-solid fa-table-list" },
-      { "id": "kalender", "titel": "Kalender", "icon": "fa-solid fa-calendar-days" },
-      { "id": "labels", "titel": "Labels", "icon": "fa-solid fa-tags" }
+      {
+        "id": "heute",
+        "titel": "Heute",
+        "icon": "fa-solid fa-bolt",
+        "reihenfolge": 10,
+        "global": true,
+        "adminOnly": false
+      },
+      {
+        "id": "board",
+        "titel": "Board",
+        "icon": "fa-solid fa-table-columns",
+        "reihenfolge": 20,
+        "global": false,
+        "adminOnly": false
+      },
+      {
+        "id": "projekte",
+        "titel": "Projekte",
+        "icon": "fa-solid fa-diagram-project",
+        "reihenfolge": 30,
+        "global": true,
+        "adminOnly": false
+      },
+      {
+        "id": "zeiten",
+        "titel": "Zeiten",
+        "icon": "fa-solid fa-table-list",
+        "reihenfolge": 40,
+        "global": false,
+        "adminOnly": false
+      },
+      {
+        "id": "kalender",
+        "titel": "Kalender",
+        "icon": "fa-solid fa-calendar-days",
+        "reihenfolge": 50,
+        "global": false,
+        "adminOnly": false
+      },
+      {
+        "id": "labels",
+        "titel": "Labels",
+        "icon": "fa-solid fa-tags",
+        "reihenfolge": 120,
+        "global": true,
+        "adminOnly": true
+      }
     ],
     "cardFields": [],
     "mappeTabs": [],
@@ -19,6 +61,10 @@
     "router": "module.kanban_kern.api:router",
     "init": "module.kanban_kern.persistence:init_db"
   },
-  "permissions": ["board.read", "card.read", "card.write"],
+  "permissions": [
+    "board.read",
+    "card.read",
+    "card.write"
+  ],
   "requires": []
 }

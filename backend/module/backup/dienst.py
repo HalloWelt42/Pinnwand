@@ -13,6 +13,8 @@ Standes erzeugt, dann werden Datenbank und Archiv ersetzt.
 """
 from __future__ import annotations
 
+import threading
+
 import json
 import shutil
 import sqlite3
@@ -330,6 +332,12 @@ def _pruefe_db(pfad: Path) -> None:
         conn.close()
 
 
+# Waehrend Restore/Reset die Datenbank-Datei getauscht wird, weist die Middleware
+# alle anderen Anfragen mit 503 ab - sonst schreibt ein paralleler Request in die
+# gerade ersetzte Datei (halbe Transaktionen im neuen Stand).
+wartung_aktiv = threading.Event()
+
+
 def wiederherstellen(sid: str) -> dict | None:
     meta = db.hole_meta(sid)
     if meta is None:
@@ -350,13 +358,19 @@ def wiederherstellen(sid: str) -> dict | None:
             tmp_db.write_bytes(zf.read("db/pinnwand.db"))
             _pruefe_db(tmp_db)
 
-            # Datenbank ersetzen. Verbindungen sind kurzlebig (pro Anfrage),
-            # daher ist ein Austausch zwischen Anfragen gefahrlos.
-            shutil.copyfile(tmp_db, DB_PFAD)
-            for nebendatei in ("-wal", "-shm"):
-                neben = Path(str(DB_PFAD) + nebendatei)
-                if neben.exists():
-                    neben.unlink()
+            # Datenbank ersetzen - unter Wartungssperre: die Middleware haelt
+            # waehrenddessen alle anderen Anfragen fern (503), damit keine
+            # parallele Transaktion in die frisch kopierte Datei schreibt.
+            wartung_aktiv.set()
+            try:
+                shutil.copyfile(tmp_db, DB_PFAD)
+                for nebendatei in ("-wal", "-shm"):
+                    neben = Path(str(DB_PFAD) + nebendatei)
+                    if neben.exists():
+                        neben.unlink()
+                _pruefe_db(DB_PFAD)
+            finally:
+                wartung_aktiv.clear()
 
             # Berichts-Archiv ersetzen.
             _BERICHTE.mkdir(parents=True, exist_ok=True)
@@ -409,6 +423,15 @@ def zuruecksetzen(modus: str = "beispiel") -> dict:
     sicherung = erzeuge(art="vor_reset", notiz="automatisch vor Zurücksetzen")
     from app.modul_registry import init_fuer, lade_manifeste
 
+    # Waehrend des Resets alle anderen Anfragen fernhalten (Middleware -> 503).
+    wartung_aktiv.set()
+    try:
+        return _reset_kern(modus, sicherung, init_fuer, lade_manifeste)
+    finally:
+        wartung_aktiv.clear()
+
+
+def _reset_kern(modus: str, sicherung: dict, init_fuer, lade_manifeste) -> dict:
     with verbindung() as conn:
         tabellen = [
             r[0] for r in conn.execute(

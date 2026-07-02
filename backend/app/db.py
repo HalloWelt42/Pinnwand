@@ -17,4 +17,9 @@ DB_PFAD = Path(os.environ.get("PINNWAND_DB_PFAD") or (Path(__file__).resolve().p
 def verbindung() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PFAD)
     conn.row_factory = sqlite3.Row
+    # Kurze Wartezeit statt sofortigem "database is locked", wenn zwei Requests
+    # (FastAPI-Threadpool) gleichzeitig schreiben. Journal bleibt bewusst beim
+    # SQLite-Standard (DELETE): WAL ist auf macOS-Bind-Mounts fehleranfaellig
+    # und der Ein-Prozess-Betrieb braucht es nicht.
+    conn.execute("PRAGMA busy_timeout = 5000")
     return conn

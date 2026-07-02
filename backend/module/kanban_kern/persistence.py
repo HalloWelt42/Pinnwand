@@ -212,6 +212,15 @@ def init_db() -> None:
     with _verb() as conn:
         conn.executescript(SCHEMA)
         _migriere(conn)
+        # Indizes auf die heissen Pfade (Zeit-Summen, Board-Rendering, Fenster).
+        for idx in (
+            "CREATE INDEX IF NOT EXISTS ix_zeiteintrag_karte ON zeiteintrag(karte_id)",
+            "CREATE INDEX IF NOT EXISTS ix_zeiteintrag_mappe_datum ON zeiteintrag(mappe_id, datum)",
+            "CREATE INDEX IF NOT EXISTS ix_zeiteintrag_datum ON zeiteintrag(datum)",
+            "CREATE INDEX IF NOT EXISTS ix_karte_board_spalte ON karte(board_id, spalte)",
+            "CREATE INDEX IF NOT EXISTS ix_karte_serie ON karte(serie_id)",
+        ):
+            conn.execute(idx)
         # Serien-Vorbuchung auf DB-Ebene idempotent: hoechstens eine Karte je
         # (Serie, Datum). Defensiv, damit etwaige Altdaten-Duplikate den Start nicht
         # blockieren (dann greift der Index eben erst nach Bereinigung).
@@ -948,12 +957,14 @@ def aktualisiere_karte(karte_id: str, aenderungen: dict) -> Karte | None:
 
 def kommentar_anhaengen(karte_id: str, autor: str, text: str, zeit: str) -> Karte | None:
     with _verb() as conn:
-        row = conn.execute("SELECT kommentare FROM karte WHERE id = ?", (karte_id,)).fetchone()
-        if row is None:
+        # Atomar in SQL anhaengen (json_insert) - ein Read-Modify-Write kann bei
+        # zwei gleichzeitigen Kommentaren einen davon verlieren.
+        cur = conn.execute(
+            "UPDATE karte SET kommentare = json_insert(kommentare, '$[#]', json(?)) WHERE id = ?",
+            (json.dumps({"autor": autor, "text": text, "zeit": zeit}, ensure_ascii=False), karte_id),
+        )
+        if cur.rowcount == 0:
             return None
-        liste = json.loads(row["kommentare"])
-        liste.append({"autor": autor, "text": text, "zeit": zeit})
-        conn.execute("UPDATE karte SET kommentare = ? WHERE id = ?", (json.dumps(liste, ensure_ascii=False), karte_id))
     return hole_karte(karte_id)
 
 
@@ -1154,6 +1165,19 @@ def _pause_intern(conn: sqlite3.Connection, karte_id: str) -> None:
         segmente = _tagessegmente(start, ende)
     except ValueError:
         segmente = []
+    # Plausibilitaets-Deckel: ein vergessener Timer (Standby, Absturz, Wochenende)
+    # bucht sonst kommentarlos zig Stunden. Sitzungen ueber 12 h werden auf die
+    # ersten 12 h gedeckelt - der Rest ist mit hoher Sicherheit keine Arbeitszeit.
+    MAX_SITZUNG_SEK = 12 * 3600
+    if sum(s[3] for s in segmente) > MAX_SITZUNG_SEK:
+        gedeckelt: list[tuple[str, str, str, int]] = []
+        rest = MAX_SITZUNG_SEK
+        for datum, s_start, s_ende, sek in segmente:
+            if rest <= 0:
+                break
+            gedeckelt.append((datum, s_start, s_ende, min(sek, rest)))
+            rest -= min(sek, rest)
+        segmente = gedeckelt
     mappe_id = _mappe_fuer_board(conn, row["board_id"])
     for datum, seg_start, seg_ende, sek in segmente:
         vorhanden = conn.execute(
@@ -1294,6 +1318,43 @@ def erstelle_zeiteintrag(eintrag_id: str, karte_id: str, datum: str, sekunden: i
         )
         _recompute_erfasst(conn, karte_id)
     return hole_zeiteintrag(eintrag_id)
+
+
+def setze_ticketzeit(karte_id: str, ziel_sek: int, kuerzel: str | None = None) -> bool:
+    """Setzt die Gesamt-Ticketzeit in EINER Transaktion (gegen die aktuelle Summe
+    gerechnet): Mehrzeit wird als manueller Eintrag heute gebucht, Minderzeit von
+    den juengsten Eintraegen abgezogen. Keine halben Korrekturen bei Abbruechen."""
+    ziel = max(0, int(ziel_sek))
+    with _verb() as conn:
+        b = conn.execute("SELECT board_id, zustaendig FROM karte WHERE id = ?", (karte_id,)).fetchone()
+        if b is None:
+            return False
+        summe = int(conn.execute(
+            "SELECT COALESCE(SUM(sekunden), 0) FROM zeiteintrag WHERE karte_id = ?", (karte_id,)
+        ).fetchone()[0])
+        if ziel > summe:
+            heute = _jetzt()[:10]
+            conn.execute(
+                "INSERT INTO zeiteintrag (id, karte_id, board_id, mappe_id, datum, start, ende, sekunden, kommentar, manuell, kuerzel)"
+                " VALUES (?, ?, ?, ?, ?, NULL, NULL, ?, 'Korrektur', 1, ?)",
+                (f"z_{uuid4().hex[:8]}", karte_id, b["board_id"], _mappe_fuer_board(conn, b["board_id"]),
+                 heute, ziel - summe, kuerzel or b["zustaendig"]),
+            )
+        elif ziel < summe:
+            rest = summe - ziel
+            for r in conn.execute(
+                "SELECT id, sekunden FROM zeiteintrag WHERE karte_id = ? ORDER BY datum DESC, id DESC", (karte_id,)
+            ).fetchall():
+                if rest <= 0:
+                    break
+                if r["sekunden"] <= rest:
+                    conn.execute("DELETE FROM zeiteintrag WHERE id = ?", (r["id"],))
+                    rest -= r["sekunden"]
+                else:
+                    conn.execute("UPDATE zeiteintrag SET sekunden = sekunden - ? WHERE id = ?", (rest, r["id"]))
+                    rest = 0
+        _recompute_erfasst(conn, karte_id)
+    return True
 
 
 def aktualisiere_zeiteintrag(eintrag_id: str, aenderungen: dict) -> Zeiteintrag | None:

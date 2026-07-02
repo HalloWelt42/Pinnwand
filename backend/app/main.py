@@ -59,6 +59,14 @@ async def ui_token_schutz(request: Request, call_next):
         )
         if geschuetzt and not hmac.compare_digest(request.headers.get("x-pinnwand-token", ""), token):
             return JSONResponse({"detail": "UI-Token erforderlich"}, status_code=401)
+    # Wartungssperre: waehrend Restore/Reset die DB-Datei getauscht wird, alle
+    # anderen API-Anfragen abweisen (defensiv importiert, Modul ist optional).
+    try:
+        from module.backup.dienst import wartung_aktiv
+        if wartung_aktiv.is_set() and request.url.path.startswith("/api/") and request.url.path != "/api/health":
+            return JSONResponse({"detail": "Wiederherstellung läuft - bitte kurz warten."}, status_code=503)
+    except ImportError:
+        pass
     # Anmeldung (Modul auth): bei aktivem Login Sitzung + Admin-Rechte serverseitig durchsetzen.
     status = authdienst.zugriff_pruefen(
         request.method, request.url.path, request.headers.get("x-pinnwand-sitzung", "")

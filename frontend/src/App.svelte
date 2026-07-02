@@ -34,6 +34,9 @@
     titel: string
     icon: string
     komponente: Component<{ boardId: string }>
+    reihenfolge: number
+    global: boolean
+    adminOnly: boolean
   }
 
   // UI-Zustand im Browser merken (Sidebar, aktive Ansicht, letztes Board).
@@ -73,9 +76,8 @@
   // verwaltenden Bereiche nicht. Rolle leitet sich aus der aktiven Person ab; ohne
   // gewaehlte Person gilt 'admin' (Bestand/frische Installation bleibt voll sichtbar).
   let personen = $state<Person[]>([])
-  // Planung ist fuer alle sichtbar, aber intern rollenbewusst: Mitarbeiter sehen/pflegen
-  // nur ihre eigenen Daten (Self-Service), globale Konfig bleibt Admins vorbehalten.
-  const ADMIN_ANSICHTEN = new Set(['einstellungen', 'labels'])
+  // Gating und Reihenfolge kommen aus den Modul-Manifesten (adminOnly/global/
+  // reihenfolge) - keine Hartlisten mehr, die neue Module vergessen koennten.
   // Bei aktivem Login ist die Rolle serverseitig bestimmt (autoritativ), sonst aus
   // der gewaehlten Person abgeleitet (Phase-1-Verhalten).
   const aktiveRolle = $derived(auth.erforderlich ? (auth.rolle ?? 'mitarbeiter') : rolleAus(personen, personSicht.id))
@@ -88,7 +90,7 @@
   })
   const istAdmin = $derived(aktiveRolle === 'admin')
   const sichtbareAnsichten = $derived(
-    aktiveRolle === 'mitarbeiter' ? ansichtsListe.filter((a) => !ADMIN_ANSICHTEN.has(a.id)) : ansichtsListe,
+    aktiveRolle === 'mitarbeiter' ? ansichtsListe.filter((a) => !a.adminOnly) : ansichtsListe,
   )
   // Komponente nur aus den sichtbaren Ansichten - so rendert ein Mitarbeiter nie den
   // Inhalt eines gesperrten Bereichs (auch nicht kurz vor dem Fallback).
@@ -102,8 +104,7 @@
   })
 
   // Globale Ansichten brauchen keine Board-Navigation; boardgebundene schon.
-  const GLOBALE_ANSICHTEN = new Set(['heute', 'suche', 'transkripte', 'planung', 'projekte', 'jahreskalender', 'wiederkehrendes', 'berichte', 'labels', 'einstellungen'])
-  const boardgebunden = $derived(!GLOBALE_ANSICHTEN.has(aktiveAnsicht))
+  const boardgebunden = $derived(!(ansichtsListe.find((a) => a.id === aktiveAnsicht)?.global ?? false))
   const aktuelleAnsichtMeta = $derived(ansichtsListe.find((a) => a.id === aktiveAnsicht))
 
   // Navigationswunsch (z.B. aus der Suche): zum Board wechseln; Board öffnet die Karte.
@@ -280,14 +281,28 @@
       ansichtsListe = erw.views
         .map((v) => {
           const k = komponenteFuer(v.wert.id)
-          return k ? { ...v.wert, komponente: k } : null
+          if (!k) return null
+          // Sortierung/Gating kommen aus dem Modul-Manifest; Fallbacks fuer
+          // Altbestand ohne die neuen Felder.
+          return {
+            id: v.wert.id,
+            titel: v.wert.titel,
+            icon: v.wert.icon,
+            komponente: k,
+            reihenfolge: v.wert.reihenfolge ?? 99,
+            global: v.wert.global ?? false,
+            adminOnly: v.wert.adminOnly ?? false,
+          }
         })
         .filter((a): a is Ansicht => a !== null)
     } catch {
-      ansichtsListe = ansichten().map((a) => ({ id: a.id, titel: a.titel, icon: a.icon, komponente: a.komponente }))
+      // Offline-Notweg ohne Manifest-Metadaten: neutrale Defaults.
+      ansichtsListe = ansichten().map((a) => ({
+        id: a.id, titel: a.titel, icon: a.icon, komponente: a.komponente,
+        reihenfolge: 99, global: false, adminOnly: false,
+      }))
     }
-    const REIHENFOLGE = ['heute', 'board', 'projekte', 'zeiten', 'kalender', 'jahreskalender', 'wiederkehrendes', 'suche', 'transkripte', 'planung', 'berichte', 'labels', 'einstellungen']
-    ansichtsListe.sort((a, b) => ((REIHENFOLGE.indexOf(a.id) + 1) || 99) - ((REIHENFOLGE.indexOf(b.id) + 1) || 99))
+    ansichtsListe.sort((a, b) => a.reihenfolge - b.reihenfolge)
     const gespeichert = _ui.ansicht
     aktiveAnsicht = gespeichert && ansichtsListe.some((a) => a.id === gespeichert)
       ? gespeichert

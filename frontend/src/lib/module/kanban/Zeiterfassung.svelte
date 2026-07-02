@@ -3,7 +3,7 @@
   // Gruppen-Zeit (nur Anzeige), Tag nachbuchen und die Tages-Aufschluesselung.
   // Ticketzeit = Summe je Karte; jeder Eintrag haengt an einem Tag (= Arbeitszeit).
   import type { Karte, Zeiteintrag } from '../../types'
-  import { erstelleZeiteintrag, ladeKartenZeiten, aktualisiereZeiteintrag, loescheZeiteintrag } from '../../api'
+  import { erstelleZeiteintrag, ladeKartenZeiten, aktualisiereZeiteintrag, loescheZeiteintrag, setzeTicketzeit } from '../../api'
   import type { KarteAenderung } from '../../api'
   import { ymd } from '../../zeit'
   import { timer, timerStarten, timerPausieren, timerStoppen, erfassteSekunden, formatDauerVoll, formatPlan, parseZeit } from '../../timer.svelte'
@@ -85,25 +85,13 @@
   // Eintraegen abgezogen. Taggenaue Korrektur bleibt ueber die Tagesliste moeglich.
   async function gesamtSetzen(wert: string): Promise<void> {
     const ziel = parseZeit(wert)
-    if (ziel == null || ziel < 0) return
-    const aktuell = karte.erfasst_sek ?? 0
-    const delta = ziel - aktuell
-    if (delta === 0) return
-    if (delta > 0) {
-      await erstelleZeiteintrag({ karte_id: karte.id, datum: ymd(new Date()), sekunden: delta })
-    } else {
-      let rest = -delta
-      for (const e of kartenZeiten) {
-        if (rest <= 0) break
-        if (e.sekunden <= rest) {
-          await loescheZeiteintrag(e.id)
-          rest -= e.sekunden
-        } else {
-          await aktualisiereZeiteintrag(e.id, { sekunden: e.sekunden - rest })
-          rest = 0
-        }
-      }
+    if (ziel == null || ziel < 0) {
+      if (wert.trim()) zeigeToast('Dauer bitte wie 1:30, 1,5 oder 90min eingeben.')
+      return
     }
+    // Atomar im Backend (eine Transaktion) - die fruehere Request-Schleife konnte
+    // bei Abbruechen halbe Korrekturen hinterlassen.
+    await setzeTicketzeit(karte.id, ziel)
     timer.stand++
     await ladeKartenZeitenFuer()
   }

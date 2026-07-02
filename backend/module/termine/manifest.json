@@ -4,7 +4,14 @@
   "version": "0.1.0",
   "extends": {
     "views": [
-      { "id": "wiederkehrendes", "titel": "Wiederkehrendes", "icon": "fa-solid fa-repeat" }
+      {
+        "id": "wiederkehrendes",
+        "titel": "Wiederkehrendes",
+        "icon": "fa-solid fa-repeat",
+        "reihenfolge": 70,
+        "global": true,
+        "adminOnly": false
+      }
     ],
     "cardFields": [],
     "mappeTabs": [],
@@ -15,5 +22,7 @@
     "init": "module.termine.dienst:init"
   },
   "permissions": [],
-  "requires": ["kanban-kern"]
+  "requires": [
+    "kanban-kern"
+  ]
 }

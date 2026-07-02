@@ -4,7 +4,14 @@
   "version": "0.1.0",
   "extends": {
     "views": [
-      { "id": "einstellungen", "titel": "Einstellungen", "icon": "fa-solid fa-gear" }
+      {
+        "id": "einstellungen",
+        "titel": "Einstellungen",
+        "icon": "fa-solid fa-gear",
+        "reihenfolge": 130,
+        "global": true,
+        "adminOnly": true
+      }
     ],
     "cardFields": [],
     "mappeTabs": [],
@@ -16,5 +23,7 @@
     "lifespan": "module.backup.dienst:lebenszyklus"
   },
   "permissions": [],
-  "requires": ["kanban-kern"]
+  "requires": [
+    "kanban-kern"
+  ]
 }

@@ -4,7 +4,14 @@
   "version": "0.1.0",
   "extends": {
     "views": [
-      { "id": "suche", "titel": "Suche", "icon": "fa-solid fa-magnifying-glass" }
+      {
+        "id": "suche",
+        "titel": "Suche",
+        "icon": "fa-solid fa-magnifying-glass",
+        "reihenfolge": 80,
+        "global": true,
+        "adminOnly": false
+      }
     ],
     "cardFields": [],
     "mappeTabs": [],
@@ -13,6 +20,10 @@
   "backend": {
     "router": "module.suche.api:router"
   },
-  "permissions": ["card.read"],
-  "requires": ["kanban-kern"]
+  "permissions": [
+    "card.read"
+  ],
+  "requires": [
+    "kanban-kern"
+  ]
 }

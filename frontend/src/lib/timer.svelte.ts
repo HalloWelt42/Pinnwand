@@ -3,12 +3,14 @@
 // Stopp beendet die Sitzung und blendet die Leiste aus.
 
 import type { Karte } from './types'
-import { ladeLaufend, timerStart, timerPause } from './api'
+import { ladeLaufend, ladeKarte, timerStart, timerPause } from './api'
 
-export const timer = $state<{ aktiv: Karte | null; jetzt: number; stand: number }>({
+export const timer = $state<{ aktiv: Karte | null; jetzt: number; stand: number; kuerzel: string | null }>({
   aktiv: null,
   jetzt: Date.now(),
   stand: 0,
+  // Kuerzel der aktiven Identitaet (Timer je Person): App.svelte haelt es aktuell.
+  kuerzel: null,
 })
 
 let uhrLaeuft = false
@@ -19,12 +21,28 @@ export function startUhr(): void {
   setInterval(() => {
     timer.jetzt = Date.now()
   }, 1000)
+  // Server-Abgleich: ein fremder Browser kann den eigenen Timer gestoppt oder
+  // gestartet haben - sonst zaehlt die Leiste optisch weiter, obwohl serverseitig
+  // laengst gebucht wurde. Leichtes Intervall plus Abgleich bei Fenster-Fokus.
+  setInterval(() => { void aktualisiereLaufend() }, 60_000)
+  window.addEventListener('focus', () => { void aktualisiereLaufend() })
 }
 
 export async function aktualisiereLaufend(): Promise<void> {
-  // Beim Start: eine tatsächlich laufende Karte als aktiv übernehmen.
-  const l = await ladeLaufend()
-  if (l) timer.aktiv = l
+  // Laufende Karte der eigenen Identitaet mit dem Server abgleichen.
+  try {
+    const l = await ladeLaufend(timer.kuerzel)
+    if (l) {
+      timer.aktiv = l
+    } else if (timer.aktiv?.laeuft_seit) {
+      // Lokal laeuft sie noch, serverseitig nicht mehr (Fremd-Stopp): frisch laden,
+      // damit die Leiste den pausierten Stand zeigt statt weiterzuzaehlen.
+      timer.aktiv = await ladeKarte(timer.aktiv.id).catch(() => null)
+      timer.stand++
+    }
+  } catch {
+    /* offline: naechster Abgleich versucht es wieder */
+  }
 }
 
 export async function timerStarten(id: string): Promise<void> {

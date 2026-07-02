@@ -31,8 +31,15 @@ def _karte_kompakt(kt: Karte) -> dict:
 
 
 class Aktionen:
-    def __init__(self, akteur: str = "unbekannt") -> None:
+    def __init__(self, akteur: str = "unbekannt", kuerzel: str | None = None,
+                 nur_mappen: set[str] | None = None) -> None:
         self.akteur = akteur
+        # Identitaet des Bedieners (UI-Weg mit aktivem Login): Zeitbuchungen werden
+        # ihm zugeschrieben statt dem Karten-Zustaendigen.
+        self.kuerzel = kuerzel
+        # Projekt-Scoping (None = ungefiltert, z.B. Agenten-Token/Admin): gefundene
+        # Karten ausserhalb der sichtbaren Mappen werden wie "nicht gefunden" behandelt.
+        self.nur_mappen = nur_mappen
 
     # -- Auflösung ------------------------------------------------------
 
@@ -49,6 +56,8 @@ class Aktionen:
     def _karte_oder_fehler(self, ref: str, board_ref: str | None = None) -> Karte:
         board_id = self._board_id(board_ref) if board_ref else None
         kt = k.finde_karte_per_text(ref, board_id)
+        if kt is not None and self.nur_mappen is not None and k.karte_mappe_id(kt.id) not in self.nur_mappen:
+            kt = None  # unsichtbares Projekt = wie nicht gefunden (kein Orakel)
         if kt is None:
             raise AktionsFehler(f"Keine Karte zu '{ref}' gefunden", status=404)
         return kt
@@ -70,7 +79,7 @@ class Aktionen:
         }
         if dry_run:
             return {"vorschau": True, **vorschau}
-        eintrag = k.erstelle_zeiteintrag(f"z_{uuid4().hex[:8]}", kt.id, iso, sek, kommentar)
+        eintrag = k.erstelle_zeiteintrag(f"z_{uuid4().hex[:8]}", kt.id, iso, sek, kommentar, kuerzel=self.kuerzel)
         return {"vorschau": False, **vorschau, "eintrag_id": eintrag.id if eintrag else None}
 
     def karte_anlegen(self, board_ref: str, titel: str, spalte: str | None = None,

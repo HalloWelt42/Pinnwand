@@ -167,11 +167,15 @@ def erstelle_instanz(serie: TerminSerie, datum: str) -> None:
         )
 
 
-def liste_instanzen(status: str | None = None, von: str | None = None, bis: str | None = None) -> list[TerminInstanz]:
+def liste_instanzen(status: str | None = None, von: str | None = None, bis: str | None = None,
+                    kuerzel: str | None = None) -> list[TerminInstanz]:
     klauseln, args = [], []
     if status:
         klauseln.append("status = ?")
         args.append(status)
+    if kuerzel:
+        klauseln.append("kuerzel = ?")
+        args.append(kuerzel)
     if von:
         klauseln.append("datum >= ?")
         args.append(von)

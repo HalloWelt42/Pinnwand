@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from fastapi import APIRouter, HTTPException, Query
+from module.auth.akteur import Akteur, aktueller_akteur
+from module.auth.rechte import darf_zeiteintrag_bearbeiten, verlange
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from module.serien import wiederholung
 
@@ -69,8 +71,9 @@ def instanzen(
     status: str | None = Query(default=None),
     von: str | None = Query(default=None),
     bis: str | None = Query(default=None),
+    kuerzel: str | None = Query(default=None),
 ) -> list[dict]:
-    return db.liste_instanzen(status=status, von=von, bis=bis)
+    return db.liste_instanzen(status=status, von=von, bis=bis, kuerzel=kuerzel)
 
 
 @router.get("/offen/anzahl")
@@ -79,7 +82,12 @@ def offen_anzahl() -> dict:
 
 
 @router.post("/instanzen/{iid}/bestaetigen", response_model=TerminInstanz)
-def instanz_bestaetigen(iid: str, eingabe: BestaetigenEingabe) -> dict:
+def instanz_bestaetigen(iid: str, eingabe: BestaetigenEingabe, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
+    # Bestaetigte Termine sind eine Ist-Quelle: nur die eigene Person oder ein Admin.
+    vorhanden = db.hole_instanz(iid)
+    if vorhanden is None:
+        raise HTTPException(status_code=404, detail="Termin nicht gefunden")
+    verlange(darf_zeiteintrag_bearbeiten(akteur, vorhanden.kuerzel), "Nur eigene Termine bestätigen.")
     inst = dienst.bestaetige(iid, eingabe.dauer_min)
     if inst is None:
         raise HTTPException(status_code=404, detail="Termin nicht gefunden")
@@ -87,7 +95,11 @@ def instanz_bestaetigen(iid: str, eingabe: BestaetigenEingabe) -> dict:
 
 
 @router.post("/instanzen/{iid}/ablehnen", response_model=TerminInstanz)
-def instanz_ablehnen(iid: str) -> dict:
+def instanz_ablehnen(iid: str, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
+    vorhanden = db.hole_instanz(iid)
+    if vorhanden is None:
+        raise HTTPException(status_code=404, detail="Termin nicht gefunden")
+    verlange(darf_zeiteintrag_bearbeiten(akteur, vorhanden.kuerzel), "Nur eigene Termine ablehnen.")
     inst = dienst.lehne_ab(iid)
     if inst is None:
         raise HTTPException(status_code=404, detail="Termin nicht gefunden")
@@ -95,8 +107,13 @@ def instanz_ablehnen(iid: str) -> dict:
 
 
 @router.post("/instanzen/bestaetigen-alle")
-def instanzen_bestaetigen_alle(eingabe: SammelBestaetigung) -> dict:
-    return {"bestaetigt": dienst.bestaetige_alle(eingabe.ids)}
+def instanzen_bestaetigen_alle(eingabe: SammelBestaetigung, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
+    # Sammel-Bestaetigung nur fuer die eigenen Instanzen (Admin: alle uebergebenen).
+    ids = eingabe.ids
+    if not akteur.ist_admin:
+        offene = {i.id: i for i in db.liste_instanzen(status="schwebend")}
+        ids = [i for i in (ids or []) if (inst := offene.get(i)) and darf_zeiteintrag_bearbeiten(akteur, inst.kuerzel)]
+    return {"bestaetigt": dienst.bestaetige_alle(ids)}
 
 
 @router.post("/materialisieren")

@@ -3,7 +3,10 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from fastapi import APIRouter, HTTPException, Query
+from module.auth.akteur import Akteur, aktueller_akteur
+from module.auth.rechte import darf_zeiteintrag_bearbeiten, verlange
+from module.kanban_kern import persistence as k
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from . import dienst, wiederholung
 from . import persistence as db
@@ -19,8 +22,12 @@ def nachtraege() -> list[SerienNachtrag]:
 
 
 @router.post("/nachtraege/{karte_id}")
-def nachtragen(karte_id: str, eingabe: NachtragEingabe) -> dict:
+def nachtragen(karte_id: str, eingabe: NachtragEingabe, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
     """Traegt die Stunden einer ignorierten Serien-Karte nach und erledigt sie."""
+    vorhanden = k.hole_karte(karte_id)
+    if vorhanden is None:
+        raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    verlange(darf_zeiteintrag_bearbeiten(akteur, vorhanden.zustaendig), "Nur eigene Serien-Karten nachtragen.")
     karte = dienst.nachtragen(karte_id, eingabe.dauer_min)
     if karte is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")

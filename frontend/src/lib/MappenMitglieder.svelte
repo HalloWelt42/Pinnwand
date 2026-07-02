@@ -41,7 +41,8 @@
     </header>
     <p class="hint">
       Nur Mitglieder sehen dieses Projekt und seine Boards. Ohne Mitglieder ist das Projekt
-      für alle sichtbar (geteilt). Admins sehen immer alle Projekte.
+      für alle sichtbar (geteilt). Admins sehen immer alle Projekte; Mitglieder können
+      die Mitgliederliste ihres Projekts selbst pflegen.
     </p>
     {#if laedt}
       <p class="leer">Lädt ...</p>

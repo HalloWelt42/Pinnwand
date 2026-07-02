@@ -11,7 +11,7 @@
   import { theme, wechsleTheme } from './lib/theme/theme.svelte'
   import { VERSION } from './lib/version'
   import { leseText, schreibeText, leseJson, schreibeJson } from './lib/uiSpeicher'
-  import { aktualisiereLaufend } from './lib/timer.svelte'
+  import { aktualisiereLaufend, timer } from './lib/timer.svelte'
   import { nav, transkriptNav, kartenZeiger, oeffneKarte } from './lib/navigation.svelte'
   import Toast from './lib/Toast.svelte'
   import KopfSuche from './lib/KopfSuche.svelte'
@@ -78,6 +78,13 @@
   // Bei aktivem Login ist die Rolle serverseitig bestimmt (autoritativ), sonst aus
   // der gewaehlten Person abgeleitet (Phase-1-Verhalten).
   const aktiveRolle = $derived(auth.erforderlich ? (auth.rolle ?? 'mitarbeiter') : rolleAus(personen, personSicht.id))
+  // Timer je Person: der Timer-Store braucht das Kuerzel der aktiven Identitaet
+  // fuer den laufend-Abgleich mit dem Server.
+  $effect(() => {
+    timer.kuerzel = auth.erforderlich
+      ? (auth.kuerzel ?? null)
+      : (personen.find((p) => p.id === personSicht.id)?.kuerzel ?? null)
+  })
   const istAdmin = $derived(aktiveRolle === 'admin')
   const sichtbareAnsichten = $derived(
     aktiveRolle === 'mitarbeiter' ? ansichtsListe.filter((a) => !ADMIN_ANSICHTEN.has(a.id)) : ansichtsListe,
@@ -386,9 +393,8 @@
               <i class="fa-solid {aktiveMappe?.id === m.id ? 'fa-folder-open' : 'fa-folder'}" aria-hidden="true"></i><span>{m.titel}</span>
             </button>
             <div class="aktionen">
-              {#if istAdmin}
-                <button class="ic" aria-label="Projekt-Mitglieder" title="Wer sieht dieses Projekt" onclick={() => (mitgliederMappe = m)}><i class="fa-solid fa-users" aria-hidden="true"></i></button>
-              {/if}
+              <!-- Mitglieder-Pflege auch fuer Mitglieder der Mappe (Server prueft). -->
+              <button class="ic" aria-label="Projekt-Mitglieder" title="Wer sieht dieses Projekt" onclick={() => (mitgliederMappe = m)}><i class="fa-solid fa-users" aria-hidden="true"></i></button>
               <button class="ic" aria-label="Mappe umbenennen" onclick={() => { bearbeiteMappeId = m.id; mappeEntwurf = m.titel }}><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
               {#if mappen.length > 1}
                 <button class="ic" aria-label="Mappe löschen" onclick={() => (loescheMappeId = m.id)}><i class="fa-solid fa-trash" aria-hidden="true"></i></button>

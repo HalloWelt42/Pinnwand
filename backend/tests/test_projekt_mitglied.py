@@ -69,5 +69,8 @@ def test_projekt_scoping_und_verwaltung(client):
     sichtbar_admin = {m["id"] for m in client.get("/api/kanban/mappen", headers=kopf_admin).json()}
     assert a["id"] in sichtbar_admin and b["id"] in sichtbar_admin
 
-    # Mitglieder-Verwaltung ist admin-only
-    assert client.put(f"/api/kanban/mappen/{a['id']}/mitglieder/{admin['id']}", headers=kopf).status_code == 403
+    # Mitglieder-Verwaltung: ein Mitglied pflegt die Mitglieder der EIGENEN Mappe
+    # (Self-Service des Erstellers) - fuer eine fremde Mappe bleibt es verboten.
+    assert client.put(f"/api/kanban/mappen/{a['id']}/mitglieder/{admin['id']}", headers=kopf).status_code == 204
+    assert client.delete(f"/api/kanban/mappen/{a['id']}/mitglieder/{admin['id']}", headers=kopf).status_code == 204
+    assert client.put(f"/api/kanban/mappen/{b['id']}/mitglieder/{ich['id']}", headers=kopf).status_code == 403

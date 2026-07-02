@@ -195,7 +195,7 @@ export const ladeErweiterungen = (): Promise<Erweiterungen> => hole('/api/erweit
 export const ladeMappen = (): Promise<Projektmappe[]> => hole('/api/kanban/mappen')
 export const ladeBoards = (mappeId: string): Promise<Board[]> => hole(`/api/kanban/mappen/${mappeId}/boards`)
 
-// Projekt-Mitglieder (wer sieht das Projekt). Verwaltung nur fuer Admins.
+// Projekt-Mitglieder (wer sieht das Projekt). Pflege: Admins und Mitglieder der Mappe.
 export const ladeMappenMitglieder = (mappeId: string): Promise<string[]> =>
   hole(`/api/kanban/mappen/${mappeId}/mitglieder`)
 export const setzeMappenMitglied = (mappeId: string, personId: string): Promise<void> =>
@@ -309,7 +309,8 @@ export const loescheKarte = (id: string): Promise<void> =>
 
 // --- Zeiterfassung ---
 
-export const ladeLaufend = (): Promise<Karte | null> => hole('/api/kanban/laufend')
+export const ladeLaufend = (kuerzel?: string | null): Promise<Karte | null> =>
+  hole(`/api/kanban/laufend${kuerzel ? `?kuerzel=${encodeURIComponent(kuerzel)}` : ''}`)
 
 export const timerStart = (id: string): Promise<Karte> =>
   hole(`/api/kanban/karten/${id}/timer/start`, { method: 'POST' })
@@ -609,11 +610,12 @@ export const aktualisiereTerminSerie = (id: string, daten: Partial<TerminSerie>)
   hole(`/api/termine/serien/${id}`, { method: 'PATCH', body: JSON.stringify(daten) })
 export const loescheTerminSerie = (id: string): Promise<void> =>
   hole(`/api/termine/serien/${id}`, { method: 'DELETE' })
-export const ladeTerminInstanzen = (p: { status?: string; von?: string; bis?: string } = {}): Promise<TerminInstanz[]> => {
+export const ladeTerminInstanzen = (p: { status?: string; von?: string; bis?: string; kuerzel?: string | null } = {}): Promise<TerminInstanz[]> => {
   const q = new URLSearchParams()
   if (p.status) q.set('status', p.status)
   if (p.von) q.set('von', p.von)
   if (p.bis) q.set('bis', p.bis)
+  if (p.kuerzel) q.set('kuerzel', p.kuerzel)
   const s = q.toString()
   return hole(`/api/termine/instanzen${s ? '?' + s : ''}`)
 }

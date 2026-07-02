@@ -36,6 +36,12 @@ def darf_zeit_buchen(akteur: Akteur, karte_zustaendig: str | None) -> bool:
     return akteur.ist_admin or akteur.kuerzel is not None
 
 
+def darf_timer_bedienen(akteur: Akteur, karte_zustaendig: str | None) -> bool:
+    """Timer startet/stoppt: Admin ueberall; auf Karten ohne Zustaendigen jeder;
+    sonst nur die zustaendige Person (die Sitzung wird ihr gutgeschrieben)."""
+    return akteur.ist_admin or karte_zustaendig is None or akteur.kuerzel == karte_zustaendig
+
+
 def verlange(erlaubt: bool, detail: str = "Keine Berechtigung für diese Aktion.") -> None:
     """Wirft 403, wenn die Aktion nicht erlaubt ist. Haelt die Endpunkte einzeilig."""
     if not erlaubt:

@@ -5,7 +5,10 @@ ist optional; ohne KI-Dienste liefert /api/suche Stichworttreffer.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
+
+from module.auth.akteur import Akteur, aktueller_akteur
+from module.kanban_kern import persistence as kdb
 
 from . import dienst, indexer
 
@@ -13,8 +16,16 @@ router = APIRouter(prefix="/api/suche", tags=["suche"])
 
 
 @router.get("")
-def suchen(q: str = Query(default=""), limit: int = Query(default=15)) -> dict:
-    return dienst.suche(q, max(1, min(limit, 50)))
+def suchen(q: str = Query(default=""), limit: int = Query(default=15),
+           akteur: Akteur = Depends(aktueller_akteur)) -> dict:
+    ergebnis = dienst.suche(q, max(1, min(limit, 50)))
+    # Projekt-Scoping: Treffer aus unsichtbaren Mappen fuer Nicht-Admins ausblenden.
+    if not akteur.ist_admin:
+        sichtbar = kdb.sichtbare_mappen_ids(akteur.person_id)
+        treffer = [tr for tr in ergebnis.get("treffer", [])
+                   if kdb.karte_mappe_id(tr.get("karte_id") if isinstance(tr, dict) else tr.karte_id) in sichtbar]
+        ergebnis = {**ergebnis, "treffer": treffer, "anzahl": len(treffer)}
+    return ergebnis
 
 
 @router.get("/status")

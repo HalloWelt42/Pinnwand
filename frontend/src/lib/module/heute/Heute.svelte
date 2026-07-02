@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { timer } from '../../timer.svelte'
   import { ladeHeute, schnellErfassen, ladeTerminInstanzen, bestaetigeTermin, lehneTerminAb, type HeuteUebersicht, type HeuteEintrag, type ErfassenErgebnis, type TerminInstanz } from '../../api'
   import { oeffneKarte } from '../../navigation.svelte'
   import { tts, vorlesen, stoppeVorlesen } from '../../tts.svelte'
@@ -50,7 +51,7 @@
   let tdauer = $state<Record<string, number>>({})
   async function ladeOffene(): Promise<void> {
     try {
-      offeneTermine = (await ladeTerminInstanzen({ status: 'schwebend', bis: ymd(new Date()) })) ?? []
+      offeneTermine = (await ladeTerminInstanzen({ status: 'schwebend', bis: ymd(new Date()), kuerzel: timer.kuerzel })) ?? []
     } catch {
       offeneTermine = []
     }

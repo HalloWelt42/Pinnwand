@@ -58,9 +58,34 @@ Team gemeinsam.
 Eine Mappe ist ein Projekt (siehe PROJEKTE.md). Über die Tabelle `mappe_mitglied` wird
 die Sichtbarkeit gesteuert: eine Mappe **ohne** Mitglieder ist für alle sichtbar
 (geteilt, rückwärts-kompatibel); sobald Mitglieder hinterlegt sind, sehen nur diese
-plus Admin das Projekt und seine Boards. Das Scoping wirkt serverseitig in
-`GET /api/kanban/mappen`, `.../boards`, `GET /api/kanban/boards/{id}` und
-`/api/kanban/projekte`; die Mitglieder-Verwaltung ist admin-nur.
+plus Admin das Projekt und seine Boards.
+
+Das Scoping wirkt serverseitig auf ALLEN Wegen, nicht nur in der Board-Navigation:
+Mappen ändern/löschen, Boards/Spalten/Karten anlegen, ändern, verschieben und
+löschen, Kommentare, Verknüpfungen, Dokumente, der Karten-Deep-Link, die
+Fertig-/Archiv-Fenster, die Heute-Übersicht, die Zeiteintrags-Liste, die Suche
+und das Schnell-Erfassen filtern bzw. verweigern Inhalte unsichtbarer Projekte
+(zentraler Helfer in `kanban_kern/api.py`).
+
+Die Mitglieder-Verwaltung dürfen Admins und die Mitglieder der jeweiligen Mappe
+(z.B. ihr Ersteller) pflegen - so kann ein Mitarbeiter sein eigenes Projekt
+selbst freigeben oder wieder teilen.
+
+## Timer und Termine je Person
+
+Der Timer läuft je Person: ein Start pausiert nur laufende Karten derselben
+Zuständigkeit, fremde Timer laufen weiter. Starten/Stoppen ist auf eigene Karten
+(oder Karten ohne Zuständigkeit) beschränkt; Admins dürfen überall. Die laufende
+Karte wird je Identität abgefragt und regelmäßig mit dem Server abgeglichen.
+
+Zeit wird immer als EIGENE Zeit gebucht: der Zeiteintrag trägt das Kürzel der
+buchenden Person (Snapshot). Darum ist das Buchen auch auf gemeinsamen oder
+fremden Karten erlaubt - Auswertungen und Eigentum hängen am Eintrag, nicht am
+Live-Zustand der Karte. Karten-Übergaben verschieben die Historie nicht mehr.
+
+Termin-Bestätigungen (zweite Ist-Quelle) sind personenbezogen: bestätigen und
+ablehnen darf nur die eigene Person oder ein Admin; das Bestätigungs-Overlay
+fragt nur die eigenen schwebenden Instanzen ab.
 
 ## Datenmodell und Sicherungen
 

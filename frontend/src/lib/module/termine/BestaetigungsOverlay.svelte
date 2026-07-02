@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { materialisiereTermine, ladeTerminInstanzen, bestaetigeTermin, lehneTerminAb, bestaetigeAlleTermine, type TerminInstanz } from '../../api'
   import { ymd, isoLang } from '../../zeit'
+  import { timer } from '../../timer.svelte'
   import { leseText, schreibeText } from '../../uiSpeicher'
 
   let offen = $state<TerminInstanz[]>([])
@@ -12,7 +13,8 @@
 
   async function offeneLaden(): Promise<void> {
     const heute = ymd(new Date())
-    offen = (await ladeTerminInstanzen({ status: 'schwebend', bis: heute })) ?? []
+    // Bestaetigen ist personenbezogen (Ist-Quelle): nur die eigenen Instanzen fragen.
+    offen = (await ladeTerminInstanzen({ status: 'schwebend', bis: heute, kuerzel: timer.kuerzel })) ?? []
   }
 
   onMount(async () => {

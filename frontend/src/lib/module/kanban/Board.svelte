@@ -28,6 +28,7 @@
   import { nav, setzeOffeneKarte } from '../../navigation.svelte'
   import { neuKarteAus, verlustHinweis } from '../../restore'
   import { personSicht } from '../../personSicht.svelte'
+  import { auth } from '../../auth.svelte'
   import { zuletztKuerzel } from '../../zuletztKuerzel.svelte'
   import { leseJson, schreibeJson } from '../../uiSpeicher'
   import Column from './Column.svelte'
@@ -78,7 +79,12 @@
   const alleLabels = $derived([...new Set((board?.karten ?? []).flatMap((k) => k.labels))].sort())
   const mitglieder = $derived([...new Set((board?.karten ?? []).map((k) => k.zustaendig).filter((z): z is string => !!z))])
   // Default-Zustaendiger fuer neue Karten: aktive Identitaet, sonst zuletzt genutztes Kuerzel.
-  const aktivKuerzel = $derived(personSicht.id ? (personen.find((p) => p.id === personSicht.id)?.kuerzel ?? null) : null)
+  // Bei aktivem Login ist die angemeldete Person autoritativ; sonst die Browser-Identitaet.
+  const aktivKuerzel = $derived(
+    auth.erforderlich
+      ? (auth.kuerzel ?? null)
+      : (personSicht.id ? (personen.find((p) => p.id === personSicht.id)?.kuerzel ?? null) : null),
+  )
   const standardKuerzel = $derived(aktivKuerzel ?? (zuletztKuerzel.wert || null))
 
   // Aus der Suche/Deep-Link angesteuerte Karte öffnen, sobald dieses Board geladen ist
@@ -105,6 +111,14 @@
         }).catch(() => zeigeToast('Karte konnte nicht geladen werden.'))
       }
     }
+  })
+
+  // Leichter Browser-Sync: beim Zurueckkehren ins Fenster das Board auffrischen,
+  // damit Aenderungen aus anderen Browsern sichtbar werden (kein Dauer-Polling).
+  $effect(() => {
+    const beiFokus = () => { if (!ausgewaehlt) void laden() }
+    window.addEventListener('focus', beiFokus)
+    return () => window.removeEventListener('focus', beiFokus)
   })
 
   // Offene Karte für tief verlinkbare URLs spiegeln; beim Verlassen wieder abräumen.
@@ -403,7 +417,10 @@
   }
   async function karteKommentar(text: string) {
     if (!ausgewaehlt) return
-    ersetzeKarte(await anhaengenKommentar(ausgewaehlt.id, ausgewaehlt.zustaendig ?? 'Ich', text))
+    // Autor ist der BEDIENER (aktive Identitaet), nicht der Karten-Zustaendige -
+    // sonst zeigt die Historie systematisch falsche Urheber.
+    const autor = standardKuerzel ?? ausgewaehlt.zustaendig ?? 'Ich'
+    ersetzeKarte(await anhaengenKommentar(ausgewaehlt.id, autor, text))
   }
   async function loescheKarteMitUndo(k: Karte) {
     const snap = $state.snapshot(k) as Karte

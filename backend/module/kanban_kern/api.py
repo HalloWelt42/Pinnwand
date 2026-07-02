@@ -7,7 +7,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException
 
 from module.auth.akteur import Akteur, aktueller_akteur
-from module.auth.rechte import darf_zeit_buchen, darf_zeiteintrag_bearbeiten, verlange
+from module.auth.rechte import darf_timer_bedienen, darf_zeit_buchen, darf_zeiteintrag_bearbeiten, verlange
 
 from . import persistence as db
 from .models import (
@@ -49,6 +49,15 @@ from .models import (
 )
 
 router = APIRouter(prefix="/api/kanban", tags=["kanban"])
+
+
+def _projekt_zugriff(akteur: Akteur, mappe_id: str | None) -> None:
+    """Serverseitiges Projekt-Scoping: Nicht-Mitglieder duerfen Inhalte einer
+    beschraenkten Mappe weder lesen noch veraendern - auf ALLEN Wegen, nicht nur
+    in der Board-Navigation."""
+    if akteur.ist_admin or mappe_id is None:
+        return
+    verlange(db.mappe_sichtbar_fuer(mappe_id, akteur.person_id), "Kein Zugriff auf dieses Projekt.")
 
 
 def _index(karte_id: str | None) -> None:
@@ -105,18 +114,22 @@ def mappe_mitglieder(mappe_id: str, akteur: Akteur = Depends(aktueller_akteur)) 
 
 @router.put("/mappen/{mappe_id}/mitglieder/{person_id}", status_code=204)
 def mappe_mitglied_setzen(mappe_id: str, person_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> None:
-    verlange(akteur.ist_admin, "Nur Admins verwalten Projekt-Mitglieder.")
+    # Admin oder ein Mitglied der Mappe (z.B. der Ersteller) pflegt die Mitglieder.
+    verlange(akteur.ist_admin or (akteur.person_id is not None and db.mappe_sichtbar_fuer(mappe_id, akteur.person_id)),
+             "Nur Admins oder Projekt-Mitglieder verwalten die Mitglieder.")
     db.setze_mappe_mitglied(mappe_id, person_id)
 
 
 @router.delete("/mappen/{mappe_id}/mitglieder/{person_id}", status_code=204)
 def mappe_mitglied_entfernen(mappe_id: str, person_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> None:
-    verlange(akteur.ist_admin, "Nur Admins verwalten Projekt-Mitglieder.")
+    verlange(akteur.ist_admin or (akteur.person_id is not None and db.mappe_sichtbar_fuer(mappe_id, akteur.person_id)),
+             "Nur Admins oder Projekt-Mitglieder verwalten die Mitglieder.")
     db.entferne_mappe_mitglied(mappe_id, person_id)
 
 
 @router.patch("/mappen/{mappe_id}", response_model=Projektmappe)
-def mappe_aendern(mappe_id: str, eingabe: MappeUpdate) -> Projektmappe:
+def mappe_aendern(mappe_id: str, eingabe: MappeUpdate, akteur: Akteur = Depends(aktueller_akteur)) -> Projektmappe:
+    _projekt_zugriff(akteur, mappe_id)
     felder = eingabe.model_dump(exclude_unset=True)
     if "titel" in felder and not (felder["titel"] or "").strip():
         raise HTTPException(status_code=400, detail="Titel darf nicht leer sein")
@@ -127,7 +140,8 @@ def mappe_aendern(mappe_id: str, eingabe: MappeUpdate) -> Projektmappe:
 
 
 @router.delete("/mappen/{mappe_id}", status_code=204)
-def mappe_loeschen(mappe_id: str) -> None:
+def mappe_loeschen(mappe_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> None:
+    _projekt_zugriff(akteur, mappe_id)
     ok, karten = db.loesche_mappe(mappe_id)
     if not ok:
         raise HTTPException(status_code=400, detail="Die letzte Mappe kann nicht geloescht werden")
@@ -172,6 +186,7 @@ def _als_seite(karten: list[Karte], gesamt: int, offset: int) -> KartenSeite:
 @router.get("/spalten/{spalte_id}/fertige", response_model=KartenSeite)
 def fertige(
     spalte_id: str,
+    akteur: Akteur = Depends(aktueller_akteur),
     zeitraum: str = "heute",
     offset: int = 0,
     limit: int | None = None,
@@ -180,14 +195,17 @@ def fertige(
     prioritaet: str | None = None,
 ) -> KartenSeite:
     """Eine gefensterte Seite fertiger Karten einer Erledigt-Spalte (nur nicht-archivierte)."""
+    _projekt_zugriff(akteur, db.spalte_mappe_id(spalte_id))
     lab = [t.strip() for t in labels.split(",") if t.strip()] if labels else None
     karten, gesamt = db.fertige_seite(spalte_id, zeitraum, offset, limit, q, lab, prioritaet)
     return _als_seite(karten, gesamt, max(0, offset))
 
 
 @router.get("/boards/{board_id}/archiv", response_model=KartenSeite)
-def archiv(board_id: str, offset: int = 0, limit: int | None = None, q: str | None = None) -> KartenSeite:
+def archiv(board_id: str, offset: int = 0, limit: int | None = None, q: str | None = None,
+           akteur: Akteur = Depends(aktueller_akteur)) -> KartenSeite:
     """Archivierte fertige Karten eines Boards (Abschluss aelter als die Schwelle)."""
+    _projekt_zugriff(akteur, db.board_mappe_id(board_id))
     karten, gesamt = db.archiv_seite(board_id, offset, limit, q)
     return _als_seite(karten, gesamt, max(0, offset))
 
@@ -204,23 +222,26 @@ def kanban_einstellungen_setzen(eingabe: KanbanEinstellungenUpdate) -> KanbanEin
 
 
 @router.get("/heute", response_model=HeuteUebersicht)
-def heute(datum: str | None = None) -> HeuteUebersicht:
+def heute(datum: str | None = None, akteur: Akteur = Depends(aktueller_akteur)) -> HeuteUebersicht:
     from datetime import date
 
-    return db.was_steht_an(datum or date.today().isoformat())
+    nur_mappen = None if akteur.ist_admin else db.sichtbare_mappen_ids(akteur.person_id)
+    return db.was_steht_an(datum or date.today().isoformat(), nur_mappen)
 
 
 # -- Dokumente (Karten- und Mappen-Dokumente) -----------------------------
 
 @router.get("/dokumente", response_model=list[Dokument])
-def dokumente(kontext: str, kontext_id: str) -> list[Dokument]:
+def dokumente(kontext: str, kontext_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> list[Dokument]:
+    _projekt_zugriff(akteur, kontext_id if kontext == "mappe" else db.karte_mappe_id(kontext_id))
     if kontext not in ("karte", "mappe"):
         raise HTTPException(status_code=400, detail="Unbekannter Kontext")
     return db.liste_dokumente(kontext, kontext_id)
 
 
 @router.post("/dokumente", response_model=Dokument, status_code=201)
-def dokument_anlegen(eingabe: DokumentCreate) -> Dokument:
+def dokument_anlegen(eingabe: DokumentCreate, akteur: Akteur = Depends(aktueller_akteur)) -> Dokument:
+    _projekt_zugriff(akteur, eingabe.kontext_id if eingabe.kontext == "mappe" else db.karte_mappe_id(eingabe.kontext_id))
     titel = eingabe.titel.strip()
     if not titel:
         raise HTTPException(status_code=400, detail="Titel darf nicht leer sein")
@@ -263,15 +284,16 @@ def dokument_loeschen(dokument_id: str) -> None:
 # -- Schnell-Erfassung (natuersprachlich, lokal, mit Vorschau) ------------
 
 @router.post("/schnell-erfassen")
-def schnell_erfassen(e: SchnellErfassen) -> dict:
+def schnell_erfassen(e: SchnellErfassen, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
     """Deutet einen Freitext (z.B. 'R3-130 1:30 Doku geschrieben') und bucht Zeit.
 
     Mit dry_run nur Vorschau (deterministische Deutung), ohne dry_run wird gebucht.
     Lokaler UI-Endpunkt ohne Token (die App ist lokal); die Logik teilt sich mit der Agenten-API.
     """
     from module.agent_api.aktionen import Aktionen, AktionsFehler
+    nur_mappen = None if akteur.ist_admin else db.sichtbare_mappen_ids(akteur.person_id)
     try:
-        ergebnis = Aktionen("ui").erfasse_freitext(e.text, dry_run=e.dry_run)
+        ergebnis = Aktionen("ui", kuerzel=akteur.kuerzel, nur_mappen=nur_mappen).erfasse_freitext(e.text, dry_run=e.dry_run)
     except AktionsFehler as ex:
         raise HTTPException(status_code=getattr(ex, "status", 400), detail=str(ex))
     if not e.dry_run and ergebnis.get("karte", {}).get("id"):
@@ -282,7 +304,8 @@ def schnell_erfassen(e: SchnellErfassen) -> dict:
 # -- Karten ---------------------------------------------------------------
 
 @router.post("/karten", response_model=Karte, status_code=201)
-def karte_anlegen(eingabe: KarteCreate) -> Karte:
+def karte_anlegen(eingabe: KarteCreate, akteur: Akteur = Depends(aktueller_akteur)) -> Karte:
+    _projekt_zugriff(akteur, db.board_mappe_id(eingabe.board_id))
     # Board und Spalte muessen existieren und zusammenpassen - sonst entstuenden
     # Waisen-Karten ohne gueltiges Board, die in keiner Ansicht erscheinen.
     detail = db.board_detail(eingabe.board_id)
@@ -309,7 +332,8 @@ def karte_anlegen(eingabe: KarteCreate) -> Karte:
 
 
 @router.patch("/karten/{karte_id}", response_model=Karte)
-def karte_aendern(karte_id: str, eingabe: KarteUpdate) -> Karte:
+def karte_aendern(karte_id: str, eingabe: KarteUpdate, akteur: Akteur = Depends(aktueller_akteur)) -> Karte:
+    _projekt_zugriff(akteur, db.karte_mappe_id(karte_id))
     karte = db.aktualisiere_karte(karte_id, eingabe.model_dump(exclude_unset=True, mode="json"))
     if karte is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
@@ -318,7 +342,8 @@ def karte_aendern(karte_id: str, eingabe: KarteUpdate) -> Karte:
 
 
 @router.post("/karten/{karte_id}/move", response_model=Karte)
-def karte_verschieben(karte_id: str, ziel: KarteMove) -> Karte:
+def karte_verschieben(karte_id: str, ziel: KarteMove, akteur: Akteur = Depends(aktueller_akteur)) -> Karte:
+    _projekt_zugriff(akteur, db.karte_mappe_id(karte_id))
     karte = db.verschiebe_karte(karte_id, ziel.spalte, ziel.reihenfolge)
     if karte is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
@@ -326,7 +351,8 @@ def karte_verschieben(karte_id: str, ziel: KarteMove) -> Karte:
 
 
 @router.post("/karten/{karte_id}/kommentare", response_model=Karte, status_code=201)
-def kommentar_anlegen(karte_id: str, eingabe: KommentarCreate) -> Karte:
+def kommentar_anlegen(karte_id: str, eingabe: KommentarCreate, akteur: Akteur = Depends(aktueller_akteur)) -> Karte:
+    _projekt_zugriff(akteur, db.karte_mappe_id(karte_id))
     karte = db.kommentar_anhaengen(karte_id, eingabe.autor, eingabe.text, datetime.now().isoformat(timespec="minutes"))
     if karte is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
@@ -335,7 +361,8 @@ def kommentar_anlegen(karte_id: str, eingabe: KommentarCreate) -> Karte:
 
 
 @router.delete("/karten/{karte_id}", status_code=204)
-def karte_loeschen(karte_id: str) -> None:
+def karte_loeschen(karte_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> None:
+    _projekt_zugriff(akteur, db.karte_mappe_id(karte_id))
     db.loesche_karte(karte_id)
     _index_weg(karte_id)
 
@@ -343,9 +370,10 @@ def karte_loeschen(karte_id: str) -> None:
 # -- Zeiterfassung --------------------------------------------------------
 
 @router.get("/karten/{karte_id}", response_model=Karte)
-def karte_holen(karte_id: str) -> Karte:
+def karte_holen(karte_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> Karte:
     """Einzelne Karte - Fallback fuer Deep-Links auf fertige Karten, die nicht im
     gefensterten Board geladen sind."""
+    _projekt_zugriff(akteur, db.karte_mappe_id(karte_id))
     k = db.hole_karte(karte_id)
     if k is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
@@ -353,15 +381,21 @@ def karte_holen(karte_id: str) -> Karte:
 
 
 @router.get("/laufend", response_model=Karte | None)
-def laufend() -> Karte | None:
-    return db.laufende_karte()
+def laufend(kuerzel: str | None = None, akteur: Akteur = Depends(aktueller_akteur)) -> Karte | None:
+    # Bei aktivem Login zaehlt die angemeldete Person; sonst das mitgegebene
+    # Kuerzel der Browser-Identitaet (Timer je Person). Nicht-Admins sehen nur
+    # die eigene laufende Karte (kein Fallback auf fremde Timer).
+    eigenes = akteur.kuerzel or kuerzel
+    return db.laufende_karte(eigenes, nur_eigene=not akteur.ist_admin and eigenes is not None)
 
 
 @router.post("/karten/{karte_id}/timer/start", response_model=Karte)
-def timer_start(karte_id: str) -> Karte:
+def timer_start(karte_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> Karte:
     vorhanden = db.hole_karte(karte_id)
     if vorhanden is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    _projekt_zugriff(akteur, db.karte_mappe_id(karte_id))
+    verlange(darf_timer_bedienen(akteur, vorhanden.zustaendig), "Der Timer läuft nur auf eigenen Karten.")
     if vorhanden.typ == "idee":
         raise HTTPException(status_code=409, detail="Ideentickets erfassen keine Zeit")
     karte = db.timer_start(karte_id)
@@ -371,7 +405,8 @@ def timer_start(karte_id: str) -> Karte:
 
 
 @router.post("/karten/{karte_id}/verknuepfen", response_model=Karte)
-def karte_verknuepfen(karte_id: str, eingabe: KarteVerknuepfen) -> Karte:
+def karte_verknuepfen(karte_id: str, eingabe: KarteVerknuepfen, akteur: Akteur = Depends(aktueller_akteur)) -> Karte:
+    _projekt_zugriff(akteur, db.karte_mappe_id(karte_id))
     """Legt diese Karte und die Ziel-Karte in eine gemeinsame Zeitgruppe."""
     karte = db.verknuepfe_karten(karte_id, eingabe.ziel_karte_id)
     if karte is None:
@@ -388,14 +423,19 @@ def karte_verknuepfung_loesen(karte_id: str) -> Karte:
 
 
 @router.patch("/gruppen/{gruppe_id}", status_code=204)
-def gruppe_aendern(gruppe_id: str, eingabe: GruppeUpdate) -> None:
+def gruppe_aendern(gruppe_id: str, eingabe: GruppeUpdate, akteur: Akteur = Depends(aktueller_akteur)) -> None:
+    _projekt_zugriff(akteur, db.gruppe_mappe_id(gruppe_id))
     """Spezialfall-Schalter: teilt die Gruppe die Zeit (Anzeige) oder zaehlt getrennt?"""
     if not db.setze_gruppe_zeit_geteilt(gruppe_id, eingabe.zeit_geteilt):
         raise HTTPException(status_code=404, detail="Gruppe nicht gefunden")
 
 
 @router.post("/karten/{karte_id}/timer/pause", response_model=Karte)
-def timer_pause(karte_id: str) -> Karte:
+def timer_pause(karte_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> Karte:
+    vorhanden = db.hole_karte(karte_id)
+    if vorhanden is None:
+        raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    verlange(darf_timer_bedienen(akteur, vorhanden.zustaendig), "Fremde Timer stoppt nur ein Admin.")
     karte = db.timer_pause(karte_id)
     if karte is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
@@ -405,8 +445,10 @@ def timer_pause(karte_id: str) -> Karte:
 # -- Zeiteinträge (Auswertung / Korrektur) -------------------------------
 
 @router.get("/zeiteintraege", response_model=list[Zeiteintrag])
-def zeiteintraege(von: str | None = None, bis: str | None = None, karte_id: str | None = None) -> list[Zeiteintrag]:
-    return db.zeiteintraege_range(von, bis, karte_id)
+def zeiteintraege(von: str | None = None, bis: str | None = None, karte_id: str | None = None,
+                  akteur: Akteur = Depends(aktueller_akteur)) -> list[Zeiteintrag]:
+    nur_mappen = None if akteur.ist_admin else db.sichtbare_mappen_ids(akteur.person_id)
+    return db.zeiteintraege_range(von, bis, karte_id, nur_mappen)
 
 
 @router.post("/zeiteintraege", response_model=Zeiteintrag, status_code=201)
@@ -452,14 +494,16 @@ def zeiteintrag_loeschen(eintrag_id: str, akteur: Akteur = Depends(aktueller_akt
 # -- Boards ---------------------------------------------------------------
 
 @router.post("/mappen/{mappe_id}/boards", response_model=BoardDetail, status_code=201)
-def board_anlegen(mappe_id: str, eingabe: BoardCreate) -> BoardDetail:
+def board_anlegen(mappe_id: str, eingabe: BoardCreate, akteur: Akteur = Depends(aktueller_akteur)) -> BoardDetail:
+    _projekt_zugriff(akteur, mappe_id)
     detail = db.erstelle_board(f"b_{uuid4().hex[:8]}", mappe_id, eingabe.titel)
     assert detail is not None
     return detail
 
 
 @router.patch("/boards/{board_id}", response_model=Board)
-def board_aendern(board_id: str, eingabe: BoardUpdate) -> Board:
+def board_aendern(board_id: str, eingabe: BoardUpdate, akteur: Akteur = Depends(aktueller_akteur)) -> Board:
+    _projekt_zugriff(akteur, db.board_mappe_id(board_id))
     if eingabe.titel is None:
         bestehend = db.board_detail(board_id)
         if bestehend is None:
@@ -472,13 +516,15 @@ def board_aendern(board_id: str, eingabe: BoardUpdate) -> Board:
 
 
 @router.delete("/boards/{board_id}", status_code=204)
-def board_loeschen(board_id: str) -> None:
+def board_loeschen(board_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> None:
+    _projekt_zugriff(akteur, db.board_mappe_id(board_id))
     for kid in db.loesche_board(board_id):
         _index_weg(kid)
 
 
 @router.patch("/boards/{board_id}/spalten-reihenfolge", status_code=204)
-def spalten_reihenfolge(board_id: str, eingabe: SpaltenReihenfolge) -> None:
+def spalten_reihenfolge(board_id: str, eingabe: SpaltenReihenfolge, akteur: Akteur = Depends(aktueller_akteur)) -> None:
+    _projekt_zugriff(akteur, db.board_mappe_id(board_id))
     if not db.setze_spalten_reihenfolge(board_id, eingabe.spalten):
         raise HTTPException(status_code=400, detail="Spalten-Liste passt nicht zum Board")
 
@@ -486,12 +532,14 @@ def spalten_reihenfolge(board_id: str, eingabe: SpaltenReihenfolge) -> None:
 # -- Spalten --------------------------------------------------------------
 
 @router.post("/boards/{board_id}/spalten", response_model=Spalte, status_code=201)
-def spalte_anlegen(board_id: str, eingabe: SpalteCreate) -> Spalte:
+def spalte_anlegen(board_id: str, eingabe: SpalteCreate, akteur: Akteur = Depends(aktueller_akteur)) -> Spalte:
+    _projekt_zugriff(akteur, db.board_mappe_id(board_id))
     return db.erstelle_spalte(f"s_{uuid4().hex[:8]}", board_id, eingabe.titel, eingabe.wip_limit)
 
 
 @router.patch("/spalten/{spalte_id}", response_model=Spalte)
-def spalte_aendern(spalte_id: str, eingabe: SpalteUpdate) -> Spalte:
+def spalte_aendern(spalte_id: str, eingabe: SpalteUpdate, akteur: Akteur = Depends(aktueller_akteur)) -> Spalte:
+    _projekt_zugriff(akteur, db.spalte_mappe_id(spalte_id))
     spalte = db.aktualisiere_spalte(spalte_id, eingabe.model_dump(exclude_unset=True))
     if spalte is None:
         raise HTTPException(status_code=404, detail="Spalte nicht gefunden")
@@ -508,7 +556,8 @@ def spalte_als_erledigt(spalte_id: str) -> Spalte:
 
 
 @router.post("/spalten/{spalte_id}/move", response_model=Spalte)
-def spalte_verschieben(spalte_id: str, ziel: SpalteMove) -> Spalte:
+def spalte_verschieben(spalte_id: str, ziel: SpalteMove, akteur: Akteur = Depends(aktueller_akteur)) -> Spalte:
+    _projekt_zugriff(akteur, db.spalte_mappe_id(spalte_id))
     spalte = db.verschiebe_spalte(spalte_id, ziel.richtung)
     if spalte is None:
         raise HTTPException(status_code=404, detail="Spalte nicht gefunden")
@@ -516,7 +565,8 @@ def spalte_verschieben(spalte_id: str, ziel: SpalteMove) -> Spalte:
 
 
 @router.delete("/spalten/{spalte_id}", status_code=204)
-def spalte_loeschen(spalte_id: str) -> None:
+def spalte_loeschen(spalte_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> None:
+    _projekt_zugriff(akteur, db.spalte_mappe_id(spalte_id))
     ergebnis, karten = db.loesche_spalte(spalte_id)
     if ergebnis == "fehlt":
         raise HTTPException(status_code=404, detail="Spalte nicht gefunden")

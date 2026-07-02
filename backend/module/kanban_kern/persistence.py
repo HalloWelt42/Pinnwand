@@ -316,6 +316,43 @@ def entferne_mappe_mitglied(mappe_id: str, person_id: str) -> bool:
     return cur.rowcount > 0
 
 
+def gruppe_mappe_id(gruppe_id: str) -> str | None:
+    with _verb() as conn:
+        r = conn.execute(
+            "SELECT b.mappe_id FROM karte k JOIN board b ON b.id = k.board_id WHERE k.gruppe_id = ? LIMIT 1",
+            (gruppe_id,),
+        ).fetchone()
+    return r[0] if r else None
+
+
+def karte_mappe_id(karte_id: str) -> str | None:
+    with _verb() as conn:
+        r = conn.execute(
+            "SELECT b.mappe_id FROM karte k JOIN board b ON b.id = k.board_id WHERE k.id = ?", (karte_id,)
+        ).fetchone()
+    return r[0] if r else None
+
+
+def spalte_mappe_id(spalte_id: str) -> str | None:
+    with _verb() as conn:
+        r = conn.execute(
+            "SELECT b.mappe_id FROM spalte s JOIN board b ON b.id = s.board_id WHERE s.id = ?", (spalte_id,)
+        ).fetchone()
+    return r[0] if r else None
+
+
+def sichtbare_mappen_ids(person_id: str | None) -> set[str]:
+    """Alle Mappen, die diese Person sehen darf (memberlos = geteilt)."""
+    with _verb() as conn:
+        rows = conn.execute(
+            "SELECT m.id FROM mappe m WHERE"
+            " NOT EXISTS (SELECT 1 FROM mappe_mitglied x WHERE x.mappe_id = m.id)"
+            " OR EXISTS (SELECT 1 FROM mappe_mitglied x WHERE x.mappe_id = m.id AND x.person_id = ?)",
+            (person_id,),
+        ).fetchall()
+    return {r[0] for r in rows}
+
+
 def board_mappe_id(board_id: str) -> str | None:
     with _verb() as conn:
         r = conn.execute("SELECT mappe_id FROM board WHERE id = ?", (board_id,)).fetchone()
@@ -1132,8 +1169,14 @@ def timer_start(karte_id: str) -> Karte | None:
         row = conn.execute("SELECT start FROM karte WHERE id = ?", (karte_id,)).fetchone()
         if row is None:
             return None
-        # Nur eine Karte darf gleichzeitig laufen -> alle anderen pausieren.
-        for r in conn.execute("SELECT id FROM karte WHERE laeuft_seit IS NOT NULL").fetchall():
+        # Timer je PERSON: der Start pausiert nur laufende Karten derselben Person
+        # (gleiches Zustaendigkeits-Kuerzel; IS vergleicht auch NULL korrekt) -
+        # fremde Timer laufen weiter, statt still gestoppt zu werden.
+        eigene = conn.execute("SELECT zustaendig FROM karte WHERE id = ?", (karte_id,)).fetchone()
+        for r in conn.execute(
+            "SELECT id FROM karte WHERE laeuft_seit IS NOT NULL AND id != ? AND zustaendig IS ?",
+            (karte_id, eigene["zustaendig"] if eigene else None),
+        ).fetchall():
             _pause_intern(conn, r["id"])
         jetzt = _jetzt_genau()
         # Ohne gesetztes Start-Datum gilt der erste Timer-Start als Arbeitsbeginn;
@@ -1153,9 +1196,17 @@ def timer_pause(karte_id: str) -> Karte | None:
     return hole_karte(karte_id)
 
 
-def laufende_karte() -> Karte | None:
+def laufende_karte(kuerzel: str | None = None, nur_eigene: bool = False) -> Karte | None:
+    """Die laufende Karte - mit kuerzel bevorzugt die der Person (Timer je Person);
+    nur_eigene unterdrueckt den Fallback auf fremde Timer (Nicht-Admins)."""
     with _verb() as conn:
-        row = conn.execute("SELECT * FROM karte WHERE laeuft_seit IS NOT NULL LIMIT 1").fetchone()
+        row = None
+        if kuerzel:
+            row = conn.execute(
+                "SELECT * FROM karte WHERE laeuft_seit IS NOT NULL AND zustaendig = ? LIMIT 1", (kuerzel,)
+            ).fetchone()
+        if row is None and not nur_eigene:
+            row = conn.execute("SELECT * FROM karte WHERE laeuft_seit IS NOT NULL LIMIT 1").fetchone()
     return _karte_aus_row(row) if row else None
 
 
@@ -1177,7 +1228,8 @@ def _zeiteintrag_aus_row(row: sqlite3.Row) -> Zeiteintrag:
     )
 
 
-def zeiteintraege_range(von: str | None = None, bis: str | None = None, karte_id: str | None = None) -> list[Zeiteintrag]:
+def zeiteintraege_range(von: str | None = None, bis: str | None = None, karte_id: str | None = None,
+                        nur_mappen: set[str] | None = None) -> list[Zeiteintrag]:
     """Zeiteintraege gefiltert. Mit karte_id (ohne von/bis) liefert es ALLE Eintraege
     einer Karte ueber alle Tage - Grundlage der Tages-Aufschluesselung im Ticket."""
     bed: list[str] = []
@@ -1191,6 +1243,13 @@ def zeiteintraege_range(von: str | None = None, bis: str | None = None, karte_id
     if karte_id:
         bed.append("z.karte_id = ?")
         params.append(karte_id)
+    if nur_mappen is not None:
+        # Projekt-Scoping fuer Nicht-Admins: nur Eintraege sichtbarer Mappen.
+        if not nur_mappen:
+            return []
+        platz = ",".join("?" for _ in nur_mappen)
+        bed.append(f"z.mappe_id IN ({platz})")
+        params.extend(sorted(nur_mappen))
     where = ("WHERE " + " AND ".join(bed) + " ") if bed else ""
     with _verb() as conn:
         rows = conn.execute(
@@ -1435,7 +1494,7 @@ def finde_karte_per_text(text: str, board_id: str | None = None) -> Karte | None
     return _karte_aus_row(row) if row else None
 
 
-def was_steht_an(heute: str) -> HeuteUebersicht:
+def was_steht_an(heute: str, nur_mappen: set[str] | None = None) -> HeuteUebersicht:
     """Handlungsorientierte Übersicht: überfällig, heute, diese Woche, laufend, liegengeblieben.
 
     Wiederkehrende Termine erscheinen automatisch über ihre Fälligkeit.
@@ -1447,9 +1506,18 @@ def was_steht_an(heute: str) -> HeuteUebersicht:
     alt = (heute_d - timedelta(days=7)).isoformat()
     with _verb() as conn:
         done = {r["board_id"]: r["id"] for r in conn.execute("SELECT board_id, id FROM spalte WHERE erledigt = 1").fetchall()}
-        rows = conn.execute(
-            "SELECT id, board_id, spalte, schluessel, titel, faellig, laeuft_seit, bewegt_am FROM karte"
-        ).fetchall()
+        if nur_mappen is not None:
+            # Projekt-Scoping: nur Karten aus sichtbaren Mappen.
+            platz = ",".join("?" for _ in nur_mappen) or "''"
+            rows = conn.execute(
+                "SELECT k.id, k.board_id, k.spalte, k.schluessel, k.titel, k.faellig, k.laeuft_seit, k.bewegt_am"
+                f" FROM karte k JOIN board b ON b.id = k.board_id WHERE b.mappe_id IN ({platz})",
+                tuple(sorted(nur_mappen)),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT id, board_id, spalte, schluessel, titel, faellig, laeuft_seit, bewegt_am FROM karte"
+            ).fetchall()
 
     def offen(r) -> bool:
         return done.get(r["board_id"]) != r["spalte"]

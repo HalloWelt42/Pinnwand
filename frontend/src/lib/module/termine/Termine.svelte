@@ -4,7 +4,7 @@
     ladeTerminInstanzen, bestaetigeTermin, lehneTerminAb, ladePersonen,
     type TerminSerie, type TerminInstanz, type Person,
   } from '../../api'
-  import { isoLang } from '../../zeit'
+  import { isoLang, ymd } from '../../zeit'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
@@ -39,7 +39,7 @@
     if (!kuerzel && personen[0]?.kuerzel) kuerzel = personen[0].kuerzel
     const heute = new Date()
     const vor = new Date(heute.getTime() - 90 * 86400000)
-    instanzen = await ladeTerminInstanzen({ von: vor.toISOString().slice(0, 10), bis: heute.toISOString().slice(0, 10) })
+    instanzen = await ladeTerminInstanzen({ von: ymd(vor), bis: ymd(heute) })
   }
   $effect(() => { laden() })
 

@@ -34,29 +34,63 @@ def nachtragen(karte_id: str, eingabe: NachtragEingabe, akteur: Akteur = Depends
     return karte.model_dump() if hasattr(karte, "model_dump") else karte
 
 
+def _mappen_scope(akteur: Akteur) -> set[str] | None:
+    return None if akteur.ist_admin else k.sichtbare_mappen_ids(akteur.person_id)
+
+
+def _pruefe_board_zugriff(akteur: Akteur, board_id: str) -> None:
+    scope = _mappen_scope(akteur)
+    if scope is None:
+        return
+    mid = k.board_mappe_id(board_id)
+    verlange(mid is None or mid in scope, "Kein Zugriff auf dieses Projekt.")
+
+
 @router.get("", response_model=list[Serie])
-def liste(board_id: str | None = Query(default=None)) -> list[dict]:
-    return db.liste(board_id)
+def liste(board_id: str | None = Query(default=None), akteur: Akteur = Depends(aktueller_akteur)) -> list[dict]:
+    serien = db.liste(board_id)
+    scope = _mappen_scope(akteur)
+    if scope is not None:
+        serien = [s for s in serien if (k.board_mappe_id(s.board_id) or "") in scope or k.board_mappe_id(s.board_id) is None]
+    return serien
 
 
 @router.post("", response_model=Serie, status_code=201)
-def anlegen(eingabe: SerieCreate) -> dict:
+def anlegen(eingabe: SerieCreate, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
+    _pruefe_board_zugriff(akteur, eingabe.board_id)
     serie = db.erstelle(eingabe.model_dump())
     dienst.materialisiere(serie)
     return serie
 
 
 @router.patch("/{sid}", response_model=Serie)
-def aendern(sid: str, eingabe: SerieUpdate) -> dict:
-    serie = db.aktualisiere(sid, eingabe.model_dump(exclude_unset=True))
+def aendern(sid: str, eingabe: SerieUpdate, akteur: Akteur = Depends(aktueller_akteur)) -> dict:
+    vorher = db.hole(sid)
+    if vorher is None:
+        raise HTTPException(status_code=404, detail="Serie nicht gefunden")
+    _pruefe_board_zugriff(akteur, vorher.board_id)
+    daten = eingabe.model_dump(exclude_unset=True)
+    # Pausieren raeumt offene Zukunfts-Vorbuchungen; Reaktivieren merkt sich den
+    # Zeitpunkt, damit die Pausenzeit nicht rueckwirkend materialisiert wird.
+    if daten.get("aktiv") is False and vorher.aktiv:
+        dienst.pausiere_aufraeumen(sid)
+    if daten.get("aktiv") is True and not vorher.aktiv:
+        daten["reaktiviert_am"] = date.today().isoformat()
+    serie = db.aktualisiere(sid, daten)
     if serie is None:
         raise HTTPException(status_code=404, detail="Serie nicht gefunden")
+    # Offene, unveraenderte Vorbuchungen auf die neuen Werte bringen.
+    dienst.ziehe_offene_vorbuchungen_nach(serie)
     dienst.materialisiere(serie)
     return serie
 
 
 @router.delete("/{sid}", status_code=204)
-def loeschen(sid: str) -> None:
+def loeschen(sid: str, akteur: Akteur = Depends(aktueller_akteur)) -> None:
+    vorher = db.hole(sid)
+    if vorher is None:
+        raise HTTPException(status_code=404, detail="Serie nicht gefunden")
+    _pruefe_board_zugriff(akteur, vorher.board_id)
     if not dienst.loesche(sid):
         raise HTTPException(status_code=404, detail="Serie nicht gefunden")
 

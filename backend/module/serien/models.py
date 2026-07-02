@@ -35,6 +35,7 @@ class Serie(BaseModel):
     start: str | None = None
     ende: str | None = None
     aktiv: bool = True
+    reaktiviert_am: str | None = None
 
 
 class SerieCreate(BaseModel):
@@ -88,3 +89,4 @@ class SerieUpdate(BaseModel):
     start: str | None = None
     ende: str | None = None
     aktiv: bool | None = None
+    reaktiviert_am: str | None = None

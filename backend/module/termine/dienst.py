@@ -14,6 +14,9 @@ from module.serien import wiederholung
 from . import persistence as db
 from .models import TerminInstanz, TerminSerie
 
+# Wie weit schwebende Instanzen zurueckreichen duerfen, bevor sie verworfen werden.
+RUECKBLICK_TAGE = 14
+
 # Ist-Quelle fuer planung/berichte: (kuerzel, datum) -> bestaetigte Minuten.
 ist_minuten_je_tag_person = db.ist_minuten_je_tag_person
 
@@ -36,7 +39,7 @@ def materialisiere(serie: TerminSerie, heute: date | None = None) -> int:
         return 0
     heute = heute or date.today()
     gestern = heute - timedelta(days=1)
-    rueckblick = max(0, int(serie.rueckblick_tage or 14))
+    rueckblick = max(0, int(serie.rueckblick_tage or RUECKBLICK_TAGE))
     von = gestern - timedelta(days=rueckblick)
     if serie.start:
         try:

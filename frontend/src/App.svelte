@@ -11,6 +11,7 @@
   import { theme, wechsleTheme } from './lib/theme/theme.svelte'
   import { VERSION } from './lib/version'
   import { leseText, schreibeText, leseJson, schreibeJson } from './lib/uiSpeicher'
+  import { ymd } from './lib/zeit'
   import { aktualisiereLaufend, timer } from './lib/timer.svelte'
   import { nav, transkriptNav, kartenZeiger, oeffneKarte } from './lib/navigation.svelte'
   import Toast from './lib/Toast.svelte'
@@ -296,7 +297,7 @@
   // Wiederkehrende Aufgaben einmal pro Tag vorbuchen, damit genau die heute
   // faelligen Karten entstehen (bei vorlauf 0 ohne Neustart, kein Voraus-Stapel).
   async function serienTagesabgleich(): Promise<void> {
-    const heute = new Date().toISOString().slice(0, 10)
+    const heute = ymd(new Date())  // lokales Datum (UTC verschiebt nach Mitternacht)
     if (leseText('pw_serien_check') === heute) return
     try {
       await serienVorbuchenAlle()

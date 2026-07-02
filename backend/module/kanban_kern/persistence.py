@@ -966,9 +966,21 @@ def _loesche_marken(conn: sqlite3.Connection, wo: str, params: tuple) -> None:
         pass
 
 
-def loesche_karte(karte_id: str) -> None:
+def loesche_karte(karte_id: str, auslass_merken: bool = True) -> None:
     with _verb() as conn:
-        row = conn.execute("SELECT board_id, spalte, gruppe_id FROM karte WHERE id = ?", (karte_id,)).fetchone()
+        row = conn.execute(
+            "SELECT board_id, spalte, gruppe_id, serie_id, serie_datum FROM karte WHERE id = ?", (karte_id,)
+        ).fetchone()
+        # Bewusst geloeschte Serien-Instanz merken, sonst legt der naechste
+        # Vorbuchungslauf sie kommentarlos wieder an (Tabelle des serien-Moduls).
+        if auslass_merken and row is not None and row["serie_id"] and row["serie_datum"]:
+            try:
+                conn.execute(
+                    "INSERT OR IGNORE INTO serie_auslass (serie_id, datum) VALUES (?, ?)",
+                    (row["serie_id"], row["serie_datum"]),
+                )
+            except sqlite3.OperationalError:
+                pass
         conn.execute("DELETE FROM karte WHERE id = ?", (karte_id,))
         conn.execute("DELETE FROM dokument WHERE kontext = 'karte' AND kontext_id = ?", (karte_id,))
         # Zeiteintraege der Karte mitloeschen, sonst verfaelschen Waisen die Ist-Summen.
@@ -1604,6 +1616,15 @@ def _raeume_karten_restdaten(conn: sqlite3.Connection, karten_ids: list[str]) ->
     if not karten_ids:
         return
     platz = ",".join("?" for _ in karten_ids)
+    try:
+        conn.execute(
+            f"INSERT OR IGNORE INTO serie_auslass (serie_id, datum)"
+            f" SELECT serie_id, serie_datum FROM karte"
+            f" WHERE id IN ({platz}) AND serie_id IS NOT NULL AND serie_datum IS NOT NULL",
+            karten_ids,
+        )
+    except sqlite3.OperationalError:
+        pass
     conn.execute(f"DELETE FROM dokument WHERE kontext = 'karte' AND kontext_id IN ({platz})", karten_ids)
     conn.execute(f"DELETE FROM zeiteintrag WHERE karte_id IN ({platz})", karten_ids)
     _loesche_marken(conn, f"WHERE karte_id IN ({platz})", tuple(karten_ids))
@@ -1629,6 +1650,10 @@ def _loesche_serien_fuer_boards(conn: sqlite3.Connection, board_ids: list[str]) 
         return
     platz = ",".join("?" for _ in board_ids)
     try:
+        conn.execute(
+            f"DELETE FROM serie_auslass WHERE serie_id IN (SELECT id FROM serie WHERE board_id IN ({platz}))",
+            board_ids,
+        )
         conn.execute(f"DELETE FROM serie WHERE board_id IN ({platz})", board_ids)
     except sqlite3.OperationalError:
         pass

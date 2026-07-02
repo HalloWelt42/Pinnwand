@@ -51,7 +51,9 @@ def _ziel_monatstag(d: date, serie: Wiederholungsregel, start: date) -> int:
         return _erster_werktag(d.year, d.month)
     if regel == "letzter_werktag":
         return _letzter_werktag(d.year, d.month)
-    return serie.monatstag or start.day
+    # Auf den Monatsletzten klemmen: "am 31." erzeugt sonst in kurzen Monaten
+    # (Feb/Apr/Jun/Sep/Nov) still gar keine Instanz.
+    return min(serie.monatstag or start.day, calendar.monthrange(d.year, d.month)[1])
 
 
 def _passt(d: date, serie: Wiederholungsregel, start: date) -> bool:

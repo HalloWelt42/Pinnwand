@@ -115,6 +115,33 @@ def aktualisiere_serie(sid: str, aenderungen: dict) -> TerminSerie | None:
     f = {k: v for k, v in aenderungen.items() if k in TerminSerieUpdate.model_fields}
     if not f:
         return hole_serie(sid)
+
+
+def ziehe_schwebende_nach(sid: str) -> int:
+    """Schwebende (unbestaetigte) Instanzen auf die aktuellen Serienwerte bringen -
+    sonst wird nach einem Personenwechsel die Zeit weiter der alten Person
+    gutgeschrieben. Bestaetigtes/Abgelehntes bleibt als Verlauf unangetastet."""
+    s = hole_serie(sid)
+    if s is None:
+        return 0
+    with verbindung() as conn:
+        cur = conn.execute(
+            "UPDATE termin_instanz SET kuerzel = ?, titel = ?, uhrzeit = ?, geplant_min = ?"
+            " WHERE serie_id = ? AND status = 'schwebend'",
+            (s.kuerzel, s.titel, s.uhrzeit, s.dauer_min, sid),
+        )
+    return cur.rowcount
+
+
+def lehne_veraltete_ab(stichtag: str) -> int:
+    """Schwebende Instanzen aelter als der Stichtag automatisch ablehnen - sie
+    stauen sich sonst unbegrenzt im Bestaetigungs-Overlay."""
+    with verbindung() as conn:
+        cur = conn.execute(
+            "UPDATE termin_instanz SET status = 'abgelehnt' WHERE status = 'schwebend' AND datum < ?",
+            (stichtag,),
+        )
+    return cur.rowcount
     if "wochentage" in f:
         f["wochentage"] = ",".join(str(x) for x in (f["wochentage"] or []))
     for b in ("wochenenden_ueberspringen", "feiertage_ueberspringen", "urlaub_ueberspringen", "aktiv"):

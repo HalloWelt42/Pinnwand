@@ -63,15 +63,22 @@ def materialisiere(serie: Serie, heute: date | None = None) -> int:
     else:
         von = heute
     von = max(von, heute - timedelta(days=RUECKBLICK))
+    # Nach einer Pause nicht rueckwirkend materialisieren: die Pausenzeit soll
+    # nicht als Karten-Stapel nachgebucht werden.
+    if serie.reaktiviert_am:
+        von = max(von, date.fromisoformat(serie.reaktiviert_am))
     if von > bis:
         return 0
     feiertage = _feiertage(von, bis) if serie.feiertage_ueberspringen else None
     urlaub = _urlaubstage(serie.zustaendig, von, bis)
     erzeugt = 0
+    auslaesse = _auslaesse(serie.id)
     for d in wiederholung.termine(serie, von, bis, feiertage):
         iso = d.isoformat()
         if iso in urlaub:
             continue
+        if iso in auslaesse:
+            continue  # Instanz wurde bewusst geloescht - nicht wieder anlegen
         if k.serien_instanz_existiert(serie.id, iso):
             continue
         titel = serie.titel
@@ -95,6 +102,71 @@ def materialisiere(serie: Serie, heute: date | None = None) -> int:
     return erzeugt
 
 
+def _auslaesse(serie_id: str) -> set[str]:
+    with verbindung() as conn:
+        rows = conn.execute("SELECT datum FROM serie_auslass WHERE serie_id = ?", (serie_id,)).fetchall()
+    return {r[0] for r in rows}
+
+
+def pausiere_aufraeumen(serie_id: str, heute: date | None = None) -> int:
+    """Beim Pausieren: offene, zeitlose Zukunfts-Vorbuchungen entfernen (der Rest
+    bleibt als Verlauf). Gibt die Anzahl geloeschter Karten zurueck."""
+    heute_iso = (heute or date.today()).isoformat()
+    with verbindung() as conn:
+        ids = [r["id"] for r in conn.execute(
+            "SELECT k.id FROM karte k"
+            " LEFT JOIN spalte s ON s.id = k.spalte"
+            " WHERE k.serie_id = ? AND k.faellig >= ? AND COALESCE(k.erfasst_sek, 0) = 0"
+            " AND COALESCE(s.erledigt, 0) = 0",
+            (serie_id, heute_iso),
+        ).fetchall()]
+    for kid in ids:
+        k.loesche_karte(kid, auslass_merken=False)
+    return len(ids)
+
+
+def ziehe_offene_vorbuchungen_nach(serie: Serie) -> int:
+    """Nach einem Serien-PATCH: offene, unveraenderte Vorbuchungen (keine Zeit,
+    nicht erledigt) auf die neuen Serienwerte bringen (Titel/Uhrzeit, Person,
+    Beschreibung, Soll). Erledigtes bleibt als Verlauf unangetastet."""
+    titel = f"{serie.uhrzeit} {serie.titel}" if serie.uhrzeit else serie.titel
+    with verbindung() as conn:
+        ids = [r["id"] for r in conn.execute(
+            "SELECT k.id FROM karte k"
+            " LEFT JOIN spalte s ON s.id = k.spalte"
+            " WHERE k.serie_id = ? AND COALESCE(k.erfasst_sek, 0) = 0 AND COALESCE(s.erledigt, 0) = 0",
+            (serie.id,),
+        ).fetchall()]
+    for kid in ids:
+        k.aktualisiere_karte(kid, {
+            "titel": titel,
+            "beschreibung": serie.beschreibung,
+            "zustaendig": serie.zustaendig,
+            "schaetzung_min": serie.dauer_min,
+        })
+    return len(ids)
+
+
+def raeume_vorbuchungen_bei_urlaub(kuerzel: str, tage: list[str]) -> int:
+    """Nachtraeglich eingetragener Urlaub: offene, zeitlose Serien-Vorbuchungen
+    der Person an diesen Tagen entfernen (mit Auslass, damit sie nicht
+    wiederkommen)."""
+    if not kuerzel or not tage:
+        return 0
+    platz = ",".join("?" for _ in tage)
+    with verbindung() as conn:
+        ids = [r["id"] for r in conn.execute(
+            f"SELECT k.id FROM karte k"
+            f" LEFT JOIN spalte s ON s.id = k.spalte"
+            f" WHERE k.serie_id IS NOT NULL AND k.zustaendig = ? AND k.faellig IN ({platz})"
+            f" AND COALESCE(k.erfasst_sek, 0) = 0 AND COALESCE(s.erledigt, 0) = 0",
+            (kuerzel, *tage),
+        ).fetchall()]
+    for kid in ids:
+        k.loesche_karte(kid)
+    return len(ids)
+
+
 def materialisiere_alle(heute: date | None = None) -> int:
     return sum(materialisiere(s, heute) for s in db.liste())
 
@@ -108,17 +180,20 @@ def loesche(sid: str) -> bool:
     Ersetzen einer Serie keine verwaisten Doppel-Karten.
     """
     with verbindung() as conn:
-        ids = [r["id"] for r in conn.execute("SELECT id FROM karte WHERE serie_id = ?", (sid,)).fetchall()]
-    for kid in ids:
-        with verbindung() as conn:
-            hat_zeit = conn.execute(
-                "SELECT 1 FROM zeiteintrag WHERE karte_id = ? LIMIT 1", (kid,)
-            ).fetchone()
-        if hat_zeit:
+        rows = conn.execute(
+            "SELECT k.id, COALESCE(s.erledigt, 0) AS erledigt,"
+            " EXISTS (SELECT 1 FROM zeiteintrag z WHERE z.karte_id = k.id) AS hat_zeit"
+            " FROM karte k LEFT JOIN spalte s ON s.id = k.spalte WHERE k.serie_id = ?",
+            (sid,),
+        ).fetchall()
+    for r in rows:
+        # Verlauf erhalten: Karten mit erfasster Zeit ODER bereits erledigte
+        # Karten (per Drag abgeschlossen, auch ohne Timer) nur abkoppeln.
+        if r["hat_zeit"] or r["erledigt"]:
             with verbindung() as conn:
-                conn.execute("UPDATE karte SET serie_id = NULL, serie_datum = NULL WHERE id = ?", (kid,))
+                conn.execute("UPDATE karte SET serie_id = NULL, serie_datum = NULL WHERE id = ?", (r["id"],))
         else:
-            k.loesche_karte(kid)
+            k.loesche_karte(r["id"], auslass_merken=False)
     return db.loesche(sid)
 
 

@@ -45,6 +45,8 @@ def serie_aendern(sid: str, eingabe: TerminSerieUpdate) -> dict:
     if serie is None:
         raise HTTPException(status_code=404, detail="Termin-Serie nicht gefunden")
     dienst.materialisiere(serie)
+    # Schwebende Instanzen den neuen Werten angleichen (Person/Titel/Soll).
+    db.ziehe_schwebende_nach(sid)
     return serie
 
 
@@ -118,4 +120,9 @@ def instanzen_bestaetigen_alle(eingabe: SammelBestaetigung, akteur: Akteur = Dep
 
 @router.post("/materialisieren")
 def materialisieren() -> dict:
-    return {"erzeugt": dienst.materialisiere_alle()}
+    erzeugt = dienst.materialisiere_alle()
+    # Schwebende Instanzen jenseits des Rueckblicks stauen sich sonst unbegrenzt
+    # im Bestaetigungs-Overlay - sie gelten als nicht stattgefunden.
+    stichtag = (date.today() - timedelta(days=dienst.RUECKBLICK_TAGE)).isoformat()
+    verworfen = db.lehne_veraltete_ab(stichtag)
+    return {"erzeugt": erzeugt, "verworfen": verworfen}

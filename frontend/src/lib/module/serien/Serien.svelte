@@ -32,6 +32,11 @@
   let vorlaufTage = $state(21)
   let wochenendenUeberspringen = $state(false)
   let feiertageUeberspringen = $state(false)
+  // Fester Startdatum-Anker (haelt die Intervall-Phase stabil) + optionales Ende.
+  let startDatum = $state('')
+  let endeDatum = $state('')
+  // Bearbeiten: befuellt das Formular oben; Speichern aktualisiert statt anzulegen.
+  let bearbeiteId = $state<string | null>(null)
 
   async function laden(): Promise<void> {
     serien = await ladeSerien(boardId)
@@ -88,6 +93,20 @@
       vorlauf_tage: vorlaufTage,
       wochenenden_ueberspringen: wochenendenUeberspringen,
       feiertage_ueberspringen: feiertageUeberspringen,
+      start: startDatum || null,
+      ende: endeDatum || null,
+    }
+    if (bearbeiteId) {
+      // Bearbeiten-Modus: EINE Serie aktualisieren (Teilnehmer bleibt unveraendert).
+      await aktualisiereSerie(bearbeiteId, basis)
+      bearbeiteId = null
+      titel = ''
+      uhrzeit = ''
+      startDatum = ''
+      endeDatum = ''
+      meldung = 'Serie aktualisiert - offene Vorbuchungen wurden angepasst.'
+      await laden()
+      return
     }
     // Je angehaktem Teilnehmer eine eigene Serie (jeder trackt seine eigene Zeit).
     // Nur aktuell bekannte Kuerzel; ohne gueltige Auswahl eine Serie ohne Zustaendigen.
@@ -114,6 +133,30 @@
     await laden()
   }
 
+  function bearbeiten(s: Serie): void {
+    bearbeiteId = s.id
+    titel = s.titel
+    typ = s.typ
+    intervall = s.intervall
+    wochentage = [...(s.wochentage ?? [])]
+    monatstag = s.monatstag ?? 1
+    monatsregel = s.monatsregel ?? 'tag'
+    uhrzeit = s.uhrzeit ?? ''
+    dauerMin = s.dauer_min ?? 0
+    spalteId = s.spalte_id ?? spalteId
+    vorlaufTage = s.vorlauf_tage
+    wochenendenUeberspringen = s.wochenenden_ueberspringen
+    feiertageUeberspringen = s.feiertage_ueberspringen ?? false
+    startDatum = s.start ?? ''
+    endeDatum = s.ende ?? ''
+  }
+  function bearbeitenAbbrechen(): void {
+    bearbeiteId = null
+    titel = ''
+    uhrzeit = ''
+    startDatum = ''
+    endeDatum = ''
+  }
   async function umschaltenAktiv(s: Serie): Promise<void> {
     await aktualisiereSerie(s.id, { aktiv: !s.aktiv })
     await laden()
@@ -144,7 +187,7 @@
 
 <div class="serien">
   <section class="neu">
-    <p class="sec">Neue Serie</p>
+    <p class="sec">{bearbeiteId ? 'Serie bearbeiten' : 'Neue Serie'}</p>
     <div class="form">
       <input class="f titel" placeholder="Titel (z.B. REKO-Telko)" bind:value={titel} />
       <select class="f" bind:value={typ}>
@@ -176,9 +219,11 @@
         {#each spalten as s (s.id)}<option value={s.id}>{s.titel}</option>{/each}
       </select>
       <label class="f mini">Vorlauf (Tage) <input type="number" min="0" bind:value={vorlaufTage} /></label>
+      <label class="f mini">Start <input type="date" bind:value={startDatum} title="Anker des Rhythmus (Standard: heute)" /></label>
+      <label class="f mini">Ende <input type="date" bind:value={endeDatum} /></label>
       <label class="f chk"><input type="checkbox" bind:checked={wochenendenUeberspringen} /> Wochenenden überspringen</label>
       <label class="f chk"><input type="checkbox" bind:checked={feiertageUeberspringen} /> Feiertage überspringen</label>
-      {#if personen.length}
+      {#if personen.length && !bearbeiteId}
         <div class="tn">
           <span class="tn-lbl">Teilnehmer</span>
           <KiAssistent typ="auswahl" titel="Teilnehmer vorschlagen" platzhalter="Wer? z.B. das Frontend-Team" uebernehmenText="Hinzufuegen" kontext={kiTnKontext} onUebernehmen={kiTnUebernehmen} />
@@ -190,7 +235,12 @@
           {/each}
         </div>
       {/if}
-      <button class="btn primaer" onclick={anlegen}>Anlegen + vorbuchen</button>
+      {#if bearbeiteId}
+        <button class="btn geist" onclick={bearbeitenAbbrechen}>Abbrechen</button>
+        <button class="btn primaer" onclick={anlegen}>Änderungen speichern</button>
+      {:else}
+        <button class="btn primaer" onclick={anlegen}>Anlegen + vorbuchen</button>
+      {/if}
     </div>
     {#if meldung}<p class="meldung">{meldung}</p>{/if}
   </section>
@@ -205,6 +255,7 @@
           {#if s.zustaendig}<span class="kz" title="Zustaendig">{s.zustaendig}</span>{/if}
           <span class="rhy">{rhythmus(s)}{#if s.dauer_min} &middot; {s.dauer_min} min{/if}</span>
           <span class="akt">
+            <button class="ic" title="Bearbeiten" onclick={() => bearbeiten(s)}><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
             <button class="ic" title="Vorschau" onclick={() => zeigeVorschau(s)}><i class="fa-solid fa-calendar-day" aria-hidden="true"></i></button>
             <button class="ic" title="Jetzt vorbuchen" onclick={() => vorbuchen(s)}><i class="fa-solid fa-bolt" aria-hidden="true"></i></button>
             <button class="ic" title={s.aktiv ? 'Pausieren' : 'Aktivieren'} onclick={() => umschaltenAktiv(s)}><i class="fa-solid {s.aktiv ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i></button>
@@ -338,6 +389,7 @@
     padding: 8px 13px;
     font-size: 12.5px;
   }
+  .btn.geist { background: transparent; color: var(--text-2); }
   .btn.primaer {
     background: var(--hl-primary);
     color: var(--hl-on-primary);

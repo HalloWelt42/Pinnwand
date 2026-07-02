@@ -32,7 +32,13 @@ CREATE TABLE IF NOT EXISTS serie (
     start TEXT,
     ende TEXT,
     aktiv INTEGER NOT NULL DEFAULT 1,
-    erstellt_am TEXT
+    erstellt_am TEXT,
+    reaktiviert_am TEXT
+);
+CREATE TABLE IF NOT EXISTS serie_auslass (
+    serie_id TEXT NOT NULL,
+    datum TEXT NOT NULL,
+    PRIMARY KEY (serie_id, datum)
 );
 """
 
@@ -45,6 +51,18 @@ def init_db() -> None:
             conn.execute("ALTER TABLE serie ADD COLUMN monatsregel TEXT NOT NULL DEFAULT 'tag'")
         if "feiertage_ueberspringen" not in spalten:
             conn.execute("ALTER TABLE serie ADD COLUMN feiertage_ueberspringen INTEGER NOT NULL DEFAULT 0")
+        if "reaktiviert_am" not in spalten:
+            conn.execute("ALTER TABLE serie ADD COLUMN reaktiviert_am TEXT")
+        # Startdatum-Anker: ohne festes Startdatum wandert die Intervall-Phase mit
+        # jedem Vorbuchungslauf ("alle 2 Tage" kollabiert zu taeglich). Altbestand
+        # bekommt einen stabilen Anker aus erstellt_am bzw. der aeltesten Instanz.
+        conn.execute(
+            "UPDATE serie SET start = COALESCE("
+            " substr(erstellt_am, 1, 10),"
+            " (SELECT MIN(k.serie_datum) FROM karte k WHERE k.serie_id = serie.id),"
+            " date('now', 'localtime'))"
+            " WHERE start IS NULL OR start = ''"
+        )
 
 
 def _row(r: sqlite3.Row) -> Serie:
@@ -58,6 +76,7 @@ def _row(r: sqlite3.Row) -> Serie:
         uhrzeit=r["uhrzeit"], dauer_min=r["dauer_min"],
         wochenenden_ueberspringen=bool(r["wochenenden_ueberspringen"]),
         feiertage_ueberspringen=bool(r["feiertage_ueberspringen"]),
+        reaktiviert_am=r["reaktiviert_am"],
         vorlauf_tage=r["vorlauf_tage"], start=r["start"], ende=r["ende"],
         aktiv=bool(r["aktiv"]),
     )
@@ -80,6 +99,10 @@ def hole(sid: str) -> Serie | None:
 
 def erstelle(daten: dict) -> Serie:
     sid = "se_" + uuid4().hex[:8]
+    # Fester Startdatum-Anker: ohne ihn wuerde die Intervall-Phase mit jedem
+    # Vorbuchungslauf neu verankert ("alle 2 Tage" kollabiert zu taeglich).
+    if not daten.get("start"):
+        daten = {**daten, "start": datetime.now().date().isoformat()}
     with verbindung() as conn:
         conn.execute(
             "INSERT INTO serie (id, board_id, spalte_id, titel, beschreibung, labels, zustaendig, typ,"
@@ -124,5 +147,6 @@ def aktualisiere(sid: str, aenderungen: dict) -> Serie | None:
 
 def loesche(sid: str) -> bool:
     with verbindung() as conn:
+        conn.execute("DELETE FROM serie_auslass WHERE serie_id = ?", (sid,))
         cur = conn.execute("DELETE FROM serie WHERE id = ?", (sid,))
     return cur.rowcount > 0

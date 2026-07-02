@@ -144,6 +144,7 @@ def urlaub_setzen(e: UrlaubSetzen, akteur: Akteur = Depends(aktueller_akteur)) -
     ende = date.fromisoformat(bis)
     erzeugt = 0
     uebersprungen = 0
+    urlaubstage: list[str] = []
     while cur <= ende:
         iso = cur.isoformat()
         wd = cur.weekday()
@@ -156,7 +157,16 @@ def urlaub_setzen(e: UrlaubSetzen, akteur: Akteur = Depends(aktueller_akteur)) -
         else:
             db.setze_urlaub(e.person_id, iso, e.anteil, e.typ, e.notiz)
             erzeugt += 1
+            urlaubstage.append(iso)
         cur += timedelta(days=1)
+    # Bereits vorgebuchte Serien-Karten der Person in diesem Zeitraum aufraeumen
+    # (best-effort; der Nachtrag-Dialog fragt sonst jeden Urlaubstag einzeln ab).
+    if urlaubstage and p and p.get("kuerzel"):
+        try:
+            from module.serien import dienst as seriendienst
+            seriendienst.raeume_vorbuchungen_bei_urlaub(p["kuerzel"], urlaubstage)
+        except Exception:
+            pass
     return {"gesetzt": erzeugt, "uebersprungen": uebersprungen}
 
 

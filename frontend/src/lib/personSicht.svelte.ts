@@ -2,7 +2,6 @@
 // Tab-Titel) auf eine Person. Leere id = Alle (Team-Gesamt). Pro Browser gemerkt -
 // es ist eine reine Anzeige-Auswahl, kein Login.
 import { leseText, schreibeText, entferne } from './uiSpeicher'
-import type { Person } from './types'
 
 const SCHLUESSEL = 'pw_aktive_person'
 
@@ -36,8 +35,5 @@ export function merkeIdentitaetGewaehlt(): void {
 // keine Person gewaehlt ist oder die Person/das Feld fehlt - so bleibt der Bestand
 // (und eine frische Installation) voll sichtbar, niemand sperrt sich aus. Das Gating
 // ist reines UI-Scoping, keine Sicherheitsgrenze.
-export function rolleAus(personen: Person[], id: string): 'admin' | 'mitarbeiter' {
-  if (!id) return 'admin'
-  const p = personen.find((x) => x.id === id)
-  return p?.rolle === 'mitarbeiter' ? 'mitarbeiter' : 'admin'
-}
+// Die Rollen-Ableitung lebt zentral in identitaet.ts (aktiveRolle) - hier bleibt
+// nur der reine Sicht-Zustand.

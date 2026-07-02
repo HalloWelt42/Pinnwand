@@ -29,6 +29,7 @@
   import { neuKarteAus, verlustHinweis } from '../../restore'
   import { personSicht } from '../../personSicht.svelte'
   import { auth } from '../../auth.svelte'
+  import { eigenesKuerzel } from '../../identitaet'
   import { zuletztKuerzel } from '../../zuletztKuerzel.svelte'
   import { leseJson, schreibeJson } from '../../uiSpeicher'
   import Column from './Column.svelte'
@@ -80,11 +81,7 @@
   const mitglieder = $derived([...new Set((board?.karten ?? []).map((k) => k.zustaendig).filter((z): z is string => !!z))])
   // Default-Zustaendiger fuer neue Karten: aktive Identitaet, sonst zuletzt genutztes Kuerzel.
   // Bei aktivem Login ist die angemeldete Person autoritativ; sonst die Browser-Identitaet.
-  const aktivKuerzel = $derived(
-    auth.erforderlich
-      ? (auth.kuerzel ?? null)
-      : (personSicht.id ? (personen.find((p) => p.id === personSicht.id)?.kuerzel ?? null) : null),
-  )
+  const aktivKuerzel = $derived(eigenesKuerzel(auth, personen, personSicht.id))
   const standardKuerzel = $derived(aktivKuerzel ?? (zuletztKuerzel.wert || null))
 
   // Aus der Suche/Deep-Link angesteuerte Karte öffnen, sobald dieses Board geladen ist

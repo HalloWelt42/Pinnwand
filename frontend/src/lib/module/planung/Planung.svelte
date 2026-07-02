@@ -9,7 +9,8 @@
     type AbwesenheitTyp, type Tagesregel, type WochenOverride,
   } from '../../api'
   import FarbWahl from '../../FarbWahl.svelte'
-  import { personSicht, rolleAus } from '../../personSicht.svelte'
+  import { personSicht } from '../../personSicht.svelte'
+  import { aktiveRolle, eigenePersonId as leiteEigeneId } from '../../identitaet'
   import { auth } from '../../auth.svelte'
   import { zeigeToast } from '../../toaster.svelte'
   import { WOCHENTAGE_KURZ, dmy, wtagKurz } from '../../zeit'
@@ -23,8 +24,8 @@
   let personen = $state<Person[]>([])
   // Rolle/Identitaet konsistent zur App: bei aktivem Login zaehlt die angemeldete
   // Person, sonst die gewaehlte Personen-Sicht ("Alle" == Admin-Vollsicht).
-  const eigenePersonId = $derived(auth.erforderlich ? auth.personId : (personSicht.id || null))
-  const istAdmin = $derived(auth.erforderlich ? auth.rolle === 'admin' : rolleAus(personen, personSicht.id) === 'admin')
+  const eigenePersonId = $derived(leiteEigeneId(auth, personSicht.id))
+  const istAdmin = $derived(aktiveRolle(auth, personen, personSicht.id) === 'admin')
   // Mitarbeiter pflegen ausschliesslich ihre eigenen Planungsdaten (Self-Service).
   const nurEigene = $derived(!istAdmin && eigenePersonId !== null)
   const sichtbarePersonen = $derived(nurEigene ? personen.filter((p) => p.id === eigenePersonId) : personen)

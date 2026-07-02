@@ -4,7 +4,8 @@
   import type { Board, Projektmappe, Person } from './lib/types'
   import { ladeMappen, ladeBoards, ladeErweiterungen, erstelleBoard, benenneBoard, loescheBoard, erstelleMappe, benenneMappe, loescheMappe, serienVorbuchenAlle, ladeLabels, ladePersonen, ladeAuthStatus, abmelden } from './lib/api'
   import { setzeLabelDefinitionen } from './lib/labels'
-  import { personSicht, rolleAus, setzePersonSicht } from './lib/personSicht.svelte'
+  import { personSicht, setzePersonSicht } from './lib/personSicht.svelte'
+  import { aktiveRolle as leiteRolleAb, eigenesKuerzel } from './lib/identitaet'
   import { auth } from './lib/auth.svelte'
   import Login from './lib/Login.svelte'
   import { ansichten, komponenteFuer } from './lib/module/registry'
@@ -80,13 +81,11 @@
   // reihenfolge) - keine Hartlisten mehr, die neue Module vergessen koennten.
   // Bei aktivem Login ist die Rolle serverseitig bestimmt (autoritativ), sonst aus
   // der gewaehlten Person abgeleitet (Phase-1-Verhalten).
-  const aktiveRolle = $derived(auth.erforderlich ? (auth.rolle ?? 'mitarbeiter') : rolleAus(personen, personSicht.id))
+  const aktiveRolle = $derived(leiteRolleAb(auth, personen, personSicht.id))
   // Timer je Person: der Timer-Store braucht das Kuerzel der aktiven Identitaet
   // fuer den laufend-Abgleich mit dem Server.
   $effect(() => {
-    timer.kuerzel = auth.erforderlich
-      ? (auth.kuerzel ?? null)
-      : (personen.find((p) => p.id === personSicht.id)?.kuerzel ?? null)
+    timer.kuerzel = eigenesKuerzel(auth, personen, personSicht.id)
   })
   const istAdmin = $derived(aktiveRolle === 'admin')
   const sichtbareAnsichten = $derived(

@@ -1,6 +1,7 @@
 // HTTP-Client zum Pinnwand-Backend. Reine Aufrufe; alle Datenmodelle leben in types.ts.
 
 import type {
+  Aktivitaet,
   Board,
   BoardDetail,
   KartenSeite,
@@ -229,6 +230,17 @@ export const setzeKanbanEinstellungen = (e: KanbanEinstellungen): Promise<Kanban
   hole('/api/kanban/einstellungen', { method: 'PUT', body: JSON.stringify(e) })
 
 export const ladeHeute = (): Promise<HeuteUebersicht> => hole('/api/kanban/heute')
+
+// --- Aktivitaetsprotokoll (Verlauf je Karte + Benachrichtigungs-Glocke) ---
+
+export const ladeKartenAktivitaet = (karteId: string): Promise<Aktivitaet[]> =>
+  hole(`/api/kanban/karten/${karteId}/aktivitaet`)
+
+export const ladeGlocke = (kuerzel: string, seit?: string | null): Promise<Aktivitaet[]> => {
+  const p = new URLSearchParams({ kuerzel })
+  if (seit) p.set('seit', seit)
+  return hole(`/api/kanban/aktivitaet?${p.toString()}`)
+}
 
 // --- Karten ---
 

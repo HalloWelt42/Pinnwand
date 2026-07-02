@@ -224,6 +224,20 @@ export interface HeuteUebersicht {
   blockiert: HeuteEintrag[]
 }
 
+// -- Aktivitaetsprotokoll (Verlauf je Karte + Benachrichtigungs-Glocke) --
+export interface Aktivitaet {
+  id: string
+  karte_id: string
+  zeit: string
+  kuerzel: string | null
+  art: string
+  text: string
+  // Nur in der Glocken-Sicht gefuellt:
+  karte_titel: string | null
+  karte_schluessel: string | null
+  board_id: string | null
+}
+
 // -- Karten-Eingaben --
 export interface KarteEingabe {
   board_id: string

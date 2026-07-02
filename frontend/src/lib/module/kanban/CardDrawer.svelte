@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { Karte, Prioritaet, Spalte } from '../../types'
+  import type { Aktivitaet, Karte, Prioritaet, Spalte } from '../../types'
   import type { KarteAenderung, TranskriptTreffer, Person, KiVorschlag } from '../../api'
-  import { transkripteSuche, ladePersonen } from '../../api'
+  import { transkripteSuche, ladePersonen, ladeKartenAktivitaet } from '../../api'
   import KiAssistent from '../../ki/KiAssistent.svelte'
   import Checkliste from './Checkliste.svelte'
   import TranskriptVerweise from './TranskriptVerweise.svelte'
@@ -75,6 +75,29 @@
 
   let neuesLabel = $state('')
   let kommentar = $state('')
+
+  // Verlauf (Aktivitaetsprotokoll): erst auf Wunsch laden, nicht bei jedem Oeffnen.
+  let verlaufOffen = $state(false)
+  let verlauf = $state<Aktivitaet[]>([])
+  async function verlaufUmschalten(): Promise<void> {
+    verlaufOffen = !verlaufOffen
+    if (verlaufOffen) {
+      try {
+        verlauf = await ladeKartenAktivitaet(karte.id)
+      } catch {
+        verlauf = []
+      }
+    }
+  }
+  $effect(() => {
+    // Kartenwechsel im offenen Drawer: alten Verlauf nicht stehen lassen.
+    void karte.id
+    verlaufOffen = false
+    verlauf = []
+  })
+  function verlaufWann(a: Aktivitaet): string {
+    return `${a.zeit.slice(8, 10)}.${a.zeit.slice(5, 7)}.${a.zeit.slice(0, 4)} ${a.zeit.slice(11, 16)}`
+  }
 
   // Vorlesen der Beschreibung umschalten (an MarkdownFeld weitergereicht).
   function vorlesenUmschalten(t: string): void {
@@ -301,6 +324,25 @@
       <button class="btn primaer" onclick={kommentarSenden}>Senden</button>
     </div>
 
+    <button class="verlauf-kopf" onclick={verlaufUmschalten}>
+      <i class="fa-solid {verlaufOffen ? 'fa-chevron-down' : 'fa-chevron-right'}" aria-hidden="true"></i>
+      Verlauf
+    </button>
+    {#if verlaufOffen}
+      {#if verlauf.length}
+        <ul class="verlauf">
+          {#each verlauf as a (a.id)}
+            <li>
+              <span class="vzeit">{verlaufWann(a)}</span>
+              <span class="vtext">{#if a.kuerzel}<b>{a.kuerzel}</b> &middot; {/if}{a.text}</span>
+            </li>
+          {/each}
+        </ul>
+      {:else}
+        <p class="vleer">Noch kein Verlauf.</p>
+      {/if}
+    {/if}
+
     <div class="fuss">
       <button class="btn geist rot" onclick={onLoeschen}><i class="fa-solid fa-trash" aria-hidden="true"></i> Karte löschen</button>
     </div>
@@ -308,6 +350,19 @@
 </aside>
 
 <style>
+  .verlauf-kopf {
+    display: inline-flex; align-items: center; gap: 7px; margin-top: 14px;
+    border: none; background: transparent; color: var(--text-3); font-size: 12px;
+    font-family: var(--font-display); padding: 0;
+  }
+  .verlauf-kopf:hover { color: var(--text-1); }
+  .verlauf { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+  .verlauf li { display: flex; align-items: baseline; gap: 9px; font-size: 11.5px; padding: 3px 0; border-bottom: 1px dashed var(--border); }
+  .verlauf li:last-child { border-bottom: none; }
+  .vzeit { flex: none; color: var(--text-3); font-variant-numeric: tabular-nums; font-size: 10.5px; }
+  .vtext { color: var(--text-2); }
+  .vtext b { color: var(--hl-primary-text); }
+  .vleer { color: var(--text-3); font-size: 11.5px; margin: 6px 0 0; }
   .mini.blockiert { background: var(--gefahr); color: #fff; border-color: transparent; }
   .blockiert-grund { display: flex; align-items: center; gap: 8px; margin: 8px 0 0; padding: 7px 10px; border-radius: var(--r-m); background: color-mix(in srgb, var(--gefahr) 10%, transparent); color: var(--gefahr); font-size: 12px; }
   .blockiert-grund input { flex: 1; border: none; background: transparent; color: var(--text-1); font-size: 12.5px; outline: none; }

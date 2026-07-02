@@ -11,6 +11,7 @@ from module.auth.rechte import darf_timer_bedienen, darf_zeit_buchen, darf_zeite
 
 from . import persistence as db
 from .models import (
+    Aktivitaet,
     Board,
     BoardCreate,
     BoardDetail,
@@ -232,6 +233,29 @@ def heute(datum: str | None = None, akteur: Akteur = Depends(aktueller_akteur)) 
     return db.was_steht_an(datum or date.today().isoformat(), nur_mappen)
 
 
+# -- Aktivitaetsprotokoll und Benachrichtigungen ---------------------------
+
+@router.get("/aktivitaet", response_model=list[Aktivitaet])
+def aktivitaet_glocke(kuerzel: str | None = None, seit: str | None = None,
+                      akteur: Akteur = Depends(aktueller_akteur)) -> list[Aktivitaet]:
+    """Benachrichtigungen: fremde Ereignisse auf den eigenen Karten. Mitarbeiter
+    sehen nur die eigene Glocke; Admins und der offene Modus geben das Kuerzel
+    der Personen-Sicht mit."""
+    wer = kuerzel if akteur.ist_admin else akteur.kuerzel
+    if not wer:
+        return []
+    nur_mappen = None if akteur.ist_admin else db.sichtbare_mappen_ids(akteur.person_id)
+    return db.aktivitaet_fuer(wer, seit=seit, nur_mappen=nur_mappen)
+
+
+@router.get("/karten/{karte_id}/aktivitaet", response_model=list[Aktivitaet])
+def karte_aktivitaet(karte_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> list[Aktivitaet]:
+    _projekt_zugriff(akteur, db.karte_mappe_id(karte_id))
+    if db.hole_karte(karte_id) is None:
+        raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    return db.karten_aktivitaet(karte_id)
+
+
 # -- Dokumente (Karten- und Mappen-Dokumente) -----------------------------
 
 @router.get("/dokumente", response_model=list[Dokument])
@@ -329,6 +353,7 @@ def karte_anlegen(eingabe: KarteCreate, akteur: Akteur = Depends(aktueller_akteu
         faellig=eingabe.faellig.isoformat() if eingabe.faellig else None,
         zustaendig=eingabe.zustaendig,
         typ=eingabe.typ,
+        akteur=akteur.kuerzel,
     )
     _index(karte.id)
     return karte
@@ -337,7 +362,7 @@ def karte_anlegen(eingabe: KarteCreate, akteur: Akteur = Depends(aktueller_akteu
 @router.patch("/karten/{karte_id}", response_model=Karte)
 def karte_aendern(karte_id: str, eingabe: KarteUpdate, akteur: Akteur = Depends(aktueller_akteur)) -> Karte:
     _projekt_zugriff(akteur, db.karte_mappe_id(karte_id))
-    karte = db.aktualisiere_karte(karte_id, eingabe.model_dump(exclude_unset=True, mode="json"))
+    karte = db.aktualisiere_karte(karte_id, eingabe.model_dump(exclude_unset=True, mode="json"), akteur=akteur.kuerzel)
     if karte is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
     _index(karte_id)
@@ -347,7 +372,7 @@ def karte_aendern(karte_id: str, eingabe: KarteUpdate, akteur: Akteur = Depends(
 @router.post("/karten/{karte_id}/move", response_model=Karte)
 def karte_verschieben(karte_id: str, ziel: KarteMove, akteur: Akteur = Depends(aktueller_akteur)) -> Karte:
     _projekt_zugriff(akteur, db.karte_mappe_id(karte_id))
-    karte = db.verschiebe_karte(karte_id, ziel.spalte, ziel.reihenfolge)
+    karte = db.verschiebe_karte(karte_id, ziel.spalte, ziel.reihenfolge, akteur=akteur.kuerzel)
     if karte is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
     return karte

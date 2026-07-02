@@ -116,6 +116,7 @@ class Aktionen:
             karte_id=f"k_{uuid4().hex[:8]}", board_id=board_id, spalte=spalte_id, titel=titel.strip(),
             beschreibung=beschreibung, labels=labels or [], prioritaet=prioritaet,
             cover=None, start=None, faellig=faellig, zustaendig=zustaendig,
+            akteur=self.kuerzel,
         )
         if schaetzung_min is not None:
             k.aktualisiere_karte(kt.id, {"schaetzung_min": schaetzung_min})
@@ -138,9 +139,9 @@ class Aktionen:
         if dry_run:
             return {"vorschau": True, **vorschau}
         if sek and sek > 0:
-            k.erstelle_zeiteintrag(f"z_{uuid4().hex[:8]}", kt.id, nlp.parse_datum(None), sek, kommentar)
+            k.erstelle_zeiteintrag(f"z_{uuid4().hex[:8]}", kt.id, nlp.parse_datum(None), sek, kommentar, kuerzel=self.kuerzel)
         # An den Anfang der Erledigt-Spalte; verschiebe_karte schiebt die anderen nach.
-        k.verschiebe_karte(kt.id, ziel, 0)
+        k.verschiebe_karte(kt.id, ziel, 0, akteur=self.kuerzel)
         if kommentar and not (sek and sek > 0):
             k.kommentar_anhaengen(kt.id, self.akteur, kommentar, datetime.now().isoformat(timespec="minutes"))
         aktuell = k.hole_karte(kt.id) or kt

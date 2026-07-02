@@ -346,6 +346,22 @@ class ZeiteintragUpdate(BaseModel):
     kommentar: str | None = None
 
 
+class Aktivitaet(BaseModel):
+    """Ein Eintrag im Aktivitaetsprotokoll einer Karte (wer hat wann was getan).
+
+    kuerzel = handelnde Person (None = System, z.B. Serien-Vorbuchung). Die
+    karte_*-/board_id-Felder sind nur in der Benachrichtigungs-Sicht gefuellt."""
+    id: str
+    karte_id: str
+    zeit: str
+    kuerzel: str | None = None
+    art: str
+    text: str
+    karte_titel: str | None = None
+    karte_schluessel: str | None = None
+    board_id: str | None = None
+
+
 class HeuteEintrag(BaseModel):
     """Eine Karte in der handlungsorientierten Heute-Uebersicht (knappe Felder)."""
 

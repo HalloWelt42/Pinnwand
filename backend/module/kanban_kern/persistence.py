@@ -22,6 +22,7 @@ def _jetzt_genau() -> str:
     return datetime.now().isoformat(timespec="seconds")
 
 from .models import (
+    Aktivitaet,
     Board,
     BoardDetail,
     Dokument,
@@ -140,6 +141,14 @@ CREATE TABLE IF NOT EXISTS kanban_einstellung (
     schluessel TEXT PRIMARY KEY,
     wert TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS aktivitaet (
+    id TEXT PRIMARY KEY,
+    karte_id TEXT NOT NULL,
+    zeit TEXT NOT NULL,
+    kuerzel TEXT,
+    art TEXT NOT NULL,
+    text TEXT NOT NULL
+);
 """
 
 
@@ -223,6 +232,8 @@ def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS ix_zeiteintrag_datum ON zeiteintrag(datum)",
             "CREATE INDEX IF NOT EXISTS ix_karte_board_spalte ON karte(board_id, spalte)",
             "CREATE INDEX IF NOT EXISTS ix_karte_serie ON karte(serie_id)",
+            "CREATE INDEX IF NOT EXISTS ix_aktivitaet_karte ON aktivitaet(karte_id, zeit)",
+            "CREATE INDEX IF NOT EXISTS ix_aktivitaet_zeit ON aktivitaet(zeit)",
         ):
             conn.execute(idx)
         # Serien-Vorbuchung auf DB-Ebene idempotent: hoechstens eine Karte je
@@ -861,11 +872,55 @@ def _kompaktiere(conn: sqlite3.Connection, board_id: str, spalte: str) -> None:
         conn.execute("UPDATE karte SET reihenfolge = ? WHERE id = ?", (index, r["id"]))
 
 
+def _protokolliere(conn: sqlite3.Connection, karte_id: str, art: str, text: str,
+                   kuerzel: str | None = None) -> None:
+    """Haengt einen Eintrag an das Aktivitaetsprotokoll der Karte an - in der
+    laufenden Transaktion, damit Ereignis und Datenaenderung zusammen landen
+    (oder zusammen zurueckrollen)."""
+    conn.execute(
+        "INSERT INTO aktivitaet (id, karte_id, zeit, kuerzel, art, text) VALUES (?, ?, ?, ?, ?, ?)",
+        (f"a_{uuid4().hex[:8]}", karte_id, _jetzt_genau(), kuerzel, art, text),
+    )
+
+
+def _protokolliere_feldaenderungen(conn: sqlite3.Connection, karte_id: str,
+                                   vorher: sqlite3.Row, felder: dict,
+                                   akteur: str | None) -> None:
+    """Protokolliert die nachvollziehenswerten Feld-Aenderungen einer Karte
+    (Zustaendigkeit, Faelligkeit, Prioritaet, Blockade, Typ) - bewusst NICHT
+    jeden Tastendruck in Titel/Beschreibung, sonst ersaeuft das Protokoll."""
+    if "zustaendig" in felder and felder["zustaendig"] != vorher["zustaendig"]:
+        neu = felder["zustaendig"]
+        _protokolliere(conn, karte_id, "zustaendig",
+                       f"Zuständig: {neu}" if neu else "Zuständigkeit entfernt", akteur)
+    if "faellig" in felder and felder["faellig"] != vorher["faellig"]:
+        neu = felder["faellig"]
+        _protokolliere(conn, karte_id, "faellig",
+                       f"Fällig am {neu}" if neu else "Fälligkeit entfernt", akteur)
+    if "prioritaet" in felder and felder["prioritaet"] != vorher["prioritaet"]:
+        neu = felder["prioritaet"]
+        _protokolliere(conn, karte_id, "prioritaet",
+                       f"Priorität: {neu}" if neu else "Priorität entfernt", akteur)
+    if "blockiert_grund" in felder and felder["blockiert_grund"] != vorher["blockiert_grund"]:
+        neu = felder["blockiert_grund"]
+        if neu and not vorher["blockiert_grund"]:
+            text = f"Blockiert: {neu}"
+        elif not neu:
+            text = "Blockade aufgehoben"
+        else:
+            text = f"Blockade-Grund geändert: {neu}"
+        _protokolliere(conn, karte_id, "blockiert", text, akteur)
+    if "typ" in felder and felder["typ"] != vorher["typ"]:
+        _protokolliere(conn, karte_id, "typ",
+                       "In eine Idee umgewandelt" if felder["typ"] == "idee" else "In Arbeit umgewandelt",
+                       akteur)
+
+
 def erstelle_karte(
     karte_id: str, board_id: str, spalte: str, titel: str,
     beschreibung: str | None, labels: list[str], prioritaet: str | None,
     cover: str | None, start: str | None, faellig: str | None, zustaendig: str | None,
-    typ: str = "arbeit",
+    typ: str = "arbeit", akteur: str | None = None,
 ) -> Karte:
     with _verb() as conn:
         b = conn.execute("SELECT kuerzel, laufnummer FROM board WHERE id = ?", (board_id,)).fetchone()
@@ -882,12 +937,13 @@ def erstelle_karte(
              prioritaet, cover, reihenfolge, start, faellig, zustaendig, jetzt, jetzt,
              "idee" if typ == "idee" else "arbeit"),
         )
+        _protokolliere(conn, karte_id, "angelegt", "Karte angelegt", akteur)
     karte = hole_karte(karte_id)
     assert karte is not None
     return karte
 
 
-def verschiebe_karte(karte_id: str, ziel_spalte: str, ziel_reihenfolge: int) -> Karte | None:
+def verschiebe_karte(karte_id: str, ziel_spalte: str, ziel_reihenfolge: int, akteur: str | None = None) -> Karte | None:
     with _verb() as conn:
         row = conn.execute("SELECT board_id, spalte, gruppe_id FROM karte WHERE id = ?", (karte_id,)).fetchone()
         if row is None:
@@ -901,8 +957,13 @@ def verschiebe_karte(karte_id: str, ziel_spalte: str, ziel_reihenfolge: int) -> 
         conn.execute("UPDATE karte SET spalte = ?, reihenfolge = ? WHERE id = ?", (ziel_spalte, ziel_reihenfolge, karte_id))
         jetzt = _jetzt()
         # Wechsel der Spalte setzt die Verweildauer (Card-Aging) zurück.
+        ziel_titel = ziel_spalte
         if quelle != ziel_spalte:
             conn.execute("UPDATE karte SET bewegt_am = ? WHERE id = ?", (jetzt, karte_id))
+            sp = conn.execute("SELECT titel FROM spalte WHERE id = ?", (ziel_spalte,)).fetchone()
+            if sp is not None:
+                ziel_titel = sp["titel"]
+            _protokolliere(conn, karte_id, "verschoben", f'Verschoben nach "{ziel_titel}"', akteur)
         betroffene = {quelle, ziel_spalte}
         # Verknuepfte Tickets ziehen bei Spaltenwechsel als Gruppe mit (ans Ende der
         # Zielspalte, dort frei sortierbar). Nur im selben Board und nur Mitglieder,
@@ -920,6 +981,8 @@ def verschiebe_karte(karte_id: str, ziel_spalte: str, ziel_reihenfolge: int) -> 
                     "UPDATE karte SET spalte = ?, reihenfolge = ?, bewegt_am = ? WHERE id = ?",
                     (ziel_spalte, ziel_pos, jetzt, m["id"]),
                 )
+                _protokolliere(conn, m["id"], "verschoben",
+                               f'Mit verknüpfter Karte verschoben nach "{ziel_titel}"', akteur)
                 betroffene.add(m["spalte"])
         # Erledigen stoppt laufende Timer sauber (bucht die Sitzung) - fuer die Karte
         # selbst und fuer mitgezogene Gruppenmitglieder.
@@ -937,7 +1000,7 @@ def verschiebe_karte(karte_id: str, ziel_spalte: str, ziel_reihenfolge: int) -> 
     return hole_karte(karte_id)
 
 
-def aktualisiere_karte(karte_id: str, aenderungen: dict) -> Karte | None:
+def aktualisiere_karte(karte_id: str, aenderungen: dict, akteur: str | None = None) -> Karte | None:
     # KarteUpdate ist die einzige Feldquelle - keine doppelte Whitelist, die driften koennte.
     felder = {k: v for k, v in aenderungen.items() if k in KarteUpdate.model_fields}
     if not felder:
@@ -953,7 +1016,7 @@ def aktualisiere_karte(karte_id: str, aenderungen: dict) -> Karte | None:
                 return None
             ziel_pos = _naechste_reihenfolge(conn, row["board_id"], neue_spalte)
         if row["spalte"] != neue_spalte:
-            verschiebe_karte(karte_id, neue_spalte, ziel_pos)
+            verschiebe_karte(karte_id, neue_spalte, ziel_pos, akteur=akteur)
     # Wechsel auf 'idee' stoppt einen laufenden Timer sauber (bucht die Sitzung),
     # sonst tickt die Zeit unsichtbar auf einem Ticket weiter, das keine erfasst.
     if felder.get("typ") == "idee":
@@ -968,7 +1031,13 @@ def aktualisiere_karte(karte_id: str, aenderungen: dict) -> Karte | None:
             felder[json_feld] = json.dumps(felder[json_feld])
     zuweisung = ", ".join(f"{k} = ?" for k in felder)
     with _verb() as conn:
+        vorher = conn.execute(
+            "SELECT zustaendig, faellig, prioritaet, blockiert_grund, typ FROM karte WHERE id = ?",
+            (karte_id,),
+        ).fetchone()
         conn.execute(f"UPDATE karte SET {zuweisung} WHERE id = ?", (*felder.values(), karte_id))
+        if vorher is not None:
+            _protokolliere_feldaenderungen(conn, karte_id, vorher, felder, akteur)
     return hole_karte(karte_id)
 
 
@@ -982,6 +1051,7 @@ def kommentar_anhaengen(karte_id: str, autor: str, text: str, zeit: str) -> Kart
         )
         if cur.rowcount == 0:
             return None
+        _protokolliere(conn, karte_id, "kommentar", "Kommentar hinterlassen", autor)
     return hole_karte(karte_id)
 
 
@@ -992,6 +1062,46 @@ def _loesche_marken(conn: sqlite3.Connection, wo: str, params: tuple) -> None:
         conn.execute(f"DELETE FROM transkript_marke {wo}", params)
     except sqlite3.OperationalError:
         pass
+
+
+def karten_aktivitaet(karte_id: str, limit: int = 200) -> list[Aktivitaet]:
+    """Das Aktivitaetsprotokoll einer Karte, Juengstes zuerst."""
+    with _verb() as conn:
+        rows = conn.execute(
+            "SELECT id, karte_id, zeit, kuerzel, art, text FROM aktivitaet"
+            " WHERE karte_id = ? ORDER BY zeit DESC, rowid DESC LIMIT ?",
+            (karte_id, limit),
+        ).fetchall()
+    return [Aktivitaet(**dict(r)) for r in rows]
+
+
+def aktivitaet_fuer(kuerzel: str, seit: str | None = None,
+                    nur_mappen: list[str] | None = None, limit: int = 50) -> list[Aktivitaet]:
+    """Fremde Ereignisse auf den Karten einer Person (Benachrichtigungs-Glocke):
+    alles, was jemand anderes (oder das System, z.B. eine Serien-Vorbuchung) an
+    Karten getan hat, fuer die die Person zustaendig ist - optional erst ab
+    einem Zeitstempel und beschraenkt auf sichtbare Mappen."""
+    sql = (
+        "SELECT a.id, a.karte_id, a.zeit, a.kuerzel, a.art, a.text,"
+        " k.titel AS karte_titel, k.schluessel AS karte_schluessel, k.board_id AS board_id"
+        " FROM aktivitaet a"
+        " JOIN karte k ON k.id = a.karte_id"
+        " JOIN board b ON b.id = k.board_id"
+        " WHERE k.zustaendig = ? AND (a.kuerzel IS NULL OR a.kuerzel != ?)"
+    )
+    params: list = [kuerzel, kuerzel]
+    if seit:
+        sql += " AND a.zeit > ?"
+        params.append(seit)
+    if nur_mappen is not None:
+        platzhalter = ",".join("?" for _ in nur_mappen) or "''"
+        sql += f" AND b.mappe_id IN ({platzhalter})"
+        params.extend(nur_mappen)
+    sql += " ORDER BY a.zeit DESC, a.rowid DESC LIMIT ?"
+    params.append(limit)
+    with _verb() as conn:
+        rows = conn.execute(sql, params).fetchall()
+    return [Aktivitaet(**dict(r)) for r in rows]
 
 
 def loesche_karte(karte_id: str, auslass_merken: bool = True) -> None:
@@ -1013,6 +1123,7 @@ def loesche_karte(karte_id: str, auslass_merken: bool = True) -> None:
         conn.execute("DELETE FROM dokument WHERE kontext = 'karte' AND kontext_id = ?", (karte_id,))
         # Zeiteintraege der Karte mitloeschen, sonst verfaelschen Waisen die Ist-Summen.
         conn.execute("DELETE FROM zeiteintrag WHERE karte_id = ?", (karte_id,))
+        conn.execute("DELETE FROM aktivitaet WHERE karte_id = ?", (karte_id,))
         _loesche_marken(conn, "WHERE karte_id = ?", (karte_id,))
         # Verwaiste Zeitgruppe aufloesen, wenn nach dem Loeschen < 2 Mitglieder bleiben.
         if row is not None and row["gruppe_id"]:
@@ -1196,6 +1307,10 @@ def _pause_intern(conn: sqlite3.Connection, karte_id: str) -> None:
             rest -= min(sek, rest)
         segmente = gedeckelt
     mappe_id = _mappe_fuer_board(conn, row["board_id"])
+    gesamt = sum(s[3] for s in segmente)
+    if gesamt > 0:
+        _protokolliere(conn, karte_id, "zeit",
+                       f"Timer gestoppt: {max(1, gesamt // 60)} min erfasst", row["zustaendig"])
     for datum, seg_start, seg_ende, sek in segmente:
         vorhanden = conn.execute(
             "SELECT id, start, ende FROM zeiteintrag WHERE manuell = 0 AND karte_id = ? AND datum = ? LIMIT 1",
@@ -1333,6 +1448,8 @@ def erstelle_zeiteintrag(eintrag_id: str, karte_id: str, datum: str, sekunden: i
             (eintrag_id, karte_id, board_id, _mappe_fuer_board(conn, board_id), datum, max(0, sekunden), kommentar,
              kuerzel or b["zustaendig"]),
         )
+        _protokolliere(conn, karte_id, "zeit",
+                       f"Zeit gebucht: {max(0, sekunden) // 60} min ({datum})", kuerzel or b["zustaendig"])
         _recompute_erfasst(conn, karte_id)
     return hole_zeiteintrag(eintrag_id)
 
@@ -1370,6 +1487,9 @@ def setze_ticketzeit(karte_id: str, ziel_sek: int, kuerzel: str | None = None) -
                 else:
                     conn.execute("UPDATE zeiteintrag SET sekunden = sekunden - ? WHERE id = ?", (rest, r["id"]))
                     rest = 0
+        if ziel != summe:
+            _protokolliere(conn, karte_id, "zeit",
+                           f"Ticketzeit gesetzt: {ziel // 60} min", kuerzel or b["zustaendig"])
         _recompute_erfasst(conn, karte_id)
     return True
 
@@ -1708,6 +1828,7 @@ def _raeume_karten_restdaten(conn: sqlite3.Connection, karten_ids: list[str]) ->
         pass
     conn.execute(f"DELETE FROM dokument WHERE kontext = 'karte' AND kontext_id IN ({platz})", karten_ids)
     conn.execute(f"DELETE FROM zeiteintrag WHERE karte_id IN ({platz})", karten_ids)
+    conn.execute(f"DELETE FROM aktivitaet WHERE karte_id IN ({platz})", karten_ids)
     _loesche_marken(conn, f"WHERE karte_id IN ({platz})", tuple(karten_ids))
     gruppen = [r[0] for r in conn.execute(
         f"SELECT DISTINCT gruppe_id FROM karte WHERE id IN ({platz}) AND gruppe_id IS NOT NULL", karten_ids

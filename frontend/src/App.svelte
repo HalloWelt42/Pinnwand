@@ -22,6 +22,7 @@
   import StundenLeiste from './lib/StundenLeiste.svelte'
   import DiensteStatus from './lib/DiensteStatus.svelte'
   import Hilfe from './lib/Hilfe.svelte'
+  import Glocke from './lib/Glocke.svelte'
   import Onboarding from './lib/Onboarding.svelte'
   import DokumentVerwaltung from './lib/DokumentVerwaltung.svelte'
   import VorleseLeiste from './lib/VorleseLeiste.svelte'
@@ -503,6 +504,7 @@
         {#if boardgebunden && aktiveMappe}<span class="krumen">{aktiveMappe.titel}{#if aktivesBoard?.kuerzel} &middot; {aktivesBoard.kuerzel}{/if}</span>{/if}
       </div>
       <div class="kopfsuche"><KopfSuche onSuche={() => geheZuAnsicht('suche')} /></div>
+      <Glocke kuerzel={timer.kuerzel} />
     </header>
 
     <main class="buehne">

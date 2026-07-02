@@ -235,6 +235,16 @@ export interface FaelligEintrag {
   erledigt: boolean
 }
 
+// -- Datei-Anhaenge an Karten --
+export interface Anhang {
+  id: string
+  karte_id: string
+  name: string
+  groesse: number
+  typ: string | null
+  erstellt_am: string | null
+}
+
 // -- Aktivitaetsprotokoll (Verlauf je Karte + Benachrichtigungs-Glocke) --
 export interface Aktivitaet {
   id: string

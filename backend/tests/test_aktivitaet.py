@@ -152,3 +152,53 @@ def test_export_board_und_mappe_vollstaendig(client):
     mdaten = m.json()
     assert mdaten["format"] == "pinnwand-mappe"
     assert any(x["board"]["id"] == b["id"] for x in mdaten["boards"])
+
+
+def test_anhaenge_lebenszyklus(client):
+    from module.kanban_kern import persistence as kp
+
+    b = _board(client, "Anhang")
+    spalte = b["spalten"][0]["id"]
+    k = _karte(client, b["id"], spalte, "Mit Anhang")
+
+    r = client.post(f"/api/kanban/karten/{k['id']}/anhaenge",
+                    files={"datei": ("notiz mit umlauten äöü.txt", b"Inhalt 123", "text/plain")})
+    assert r.status_code == 201, r.text
+    anhang = r.json()
+    assert anhang["name"].endswith(".txt")
+    assert anhang["groesse"] == len(b"Inhalt 123")
+    assert kp.anhang_pfad(kp.hole_anhang(anhang["id"])).is_file()
+
+    # Liste + Download
+    liste = client.get(f"/api/kanban/karten/{k['id']}/anhaenge").json()
+    assert [a["id"] for a in liste] == [anhang["id"]]
+    d = client.get(f"/api/kanban/anhaenge/{anhang['id']}")
+    assert d.status_code == 200 and d.content == b"Inhalt 123"
+    cd = d.headers.get("content-disposition", "")
+    assert "attachment" in cd and "filename*=UTF-8''" in cd
+
+    # Aktivitaetsprotokoll kennt den Anhang
+    assert any(a["art"] == "anhang" for a in _protokoll(client, k["id"]))
+
+    # Leere Datei abgelehnt
+    assert client.post(f"/api/kanban/karten/{k['id']}/anhaenge",
+                       files={"datei": ("leer.txt", b"", "text/plain")}).status_code == 400
+
+    # Karte loeschen raeumt Datei + Row ab
+    pfad = kp.anhang_pfad(kp.hole_anhang(anhang["id"]))
+    assert client.delete(f"/api/kanban/karten/{k['id']}").status_code == 204
+    assert not pfad.exists()
+    assert kp.hole_anhang(anhang["id"]) is None
+
+
+def test_anhang_einzeln_loeschen(client):
+    from module.kanban_kern import persistence as kp
+
+    b = _board(client, "Anhang-Del")
+    k = _karte(client, b["id"], b["spalten"][0]["id"], "Anhang weg")
+    a = client.post(f"/api/kanban/karten/{k['id']}/anhaenge",
+                    files={"datei": ("x.bin", b"\x00\x01", "application/octet-stream")}).json()
+    pfad = kp.anhang_pfad(kp.hole_anhang(a["id"]))
+    assert client.delete(f"/api/kanban/anhaenge/{a['id']}").status_code == 204
+    assert not pfad.exists()
+    assert client.get(f"/api/kanban/karten/{k['id']}/anhaenge").json() == []

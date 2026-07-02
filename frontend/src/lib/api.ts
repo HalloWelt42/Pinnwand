@@ -2,6 +2,7 @@
 
 import type {
   Aktivitaet,
+  Anhang,
   Board,
   FaelligEintrag,
   BoardDetail,
@@ -234,6 +235,32 @@ export const ladeHeute = (): Promise<HeuteUebersicht> => hole('/api/kanban/heute
 
 export const ladeFaellige = (von: string, bis: string): Promise<FaelligEintrag[]> =>
   hole(`/api/kanban/faellig?von=${von}&bis=${bis}`)
+
+// --- Datei-Anhaenge an Karten ---
+
+export const ladeAnhaenge = (karteId: string): Promise<Anhang[]> =>
+  hole(`/api/kanban/karten/${karteId}/anhaenge`)
+
+export async function anhangHochladen(karteId: string, datei: File): Promise<Anhang> {
+  const form = new FormData()
+  form.append('datei', datei)
+  const r = await fetch(`${BASIS}/api/kanban/karten/${karteId}/anhaenge`, {
+    method: 'POST',
+    headers: authKopf(),
+    body: form,
+  })
+  if (!r.ok) {
+    const detail = await r.json().then((d) => d.detail).catch(() => null)
+    throw new Error(typeof detail === 'string' ? detail : 'Hochladen fehlgeschlagen')
+  }
+  return r.json()
+}
+
+export const anhangLoeschen = (anhangId: string): Promise<void> =>
+  hole(`/api/kanban/anhaenge/${anhangId}`, { method: 'DELETE' })
+
+export const anhangHerunterladen = (a: Anhang): Promise<void> =>
+  ladeDateiHerunter(`/api/kanban/anhaenge/${a.id}`, a.name)
 
 // --- Aktivitaetsprotokoll (Verlauf je Karte + Benachrichtigungs-Glocke) ---
 

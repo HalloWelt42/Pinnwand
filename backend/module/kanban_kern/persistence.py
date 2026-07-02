@@ -7,11 +7,13 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import sqlite3
 from datetime import datetime, time as _zeit, timedelta
+from pathlib import Path
 from uuid import uuid4
 
-from app.db import verbindung
+from app.db import DB_PFAD, verbindung
 
 
 def _jetzt() -> str:
@@ -23,6 +25,7 @@ def _jetzt_genau() -> str:
 
 from .models import (
     Aktivitaet,
+    Anhang,
     Board,
     BoardDetail,
     Dokument,
@@ -150,6 +153,14 @@ CREATE TABLE IF NOT EXISTS aktivitaet (
     art TEXT NOT NULL,
     text TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS anhang (
+    id TEXT PRIMARY KEY,
+    karte_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    groesse INTEGER NOT NULL DEFAULT 0,
+    typ TEXT,
+    erstellt_am TEXT
+);
 """
 
 
@@ -235,6 +246,7 @@ def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS ix_karte_serie ON karte(serie_id)",
             "CREATE INDEX IF NOT EXISTS ix_aktivitaet_karte ON aktivitaet(karte_id, zeit)",
             "CREATE INDEX IF NOT EXISTS ix_aktivitaet_zeit ON aktivitaet(zeit)",
+            "CREATE INDEX IF NOT EXISTS ix_anhang_karte ON anhang(karte_id)",
         ):
             conn.execute(idx)
         # Serien-Vorbuchung auf DB-Ebene idempotent: hoechstens eine Karte je
@@ -1065,6 +1077,76 @@ def _loesche_marken(conn: sqlite3.Connection, wo: str, params: tuple) -> None:
         pass
 
 
+# -- Datei-Anhaenge --------------------------------------------------------
+# Dateien liegen neben der Datenbank unter anhaenge/<karte_id>/<anhang_id>;
+# der Original-Name steht nur in der Tabelle (keine Dateisystem-Fallen durch
+# Sonderzeichen). Backup/Restore nehmen den Ordner mit.
+
+ANHANG_MAX_BYTES = 25 * 1024 * 1024
+
+
+def anhaenge_dir() -> Path:
+    return DB_PFAD.parent / "anhaenge"
+
+
+def _anhang_aus_row(row: sqlite3.Row) -> Anhang:
+    return Anhang(**dict(row))
+
+
+def liste_anhaenge(karte_id: str) -> list[Anhang]:
+    with _verb() as conn:
+        rows = conn.execute(
+            "SELECT * FROM anhang WHERE karte_id = ? ORDER BY erstellt_am, name", (karte_id,)
+        ).fetchall()
+    return [_anhang_aus_row(r) for r in rows]
+
+
+def speichere_anhang(karte_id: str, name: str, daten: bytes, typ: str | None,
+                     akteur: str | None = None) -> Anhang | None:
+    """Legt die Datei ab und registriert sie an der Karte (None = Karte fehlt)."""
+    sauber = Path(name).name.strip() or "datei"
+    anhang_id = f"an_{uuid4().hex[:10]}"
+    with _verb() as conn:
+        if conn.execute("SELECT 1 FROM karte WHERE id = ?", (karte_id,)).fetchone() is None:
+            return None
+        ordner = anhaenge_dir() / karte_id
+        ordner.mkdir(parents=True, exist_ok=True)
+        (ordner / anhang_id).write_bytes(daten)
+        conn.execute(
+            "INSERT INTO anhang (id, karte_id, name, groesse, typ, erstellt_am) VALUES (?, ?, ?, ?, ?, ?)",
+            (anhang_id, karte_id, sauber, len(daten), typ, _jetzt()),
+        )
+        _protokolliere(conn, karte_id, "anhang", f"Anhang hinzugefügt: {sauber}", akteur)
+    return hole_anhang(anhang_id)
+
+
+def hole_anhang(anhang_id: str) -> Anhang | None:
+    with _verb() as conn:
+        row = conn.execute("SELECT * FROM anhang WHERE id = ?", (anhang_id,)).fetchone()
+    return _anhang_aus_row(row) if row else None
+
+
+def anhang_pfad(anhang: Anhang) -> Path:
+    return anhaenge_dir() / anhang.karte_id / anhang.id
+
+
+def loesche_anhang(anhang_id: str, akteur: str | None = None) -> bool:
+    with _verb() as conn:
+        row = conn.execute("SELECT * FROM anhang WHERE id = ?", (anhang_id,)).fetchone()
+        if row is None:
+            return False
+        conn.execute("DELETE FROM anhang WHERE id = ?", (anhang_id,))
+        _protokolliere(conn, row["karte_id"], "anhang", f"Anhang entfernt: {row['name']}", akteur)
+    (anhaenge_dir() / row["karte_id"] / anhang_id).unlink(missing_ok=True)
+    return True
+
+
+def _loesche_anhang_dateien(karten_ids: list[str]) -> None:
+    """Datei-Ordner geloeschter Karten entfernen (Rows loescht der Aufrufer)."""
+    for kid in karten_ids:
+        shutil.rmtree(anhaenge_dir() / kid, ignore_errors=True)
+
+
 def _export_karten(conn: sqlite3.Connection, board_id: str) -> list[dict]:
     rows = conn.execute(
         "SELECT * FROM karte WHERE board_id = ? ORDER BY spalte, reihenfolge", (board_id,)
@@ -1224,6 +1306,7 @@ def loesche_karte(karte_id: str, auslass_merken: bool = True) -> None:
         # Zeiteintraege der Karte mitloeschen, sonst verfaelschen Waisen die Ist-Summen.
         conn.execute("DELETE FROM zeiteintrag WHERE karte_id = ?", (karte_id,))
         conn.execute("DELETE FROM aktivitaet WHERE karte_id = ?", (karte_id,))
+        conn.execute("DELETE FROM anhang WHERE karte_id = ?", (karte_id,))
         _loesche_marken(conn, "WHERE karte_id = ?", (karte_id,))
         # Verwaiste Zeitgruppe aufloesen, wenn nach dem Loeschen < 2 Mitglieder bleiben.
         if row is not None and row["gruppe_id"]:
@@ -1234,6 +1317,7 @@ def loesche_karte(karte_id: str, auslass_merken: bool = True) -> None:
                 conn.execute("DELETE FROM kartengruppe WHERE id = ?", (gid,))
         if row is not None:
             _kompaktiere(conn, row["board_id"], row["spalte"])
+    _loesche_anhang_dateien([karte_id])
 
 
 # -- Dokumente (Karten- und Mappen-Dokumente) -----------------------------
@@ -1929,6 +2013,8 @@ def _raeume_karten_restdaten(conn: sqlite3.Connection, karten_ids: list[str]) ->
     conn.execute(f"DELETE FROM dokument WHERE kontext = 'karte' AND kontext_id IN ({platz})", karten_ids)
     conn.execute(f"DELETE FROM zeiteintrag WHERE karte_id IN ({platz})", karten_ids)
     conn.execute(f"DELETE FROM aktivitaet WHERE karte_id IN ({platz})", karten_ids)
+    conn.execute(f"DELETE FROM anhang WHERE karte_id IN ({platz})", karten_ids)
+    _loesche_anhang_dateien(karten_ids)
     _loesche_marken(conn, f"WHERE karte_id IN ({platz})", tuple(karten_ids))
     gruppen = [r[0] for r in conn.execute(
         f"SELECT DISTINCT gruppe_id FROM karte WHERE id IN ({platz}) AND gruppe_id IS NOT NULL", karten_ids

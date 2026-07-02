@@ -372,6 +372,16 @@ class HeuteEintrag(BaseModel):
     faellig: str | None = None
 
 
+class Anhang(BaseModel):
+    """Ein Datei-Anhang an einer Karte (Datei liegt neben der Datenbank)."""
+    id: str
+    karte_id: str
+    name: str
+    groesse: int = 0
+    typ: str | None = None
+    erstellt_am: str | None = None
+
+
 class FaelligEintrag(BaseModel):
     """Eine faellige Karte fuer den Faelligkeits-Kalender (knappe Felder)."""
     id: str

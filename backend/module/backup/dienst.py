@@ -65,6 +65,19 @@ def _zaehler(conn: sqlite3.Connection) -> dict[str, int]:
     return zahlen
 
 
+def _anhang_dateien() -> list[tuple[Path, str]]:
+    """Alle Karten-Anhaenge (Datei, Zip-Eintrag) - liegen neben der Datenbank."""
+    from module.kanban_kern.persistence import anhaenge_dir
+    wurzel = anhaenge_dir()
+    if not wurzel.is_dir():
+        return []
+    out: list[tuple[Path, str]] = []
+    for p in sorted(wurzel.rglob("*")):
+        if p.is_file():
+            out.append((p, f"anhaenge/{p.relative_to(wurzel).as_posix()}"))
+    return out
+
+
 def _berichte_dateien() -> list[Path]:
     if not _BERICHTE.is_dir():
         return []
@@ -144,6 +157,7 @@ def erzeuge(art: str = "manuell", notiz: str = "") -> dict:
         "schema": schema,
         "zaehler": zaehler,
         "berichte": len(_berichte_dateien()),
+        "anhaenge": len(_anhang_dateien()),
     }
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -154,6 +168,8 @@ def erzeuge(art: str = "manuell", notiz: str = "") -> dict:
             zf.write(tmp_db, "db/pinnwand.db")
             for p in _berichte_dateien():
                 zf.write(p, f"berichte/{p.name}")
+            for p, eintrag in _anhang_dateien():
+                zf.write(p, eintrag)
             for pfad, eintrag in _konfig_dateien():
                 zf.write(pfad, eintrag)
 
@@ -381,6 +397,21 @@ def wiederherstellen(sid: str) -> dict | None:
                     ziel = _BERICHTE / Path(name).name
                     ziel.write_bytes(zf.read(name))
 
+            # Karten-Anhaenge ersetzen (Stand des Snapshots; aeltere Snapshots
+            # ohne Anhaenge stellen konsistent einen leeren Ordner her).
+            from module.kanban_kern.persistence import anhaenge_dir
+            wurzel = anhaenge_dir()
+            shutil.rmtree(wurzel, ignore_errors=True)
+            for name in namen:
+                if name.startswith("anhaenge/") and not name.endswith("/"):
+                    rel = Path(name).relative_to("anhaenge")
+                    # Zip-Slip-Schutz: keine Pfad-Ausbrueche aus dem Anhangsordner.
+                    if ".." in rel.parts:
+                        continue
+                    ziel = wurzel / rel
+                    ziel.parent.mkdir(parents=True, exist_ok=True)
+                    ziel.write_bytes(zf.read(name))
+
     # Die wiederhergestellte DB hat die Snapshot-Liste mit zurückgesetzt; aus den
     # vorhandenen Dateien wieder vervollständigen (inklusive Sicherheits-Snapshot).
     synchronisiere_index()
@@ -393,6 +424,7 @@ def _leeren() -> None:
         "karte", "zeiteintrag", "urlaub", "feiertag", "serie",
         "person", "bericht_archiv", "agent_audit", "agent_idempotenz",
         "dokument", "wochen_override", "termin_serie", "termin_instanz",
+        "anhang", "aktivitaet",
     )
     with verbindung() as conn:
         vorhanden = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
@@ -404,6 +436,8 @@ def _leeren() -> None:
         if "tagesregel" in vorhanden:
             conn.execute("DELETE FROM tagesregel WHERE person_id IS NOT NULL")
     _loesche_berichtsdateien()
+    from module.kanban_kern.persistence import anhaenge_dir
+    shutil.rmtree(anhaenge_dir(), ignore_errors=True)
 
 
 def _loesche_berichtsdateien() -> None:

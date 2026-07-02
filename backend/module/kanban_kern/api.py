@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 from datetime import datetime
+from urllib.parse import quote
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi.responses import FileResponse, JSONResponse
 
 from module.auth.akteur import Akteur, aktueller_akteur
 from module.auth.rechte import darf_timer_bedienen, darf_zeit_buchen, darf_zeiteintrag_bearbeiten, verlange
@@ -13,6 +14,7 @@ from module.auth.rechte import darf_timer_bedienen, darf_zeit_buchen, darf_zeite
 from . import persistence as db
 from .models import (
     Aktivitaet,
+    Anhang,
     Board,
     FaelligEintrag,
     BoardCreate,
@@ -284,6 +286,59 @@ def karte_aktivitaet(karte_id: str, akteur: Akteur = Depends(aktueller_akteur)) 
     if db.hole_karte(karte_id) is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
     return db.karten_aktivitaet(karte_id)
+
+
+# -- Datei-Anhaenge an Karten ----------------------------------------------
+
+@router.get("/karten/{karte_id}/anhaenge", response_model=list[Anhang])
+def karte_anhaenge(karte_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> list[Anhang]:
+    _projekt_zugriff(akteur, db.karte_mappe_id(karte_id))
+    return db.liste_anhaenge(karte_id)
+
+
+@router.post("/karten/{karte_id}/anhaenge", response_model=Anhang, status_code=201)
+async def anhang_hochladen(karte_id: str, datei: UploadFile,
+                           akteur: Akteur = Depends(aktueller_akteur)) -> Anhang:
+    _projekt_zugriff(akteur, db.karte_mappe_id(karte_id))
+    daten = await datei.read()
+    if len(daten) > db.ANHANG_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="Datei zu groß (Grenze 25 MB)")
+    if not daten:
+        raise HTTPException(status_code=400, detail="Leere Datei")
+    anhang = db.speichere_anhang(karte_id, datei.filename or "datei", daten,
+                                 datei.content_type, akteur=akteur.kuerzel)
+    if anhang is None:
+        raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    return anhang
+
+
+@router.get("/anhaenge/{anhang_id}")
+def anhang_herunterladen(anhang_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> FileResponse:
+    anhang = db.hole_anhang(anhang_id)
+    if anhang is None:
+        raise HTTPException(status_code=404, detail="Anhang nicht gefunden")
+    _projekt_zugriff(akteur, db.karte_mappe_id(anhang.karte_id))
+    pfad = db.anhang_pfad(anhang)
+    if not pfad.is_file():
+        raise HTTPException(status_code=404, detail="Datei fehlt auf der Platte")
+    # HTTP-Header sind Latin-1: Umlaut-Namen als RFC-5987 filename* mitgeben,
+    # dazu ein ASCII-Fallback fuer alte Clients.
+    ascii_name = anhang.name.encode("ascii", "replace").decode() or "datei"
+    cd = f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(anhang.name)}"
+    return FileResponse(
+        pfad,
+        media_type=anhang.typ or "application/octet-stream",
+        headers={"Content-Disposition": cd},
+    )
+
+
+@router.delete("/anhaenge/{anhang_id}", status_code=204)
+def anhang_loeschen(anhang_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> None:
+    anhang = db.hole_anhang(anhang_id)
+    if anhang is None:
+        raise HTTPException(status_code=404, detail="Anhang nicht gefunden")
+    _projekt_zugriff(akteur, db.karte_mappe_id(anhang.karte_id))
+    db.loesche_anhang(anhang_id, akteur=akteur.kuerzel)
 
 
 # -- Dokumente (Karten- und Mappen-Dokumente) -----------------------------

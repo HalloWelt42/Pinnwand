@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { Aktivitaet, Karte, Prioritaet, Spalte } from '../../types'
+  import type { Aktivitaet, Anhang, Karte, Prioritaet, Spalte } from '../../types'
   import type { KarteAenderung, TranskriptTreffer, Person, KiVorschlag } from '../../api'
-  import { transkripteSuche, ladePersonen, ladeKartenAktivitaet } from '../../api'
+  import { transkripteSuche, ladePersonen, ladeKartenAktivitaet, ladeAnhaenge, anhangHochladen, anhangLoeschen, anhangHerunterladen } from '../../api'
   import KiAssistent from '../../ki/KiAssistent.svelte'
   import Checkliste from './Checkliste.svelte'
   import TranskriptVerweise from './TranskriptVerweise.svelte'
@@ -75,6 +75,40 @@
 
   let neuesLabel = $state('')
   let kommentar = $state('')
+
+  // Datei-Anhaenge der Karte.
+  let anhaenge = $state<Anhang[]>([])
+  let anhangFehler = $state('')
+  let anhangLaeuft = $state(false)
+  let dateiwahl = $state<HTMLInputElement | null>(null)
+  $effect(() => {
+    void karte.id
+    anhangFehler = ''
+    ladeAnhaenge(karte.id).then((a) => (anhaenge = a)).catch(() => (anhaenge = []))
+  })
+  async function anhaengeHochladen(dateien: FileList | null): Promise<void> {
+    if (!dateien?.length) return
+    anhangFehler = ''
+    anhangLaeuft = true
+    try {
+      for (const d of Array.from(dateien)) await anhangHochladen(karte.id, d)
+      anhaenge = await ladeAnhaenge(karte.id)
+    } catch (e) {
+      anhangFehler = e instanceof Error ? e.message : 'Hochladen fehlgeschlagen'
+    } finally {
+      anhangLaeuft = false
+      if (dateiwahl) dateiwahl.value = ''
+    }
+  }
+  async function anhangEntfernen(a: Anhang): Promise<void> {
+    await anhangLoeschen(a.id)
+    anhaenge = anhaenge.filter((x) => x.id !== a.id)
+  }
+  function groesseText(bytes: number): string {
+    if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+    if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`
+    return `${bytes} B`
+  }
 
   // Verlauf (Aktivitaetsprotokoll): erst auf Wunsch laden, nicht bei jedem Oeffnen.
   let verlaufOffen = $state(false)
@@ -315,6 +349,30 @@
 
     <TranskriptVerweise karteId={karte.id} />
 
+    <p class="sec">Anhänge</p>
+    {#if anhaenge.length}
+      <ul class="anhaenge">
+        {#each anhaenge as a (a.id)}
+          <li>
+            <button class="adatei" title="Herunterladen" onclick={() => anhangHerunterladen(a).catch(() => (anhangFehler = 'Download fehlgeschlagen'))}>
+              <i class="fa-solid fa-paperclip" aria-hidden="true"></i>
+              <span class="aname">{a.name}</span>
+              <span class="agroesse">{groesseText(a.groesse)}</span>
+            </button>
+            <button class="aloeschen" aria-label="Anhang {a.name} löschen" title="Anhang löschen" onclick={() => anhangEntfernen(a)}>
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+          </li>
+        {/each}
+      </ul>
+    {/if}
+    <input class="afile" type="file" multiple bind:this={dateiwahl} onchange={(e) => anhaengeHochladen(e.currentTarget.files)} />
+    <button class="btn geist aknopf" disabled={anhangLaeuft} onclick={() => dateiwahl?.click()}>
+      <i class="fa-solid {anhangLaeuft ? 'fa-spinner fa-spin' : 'fa-paperclip'}" aria-hidden="true"></i>
+      {anhangLaeuft ? 'Lädt hoch ...' : 'Datei anhängen'}
+    </button>
+    {#if anhangFehler}<p class="afehler">{anhangFehler}</p>{/if}
+
     <p class="sec">Aktivität</p>
     {#each karte.kommentare as k (k.zeit + k.autor)}
       <div class="cmt"><span class="av">{initialen(k.autor)}</span><div class="ct"><b>{k.autor}</b> <span class="zeit">{zeitKurz(k.zeit)}</span><button class="cmt-vor" aria-label="Kommentar vorlesen" title="Vorlesen" onclick={() => vorlesen(k.text)}><i class="fa-solid fa-volume-high" aria-hidden="true"></i></button><div class="cmt-md"><Markdown md={k.text} /></div></div></div>
@@ -350,6 +408,22 @@
 </aside>
 
 <style>
+  .anhaenge { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .anhaenge li { display: flex; align-items: center; gap: 4px; }
+  .adatei {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; text-align: left;
+    background: var(--surface-2); border: 1px solid transparent; border-radius: var(--r-s);
+    padding: 7px 9px; color: var(--text-1); font-size: 12px;
+  }
+  .adatei:hover { border-color: var(--border-2); background: var(--surface-3); }
+  .adatei .fa-paperclip { color: var(--text-3); font-size: 11px; }
+  .aname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .agroesse { flex: none; color: var(--text-3); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+  .aloeschen { border: none; background: transparent; color: var(--text-3); font-size: 12px; padding: 6px; }
+  .aloeschen:hover { color: var(--gefahr); }
+  .afile { display: none; }
+  .aknopf { font-size: 12px; }
+  .afehler { color: var(--gefahr); font-size: 11.5px; margin: 6px 0 0; }
   .verlauf-kopf {
     display: inline-flex; align-items: center; gap: 7px; margin-top: 14px;
     border: none; background: transparent; color: var(--text-3); font-size: 12px;

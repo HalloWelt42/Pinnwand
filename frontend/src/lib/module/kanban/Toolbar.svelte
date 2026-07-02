@@ -6,6 +6,7 @@
 
   let {
     boardId,
+    ansichtsModus = $bindable(),
     suche = $bindable(),
     sortModus = $bindable(),
     filterPrio = $bindable(),
@@ -16,6 +17,7 @@
     reorderPausiert,
   }: {
     boardId: string
+    ansichtsModus: 'board' | 'liste'
     suche: string
     sortModus: 'manuell' | 'faellig' | 'prioritaet'
     filterPrio: Prioritaet | null
@@ -115,6 +117,14 @@
 </script>
 
 <div class="tb">
+  <div class="modus" role="group" aria-label="Darstellung">
+    <button class="mb" class:on={ansichtsModus === 'board'} title="Spalten-Ansicht" aria-label="Spalten-Ansicht" onclick={() => (ansichtsModus = 'board')}>
+      <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
+    </button>
+    <button class="mb" class:on={ansichtsModus === 'liste'} title="Listen-Ansicht" aria-label="Listen-Ansicht" onclick={() => (ansichtsModus = 'liste')}>
+      <i class="fa-solid fa-table-list" aria-hidden="true"></i>
+    </button>
+  </div>
   <label class="suche">
     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
     <input placeholder="Suchen in Titel, Inhalt, Labels, Kommentaren ..." bind:value={suche} aria-label="Suche" />
@@ -379,4 +389,8 @@
   .fsatz .fname { display: inline-flex; align-items: center; gap: 6px; height: 100%; padding: 0 4px 0 10px; border: none; background: transparent; color: inherit; font-size: inherit; }
   .fsatz .fx { height: 100%; padding: 0 8px; border: none; background: transparent; color: var(--text-3); font-size: 11px; }
   .fsatz .fx:hover { color: var(--gefahr); }
+  .modus { display: flex; border: 1px solid var(--border); border-radius: var(--r-m); overflow: hidden; }
+  .mb { width: 34px; height: 30px; border: none; background: var(--surface-2); color: var(--text-3); font-size: 12px; }
+  .mb:hover { color: var(--text-1); }
+  .mb.on { background: var(--hl-primary-weich); color: var(--hl-primary-text); }
 </style>

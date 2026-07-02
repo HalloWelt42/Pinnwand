@@ -27,6 +27,7 @@ from .models import (
     BoardDetail,
     Dokument,
     DokumentUpdate,
+    FaelligEintrag,
     GruppenMitglied,
     HeuteUebersicht,
     Karte,
@@ -1062,6 +1063,34 @@ def _loesche_marken(conn: sqlite3.Connection, wo: str, params: tuple) -> None:
         conn.execute(f"DELETE FROM transkript_marke {wo}", params)
     except sqlite3.OperationalError:
         pass
+
+
+def faellige_karten(von: str, bis: str, nur_mappen: list[str] | None = None) -> list[FaelligEintrag]:
+    """Alle Karten mit Faelligkeit im Zeitraum (fuer den Faelligkeits-Kalender) -
+    auch erledigte, damit der Monat vollstaendig erzaehlt, was anstand."""
+    sql = (
+        "SELECT k.id, k.board_id, k.schluessel, k.titel, k.faellig, k.zustaendig,"
+        " COALESCE(s.erledigt, 0) AS erledigt"
+        " FROM karte k"
+        " JOIN board b ON b.id = k.board_id"
+        " LEFT JOIN spalte s ON s.id = k.spalte"
+        " WHERE k.faellig IS NOT NULL AND k.faellig >= ? AND k.faellig <= ?"
+    )
+    params: list = [von, bis]
+    if nur_mappen is not None:
+        platzhalter = ",".join("?" for _ in nur_mappen) or "''"
+        sql += f" AND b.mappe_id IN ({platzhalter})"
+        params.extend(nur_mappen)
+    sql += " ORDER BY k.faellig, k.titel"
+    with _verb() as conn:
+        rows = conn.execute(sql, params).fetchall()
+    return [
+        FaelligEintrag(
+            id=r["id"], board_id=r["board_id"], schluessel=r["schluessel"], titel=r["titel"],
+            faellig=r["faellig"], zustaendig=r["zustaendig"], erledigt=bool(r["erledigt"]),
+        )
+        for r in rows
+    ]
 
 
 def karten_aktivitaet(karte_id: str, limit: int = 200) -> list[Aktivitaet]:

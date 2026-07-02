@@ -372,6 +372,17 @@ class HeuteEintrag(BaseModel):
     faellig: str | None = None
 
 
+class FaelligEintrag(BaseModel):
+    """Eine faellige Karte fuer den Faelligkeits-Kalender (knappe Felder)."""
+    id: str
+    board_id: str
+    schluessel: str | None = None
+    titel: str
+    faellig: str
+    zustaendig: str | None = None
+    erledigt: bool = False
+
+
 class HeuteUebersicht(BaseModel):
     datum: str
     ueberfaellig: list[HeuteEintrag] = []

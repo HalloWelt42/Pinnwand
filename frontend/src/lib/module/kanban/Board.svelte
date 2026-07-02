@@ -33,6 +33,7 @@
   import { zuletztKuerzel } from '../../zuletztKuerzel.svelte'
   import { leseJson, schreibeJson } from '../../uiSpeicher'
   import Column from './Column.svelte'
+  import ListenAnsicht from './ListenAnsicht.svelte'
   import Toolbar from './Toolbar.svelte'
   import CardDrawer from './CardDrawer.svelte'
   import Archiv from './Archiv.svelte'
@@ -52,6 +53,8 @@
   let personen = $state<Person[]>([])
   // Zeitraum-Filter je erledigter Spalte (Schluessel = Spalten-ID, Wert = Zeitraum).
   let fertigFilter = $state<Record<string, string>>({})
+  // Darstellung des Boards: klassische Spalten oder flache, sortierbare Tabelle.
+  let ansichtsModus = $state<'board' | 'liste'>('board')
 
   // Gefensterte Fertig-Karten je Erledigt-Spalte: geladene Seite + Nachlade-Info.
   // board.karten enthaelt KEINE Erledigt-Karten mehr (das Backend liefert sie gefenstert).
@@ -199,12 +202,12 @@
   }
 
   // Spalten-/Filterzustand je Board im Browser merken.
-  function _ladeBoardUi(id: string): { suche?: string; sortModus?: typeof sortModus; filterPrio?: Prioritaet | null; filterLabels?: string[]; eingeklappt?: string[]; fertigFilter?: Record<string, string> } {
+  function _ladeBoardUi(id: string): { suche?: string; sortModus?: typeof sortModus; filterPrio?: Prioritaet | null; filterLabels?: string[]; eingeklappt?: string[]; fertigFilter?: Record<string, string>; ansichtsModus?: 'board' | 'liste' } {
     return leseJson('pw_board_' + id, {})
   }
   function _merkeBoardUi(): void {
     schreibeJson('pw_board_' + boardId, {
-      suche, sortModus, filterPrio, filterLabels, eingeklappt: Array.from(eingeklappt), fertigFilter,
+      suche, sortModus, filterPrio, filterLabels, eingeklappt: Array.from(eingeklappt), fertigFilter, ansichtsModus,
     })
   }
 
@@ -218,6 +221,7 @@
     ausgewaehlt = null
     eingeklappt = new Set(s.eingeklappt ?? [])
     fertigFilter = s.fertigFilter ?? {}
+    ansichtsModus = s.ansichtsModus ?? 'board'
     fertigDaten = {}  // Board-Wechsel: gefensterte Fertig-Daten des alten Boards verwerfen
     laden()
   })
@@ -229,6 +233,7 @@
     void filterLabels
     void eingeklappt
     void fertigFilter
+    void ansichtsModus
     _merkeBoardUi()
   })
 
@@ -305,6 +310,14 @@
     }
     return eintrag.karten
   }
+
+  // Flache Zeilen fuer die Listenansicht: dieselben Karten wie die Spalten
+  // (inklusive Filter/Suche und der geladenen Fertig-Fenster).
+  const listenZeilen = $derived(
+    ansicht
+      .filter((e) => e.id !== SHADOW_PLACEHOLDER_ITEM_ID)
+      .flatMap((e) => anzeige(e).map((k) => ({ karte: k, spalteTitel: e.spalte.titel, erledigt: !!e.spalte.erledigt }))),
+  )
 
   function setzeFertigFilter(spalteId: string, zeitraum: string): void {
     fertigFilter = { ...fertigFilter, [spalteId]: zeitraum }
@@ -529,8 +542,11 @@
 </script>
 
 {#if board}
-  <Toolbar {boardId} bind:suche bind:sortModus bind:filterPrio bind:filterLabels bind:filterZustaendig {alleLabels} {mitglieder} reorderPausiert={kartenDragAus} />
+  <Toolbar {boardId} bind:suche bind:sortModus bind:filterPrio bind:filterLabels bind:filterZustaendig bind:ansichtsModus {alleLabels} {mitglieder} reorderPausiert={kartenDragAus} />
 
+  {#if ansichtsModus === 'liste'}
+    <ListenAnsicht zeilen={listenZeilen} onOeffnen={oeffnen} />
+  {:else}
   <div class="flaeche">
     <div
       class="spalten"
@@ -590,6 +606,7 @@
       {/if}
     </div>
   </div>
+  {/if}
 
   {#if archivOffen && board}
     <Archiv

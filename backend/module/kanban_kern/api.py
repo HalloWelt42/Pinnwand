@@ -13,6 +13,7 @@ from . import persistence as db
 from .models import (
     Aktivitaet,
     Board,
+    FaelligEintrag,
     BoardCreate,
     BoardDetail,
     BoardUpdate,
@@ -231,6 +232,13 @@ def heute(datum: str | None = None, akteur: Akteur = Depends(aktueller_akteur)) 
 
     nur_mappen = None if akteur.ist_admin else db.sichtbare_mappen_ids(akteur.person_id)
     return db.was_steht_an(datum or date.today().isoformat(), nur_mappen)
+
+
+@router.get("/faellig", response_model=list[FaelligEintrag])
+def faellige(von: str, bis: str, akteur: Akteur = Depends(aktueller_akteur)) -> list[FaelligEintrag]:
+    """Faelligkeits-Kalender: alle Karten mit Faelligkeit im Zeitraum (gescoped)."""
+    nur_mappen = None if akteur.ist_admin else db.sichtbare_mappen_ids(akteur.person_id)
+    return db.faellige_karten(von, bis, nur_mappen)
 
 
 # -- Aktivitaetsprotokoll und Benachrichtigungen ---------------------------

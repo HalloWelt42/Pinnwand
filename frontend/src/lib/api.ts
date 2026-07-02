@@ -3,6 +3,7 @@
 import type {
   Aktivitaet,
   Board,
+  FaelligEintrag,
   BoardDetail,
   KartenSeite,
   KanbanEinstellungen,
@@ -230,6 +231,9 @@ export const setzeKanbanEinstellungen = (e: KanbanEinstellungen): Promise<Kanban
   hole('/api/kanban/einstellungen', { method: 'PUT', body: JSON.stringify(e) })
 
 export const ladeHeute = (): Promise<HeuteUebersicht> => hole('/api/kanban/heute')
+
+export const ladeFaellige = (von: string, bis: string): Promise<FaelligEintrag[]> =>
+  hole(`/api/kanban/faellig?von=${von}&bis=${bis}`)
 
 // --- Aktivitaetsprotokoll (Verlauf je Karte + Benachrichtigungs-Glocke) ---
 

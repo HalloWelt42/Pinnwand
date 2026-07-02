@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { ladeZeiteintraege, ladePlanungsTage, ladePersonen, type PlanTag, type Person } from '../../api'
-  import { ymd, formatStd, isoLang } from '../../zeit'
+  import { ladeZeiteintraege, ladePlanungsTage, ladePersonen, ladeFaellige, type PlanTag, type Person, type FaelligEintrag } from '../../api'
+  import { oeffneKarte } from '../../navigation.svelte'
+  import { ymd, formatStd, isoLang, isoKurz } from '../../zeit'
 
   let { boardId }: { boardId: string } = $props()
 
@@ -29,6 +30,24 @@
   })
   let tagMap = $state<Map<string, number>>(new Map())
   let maxSek = $state(0)
+
+  // Faelligkeits-Kalender: alle im Monat faelligen Karten (auch erledigte,
+  // gedimmt) - als Marker im Monatsgitter und als klickbare Liste daneben.
+  let faellige = $state<FaelligEintrag[]>([])
+  $effect(() => {
+    const von = ymd(new Date(jahr, monat, 1))
+    const bis = ymd(new Date(jahr, monat + 1, 0))
+    ladeFaellige(von, bis).then((f) => (faellige = f)).catch(() => (faellige = []))
+  })
+  const faelligJeTag = $derived.by(() => {
+    const m = new Map<string, FaelligEintrag[]>()
+    for (const f of faellige) {
+      const liste = m.get(f.faellig) ?? []
+      liste.push(f)
+      m.set(f.faellig, liste)
+    }
+    return m
+  })
 
   const WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
   const MONATE = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
@@ -195,12 +214,43 @@
               title={tipp(z.key, z.sek) + (info?.feiertag ? ' · ' + info.feiertag : '') + (info?.urlaub ? ' · Urlaub' : '')}>
               <span class="mnum">{z.tag}</span>
               {#if z.sek}<span class="mstd">{formatStd(z.sek)}</span>{/if}
+              {#if faelligJeTag.has(z.key)}
+                {@const offen = faelligJeTag.get(z.key)!.filter((f) => !f.erledigt).length}
+                <span class="fmark" class:alle-fertig={offen === 0}
+                  title={faelligJeTag.get(z.key)!.map((f) => (f.erledigt ? '[erledigt] ' : '') + f.titel).join(', ')}>
+                  {faelligJeTag.get(z.key)!.length}
+                </span>
+              {/if}
             </div>
           {:else}
             <div class="mtag mleer"></div>
           {/if}
         {/each}
       </div>
+    </section>
+
+    <section class="karte faellig">
+      <div class="kh">
+        <span class="titel">Fällig im {MONATE[monat]}</span>
+        <span class="ges">{faellige.filter((f) => !f.erledigt).length} offen · {faellige.length} gesamt</span>
+      </div>
+      {#if faellige.length}
+        <ul class="fliste">
+          {#each faellige as f (f.id)}
+            <li>
+              <button class="fzeile" class:fertig={f.erledigt} onclick={() => oeffneKarte(f.board_id, f.id)}>
+                <span class="fdatum">{isoKurz(f.faellig)}</span>
+                {#if f.schluessel}<span class="fkey">{f.schluessel}</span>{/if}
+                <span class="ftitel">{f.titel}</span>
+                {#if f.zustaendig}<span class="fwer">{f.zustaendig}</span>{/if}
+                {#if f.erledigt}<i class="fa-solid fa-check" aria-hidden="true"></i>{/if}
+              </button>
+            </li>
+          {/each}
+        </ul>
+      {:else}
+        <p class="fleer">Keine Fälligkeiten in diesem Monat.</p>
+      {/if}
     </section>
   </div>
 </div>
@@ -395,5 +445,92 @@
   .mtag.kraeftig .mnum,
   .mtag.kraeftig .mstd {
     color: var(--hl-on-primary);
+  }
+  .fmark {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 13px;
+    height: 13px;
+    padding: 0 3px;
+    border-radius: 999px;
+    background: var(--gefahr);
+    color: #fff;
+    font-size: 8.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .fmark.alle-fertig {
+    background: var(--ok);
+  }
+  .faellig {
+    min-width: 300px;
+    max-width: 420px;
+  }
+  .fliste {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    max-height: 420px;
+    overflow-y: auto;
+  }
+  .fzeile {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+    background: var(--surface-2);
+    border: 1px solid transparent;
+    border-radius: var(--r-s);
+    padding: 6px 9px;
+    color: var(--text-1);
+    font-size: 12px;
+  }
+  .fzeile:hover {
+    border-color: var(--border-2);
+    background: var(--surface-3);
+  }
+  .fzeile.fertig .ftitel {
+    text-decoration: line-through;
+    color: var(--text-3);
+  }
+  .fzeile .fa-check {
+    color: var(--ok);
+    font-size: 10px;
+  }
+  .fdatum {
+    flex: none;
+    color: var(--text-3);
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .fkey {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    flex: none;
+  }
+  .ftitel {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .fwer {
+    flex: none;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--hl-primary-text);
+  }
+  .fleer {
+    color: var(--text-3);
+    font-size: 12px;
+    margin: 2px 0;
   }
 </style>

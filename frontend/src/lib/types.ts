@@ -224,6 +224,17 @@ export interface HeuteUebersicht {
   blockiert: HeuteEintrag[]
 }
 
+// -- Faelligkeits-Kalender --
+export interface FaelligEintrag {
+  id: string
+  board_id: string
+  schluessel: string | null
+  titel: string
+  faellig: string
+  zustaendig: string | null
+  erledigt: boolean
+}
+
 // -- Aktivitaetsprotokoll (Verlauf je Karte + Benachrichtigungs-Glocke) --
 export interface Aktivitaet {
   id: string

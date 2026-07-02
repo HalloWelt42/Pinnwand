@@ -95,3 +95,33 @@ def test_loeschen_raeumt_protokoll_ab(client):
     with kdb._verb() as conn:
         rest = conn.execute("SELECT COUNT(*) FROM aktivitaet WHERE karte_id = ?", (k["id"],)).fetchone()[0]
     assert rest == 0
+
+
+def test_faellig_kalender_liefert_zeitraum_mit_erledigt_flag(client):
+    b = _board(client, "Faellig-Kal")
+    offen_sp = b["spalten"][0]["id"]
+    fertig_sp = client.post(f"/api/kanban/boards/{b['id']}/spalten", json={"titel": "FK-Fertig"}).json()
+    client.post(f"/api/kanban/spalten/{fertig_sp['id']}/erledigt")
+
+    r = client.post("/api/kanban/karten", json={
+        "board_id": b["id"], "spalte": offen_sp, "titel": "FK offen", "faellig": "2026-08-10",
+    })
+    offen = r.json()
+    fertig = client.post("/api/kanban/karten", json={
+        "board_id": b["id"], "spalte": offen_sp, "titel": "FK fertig", "faellig": "2026-08-20",
+    }).json()
+    client.post(f"/api/kanban/karten/{fertig['id']}/move", json={"spalte": fertig_sp["id"], "reihenfolge": 0})
+    # Ausserhalb des Zeitraums
+    client.post("/api/kanban/karten", json={
+        "board_id": b["id"], "spalte": offen_sp, "titel": "FK September", "faellig": "2026-09-01",
+    })
+
+    r = client.get("/api/kanban/faellig", params={"von": "2026-08-01", "bis": "2026-08-31"})
+    assert r.status_code == 200, r.text
+    eintraege = {e["id"]: e for e in r.json() if e["board_id"] == b["id"]}
+    assert set(eintraege) == {offen["id"], fertig["id"]}
+    assert eintraege[offen["id"]]["erledigt"] is False
+    assert eintraege[fertig["id"]]["erledigt"] is True
+    # Sortiert nach Datum
+    daten = [e["faellig"] for e in r.json()]
+    assert daten == sorted(daten)

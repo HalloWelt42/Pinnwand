@@ -84,6 +84,8 @@ export interface KartenSeite {
 export interface KanbanEinstellungen {
   fertig_seitengroesse: number
   archiv_tage: number
+  aging_amber_tage: number
+  aging_rot_tage: number
 }
 
 export type ProjektStatus = 'aktiv' | 'pausiert' | 'abgeschlossen'

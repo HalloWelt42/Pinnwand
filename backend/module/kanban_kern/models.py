@@ -102,14 +102,18 @@ class KartenSeite(BaseModel):
 
 
 class KanbanEinstellungen(BaseModel):
-    """Anzeige-/Ladegrenzen fuer fertige Karten - in der UI einstellbar."""
+    """Anzeige-/Ladegrenzen und Karten-Alterung - in der UI einstellbar."""
     fertig_seitengroesse: int = 50
     archiv_tage: int = 365
+    aging_amber_tage: int = 4  # Verweildauer-Badge amber ab X Tagen (0 = aus)
+    aging_rot_tage: int = 8    # rot ab Y Tagen (0 = aus)
 
 
 class KanbanEinstellungenUpdate(BaseModel):
     fertig_seitengroesse: int = Field(ge=1, le=500)
     archiv_tage: int = Field(ge=1, le=100000)
+    aging_amber_tage: int = Field(default=4, ge=0, le=365)
+    aging_rot_tage: int = Field(default=8, ge=0, le=365)
 
 
 # Eine Mappe ist zugleich ein Projekt (Board = Phase). Der Status steuert nur die

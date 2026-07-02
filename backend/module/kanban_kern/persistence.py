@@ -561,14 +561,21 @@ def hole_kanban_einstellungen() -> dict[str, int]:
     return {
         "fertig_seitengroesse": _als_int(roh.get("fertig_seitengroesse"), 50, 1, 500),
         "archiv_tage": _als_int(roh.get("archiv_tage"), 365, 1, 100000),
+        # Karten-Alterung (Badge): amber ab X Tagen, rot ab Y Tagen; 0 = aus.
+        "aging_amber_tage": _als_int(roh.get("aging_amber_tage"), 4, 0, 365),
+        "aging_rot_tage": _als_int(roh.get("aging_rot_tage"), 8, 0, 365),
     }
 
 
-def setze_kanban_einstellungen(fertig_seitengroesse: int, archiv_tage: int) -> dict[str, int]:
+def setze_kanban_einstellungen(fertig_seitengroesse: int, archiv_tage: int,
+                               aging_amber_tage: int = 4, aging_rot_tage: int = 8) -> dict[str, int]:
     seiten = _als_int(fertig_seitengroesse, 50, 1, 500)
     tage = _als_int(archiv_tage, 365, 1, 100000)
+    amber = _als_int(aging_amber_tage, 4, 0, 365)
+    rot = _als_int(aging_rot_tage, 8, 0, 365)
     with _verb() as conn:
-        for schluessel, wert in (("fertig_seitengroesse", seiten), ("archiv_tage", tage)):
+        for schluessel, wert in (("fertig_seitengroesse", seiten), ("archiv_tage", tage),
+                                 ("aging_amber_tage", amber), ("aging_rot_tage", rot)):
             conn.execute(
                 "INSERT INTO kanban_einstellung (schluessel, wert) VALUES (?, ?) "
                 "ON CONFLICT(schluessel) DO UPDATE SET wert = excluded.wert",
@@ -639,6 +646,7 @@ def fertige_seite(
     q: str | None = None,
     labels: list[str] | None = None,
     prioritaet: str | None = None,
+    zustaendig: list[str] | None = None,
 ) -> tuple[list[Karte], int]:
     """Eine Seite fertiger Karten EINER Erledigt-Spalte: nach Abschlussdatum (neueste
     zuerst), ohne archivierte (aelter als die Schwelle), gedeckelt + per Offset nachladbar.
@@ -657,6 +665,10 @@ def fertige_seite(
             args += [von, bis]
     where += such_bed
     args += such_args
+    if zustaendig:
+        platz = ",".join("?" for _ in zustaendig)
+        where.append(f"zustaendig IN ({platz})")
+        args += zustaendig
     wsql = " AND ".join(where)
     with _verb() as conn:
         gesamt = conn.execute(f"SELECT COUNT(*) AS n FROM karte WHERE {wsql}", args).fetchone()["n"]

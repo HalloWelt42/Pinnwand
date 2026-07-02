@@ -8,6 +8,7 @@
     sortModus = $bindable(),
     filterPrio = $bindable(),
     filterLabels = $bindable(),
+    filterZustaendig = $bindable(),
     alleLabels,
     mitglieder,
     reorderPausiert,
@@ -16,13 +17,14 @@
     sortModus: 'manuell' | 'faellig' | 'prioritaet'
     filterPrio: Prioritaet | null
     filterLabels: string[]
+    filterZustaendig: string[]
     alleLabels: string[]
     mitglieder: string[]
     reorderPausiert: boolean
   } = $props()
 
   let filterOffen = $state(false)
-  const aktiveFilter = $derived(filterLabels.length + (filterPrio ? 1 : 0))
+  const aktiveFilter = $derived(filterLabels.length + (filterPrio ? 1 : 0) + filterZustaendig.length)
 
   function labelUmschalten(l: string) {
     filterLabels = filterLabels.includes(l) ? filterLabels.filter((x) => x !== l) : [...filterLabels, l]
@@ -31,7 +33,11 @@
     suche = ''
     filterPrio = null
     filterLabels = []
+    filterZustaendig = []
     sortModus = 'manuell'
+  }
+  function personUmschalten(m: string) {
+    filterZustaendig = filterZustaendig.includes(m) ? filterZustaendig.filter((x) => x !== m) : [...filterZustaendig, m]
   }
 
   // KI schlaegt eine Filter-Kombination aus einem Wunsch vor; uebernommen wird nur,
@@ -106,14 +112,20 @@
   {/if}
 
   {#if mitglieder.length}
-    <div class="avs" aria-label="Mitglieder">
-      {#each mitglieder.slice(0, 5) as m (m)}<span class="av">{m}</span>{/each}
-      {#if mitglieder.length > 5}<span class="av rest">+{mitglieder.length - 5}</span>{/if}
+    <!-- Avatare sind der Personen-Filter: Klick zeigt nur die Karten der Person(en). -->
+    <div class="avs" aria-label="Nach Person filtern">
+      {#each mitglieder.slice(0, 7) as m (m)}
+        <button class="av klick" class:on={filterZustaendig.includes(m)} title="Nur Karten von {m}" onclick={() => personUmschalten(m)}>{m}</button>
+      {/each}
+      {#if mitglieder.length > 7}<span class="av rest">+{mitglieder.length - 7}</span>{/if}
     </div>
   {/if}
 </div>
 
 <style>
+  .av.klick { cursor: pointer; border: 1px solid transparent; background: var(--surface-2); }
+  .av.klick:hover { border-color: var(--hl-primary); }
+  .av.klick.on { background: var(--hl-primary); color: var(--hl-on-primary); font-weight: 700; }
   .tb {
     display: flex;
     align-items: center;

@@ -148,10 +148,27 @@
   const imStatus = $derived(tage(karte.bewegt_am) ?? 0)
   const durchlauf = $derived(tage(karte.erstellt_am) ?? 0)
   const spalteTitel = $derived(spalten.find((s) => s.id === karte.spalte)?.titel ?? '')
+
+  // Beim Oeffnen den Fokus in den Drawer holen, damit Tab nicht durch das
+  // Board hinter dem Backdrop wandert.
+  function fokusBeimOeffnen(el: HTMLElement) {
+    el.focus()
+  }
 </script>
 
+<!-- Escape schliesst den Drawer; steckt der Fokus in einem Eingabefeld, beendet
+     der erste Escape nur die Eingabe (blur), der zweite schliesst. -->
+<svelte:window onkeydown={(e) => {
+  if (e.key !== 'Escape') return
+  const ziel = e.target as HTMLElement | null
+  if (ziel && (ziel.tagName === 'INPUT' || ziel.tagName === 'TEXTAREA' || ziel.isContentEditable)) {
+    ziel.blur()
+    return
+  }
+  onSchliessen()
+}} />
 <div class="backdrop" role="presentation" onclick={onSchliessen}></div>
-<aside class="drawer" aria-label="Kartendetails">
+<aside class="drawer" aria-label="Kartendetails" tabindex="-1" use:fokusBeimOeffnen>
   <header>
     {#if karte.schluessel}<span class="key">{karte.schluessel}</span>{/if}
     <span class="pfad">{spalteTitel}</span>

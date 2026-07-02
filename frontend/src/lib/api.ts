@@ -197,7 +197,7 @@ export const ladeKarte = (id: string): Promise<Karte> => hole(`/api/kanban/karte
 // Gefensterte Seite fertiger Karten EINER Erledigt-Spalte (Zeitfenster + Deckel + Nachladen).
 export const ladeFertige = (
   spalteId: string,
-  opts: { zeitraum?: string; offset?: number; limit?: number; q?: string; labels?: string[]; prioritaet?: string | null } = {},
+  opts: { zeitraum?: string; offset?: number; limit?: number; q?: string; labels?: string[]; prioritaet?: string | null; zustaendig?: string[] } = {},
 ): Promise<KartenSeite> => {
   const p = new URLSearchParams()
   if (opts.zeitraum) p.set('zeitraum', opts.zeitraum)
@@ -206,6 +206,7 @@ export const ladeFertige = (
   if (opts.q && opts.q.trim()) p.set('q', opts.q.trim())
   if (opts.labels && opts.labels.length) p.set('labels', opts.labels.join(','))
   if (opts.prioritaet) p.set('prioritaet', opts.prioritaet)
+  if (opts.zustaendig && opts.zustaendig.length) p.set('zustaendig', opts.zustaendig.join(','))
   const qs = p.toString()
   return hole(`/api/kanban/spalten/${spalteId}/fertige${qs ? '?' + qs : ''}`)
 }

@@ -91,7 +91,8 @@ def test_einstellungen_les_und_setzbar(client):
             "/api/kanban/einstellungen", json={"fertig_seitengroesse": 10, "archiv_tage": 30}
         )
         assert gesetzt.status_code == 200, gesetzt.text
-        assert gesetzt.json() == {"fertig_seitengroesse": 10, "archiv_tage": 30}
+        antwort = gesetzt.json()
+        assert antwort["fertig_seitengroesse"] == 10 and antwort["archiv_tage"] == 30
         # Archiv-Schwelle 30 Tage: eine 40 Tage alte Fertig-Karte muss ins Archiv wandern.
         board_id, _offen, done = _board_mit_fertig(client)
         alt = _karte(client, board_id, done, "40 Tage alt")

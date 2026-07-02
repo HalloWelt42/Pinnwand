@@ -68,6 +68,7 @@
   let sortModus = $state<'manuell' | 'faellig' | 'prioritaet'>('manuell')
   let filterPrio = $state<Prioritaet | null>(null)
   let filterLabels = $state<string[]>([])
+  let filterZustaendig = $state<string[]>([])
 
   let neueSpalte = $state(false)
   let spalteTitel = $state('')
@@ -76,7 +77,7 @@
   const AKZENTE = ['#4f9be8', '#ffb300', '#a5d6a7', '#b39ddb', '#f48fb1', '#80cbc4', '#ff8a65', '#9fa8da']
   const PRIO_RANG: Record<string, number> = { hoch: 0, mittel: 1, niedrig: 2 }
 
-  const kartenDragAus = $derived(suche !== '' || filterLabels.length > 0 || filterPrio !== null || sortModus !== 'manuell')
+  const kartenDragAus = $derived(suche !== '' || filterLabels.length > 0 || filterPrio !== null || filterZustaendig.length > 0 || sortModus !== 'manuell')
   const alleLabels = $derived([...new Set((board?.karten ?? []).flatMap((k) => k.labels))].sort())
   const mitglieder = $derived([...new Set((board?.karten ?? []).map((k) => k.zustaendig).filter((z): z is string => !!z))])
   // Default-Zustaendiger fuer neue Karten: aktive Identitaet, sonst zuletzt genutztes Kuerzel.
@@ -138,9 +139,9 @@
 
   // Ladeparameter einer Erledigt-Spalte: bei aktiver Suche/Sortierung greift die
   // serverseitige Suche (Zeitfenster ausgesetzt), sonst der Zeitfilter der Spalte.
-  function fertigParams(spalteId: string): { zeitraum?: string; q?: string; labels?: string[]; prioritaet?: string | null } {
+  function fertigParams(spalteId: string): { zeitraum?: string; q?: string; labels?: string[]; prioritaet?: string | null; zustaendig?: string[] } {
     if (kartenDragAus) {
-      return { q: suche || undefined, labels: filterLabels, prioritaet: filterPrio }
+      return { q: suche || undefined, labels: filterLabels, prioritaet: filterPrio, zustaendig: filterZustaendig }
     }
     return { zeitraum: fertigFilter[spalteId] ?? 'heute' }
   }
@@ -278,6 +279,7 @@
 
   function passt(k: Karte): boolean {
     if (filterPrio && k.prioritaet !== filterPrio) return false
+    if (filterZustaendig.length && !filterZustaendig.includes(k.zustaendig ?? '')) return false
     if (filterLabels.length && !filterLabels.some((l) => k.labels.includes(l))) return false
     const q = suche.trim().toLowerCase()
     if (q) {
@@ -520,7 +522,7 @@
 </script>
 
 {#if board}
-  <Toolbar bind:suche bind:sortModus bind:filterPrio bind:filterLabels {alleLabels} {mitglieder} reorderPausiert={kartenDragAus} />
+  <Toolbar bind:suche bind:sortModus bind:filterPrio bind:filterLabels bind:filterZustaendig {alleLabels} {mitglieder} reorderPausiert={kartenDragAus} />
 
   <div class="flaeche">
     <div

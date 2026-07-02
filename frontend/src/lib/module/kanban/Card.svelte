@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { kanbanKonfig } from '../../kanbanKonfig.svelte'
   import type { Karte } from '../../types'
   import { labelFarbe } from '../../labels'
   import { theme } from '../../theme/theme.svelte'
@@ -84,7 +85,14 @@
     if (Number.isNaN(t)) return null
     return Math.floor((Date.now() - t) / 86400000)
   })
-  const aging = $derived(liegtTage != null && liegtTage >= 4 ? (liegtTage >= 8 ? 'rot' : 'amber') : null)
+  const aging = $derived.by(() => {
+    // Schwellen aus den Einstellungen (0 = Alterung aus).
+    const amber = kanbanKonfig.aging_amber_tage
+    const rot = kanbanKonfig.aging_rot_tage
+    if (liegtTage == null || amber <= 0) return null
+    if (rot > 0 && liegtTage >= rot) return 'rot'
+    return liegtTage >= amber ? 'amber' : null
+  })
   const prioFarbe: Record<string, string> = {
     hoch: 'var(--prio-hoch)',
     mittel: 'var(--prio-mittel)',

@@ -194,11 +194,13 @@ def fertige(
     q: str | None = None,
     labels: str | None = None,
     prioritaet: str | None = None,
+    zustaendig: str | None = None,
 ) -> KartenSeite:
     """Eine gefensterte Seite fertiger Karten einer Erledigt-Spalte (nur nicht-archivierte)."""
     _projekt_zugriff(akteur, db.spalte_mappe_id(spalte_id))
     lab = [t.strip() for t in labels.split(",") if t.strip()] if labels else None
-    karten, gesamt = db.fertige_seite(spalte_id, zeitraum, offset, limit, q, lab, prioritaet)
+    zus = [t.strip() for t in zustaendig.split(",") if t.strip()] if zustaendig else None
+    karten, gesamt = db.fertige_seite(spalte_id, zeitraum, offset, limit, q, lab, prioritaet, zus)
     return _als_seite(karten, gesamt, max(0, offset))
 
 
@@ -218,7 +220,7 @@ def kanban_einstellungen() -> KanbanEinstellungen:
 
 @router.put("/einstellungen", response_model=KanbanEinstellungen)
 def kanban_einstellungen_setzen(eingabe: KanbanEinstellungenUpdate) -> KanbanEinstellungen:
-    werte = db.setze_kanban_einstellungen(eingabe.fertig_seitengroesse, eingabe.archiv_tage)
+    werte = db.setze_kanban_einstellungen(eingabe.fertig_seitengroesse, eingabe.archiv_tage, eingabe.aging_amber_tage, eingabe.aging_rot_tage)
     return KanbanEinstellungen(**werte)
 
 

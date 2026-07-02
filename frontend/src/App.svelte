@@ -14,6 +14,7 @@
   import { leseText, schreibeText, leseJson, schreibeJson } from './lib/uiSpeicher'
   import { ymd } from './lib/zeit'
   import { aktualisiereLaufend, timer } from './lib/timer.svelte'
+  import { ladeKanbanKonfig } from './lib/kanbanKonfig.svelte'
   import { nav, transkriptNav, kartenZeiger, oeffneKarte } from './lib/navigation.svelte'
   import Toast from './lib/Toast.svelte'
   import KopfSuche from './lib/KopfSuche.svelte'
@@ -347,6 +348,7 @@
     ladeLabelFarben()
     ladePersonen().then((p) => (personen = p)).catch(() => {}) // fuer das Rollen-Gating
     aktualisiereLaufend()
+    void ladeKanbanKonfig()
     serienTagesabgleich()
     try {
       mappen = await ladeMappen()

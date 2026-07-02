@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { kanbanKonfig } from '../../kanbanKonfig.svelte'
   import {
     ladeSnapshots, backupZustand, erzeugeSnapshot, snapshotVorschau,
     snapshotHerunterladen, stelleSnapshotWiederHer, loescheSnapshot, datenZuruecksetzen,
@@ -155,20 +156,25 @@
   // --- Fertig-Karten / Archiv (serverseitige Ladegrenzen) ---
   let fertigSeite = $state(50)
   let archivTage = $state(365)
+  let agingAmber = $state(4)
+  let agingRot = $state(8)
   let kanbanMeldung = $state('')
   let kanbanArbeitet = $state(false)
   $effect(() => {
     ladeKanbanEinstellungen()
-      .then((e) => { fertigSeite = e.fertig_seitengroesse; archivTage = e.archiv_tage })
+      .then((e) => { fertigSeite = e.fertig_seitengroesse; archivTage = e.archiv_tage; agingAmber = e.aging_amber_tage; agingRot = e.aging_rot_tage })
       .catch(() => {})
   })
   async function kanbanSpeichern(): Promise<void> {
     kanbanArbeitet = true
     kanbanMeldung = ''
     try {
-      const e = await setzeKanbanEinstellungen({ fertig_seitengroesse: fertigSeite, archiv_tage: archivTage })
+      const e = await setzeKanbanEinstellungen({ fertig_seitengroesse: fertigSeite, archiv_tage: archivTage, aging_amber_tage: agingAmber, aging_rot_tage: agingRot })
       fertigSeite = e.fertig_seitengroesse
       archivTage = e.archiv_tage
+      agingAmber = e.aging_amber_tage
+      agingRot = e.aging_rot_tage
+      Object.assign(kanbanKonfig, e)
       kanbanMeldung = 'Gespeichert - wirkt beim nächsten Laden der Boards.'
     } catch {
       kanbanMeldung = 'Speichern nicht möglich (nur Admins).'
@@ -276,7 +282,11 @@
       </label>
       <label>
         Archiv ab (Tage)
-        <input type="number" min="1" max="100000" bind:value={archivTage} aria-label="Archiv-Schwelle in Tagen" />
+        <input type="number" min="1" max="100000" bind:value={archivTage} aria-label="Archiv-Schwelle in Tagen" /></label>
+      <label class="feld">Alterung amber ab (Tagen, 0 = aus)
+        <input type="number" min="0" max="365" bind:value={agingAmber} aria-label="Alterung amber ab Tagen" /></label>
+      <label class="feld">Alterung rot ab (Tagen, 0 = aus)
+        <input type="number" min="0" max="365" bind:value={agingRot} aria-label="Alterung rot ab Tagen" />
       </label>
       <button class="btn primaer" onclick={kanbanSpeichern} disabled={kanbanArbeitet}>
         <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Speichern

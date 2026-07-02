@@ -392,7 +392,7 @@
           {#each verlauf as a (a.id)}
             <li>
               <span class="vzeit">{verlaufWann(a)}</span>
-              <span class="vtext">{#if a.kuerzel}<b>{a.kuerzel}</b> &middot; {/if}{a.text}</span>
+              <span class="vtext">{#if a.kuerzel}<b>{a.kuerzel}</b>{' · '}{/if}{a.text}</span>
             </li>
           {/each}
         </ul>

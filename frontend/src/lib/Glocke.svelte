@@ -81,7 +81,7 @@
                     <span class="titel">{a.karte_titel ?? a.karte_id}</span>
                     <span class="zeit">{wann(a)}</span>
                   </span>
-                  <span class="text">{#if a.kuerzel}<b>{a.kuerzel}</b>: {/if}{a.text}</span>
+                  <span class="text">{#if a.kuerzel}<b>{a.kuerzel}</b>{': '}{/if}{a.text}</span>
                 </button>
               </li>
             {/each}

@@ -182,6 +182,9 @@
     {#if karte.kommentare.length}
       <span class="badge"><i class="fa-regular fa-comment" aria-hidden="true"></i> {karte.kommentare.length}</span>
     {/if}
+    {#if karte.blockiert_grund}
+      <span class="blockiert" title="Blockiert: {karte.blockiert_grund}"><i class="fa-solid fa-hand" aria-hidden="true"></i></span>
+    {/if}
     {#if aging}
       <span class="alter {aging}" title="Liegt {liegtTage} Tage in dieser Spalte"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> {liegtTage}</span>
     {/if}
@@ -205,6 +208,7 @@
 {/if}
 
 <style>
+  .blockiert { color: var(--gefahr); font-size: 11px; }
   .card {
     position: relative;
     background: var(--surface-1);

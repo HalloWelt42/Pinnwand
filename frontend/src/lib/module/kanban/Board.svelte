@@ -26,7 +26,7 @@
   import { zeigeToast } from '../../toaster.svelte'
   import { timer } from '../../timer.svelte'
   import { nav, setzeOffeneKarte } from '../../navigation.svelte'
-  import { neuKarteAus, verlustHinweis } from '../../restore'
+  import { neuKarteAus, dupliziereKarte, verlustHinweis } from '../../restore'
   import { personSicht } from '../../personSicht.svelte'
   import { auth } from '../../auth.svelte'
   import { eigenesKuerzel } from '../../identitaet'
@@ -437,6 +437,13 @@
   function karteLoeschen() {
     if (ausgewaehlt) loescheKarteMitUndo(ausgewaehlt)
   }
+  async function karteDuplizieren() {
+    if (!ausgewaehlt) return
+    const kopie = await dupliziereKarte($state.snapshot(ausgewaehlt) as Karte)
+    await laden()
+    ausgewaehlt = findeKarte(kopie.id) ?? kopie
+    zeigeToast(`Karte als "${kopie.titel}" dupliziert`)
+  }
   function karteSchnellLoeschen(id: string) {
     const k = findeKarte(id)
     if (k) loescheKarteMitUndo(k)
@@ -522,7 +529,7 @@
 </script>
 
 {#if board}
-  <Toolbar bind:suche bind:sortModus bind:filterPrio bind:filterLabels bind:filterZustaendig {alleLabels} {mitglieder} reorderPausiert={kartenDragAus} />
+  <Toolbar {boardId} bind:suche bind:sortModus bind:filterPrio bind:filterLabels bind:filterZustaendig {alleLabels} {mitglieder} reorderPausiert={kartenDragAus} />
 
   <div class="flaeche">
     <div
@@ -602,6 +609,7 @@
       onAendern={karteAendern}
       onKommentar={karteKommentar}
       onLoeschen={karteLoeschen}
+      onDuplizieren={karteDuplizieren}
       onReload={laden}
       onOeffneKarte={oeffnen}
     />

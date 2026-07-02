@@ -12,8 +12,8 @@
 
   const SCHRITTE: Schritt[] = [
     { id: 'willkommen', titel: 'Willkommen bei Pinnwand', text: 'Eine lokale, modulare Plattform für Aufgaben, Zeiten und Planung. Diese kurze Einrichtung legt direkt die Grundlagen an. Du kannst sie jederzeit überspringen und alles später ändern.' },
-    { id: 'mappe', titel: 'Projektmappe', text: 'Eine Mappe bündelt zusammengehörige Boards. Lege optional gleich eine eigene Mappe an (sonst nutzt du die vorhandene).' },
-    { id: 'personen', titel: 'Personen und Wochenstunden', text: 'Lege die Personen an, deren Zeiten du planst. Das Wochen-Soll je Wochentag stellst du anschließend unter Planung ein.', ansicht: 'planung' },
+    { id: 'mappe', titel: 'Projektmappe', text: 'Eine Mappe ist ein Projekt und bündelt zusammengehörige Boards (Phasen). Wer ein Projekt sehen darf, steuerst du später über seine Mitglieder. Lege optional gleich eine eigene Mappe an (sonst nutzt du die vorhandene).' },
+    { id: 'personen', titel: 'Personen und Wochenstunden', text: 'Lege die Personen an, deren Zeiten du planst. Die erste Person wird automatisch Admin, weitere sind Mitarbeiter (unter Planung änderbar). Das Wochen-Soll je Wochentag stellst du anschließend unter Planung ein.', ansicht: 'planung' },
     { id: 'feiertage', titel: 'Feiertage und Region', text: 'Importiere die Feiertage deiner Region - sie werden im Kalender berücksichtigt und reduzieren das Soll.', ansicht: 'planung' },
     { id: 'serien', titel: 'Wiederkehrende Termine', text: 'Unter Serien richtest du wiederkehrende Termine/Aufgaben ein (z.B. eine wöchentliche Telefonkonferenz). Sie werden automatisch als Karten mit Fälligkeit und Soll vorgebucht.', ansicht: 'serien' },
     { id: 'token', titel: 'Agenten-Zugriff (optional)', text: 'KI-Werkzeuge können über die Agenten-API das Board befüllen und lesen. Ein Zugriffs-Token legst du bei Bedarf in den Einstellungen an (dort brauchst du dein Admin-Token).', ansicht: 'einstellungen' },

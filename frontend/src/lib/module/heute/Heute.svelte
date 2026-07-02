@@ -77,6 +77,7 @@
           { titel: 'Diese Woche', icon: 'fa-calendar-week', klasse: '', items: d.diese_woche },
           { titel: 'Läuft gerade', icon: 'fa-play', klasse: 'gruen', items: d.laufend },
           { titel: 'Liegengeblieben', icon: 'fa-hourglass-half', klasse: 'amber', items: d.liegengeblieben },
+          { titel: 'Blockiert', icon: 'fa-hand', klasse: 'rot', items: d.blockiert ?? [] },
         ]
       : [],
   )
@@ -92,6 +93,7 @@
     if (d.heute.length) teile.push(`Heute fällig: ${d.heute.map((x) => x.titel).join(', ')}.`)
     if (d.diese_woche.length) teile.push(`Diese Woche: ${d.diese_woche.map((x) => x.titel).join(', ')}.`)
     if (d.laufend.length) teile.push(`Es läuft: ${d.laufend.map((x) => x.titel).join(', ')}.`)
+    if (d.blockiert?.length) teile.push(`Blockiert: ${d.blockiert.map((x) => x.titel).join(', ')}.`)
     if (teile.length === 1) teile.push('Nichts Dringendes.')
     return teile.join(' ')
   }

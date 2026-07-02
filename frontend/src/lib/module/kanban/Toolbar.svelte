@@ -2,8 +2,10 @@
   import type { Prioritaet } from '../../types'
   import type { KiVorschlag } from '../../api'
   import KiAssistent from '../../ki/KiAssistent.svelte'
+  import { leseJson, schreibeJson } from '../../uiSpeicher'
 
   let {
+    boardId,
     suche = $bindable(),
     sortModus = $bindable(),
     filterPrio = $bindable(),
@@ -13,6 +15,7 @@
     mitglieder,
     reorderPausiert,
   }: {
+    boardId: string
     suche: string
     sortModus: 'manuell' | 'faellig' | 'prioritaet'
     filterPrio: Prioritaet | null
@@ -25,6 +28,54 @@
 
   let filterOffen = $state(false)
   const aktiveFilter = $derived(filterLabels.length + (filterPrio ? 1 : 0) + filterZustaendig.length)
+
+  // Benannte, je Board gespeicherte Filter-Kombinationen (browser-lokal wie der
+  // uebrige UI-Zustand). Ein Klick auf den Chip wendet den Satz an, ein zweiter
+  // setzt zurueck; gespeichert wird die KOMPLETTE Sicht (Suche, Prio, Labels,
+  // Personen, Sortierung).
+  interface FilterSatz {
+    name: string
+    suche: string
+    sortModus: 'manuell' | 'faellig' | 'prioritaet'
+    filterPrio: Prioritaet | null
+    filterLabels: string[]
+    filterZustaendig: string[]
+  }
+  let gespeicherte = $state<FilterSatz[]>([])
+  let neuName = $state('')
+  $effect(() => {
+    gespeicherte = leseJson('pw_filtersets_' + boardId, [])
+  })
+  function filterMerken(): void {
+    const name = neuName.trim()
+    if (!name) return
+    const satz: FilterSatz = {
+      name, suche, sortModus, filterPrio,
+      filterLabels: [...filterLabels], filterZustaendig: [...filterZustaendig],
+    }
+    gespeicherte = [...gespeicherte.filter((s) => s.name !== name), satz]
+    schreibeJson('pw_filtersets_' + boardId, $state.snapshot(gespeicherte))
+    neuName = ''
+  }
+  function filterAnwenden(s: FilterSatz): void {
+    suche = s.suche
+    sortModus = s.sortModus
+    filterPrio = s.filterPrio
+    filterLabels = [...s.filterLabels]
+    filterZustaendig = [...s.filterZustaendig]
+    filterOffen = false
+  }
+  function filterEntfernen(name: string): void {
+    gespeicherte = gespeicherte.filter((s) => s.name !== name)
+    schreibeJson('pw_filtersets_' + boardId, $state.snapshot(gespeicherte))
+  }
+  function gleicheListe(a: string[], b: string[]): boolean {
+    return a.length === b.length && a.every((x) => b.includes(x))
+  }
+  function satzAktiv(s: FilterSatz): boolean {
+    return suche === s.suche && sortModus === s.sortModus && filterPrio === s.filterPrio
+      && gleicheListe(filterLabels, s.filterLabels) && gleicheListe(filterZustaendig, s.filterZustaendig)
+  }
 
   function labelUmschalten(l: string) {
     filterLabels = filterLabels.includes(l) ? filterLabels.filter((x) => x !== l) : [...filterLabels, l]
@@ -90,9 +141,27 @@
             {/each}
           </div>
         {/if}
+        <p class="ueber merken-ueber">Sicht speichern</p>
+        <div class="merken">
+          <input placeholder="Name der Sicht" bind:value={neuName} aria-label="Name der gespeicherten Sicht"
+            onkeydown={(e) => { if (e.key === 'Enter') filterMerken() }} />
+          <button class="pchip" disabled={!neuName.trim()} onclick={filterMerken}>Speichern</button>
+        </div>
       </div>
     {/if}
   </div>
+
+  {#each gespeicherte as s (s.name)}
+    <span class="fsatz" class:on={satzAktiv(s)}>
+      <button class="fname" title={satzAktiv(s) ? 'Sicht zurücksetzen' : 'Gespeicherte Sicht anwenden'}
+        onclick={() => (satzAktiv(s) ? zuruecksetzen() : filterAnwenden(s))}>
+        <i class="fa-solid fa-bookmark" aria-hidden="true"></i> {s.name}
+      </button>
+      <button class="fx" aria-label="Gespeicherte Sicht {s.name} entfernen" onclick={() => filterEntfernen(s.name)}>
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </span>
+  {/each}
 
   <div class="sort">
     <i class="fa-solid fa-arrow-down-wide-short" aria-hidden="true"></i>
@@ -293,4 +362,21 @@
     background: var(--surface-3);
     color: var(--text-2);
   }
+  .merken-ueber { margin-top: 10px; }
+  .merken { display: flex; gap: 6px; }
+  .merken input {
+    flex: 1; min-width: 0; border: 1px solid var(--border); background: var(--surface-1);
+    color: var(--text-1); border-radius: var(--r-m); padding: 4px 8px; font-size: 12px; outline: none;
+  }
+  .merken input:focus { border-color: var(--hl-primary); }
+  .merken .pchip:disabled { opacity: 0.5; }
+  .fsatz {
+    display: inline-flex; align-items: center; height: 32px;
+    border: 1px solid var(--border); border-radius: var(--r-m); background: var(--surface-2);
+    color: var(--text-2); font-size: 12px; overflow: hidden;
+  }
+  .fsatz.on { border-color: var(--hl-primary); color: var(--hl-primary-text); background: var(--hl-primary-weich); }
+  .fsatz .fname { display: inline-flex; align-items: center; gap: 6px; height: 100%; padding: 0 4px 0 10px; border: none; background: transparent; color: inherit; font-size: inherit; }
+  .fsatz .fx { height: 100%; padding: 0 8px; border: none; background: transparent; color: var(--text-3); font-size: 11px; }
+  .fsatz .fx:hover { color: var(--gefahr); }
 </style>

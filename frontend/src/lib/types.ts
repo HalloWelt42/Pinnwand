@@ -29,6 +29,7 @@ export interface Karte {
   schluessel?: string | null
   beschreibung?: string | null
   notizen?: string | null
+  blockiert_grund?: string | null
   labels: string[]
   prioritaet?: Prioritaet | null
   checkliste: ChecklistPunkt[]
@@ -220,6 +221,7 @@ export interface HeuteUebersicht {
   diese_woche: HeuteEintrag[]
   laufend: HeuteEintrag[]
   liegengeblieben: HeuteEintrag[]
+  blockiert: HeuteEintrag[]
 }
 
 // -- Karten-Eingaben --
@@ -240,6 +242,7 @@ export interface KarteAenderung {
   titel?: string
   beschreibung?: string | null
   notizen?: string | null
+  blockiert_grund?: string | null
   labels?: string[]
   prioritaet?: Prioritaet | null
   checkliste?: ChecklistPunkt[]

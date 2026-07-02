@@ -7,9 +7,13 @@
   }
 
   const THEMEN: Thema[] = [
-    { titel: 'Heute (Was steht an)', text: 'Startansicht mit überfälligen, heute und diese Woche fälligen, laufenden und liegengebliebenen Aufgaben. Klick öffnet die Karte. Vorlesen liest den Tagesüberblick.' },
-    { titel: 'Board', text: 'Kanban mit Spalten und Karten. Karten per Drag-and-drop verschieben, Spalten einklappen. Eine Spalte kann als Erledigt-Spalte markiert werden (Kebab-Menü).' },
-    { titel: 'Karte bearbeiten', text: 'Karte anklicken öffnet die Detailansicht. Beschreibung ganz oben als Markdown (Split-Editor, Vollbild, Auto-Speichern). Zeiterfassung mit Start/Pause, Schätzung als Soll. Labels, Checkliste, Kommentare.' },
+    { titel: 'Heute (Was steht an)', text: 'Startansicht mit überfälligen, heute und diese Woche fälligen, laufenden, liegengebliebenen und blockierten Aufgaben. Klick öffnet die Karte. Vorlesen liest den Tagesüberblick. Oben: Schnell-Erfassung und zu bestätigende Termine.' },
+    { titel: 'Login und Rollen', text: 'Das Login ist abschaltbar (Einstellungen). Admins sehen und dürfen alles; Mitarbeiter sehen nur ihre Projekte, buchen nur eigene Zeiten und pflegen nur die eigenen Daten. Ohne Login wählt die Personen-Sicht oben die aktive Identität.' },
+    { titel: 'Projekte und Mitglieder', text: 'Eine Mappe ist ein Projekt, jedes Board eine Phase. Projekte haben Mitglieder: Nur Mitglieder (und Admins) sehen und bearbeiten die Boards. Die Ansicht Projekte zeigt Ist/Soll/Budget je Projekt, Phase und Person.' },
+    { titel: 'Board', text: 'Kanban mit Spalten und Karten. Karten per Drag-and-drop verschieben, Spalten einklappen. Eine Spalte kann als Erledigt-Spalte markiert werden (Kebab-Menü). Avatare oben filtern nach Person; Filter-Sichten lassen sich benannt speichern (Lesezeichen-Chips).' },
+    { titel: 'Karte bearbeiten', text: 'Karte anklicken öffnet die Detailansicht. Beschreibung ganz oben als Markdown (Split-Editor, Vollbild, Auto-Speichern). Zeiterfassung mit Start/Pause, Schätzung als Soll. Labels, Checkliste, Kommentare. Oben: Blockiert-Markierung mit Grund und Duplizieren als Kopiervorlage.' },
+    { titel: 'Ideen', text: 'Eine Karte kann statt Arbeit auch eine Idee sein (Umschalter im Karten-Kopf): eine Notiz ohne Zeiterfassung. Wird aus der Idee Arbeit, einfach zurückschalten.' },
+    { titel: 'Archiv und Rückgängig', text: 'Fertige Karten wandern nach einiger Zeit automatisch ins Archiv der Erledigt-Spalte (Uhr-Symbol im Spaltenkopf). Gelöschte Karten lassen sich direkt über den Hinweis unten rückgängig wiederherstellen; erfasste Zeiten kommen dabei nicht zurück.' },
     { titel: 'Zeiten', text: 'Wochen-Stundenzettel mit Soll/Ist je Karte. Zeiten nachtragen und korrigieren (Dauer als 1:30 oder 1,5).' },
     { titel: 'Kalender', text: 'Jahres-Heatmap und Monat. Wochenenden, Feiertage (rot) und Urlaub (amber, Person wählbar) sind eingefärbt.' },
     { titel: 'Serien', text: 'Wiederkehrende Termine/Aufgaben (täglich/wöchentlich/monatlich, Wochentage, Uhrzeit, Dauer). Werden automatisch als Karten vorgebucht.' },

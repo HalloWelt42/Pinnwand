@@ -23,6 +23,7 @@
     spalten,
     boardKarten = [],
     onSchliessen,
+    onDuplizieren,
     onAendern,
     onKommentar,
     onLoeschen,
@@ -33,6 +34,7 @@
     spalten: Spalte[]
     boardKarten?: Karte[]
     onSchliessen: () => void
+    onDuplizieren?: () => void
     onAendern: (daten: KarteAenderung) => void | Promise<void>
     onKommentar: (text: string) => void
     onLoeschen: () => void
@@ -45,6 +47,10 @@
   // Arbeit vs. Idee (Notiz ohne Zeiterfassung).
   const istIdee = $derived(karte.typ === 'idee')
   function typUmschalten(): void { onAendern({ typ: istIdee ? 'arbeit' : 'idee' }) }
+  const istBlockiert = $derived(!!karte.blockiert_grund)
+  function blockiertUmschalten(): void {
+    onAendern({ blockiert_grund: istBlockiert ? null : 'Grund noch offen' })
+  }
 
   // Personen fuer die Zustaendig-Auswahl (echtes Dropdown statt Freitext, verhindert
   // Tippfehler/leeres Kuerzel). Einmalig beim Oeffnen laden.
@@ -176,12 +182,27 @@
       <button class="mini geist" class:an={istIdee} title="Zwischen Arbeit und Idee umschalten" onclick={typUmschalten}>
         <i class="fa-{istIdee ? 'regular fa-lightbulb' : 'solid fa-briefcase'}" aria-hidden="true"></i> {istIdee ? 'Idee' : 'Arbeit'}
       </button>
+      <button class="mini geist" class:blockiert={istBlockiert} title={istBlockiert ? 'Blockade aufheben' : 'Als blockiert markieren'} onclick={blockiertUmschalten}>
+        <i class="fa-solid fa-hand" aria-hidden="true"></i> {istBlockiert ? 'Blockiert' : 'Frei'}
+      </button>
+      {#if onDuplizieren}
+        <button class="mini geist" title="Karte als Kopiervorlage duplizieren (ohne Zeiten, Checkliste zurückgesetzt)" onclick={onDuplizieren}>
+          <i class="fa-solid fa-copy" aria-hidden="true"></i>
+        </button>
+      {/if}
       <button class="ib" aria-label="Schließen" onclick={onSchliessen}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     </span>
   </header>
 
   <div class="body">
     <input class="titel" value={karte.titel} aria-label="Titel" onchange={(e) => onAendern({ titel: e.currentTarget.value })} />
+    {#if istBlockiert}
+      <label class="blockiert-grund">
+        <i class="fa-solid fa-hand" aria-hidden="true"></i>
+        <input value={karte.blockiert_grund ?? ''} placeholder="Warum blockiert?" aria-label="Blockade-Grund"
+          onchange={(e) => onAendern({ blockiert_grund: e.currentTarget.value || null })} />
+      </label>
+    {/if}
 
     <MarkdownFeld titel="Beschreibung" schluessel={karte.id} text={karte.beschreibung ?? ''} ohneVorschau ohneKnopf
       onSpeichern={(w) => onAendern({ beschreibung: w })}
@@ -287,6 +308,9 @@
 </aside>
 
 <style>
+  .mini.blockiert { background: var(--gefahr); color: #fff; border-color: transparent; }
+  .blockiert-grund { display: flex; align-items: center; gap: 8px; margin: 8px 0 0; padding: 7px 10px; border-radius: var(--r-m); background: color-mix(in srgb, var(--gefahr) 10%, transparent); color: var(--gefahr); font-size: 12px; }
+  .blockiert-grund input { flex: 1; border: none; background: transparent; color: var(--text-1); font-size: 12.5px; outline: none; }
   .backdrop {
     position: fixed;
     inset: 0;

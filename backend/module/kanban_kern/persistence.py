@@ -100,7 +100,8 @@ CREATE TABLE IF NOT EXISTS karte (
     transkript_id TEXT,
     transkript_name TEXT,
     typ TEXT NOT NULL DEFAULT 'arbeit',
-    gruppe_id TEXT
+    gruppe_id TEXT,
+    blockiert_grund TEXT
 );
 CREATE TABLE IF NOT EXISTS kartengruppe (
     id TEXT PRIMARY KEY,
@@ -166,6 +167,9 @@ def _migriere(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE karte ADD COLUMN typ TEXT NOT NULL DEFAULT 'arbeit'")
     if "gruppe_id" not in kspalten:
         conn.execute("ALTER TABLE karte ADD COLUMN gruppe_id TEXT")
+    if "blockiert_grund" not in kspalten:
+        # Leichtes Blockiert-Flag mit Freitext-Grund (NULL = frei).
+        conn.execute("ALTER TABLE karte ADD COLUMN blockiert_grund TEXT")
     # Person am Zeiteintrag (Snapshot beim Buchen): macht die Zuordnung historiefest -
     # Karten-Uebergaben oder Umbenennungen verschieben Alt-Zeiten nicht mehr.
     zspalten = {r["name"] for r in conn.execute("PRAGMA table_info(zeiteintrag)").fetchall()}
@@ -246,6 +250,7 @@ def _karte_aus_row(row: sqlite3.Row) -> Karte:
         schluessel=row["schluessel"],
         beschreibung=row["beschreibung"],
         notizen=row["notizen"],
+        blockiert_grund=row["blockiert_grund"],
         labels=json.loads(row["labels"]),
         prioritaet=row["prioritaet"],
         checkliste=json.loads(row["checkliste"]),
@@ -1595,13 +1600,13 @@ def was_steht_an(heute: str, nur_mappen: set[str] | None = None) -> HeuteUebersi
             # Projekt-Scoping: nur Karten aus sichtbaren Mappen.
             platz = ",".join("?" for _ in nur_mappen) or "''"
             rows = conn.execute(
-                "SELECT k.id, k.board_id, k.spalte, k.schluessel, k.titel, k.faellig, k.laeuft_seit, k.bewegt_am"
+                "SELECT k.id, k.board_id, k.spalte, k.schluessel, k.titel, k.faellig, k.laeuft_seit, k.bewegt_am, k.blockiert_grund"
                 f" FROM karte k JOIN board b ON b.id = k.board_id WHERE b.mappe_id IN ({platz})",
                 tuple(sorted(nur_mappen)),
             ).fetchall()
         else:
             rows = conn.execute(
-                "SELECT id, board_id, spalte, schluessel, titel, faellig, laeuft_seit, bewegt_am FROM karte"
+                "SELECT id, board_id, spalte, schluessel, titel, faellig, laeuft_seit, bewegt_am, blockiert_grund FROM karte"
             ).fetchall()
 
     def offen(r) -> bool:
@@ -1611,9 +1616,11 @@ def was_steht_an(heute: str, nur_mappen: set[str] | None = None) -> HeuteUebersi
         return {"id": r["id"], "board_id": r["board_id"], "schluessel": r["schluessel"],
                 "titel": r["titel"], "faellig": r["faellig"]}
 
-    ueberfaellig, heute_f, diese_woche, laufend, liegengeblieben = [], [], [], [], []
+    ueberfaellig, heute_f, diese_woche, laufend, liegengeblieben, blockiert = [], [], [], [], [], []
     faellig_ids: set[str] = set()
     for r in rows:
+        if r["blockiert_grund"] and offen(r):
+            blockiert.append(eintrag(r))
         if r["laeuft_seit"]:
             laufend.append(eintrag(r))
         if r["faellig"] and offen(r):
@@ -1629,6 +1636,7 @@ def was_steht_an(heute: str, nur_mappen: set[str] | None = None) -> HeuteUebersi
     return HeuteUebersicht(
         datum=heute, ueberfaellig=ueberfaellig, heute=heute_f,
         diese_woche=diese_woche, laufend=laufend, liegengeblieben=liegengeblieben,
+        blockiert=blockiert,
     )
 
 

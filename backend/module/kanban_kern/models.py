@@ -41,6 +41,8 @@ class Karte(BaseModel):
     schluessel: str | None = None
     beschreibung: str | None = None
     notizen: str | None = None
+    # Leichtes Blockiert-Flag: Freitext-Grund, None = frei.
+    blockiert_grund: str | None = None
     labels: list[str] = Field(default_factory=list)
     prioritaet: Prioritaet | None = None
     checkliste: list[ChecklistPunkt] = Field(default_factory=list)
@@ -230,6 +232,7 @@ class KarteUpdate(BaseModel):
     titel: str | None = None
     beschreibung: str | None = None
     notizen: str | None = None
+    blockiert_grund: str | None = None
     labels: list[str] | None = None
     prioritaet: Prioritaet | None = None
     checkliste: list[ChecklistPunkt] | None = None
@@ -360,3 +363,4 @@ class HeuteUebersicht(BaseModel):
     diese_woche: list[HeuteEintrag] = []
     laufend: list[HeuteEintrag] = []
     liegengeblieben: list[HeuteEintrag] = []
+    blockiert: list[HeuteEintrag] = []

@@ -20,6 +20,15 @@ class ChecklistPunkt(BaseModel):
     erledigt: bool = False
 
 
+class ChecklistPunktCreate(BaseModel):
+    text: str
+
+
+class ChecklistPunktUpdate(BaseModel):
+    text: str | None = None
+    erledigt: bool | None = None
+
+
 class GruppenMitglied(BaseModel):
     """Eine andere Karte derselben Verknuepfungs-/Zeitgruppe (zur Anzeige)."""
     id: str

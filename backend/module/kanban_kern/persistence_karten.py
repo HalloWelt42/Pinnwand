@@ -506,6 +506,65 @@ def aktualisiere_karte(karte_id: str, aenderungen: dict, akteur: str | None = No
     return hole_karte(karte_id)
 
 
+# -- Checkliste als Einzeloperationen ---------------------------------------
+# Atomar in SQL (json_insert/json_replace/json_remove) statt die ganze Liste
+# zu ersetzen - zwei gleichzeitige Bearbeiter ueberschreiben sich so nicht
+# mehr gegenseitig. Ein ungueltiger Index heisst: die Liste hat sich parallel
+# geaendert -> IndexError, der Aufrufer meldet den Konflikt.
+
+def _checkliste_laenge(conn: sqlite3.Connection, karte_id: str) -> int | None:
+    row = conn.execute(
+        "SELECT json_array_length(checkliste) AS n FROM karte WHERE id = ?", (karte_id,)
+    ).fetchone()
+    return None if row is None else int(row["n"] or 0)
+
+
+def checkliste_punkt_anhaengen(karte_id: str, text: str) -> Karte | None:
+    with _verb() as conn:
+        cur = conn.execute(
+            "UPDATE karte SET checkliste = json_insert(checkliste, '$[#]', json(?)) WHERE id = ?",
+            (json.dumps({"text": text, "erledigt": False}, ensure_ascii=False), karte_id),
+        )
+        if cur.rowcount == 0:
+            return None
+    return hole_karte(karte_id)
+
+
+def checkliste_punkt_aendern(karte_id: str, index: int, text: str | None = None,
+                             erledigt: bool | None = None) -> Karte | None:
+    with _verb() as conn:
+        n = _checkliste_laenge(conn, karte_id)
+        if n is None:
+            return None
+        if not 0 <= index < n:
+            raise IndexError(index)
+        if text is not None:
+            conn.execute(
+                "UPDATE karte SET checkliste = json_replace(checkliste, ?, ?) WHERE id = ?",
+                (f"$[{index}].text", text, karte_id),
+            )
+        if erledigt is not None:
+            conn.execute(
+                "UPDATE karte SET checkliste = json_replace(checkliste, ?, json(?)) WHERE id = ?",
+                (f"$[{index}].erledigt", "true" if erledigt else "false", karte_id),
+            )
+    return hole_karte(karte_id)
+
+
+def checkliste_punkt_loeschen(karte_id: str, index: int) -> Karte | None:
+    with _verb() as conn:
+        n = _checkliste_laenge(conn, karte_id)
+        if n is None:
+            return None
+        if not 0 <= index < n:
+            raise IndexError(index)
+        conn.execute(
+            "UPDATE karte SET checkliste = json_remove(checkliste, ?) WHERE id = ?",
+            (f"$[{index}]", karte_id),
+        )
+    return hole_karte(karte_id)
+
+
 def kommentar_anhaengen(karte_id: str, autor: str, text: str, zeit: str) -> Karte | None:
     with _verb() as conn:
         # Atomar in SQL anhaengen (json_insert) - ein Read-Modify-Write kann bei

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Aktivitaet, Anhang, Karte, Prioritaet, Spalte } from '../../types'
   import type { KarteAenderung, TranskriptTreffer, Person, KiVorschlag } from '../../api'
-  import { transkripteSuche, ladePersonen, ladeKartenAktivitaet, ladeAnhaenge, anhangHochladen, anhangLoeschen, anhangHerunterladen } from '../../api'
+  import { transkripteSuche, ladePersonen, ladeKartenAktivitaet, ladeAnhaenge, anhangHochladen, anhangLoeschen, anhangHerunterladen, checklistePunktNeu, checklistePunktAendern, checklistePunktLoeschen } from '../../api'
   import KiAssistent from '../../ki/KiAssistent.svelte'
   import Checkliste from './Checkliste.svelte'
   import TranskriptVerweise from './TranskriptVerweise.svelte'
@@ -24,6 +24,7 @@
     boardKarten = [],
     onSchliessen,
     onDuplizieren,
+    onKarteAktualisiert,
     onAendern,
     onKommentar,
     onLoeschen,
@@ -35,6 +36,7 @@
     boardKarten?: Karte[]
     onSchliessen: () => void
     onDuplizieren?: () => void
+    onKarteAktualisiert?: (k: Karte) => void
     onAendern: (daten: KarteAenderung) => void | Promise<void>
     onKommentar: (text: string) => void
     onLoeschen: () => void
@@ -75,6 +77,16 @@
 
   let neuesLabel = $state('')
   let kommentar = $state('')
+
+  // Checklisten-Einzeloperationen: das Backend schreibt atomar; ein 409
+  // (Liste hat sich parallel geaendert) laedt einfach frisch nach.
+  async function checklisteOp(p: Promise<Karte>): Promise<void> {
+    try {
+      onKarteAktualisiert?.(await p)
+    } catch {
+      await onReload?.()
+    }
+  }
 
   // Datei-Anhaenge der Karte.
   let anhaenge = $state<Anhang[]>([])
@@ -323,7 +335,12 @@
       <input class="labinput" placeholder="+ Label" bind:value={neuesLabel} onkeydown={(e) => { if (e.key === 'Enter') labelHinzufuegen() }} onblur={labelHinzufuegen} />
     </div>
 
-    <Checkliste punkte={karte.checkliste} onChange={(neu) => onAendern({ checkliste: neu })} />
+    <Checkliste
+      punkte={karte.checkliste}
+      onPunktNeu={(text) => checklisteOp(checklistePunktNeu(karte.id, text))}
+      onPunktAendern={(i, daten) => checklisteOp(checklistePunktAendern(karte.id, i, daten))}
+      onPunktEntfernen={(i) => checklisteOp(checklistePunktLoeschen(karte.id, i))}
+    />
 
     <p class="sec">Dokumente</p>
     <DokumentVerwaltung kontext="karte" kontextId={karte.id} />

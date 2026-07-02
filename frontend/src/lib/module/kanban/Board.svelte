@@ -670,6 +670,7 @@
       onKommentar={karteKommentar}
       onLoeschen={karteLoeschen}
       onDuplizieren={karteDuplizieren}
+      onKarteAktualisiert={ersetzeKarte}
       onReload={laden}
       onOeffneKarte={oeffnen}
     />

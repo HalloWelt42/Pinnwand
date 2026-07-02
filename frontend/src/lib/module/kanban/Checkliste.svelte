@@ -1,31 +1,36 @@
 <script lang="ts">
   // Eigenstaendige Checkliste: abhaken, umbenennen (Klick auf Text), hinzufuegen, loeschen.
-  // Reicht das geaenderte Array nach oben (onChange) - der Aufrufer speichert.
+  // Reicht Einzeloperationen nach oben - der Aufrufer speichert sie atomar am Server.
   import type { ChecklistPunkt } from '../../types'
 
-  let { punkte, onChange }: { punkte: ChecklistPunkt[]; onChange: (neu: ChecklistPunkt[]) => void } = $props()
+  let { punkte, onPunktNeu, onPunktAendern, onPunktEntfernen }: {
+    punkte: ChecklistPunkt[]
+    onPunktNeu: (text: string) => void
+    onPunktAendern: (index: number, daten: { text?: string; erledigt?: boolean }) => void
+    onPunktEntfernen: (index: number) => void
+  } = $props()
 
   let neuerPunkt = $state('')
   let punktEdit = $state<number | null>(null)
   const erledigt = $derived(punkte.filter((c) => c.erledigt).length)
 
   function umschalten(i: number) {
-    onChange(punkte.map((c, idx) => (idx === i ? { ...c, erledigt: !c.erledigt } : c)))
+    onPunktAendern(i, { erledigt: !punkte[i].erledigt })
   }
   function hinzufuegen() {
     const t = neuerPunkt.trim()
     if (!t) return
-    onChange([...punkte, { text: t, erledigt: false }])
+    onPunktNeu(t)
     neuerPunkt = ''
   }
   function entfernen(i: number) {
-    onChange(punkte.filter((_, idx) => idx !== i))
+    onPunktEntfernen(i)
   }
   function textAendern(i: number, wert: string) {
     const t = wert.trim()
     punktEdit = null
     if (!t || t === punkte[i]?.text) return
-    onChange(punkte.map((c, idx) => (idx === i ? { ...c, text: t } : c)))
+    onPunktAendern(i, { text: t })
   }
 </script>
 

@@ -16,6 +16,8 @@ from .models import (
     Aktivitaet,
     Anhang,
     Board,
+    ChecklistPunktCreate,
+    ChecklistPunktUpdate,
     FaelligEintrag,
     BoardCreate,
     BoardDetail,
@@ -460,6 +462,54 @@ def karte_verschieben(karte_id: str, ziel: KarteMove, akteur: Akteur = Depends(a
     karte = db.verschiebe_karte(karte_id, ziel.spalte, ziel.reihenfolge, akteur=akteur.kuerzel)
     if karte is None:
         raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    return karte
+
+
+@router.post("/karten/{karte_id}/checkliste", response_model=Karte, status_code=201)
+def checkliste_punkt_neu(karte_id: str, eingabe: ChecklistPunktCreate,
+                         akteur: Akteur = Depends(aktueller_akteur)) -> Karte:
+    _projekt_zugriff(akteur, db.karte_mappe_id(karte_id))
+    text = eingabe.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Punkt-Text darf nicht leer sein")
+    karte = db.checkliste_punkt_anhaengen(karte_id, text)
+    if karte is None:
+        raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    _index(karte_id)
+    return karte
+
+
+@router.patch("/karten/{karte_id}/checkliste/{index}", response_model=Karte)
+def checkliste_punkt_aendern(karte_id: str, index: int, eingabe: ChecklistPunktUpdate,
+                             akteur: Akteur = Depends(aktueller_akteur)) -> Karte:
+    _projekt_zugriff(akteur, db.karte_mappe_id(karte_id))
+    if eingabe.text is not None and not eingabe.text.strip():
+        raise HTTPException(status_code=400, detail="Punkt-Text darf nicht leer sein")
+    try:
+        karte = db.checkliste_punkt_aendern(
+            karte_id, index,
+            text=eingabe.text.strip() if eingabe.text is not None else None,
+            erledigt=eingabe.erledigt,
+        )
+    except IndexError:
+        raise HTTPException(status_code=409, detail="Checkliste hat sich geändert - bitte neu laden")
+    if karte is None:
+        raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    _index(karte_id)
+    return karte
+
+
+@router.delete("/karten/{karte_id}/checkliste/{index}", response_model=Karte)
+def checkliste_punkt_loeschen(karte_id: str, index: int,
+                              akteur: Akteur = Depends(aktueller_akteur)) -> Karte:
+    _projekt_zugriff(akteur, db.karte_mappe_id(karte_id))
+    try:
+        karte = db.checkliste_punkt_loeschen(karte_id, index)
+    except IndexError:
+        raise HTTPException(status_code=409, detail="Checkliste hat sich geändert - bitte neu laden")
+    if karte is None:
+        raise HTTPException(status_code=404, detail="Karte nicht gefunden")
+    _index(karte_id)
     return karte
 
 

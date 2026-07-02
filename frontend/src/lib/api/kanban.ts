@@ -179,6 +179,21 @@ export const verschiebeKarte = (id: string, spalte: string, reihenfolge: number)
 export const anhaengenKommentar = (id: string, autor: string, text: string): Promise<Karte> =>
   hole(`/api/kanban/karten/${id}/kommentare`, { method: 'POST', body: JSON.stringify({ autor, text }) })
 
+// Checkliste als Einzeloperationen (atomar im Backend - kein Ganz-Listen-Ersatz,
+// zwei gleichzeitige Bearbeiter ueberschreiben sich nicht mehr).
+export const checklistePunktNeu = (karteId: string, text: string): Promise<Karte> =>
+  hole(`/api/kanban/karten/${karteId}/checkliste`, { method: 'POST', body: JSON.stringify({ text }) })
+
+export const checklistePunktAendern = (
+  karteId: string,
+  index: number,
+  daten: { text?: string; erledigt?: boolean },
+): Promise<Karte> =>
+  hole(`/api/kanban/karten/${karteId}/checkliste/${index}`, { method: 'PATCH', body: JSON.stringify(daten) })
+
+export const checklistePunktLoeschen = (karteId: string, index: number): Promise<Karte> =>
+  hole(`/api/kanban/karten/${karteId}/checkliste/${index}`, { method: 'DELETE' })
+
 export const loescheKarte = (id: string): Promise<void> =>
   hole(`/api/kanban/karten/${id}`, { method: 'DELETE' })
 

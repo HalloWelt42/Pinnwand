@@ -451,6 +451,35 @@
   function karteLoeschen() {
     if (ausgewaehlt) loescheKarteMitUndo(ausgewaehlt)
   }
+  // Sammel-Aktionen aus der Listen-Ansicht (sequenziell, dann EIN Reload).
+  async function bulkVerschieben(ids: string[], spalteId: string) {
+    for (const id of ids) await verschiebeKarte(id, spalteId, 1_000_000)
+    await laden()
+    warneWip(spalteId)
+  }
+  async function bulkAendern(ids: string[], daten: KarteAenderung) {
+    for (const id of ids) await aktualisiereKarte(id, daten)
+    await laden()
+  }
+  async function bulkLoeschen(ids: string[]) {
+    const snaps = ids
+      .map((id) => findeKarte(id))
+      .filter((k): k is Karte => !!k)
+      .map((k) => $state.snapshot(k) as Karte)
+    if (!snaps.length) return
+    for (const s of snaps) {
+      if (timer.aktiv?.id === s.id) timer.aktiv = null
+      if (ausgewaehlt?.id === s.id) ausgewaehlt = null
+      await loescheKarte(s.id)
+    }
+    await laden()
+    const zeitVerlust = snaps.some((s) => (s.erfasst_sek ?? 0) > 0) ? ' - erfasste Zeiten gehen verloren' : ''
+    zeigeToast(`${snaps.length} Karten gelöscht${zeitVerlust}`, async () => {
+      for (const s of snaps) await neuKarteAus(boardId, s.spalte, s)
+      await laden()
+    })
+  }
+
   async function karteDuplizieren() {
     if (!ausgewaehlt) return
     const kopie = await dupliziereKarte($state.snapshot(ausgewaehlt) as Karte)
@@ -546,7 +575,15 @@
   <Toolbar {boardId} bind:suche bind:sortModus bind:filterPrio bind:filterLabels bind:filterZustaendig bind:ansichtsModus {alleLabels} {mitglieder} reorderPausiert={kartenDragAus} />
 
   {#if ansichtsModus === 'liste'}
-    <ListenAnsicht zeilen={listenZeilen} onOeffnen={oeffnen} />
+    <ListenAnsicht
+      zeilen={listenZeilen}
+      spalten={board.spalten}
+      {mitglieder}
+      onOeffnen={oeffnen}
+      onBulkVerschieben={bulkVerschieben}
+      onBulkAendern={bulkAendern}
+      onBulkLoeschen={bulkLoeschen}
+    />
   {:else}
   <div class="flaeche">
     <div

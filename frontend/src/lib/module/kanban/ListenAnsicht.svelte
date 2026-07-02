@@ -2,7 +2,7 @@
   // Tabellen-/Listenansicht des Boards: dieselben (gefilterten) Karten wie die
   // Spaltenansicht, flach als sortierbare Tabelle. Bearbeitet wird weiterhin im
   // Drawer - die Liste ist eine Lese- und Einstiegs-Sicht.
-  import type { Karte } from '../../types'
+  import type { Karte, KarteAenderung, Prioritaet, Spalte } from '../../types'
   import { formatStd, isoKurz } from '../../zeit'
 
   interface Zeile {
@@ -11,7 +11,56 @@
     erledigt: boolean
   }
 
-  let { zeilen, onOeffnen }: { zeilen: Zeile[]; onOeffnen: (id: string) => void } = $props()
+  let {
+    zeilen,
+    spalten,
+    mitglieder,
+    onOeffnen,
+    onBulkVerschieben,
+    onBulkAendern,
+    onBulkLoeschen,
+  }: {
+    zeilen: Zeile[]
+    spalten: Spalte[]
+    mitglieder: string[]
+    onOeffnen: (id: string) => void
+    onBulkVerschieben: (ids: string[], spalteId: string) => Promise<void>
+    onBulkAendern: (ids: string[], daten: KarteAenderung) => Promise<void>
+    onBulkLoeschen: (ids: string[]) => Promise<void>
+  } = $props()
+
+  // Mehrfachauswahl fuer Sammel-Aktionen (Status/Zustaendig/Prioritaet/Loeschen).
+  let auswahl = $state<Set<string>>(new Set())
+  $effect(() => {
+    // Zeilen-Wechsel (Filter, Reload): verschwundene Karten aus der Auswahl raeumen.
+    const ids = new Set(zeilen.map((z) => z.karte.id))
+    if ([...auswahl].some((id) => !ids.has(id))) {
+      auswahl = new Set([...auswahl].filter((id) => ids.has(id)))
+    }
+  })
+  function umschalten(id: string): void {
+    const s = new Set(auswahl)
+    s.has(id) ? s.delete(id) : s.add(id)
+    auswahl = s
+  }
+  const alleGewaehlt = $derived(zeilen.length > 0 && zeilen.every((z) => auswahl.has(z.karte.id)))
+  function alleUmschalten(): void {
+    auswahl = alleGewaehlt ? new Set() : new Set(zeilen.map((z) => z.karte.id))
+  }
+  let laeuft = $state(false)
+  async function aktion(f: () => Promise<void>): Promise<void> {
+    if (laeuft) return
+    laeuft = true
+    try {
+      await f()
+      auswahl = new Set()
+    } finally {
+      laeuft = false
+    }
+  }
+  let zielSpalte = $state('')
+  let zielPerson = $state('')
+  let zielPrio = $state('')
 
   type SortFeld = 'schluessel' | 'titel' | 'status' | 'zustaendig' | 'prioritaet' | 'faellig' | 'zeit'
   let sortFeld = $state<SortFeld>('status')
@@ -60,9 +109,40 @@
 </script>
 
 <div class="liste">
+  {#if auswahl.size}
+    <div class="bulk">
+      <span class="bz">{auswahl.size} ausgewählt</span>
+      <select bind:value={zielSpalte} aria-label="Status setzen" disabled={laeuft}
+        onchange={() => { if (zielSpalte) aktion(() => onBulkVerschieben([...auswahl], zielSpalte)).then(() => (zielSpalte = '')) }}>
+        <option value="">Status setzen ...</option>
+        {#each spalten as s (s.id)}<option value={s.id}>{s.titel}</option>{/each}
+      </select>
+      <select bind:value={zielPerson} aria-label="Zuständig setzen" disabled={laeuft}
+        onchange={() => { if (zielPerson) aktion(() => onBulkAendern([...auswahl], { zustaendig: zielPerson === '-' ? null : zielPerson })).then(() => (zielPerson = '')) }}>
+        <option value="">Zuständig ...</option>
+        <option value="-">niemand</option>
+        {#each mitglieder as m (m)}<option value={m}>{m}</option>{/each}
+      </select>
+      <select bind:value={zielPrio} aria-label="Priorität setzen" disabled={laeuft}
+        onchange={() => { if (zielPrio) aktion(() => onBulkAendern([...auswahl], { prioritaet: zielPrio === '-' ? null : (zielPrio as Prioritaet) })).then(() => (zielPrio = '')) }}>
+        <option value="">Priorität ...</option>
+        <option value="hoch">hoch</option>
+        <option value="mittel">mittel</option>
+        <option value="niedrig">niedrig</option>
+        <option value="-">keine</option>
+      </select>
+      <button class="bloeschen" disabled={laeuft} onclick={() => aktion(() => onBulkLoeschen([...auswahl]))}>
+        <i class="fa-solid fa-trash" aria-hidden="true"></i> Löschen
+      </button>
+      <button class="babbruch" disabled={laeuft} onclick={() => (auswahl = new Set())}>Auswahl aufheben</button>
+    </div>
+  {/if}
   <table>
     <thead>
       <tr>
+        <th class="check">
+          <input type="checkbox" checked={alleGewaehlt} aria-label="Alle auswählen" onchange={alleUmschalten} />
+        </th>
         {#each SPALTEN as s (s.feld)}
           <th class={s.feld}>
             <button class="sk" onclick={() => sortiere(s.feld)}>
@@ -76,7 +156,10 @@
     <tbody>
       {#each sortiert as z (z.karte.id)}
         {@const k = z.karte}
-        <tr class:fertig={z.erledigt} onclick={() => onOeffnen(k.id)}>
+        <tr class:fertig={z.erledigt} class:gewaehlt={auswahl.has(k.id)} onclick={() => onOeffnen(k.id)}>
+          <td class="check" onclick={(e) => e.stopPropagation()}>
+            <input type="checkbox" checked={auswahl.has(k.id)} aria-label="Karte auswählen" onchange={() => umschalten(k.id)} />
+          </td>
           <td class="schluessel mono">{k.schluessel ?? ''}</td>
           <td class="titel">
             {#if k.typ === 'idee'}<i class="fa-regular fa-lightbulb idee" aria-hidden="true" title="Idee"></i>{/if}
@@ -142,4 +225,28 @@
   .prio.niedrig { background: color-mix(in srgb, var(--prio-niedrig) 18%, transparent); color: var(--prio-niedrig); }
   .soll { color: var(--text-3); margin-left: 3px; }
   .leer { color: var(--text-3); font-size: 12.5px; padding: 14px 4px; }
+  .check { width: 30px; text-align: center; }
+  th.check { padding: 8px 6px; }
+  td.check { cursor: default; }
+  .check input { accent-color: var(--hl-primary); cursor: pointer; }
+  tr.gewaehlt { background: var(--hl-primary-weich); }
+  .bulk {
+    position: sticky; top: 0; z-index: 2;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    background: var(--surface-3); border: 1px solid var(--hl-primary);
+    border-radius: var(--r-m); padding: 7px 10px; margin-bottom: 10px; font-size: 12px;
+  }
+  .bulk .bz { color: var(--hl-primary-text); font-weight: 600; }
+  .bulk select {
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--text-1);
+    border-radius: var(--r-s); padding: 5px 7px; font-size: 12px;
+  }
+  .bloeschen {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--gefahr); background: transparent; color: var(--gefahr);
+    border-radius: var(--r-m); padding: 5px 10px; font-size: 12px;
+  }
+  .bloeschen:hover { background: var(--gefahr); color: #fff; }
+  .babbruch { border: none; background: transparent; color: var(--text-3); font-size: 12px; margin-left: auto; }
+  .babbruch:hover { color: var(--text-1); }
 </style>

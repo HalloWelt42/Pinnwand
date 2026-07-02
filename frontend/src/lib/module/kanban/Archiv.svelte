@@ -3,6 +3,7 @@
   import { ladeKartenArchiv } from '../../api'
   import { labelFarbe } from '../../labels'
   import { theme } from '../../theme/theme.svelte'
+  import Modal from '../../Modal.svelte'
 
   const dunkel = $derived(theme.modus === 'dunkel')
 
@@ -51,66 +52,43 @@
   })
 </script>
 
-<div class="huelle" role="button" tabindex="-1" onclick={onSchliessen} onkeydown={(e) => { if (e.key === 'Escape') onSchliessen() }}>
-  <div class="fenster" role="dialog" aria-label="Archiv" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
-    <header>
-      <div class="kopf">
-        <i class="fa-solid fa-box-archive" aria-hidden="true"></i>
-        <span class="t">Archiv - {titel}</span>
-        <span class="zahl">{gesamt}</span>
-      </div>
-      <button class="x" aria-label="Schliessen" onclick={onSchliessen}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-    </header>
-    <div class="suchzeile">
-      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-      <input class="feld" placeholder="Im Archiv suchen ..." bind:value={suche} oninput={beiSuche} aria-label="Archiv durchsuchen" />
+<Modal ariaLabel="Archiv" breite="min(680px, 100%)" maxHoehe="min(80vh, 720px)" {onSchliessen}>
+  <header>
+    <div class="kopf">
+      <i class="fa-solid fa-box-archive" aria-hidden="true"></i>
+      <span class="t">Archiv - {titel}</span>
+      <span class="zahl">{gesamt}</span>
     </div>
-    <div class="liste" onscroll={beiScroll}>
-      {#each karten as k (k.id)}
-        <button class="eintrag" onclick={() => onOeffneKarte(k)}>
-          <div class="zeile1">
-            {#if k.schluessel}<span class="schl">{k.schluessel}</span>{/if}
-            <span class="titel">{k.titel}</span>
-          </div>
-          <div class="zeile2">
-            {#if k.abschluss_am}<span class="datum"><i class="fa-solid fa-flag-checkered" aria-hidden="true"></i> {k.abschluss_am}</span>{/if}
-            {#if k.zustaendig}<span class="wer">{k.zustaendig}</span>{/if}
-            {#each (k.labels ?? []) as l}{@const f = labelFarbe(l, dunkel)}<span class="label" style="background:{f.bg};color:{f.fg}">{l}</span>{/each}
-          </div>
-        </button>
-      {/each}
-      {#if !laden && karten.length === 0}
-        <div class="leer">Keine archivierten Karten{suche ? ' fuer diese Suche' : ''}.</div>
-      {/if}
-      {#if hatMehr}
-        <button class="mehr" onclick={() => seite(false)} disabled={laden}>{laden ? 'Lädt ...' : 'Mehr laden'}</button>
-      {/if}
-    </div>
+    <button class="x" aria-label="Schliessen" onclick={onSchliessen}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+  </header>
+  <div class="suchzeile">
+    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+    <input class="feld" placeholder="Im Archiv suchen ..." bind:value={suche} oninput={beiSuche} aria-label="Archiv durchsuchen" />
   </div>
-</div>
+  <div class="liste" onscroll={beiScroll}>
+    {#each karten as k (k.id)}
+      <button class="eintrag" onclick={() => onOeffneKarte(k)}>
+        <div class="zeile1">
+          {#if k.schluessel}<span class="schl">{k.schluessel}</span>{/if}
+          <span class="titel">{k.titel}</span>
+        </div>
+        <div class="zeile2">
+          {#if k.abschluss_am}<span class="datum"><i class="fa-solid fa-flag-checkered" aria-hidden="true"></i> {k.abschluss_am}</span>{/if}
+          {#if k.zustaendig}<span class="wer">{k.zustaendig}</span>{/if}
+          {#each (k.labels ?? []) as l}{@const f = labelFarbe(l, dunkel)}<span class="label" style="background:{f.bg};color:{f.fg}">{l}</span>{/each}
+        </div>
+      </button>
+    {/each}
+    {#if !laden && karten.length === 0}
+      <div class="leer">Keine archivierten Karten{suche ? ' fuer diese Suche' : ''}.</div>
+    {/if}
+    {#if hatMehr}
+      <button class="mehr" onclick={() => seite(false)} disabled={laden}>{laden ? 'Lädt ...' : 'Mehr laden'}</button>
+    {/if}
+  </div>
+</Modal>
 
 <style>
-  .huelle {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 60;
-    padding: 24px;
-  }
-  .fenster {
-    width: min(680px, 100%);
-    max-height: min(80vh, 720px);
-    background: var(--surface-1, #1b1b1f);
-    border: 1px solid var(--border);
-    border-radius: var(--r-xl, 14px);
-    box-shadow: var(--schatten-lift, 0 12px 40px rgba(0, 0, 0, 0.4));
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
   header {
     display: flex;
     align-items: center;

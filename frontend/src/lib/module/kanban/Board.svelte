@@ -38,6 +38,7 @@
   import Toolbar from './Toolbar.svelte'
   import CardDrawer from './CardDrawer.svelte'
   import Archiv from './Archiv.svelte'
+  import Modal from '../../Modal.svelte'
 
   let { boardId }: { boardId: string } = $props()
 
@@ -675,10 +676,8 @@
   {/if}
 
   {#if loeschErledigt}
-    <div class="warn-huelle" role="button" tabindex="-1" onclick={() => (loeschErledigt = null)}
-      onkeydown={(e) => { if (e.key === 'Escape') loeschErledigt = null }}>
-      <div class="warn-fenster" role="dialog" aria-label="Erledigt-Spalte löschen" tabindex="-1"
-        onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
+    <Modal ariaLabel="Erledigt-Spalte löschen" z={70} onSchliessen={() => (loeschErledigt = null)}>
+      <div class="warn-inhalt">
         <p class="warn-kopf"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Erledigt-Spalte "{loeschErledigt.titel}" löschen?</p>
         <p class="warn-text">
           Dabei werden <b>{loeschErledigt.gesamt} fertige Karten</b> (einschließlich archivierter
@@ -690,13 +689,12 @@
           <button class="wbtn gefahr" onclick={erledigtSpalteLoeschenBestaetigt}>Endgültig löschen</button>
         </div>
       </div>
-    </div>
+    </Modal>
   {/if}
 {/if}
 
 <style>
-  .warn-huelle { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: flex; align-items: center; justify-content: center; z-index: 70; padding: 24px; }
-  .warn-fenster { width: min(440px, 100%); background: var(--surface-1, #1b1b1f); border: 1px solid var(--border); border-radius: var(--r-xl, 14px); box-shadow: var(--schatten-lift, 0 12px 40px rgba(0, 0, 0, 0.4)); padding: 16px 18px; }
+  .warn-inhalt { padding: 16px 18px; }
   .warn-kopf { display: flex; align-items: center; gap: 9px; color: var(--gefahr); font-weight: 600; font-size: 14px; margin: 0 0 8px; }
   .warn-text { color: var(--text-2); font-size: 12.5px; line-height: 1.55; margin: 0 0 14px; }
   .warn-aktion { display: flex; justify-content: flex-end; gap: 8px; }

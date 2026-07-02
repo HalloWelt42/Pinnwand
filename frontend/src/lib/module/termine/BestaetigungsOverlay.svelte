@@ -4,6 +4,7 @@
   import { ymd, isoLang } from '../../zeit'
   import { timer } from '../../timer.svelte'
   import { leseText, schreibeText } from '../../uiSpeicher'
+  import Modal from '../../Modal.svelte'
 
   let offen = $state<TerminInstanz[]>([])
   let sichtbar = $state(false)
@@ -51,41 +52,34 @@
   }
 </script>
 
-<svelte:window onkeydown={(e) => { if (sichtbar && e.key === 'Escape') spaeter() }} />
 {#if sichtbar}
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="overlay" role="presentation" onclick={spaeter}></div>
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="modal" role="dialog" aria-label="Termine bestätigen" tabindex="-1" onclick={(e) => e.stopPropagation()}>
-    <h2><i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Termine bestätigen</h2>
-    <p class="hint">Haben diese Termine stattgefunden? Dauer bei Bedarf anpassen. Nicht bestätigte Termine werden nicht gebucht.</p>
-    <div class="liste">
-      {#each offen as i (i.id)}
-        <div class="zeile">
-          <span class="dat">{isoLang(i.datum)}</span>
-          <span class="tit">{i.uhrzeit ? i.uhrzeit + ' ' : ''}{i.titel}{#if i.kuerzel} <span class="k">{i.kuerzel}</span>{/if}</span>
-          <input class="dauer" type="number" min="0" step="5" value={dauerVon(i)} onchange={(e) => (dauer[i.id] = parseInt(e.currentTarget.value) || 0)} />
-          <span class="me">min</span>
-          <button class="mini" onclick={() => bestaetigen(i)}>Fand statt</button>
-          <button class="mini geist" onclick={() => ablehnen(i)}>Nein</button>
-        </div>
-      {/each}
+  <Modal ariaLabel="Termine bestätigen" optik="pop" z={80} polster="0" abdunkelung="rgba(0, 0, 0, 0.5)"
+    breite="min(560px, 94vw)" maxHoehe="86vh" onSchliessen={spaeter}>
+    <div class="inhalt">
+      <h2><i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Termine bestätigen</h2>
+      <p class="hint">Haben diese Termine stattgefunden? Dauer bei Bedarf anpassen. Nicht bestätigte Termine werden nicht gebucht.</p>
+      <div class="liste">
+        {#each offen as i (i.id)}
+          <div class="zeile">
+            <span class="dat">{isoLang(i.datum)}</span>
+            <span class="tit">{i.uhrzeit ? i.uhrzeit + ' ' : ''}{i.titel}{#if i.kuerzel} <span class="k">{i.kuerzel}</span>{/if}</span>
+            <input class="dauer" type="number" min="0" step="5" value={dauerVon(i)} onchange={(e) => (dauer[i.id] = parseInt(e.currentTarget.value) || 0)} />
+            <span class="me">min</span>
+            <button class="mini" onclick={() => bestaetigen(i)}>Fand statt</button>
+            <button class="mini geist" onclick={() => ablehnen(i)}>Nein</button>
+          </div>
+        {/each}
+      </div>
+      <div class="fuss">
+        <button class="text" onclick={spaeter}>Später</button>
+        <button class="primaer" onclick={alleWieGeplant}>Alle wie geplant bestätigen</button>
+      </div>
     </div>
-    <div class="fuss">
-      <button class="text" onclick={spaeter}>Später</button>
-      <button class="primaer" onclick={alleWieGeplant}>Alle wie geplant bestätigen</button>
-    </div>
-  </div>
+  </Modal>
 {/if}
 
 <style>
-  .overlay { position: fixed; inset: 0; z-index: 80; background: rgba(0, 0, 0, 0.5); }
-  .modal {
-    position: fixed; z-index: 81; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 560px; max-width: 94vw; max-height: 86vh; overflow-y: auto;
-    background: var(--surface-col); border: 1px solid var(--border-2); border-radius: var(--r-xl);
-    padding: 20px; box-shadow: var(--schatten-pop);
-  }
+  .inhalt { padding: 20px; overflow-y: auto; }
   h2 { margin: 0 0 6px; font-family: var(--font-display); font-size: 17px; color: var(--text-1); display: flex; align-items: center; gap: 9px; }
   .hint { margin: 0 0 14px; font-size: 12.5px; color: var(--text-2); line-height: 1.5; }
   .liste { display: flex; flex-direction: column; gap: 4px; }

@@ -7,6 +7,7 @@
   import { timer } from './timer.svelte'
   import { isoLang } from './zeit'
   import { leseText, schreibeText } from './uiSpeicher'
+  import Modal from './Modal.svelte'
 
   let offen = $state<SerienNachtrag[]>([])
   let sichtbar = $state(false)
@@ -52,41 +53,34 @@
   }
 </script>
 
-<svelte:window onkeydown={(e) => { if (sichtbar && e.key === 'Escape') spaeter() }} />
 {#if sichtbar}
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="overlay" role="presentation" onclick={spaeter}></div>
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="modal" role="dialog" aria-label="Stunden nachtragen" tabindex="-1" onclick={(e) => e.stopPropagation()}>
-    <h2><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Stunden nachtragen</h2>
-    <p class="hint">Diese wiederkehrenden Aufgaben sind vorbei und wurden nicht erfasst. Stunden bei Bedarf anpassen und nachtragen - oder verwerfen, wenn nicht erledigt.</p>
-    <div class="liste">
-      {#each offen as n (n.karte_id)}
-        <div class="zeile">
-          <span class="dat">{isoLang(n.datum)}</span>
-          <span class="tit">{n.titel}</span>
-          <input class="std" type="number" min="0" step="0.25" value={stundenVon(n)}
-            onchange={(e) => (stunden[n.karte_id] = parseFloat(e.currentTarget.value) || 0)} />
-          <span class="me">Std</span>
-          <button class="mini" onclick={() => nachtragen(n)}>Nachtragen</button>
-          <button class="mini geist" onclick={() => verwerfen(n)}>Verwerfen</button>
-        </div>
-      {/each}
+  <Modal ariaLabel="Stunden nachtragen" optik="pop" z={80} polster="0" abdunkelung="rgba(0, 0, 0, 0.5)"
+    breite="min(560px, 94vw)" maxHoehe="86vh" onSchliessen={spaeter}>
+    <div class="inhalt">
+      <h2><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Stunden nachtragen</h2>
+      <p class="hint">Diese wiederkehrenden Aufgaben sind vorbei und wurden nicht erfasst. Stunden bei Bedarf anpassen und nachtragen - oder verwerfen, wenn nicht erledigt.</p>
+      <div class="liste">
+        {#each offen as n (n.karte_id)}
+          <div class="zeile">
+            <span class="dat">{isoLang(n.datum)}</span>
+            <span class="tit">{n.titel}</span>
+            <input class="std" type="number" min="0" step="0.25" value={stundenVon(n)}
+              onchange={(e) => (stunden[n.karte_id] = parseFloat(e.currentTarget.value) || 0)} />
+            <span class="me">Std</span>
+            <button class="mini" onclick={() => nachtragen(n)}>Nachtragen</button>
+            <button class="mini geist" onclick={() => verwerfen(n)}>Verwerfen</button>
+          </div>
+        {/each}
+      </div>
+      <div class="fuss">
+        <button class="text" onclick={spaeter}>Später</button>
+      </div>
     </div>
-    <div class="fuss">
-      <button class="text" onclick={spaeter}>Später</button>
-    </div>
-  </div>
+  </Modal>
 {/if}
 
 <style>
-  .overlay { position: fixed; inset: 0; z-index: 80; background: rgba(0, 0, 0, 0.5); }
-  .modal {
-    position: fixed; z-index: 81; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 560px; max-width: 94vw; max-height: 86vh; overflow-y: auto;
-    background: var(--surface-col); border: 1px solid var(--border-2); border-radius: var(--r-xl);
-    padding: 20px; box-shadow: var(--schatten-pop);
-  }
+  .inhalt { padding: 20px; overflow-y: auto; }
   h2 { margin: 0 0 6px; font-family: var(--font-display); font-size: 17px; color: var(--text-1); display: flex; align-items: center; gap: 9px; }
   .hint { margin: 0 0 14px; font-size: 12.5px; color: var(--text-2); line-height: 1.5; }
   .liste { display: flex; flex-direction: column; gap: 4px; }

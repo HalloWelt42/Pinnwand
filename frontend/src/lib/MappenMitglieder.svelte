@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Person } from './types'
   import { ladeMappenMitglieder, setzeMappenMitglied, entferneMappenMitglied } from './api'
+  import Modal from './Modal.svelte'
 
   let { mappeId, titel, personen, onSchliessen }: {
     mappeId: string
@@ -33,57 +34,34 @@
   }
 </script>
 
-<div class="huelle" role="button" tabindex="-1" onclick={onSchliessen} onkeydown={(e) => { if (e.key === 'Escape') onSchliessen() }}>
-  <div class="fenster" role="dialog" aria-label="Projekt-Mitglieder" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
-    <header>
-      <div class="kopf"><i class="fa-solid fa-users" aria-hidden="true"></i> Mitglieder - {titel}</div>
-      <button class="x" aria-label="Schliessen" onclick={onSchliessen}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-    </header>
-    <p class="hint">
-      Nur Mitglieder sehen dieses Projekt und seine Boards. Ohne Mitglieder ist das Projekt
-      für alle sichtbar (geteilt). Admins sehen immer alle Projekte; Mitglieder können
-      die Mitgliederliste ihres Projekts selbst pflegen.
-    </p>
-    {#if laedt}
-      <p class="leer">Lädt ...</p>
-    {:else}
-      <div class="liste">
-        {#each personen as p (p.id)}
-          <label class="zeile">
-            <input type="checkbox" checked={mitglieder.has(p.id)} onchange={() => umschalten(p.id)} />
-            <span class="nam">{p.name}</span>
-            {#if p.kuerzel}<span class="krz">{p.kuerzel}</span>{/if}
-          </label>
-        {/each}
-        {#if personen.length === 0}<p class="leer">Keine Personen vorhanden.</p>{/if}
-      </div>
-      {#if mitglieder.size === 0}<p class="geteilt">Aktuell für alle sichtbar (keine Mitglieder).</p>{/if}
-    {/if}
-  </div>
-</div>
+<Modal ariaLabel="Projekt-Mitglieder" breite="min(420px, 100%)" maxHoehe="min(75vh, 620px)" {onSchliessen}>
+  <header>
+    <div class="kopf"><i class="fa-solid fa-users" aria-hidden="true"></i> Mitglieder - {titel}</div>
+    <button class="x" aria-label="Schliessen" onclick={onSchliessen}><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+  </header>
+  <p class="hint">
+    Nur Mitglieder sehen dieses Projekt und seine Boards. Ohne Mitglieder ist das Projekt
+    für alle sichtbar (geteilt). Admins sehen immer alle Projekte; Mitglieder können
+    die Mitgliederliste ihres Projekts selbst pflegen.
+  </p>
+  {#if laedt}
+    <p class="leer">Lädt ...</p>
+  {:else}
+    <div class="liste">
+      {#each personen as p (p.id)}
+        <label class="zeile">
+          <input type="checkbox" checked={mitglieder.has(p.id)} onchange={() => umschalten(p.id)} />
+          <span class="nam">{p.name}</span>
+          {#if p.kuerzel}<span class="krz">{p.kuerzel}</span>{/if}
+        </label>
+      {/each}
+      {#if personen.length === 0}<p class="leer">Keine Personen vorhanden.</p>{/if}
+    </div>
+    {#if mitglieder.size === 0}<p class="geteilt">Aktuell für alle sichtbar (keine Mitglieder).</p>{/if}
+  {/if}
+</Modal>
 
 <style>
-  .huelle {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 60;
-    padding: 24px;
-  }
-  .fenster {
-    width: min(420px, 100%);
-    max-height: min(75vh, 620px);
-    background: var(--surface-1, #1b1b1f);
-    border: 1px solid var(--border);
-    border-radius: var(--r-xl, 14px);
-    box-shadow: var(--schatten-lift, 0 12px 40px rgba(0, 0, 0, 0.4));
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
   header {
     display: flex;
     align-items: center;

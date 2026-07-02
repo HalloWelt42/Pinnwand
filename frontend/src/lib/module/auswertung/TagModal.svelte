@@ -1,6 +1,7 @@
 <script lang="ts">
   import { setzeUrlaub, leereTag, type AbwesenheitTyp } from '../../api'
   import { isoLang } from '../../zeit'
+  import Modal from '../../Modal.svelte'
 
   interface PersonMini { id: string; name: string; kuerzel: string | null }
   let {
@@ -66,11 +67,8 @@
   }
 </script>
 
-<svelte:window onkeydown={(e) => { if (e.key === 'Escape') onSchliessen() }} />
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="overlay" role="presentation" onclick={onSchliessen}>
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="modal" role="dialog" aria-label="Eintrag" tabindex="-1" onclick={(e) => e.stopPropagation()}>
+<Modal ariaLabel="Eintrag" optik="pop" z={80} polster="0" breite="min(440px, 94vw)" {onSchliessen}>
+  <div class="inhalt">
     <h3>Eintrag {isoLang(von)}{bis && bis !== von ? ' bis ' + isoLang(bis) : ''}</h3>
     <label>Person
       <select bind:value={personId}>
@@ -100,11 +98,10 @@
       <button class="btn primaer" onclick={eintragen} disabled={arbeitet}>Eintragen</button>
     </div>
   </div>
-</div>
+</Modal>
 
 <style>
-  .overlay { position: fixed; inset: 0; z-index: 80; background: rgba(0, 0, 0, 0.45); display: flex; align-items: center; justify-content: center; }
-  .modal { width: 440px; max-width: 94vw; background: var(--surface-col); border: 1px solid var(--border-2); border-radius: var(--r-xl); padding: 18px; box-shadow: var(--schatten-pop); display: flex; flex-direction: column; gap: 10px; }
+  .inhalt { padding: 18px; display: flex; flex-direction: column; gap: 10px; }
   h3 { margin: 0 0 4px; font-family: var(--font-display); font-size: 15px; color: var(--text-1); }
   label { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; color: var(--text-3); }
   select, input { border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-1); border-radius: var(--r-m); padding: 7px 9px; font-size: 12.5px; }

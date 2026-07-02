@@ -5,6 +5,7 @@ from datetime import datetime
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 
 from module.auth.akteur import Akteur, aktueller_akteur
 from module.auth.rechte import darf_timer_bedienen, darf_zeit_buchen, darf_zeiteintrag_bearbeiten, verlange
@@ -232,6 +233,27 @@ def heute(datum: str | None = None, akteur: Akteur = Depends(aktueller_akteur)) 
 
     nur_mappen = None if akteur.ist_admin else db.sichtbare_mappen_ids(akteur.person_id)
     return db.was_steht_an(datum or date.today().isoformat(), nur_mappen)
+
+
+@router.get("/boards/{board_id}/export")
+def board_export(board_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> JSONResponse:
+    """Selektiver Export: ein Board als JSON-Datei (alle Karten, Zeiten, Dokumente)."""
+    _projekt_zugriff(akteur, db.board_mappe_id(board_id))
+    daten = db.export_board(board_id)
+    if daten is None:
+        raise HTTPException(status_code=404, detail="Board nicht gefunden")
+    name = f"board-{daten['board'].get('kuerzel') or board_id}.json"
+    return JSONResponse(daten, headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
+@router.get("/mappen/{mappe_id}/export")
+def mappe_export(mappe_id: str, akteur: Akteur = Depends(aktueller_akteur)) -> JSONResponse:
+    """Selektiver Export: eine Mappe (Projekt) mit allen Boards als JSON-Datei."""
+    _projekt_zugriff(akteur, mappe_id)
+    daten = db.export_mappe(mappe_id)
+    if daten is None:
+        raise HTTPException(status_code=404, detail="Mappe nicht gefunden")
+    return JSONResponse(daten, headers={"Content-Disposition": f'attachment; filename="mappe-{mappe_id}.json"'})
 
 
 @router.get("/faellig", response_model=list[FaelligEintrag])

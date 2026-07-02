@@ -20,6 +20,7 @@
     setzeErledigtSpalte,
     setzeSpaltenReihenfolge,
     ladePersonen,
+    ladeDateiHerunter,
     type KarteAenderung,
     type Person,
   } from '../../api'
@@ -603,6 +604,10 @@
       {:else}
         <button class="add-btn" onclick={() => (neueSpalte = true)}><i class="fa-solid fa-plus" aria-hidden="true"></i> Spalte</button>
         <button class="add-btn archiv" onclick={() => (archivOffen = true)} title="Archivierte fertige Karten"><i class="fa-solid fa-box-archive" aria-hidden="true"></i> Archiv</button>
+        <button class="add-btn archiv" title="Board als JSON exportieren (alle Karten, Zeiten, Dokumente)"
+          onclick={() => ladeDateiHerunter(`/api/kanban/boards/${boardId}/export`, 'board.json').catch(() => zeigeToast('Export fehlgeschlagen'))}>
+          <i class="fa-solid fa-file-export" aria-hidden="true"></i> Export
+        </button>
       {/if}
     </div>
   </div>

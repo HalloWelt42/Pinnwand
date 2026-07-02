@@ -1065,6 +1065,77 @@ def _loesche_marken(conn: sqlite3.Connection, wo: str, params: tuple) -> None:
         pass
 
 
+def _export_karten(conn: sqlite3.Connection, board_id: str) -> list[dict]:
+    rows = conn.execute(
+        "SELECT * FROM karte WHERE board_id = ? ORDER BY spalte, reihenfolge", (board_id,)
+    ).fetchall()
+    out = []
+    for r in rows:
+        d = dict(r)
+        for feld in ("labels", "checkliste", "kommentare"):
+            d[feld] = json.loads(d[feld] or "[]")
+        out.append(d)
+    return out
+
+
+def _export_board_kern(conn: sqlite3.Connection, board_row: sqlite3.Row) -> dict:
+    board_id = board_row["id"]
+    spalten = [dict(r) for r in conn.execute(
+        "SELECT * FROM spalte WHERE board_id = ? ORDER BY reihenfolge", (board_id,)
+    ).fetchall()]
+    karten = _export_karten(conn, board_id)
+    zeiten = [dict(r) for r in conn.execute(
+        "SELECT * FROM zeiteintrag WHERE board_id = ? ORDER BY datum, id", (board_id,)
+    ).fetchall()]
+    karten_ids = [k["id"] for k in karten]
+    dokumente: list[dict] = []
+    if karten_ids:
+        platz = ",".join("?" for _ in karten_ids)
+        dokumente = [dict(r) for r in conn.execute(
+            f"SELECT * FROM dokument WHERE kontext = 'karte' AND kontext_id IN ({platz})", karten_ids
+        ).fetchall()]
+    return {
+        "board": dict(board_row),
+        "spalten": spalten,
+        "karten": karten,
+        "zeiteintraege": zeiten,
+        "dokumente": dokumente,
+    }
+
+
+def export_board(board_id: str) -> dict | None:
+    """Vollstaendiger, lesbarer JSON-Export eines Boards (alle Karten inklusive
+    erledigter und archivierter, Zeiteintraege, Karten-Dokumente)."""
+    with _verb() as conn:
+        b = conn.execute("SELECT * FROM board WHERE id = ?", (board_id,)).fetchone()
+        if b is None:
+            return None
+        return {"format": "pinnwand-board", "version": 1, **_export_board_kern(conn, b)}
+
+
+def export_mappe(mappe_id: str) -> dict | None:
+    """Vollstaendiger JSON-Export einer Mappe (Projekt): alle Boards samt Inhalt
+    plus die Mappen-Dokumente."""
+    with _verb() as conn:
+        m = conn.execute("SELECT * FROM mappe WHERE id = ?", (mappe_id,)).fetchone()
+        if m is None:
+            return None
+        boards = [
+            _export_board_kern(conn, b)
+            for b in conn.execute("SELECT * FROM board WHERE mappe_id = ? ORDER BY titel", (mappe_id,)).fetchall()
+        ]
+        dokumente = [dict(r) for r in conn.execute(
+            "SELECT * FROM dokument WHERE kontext = 'mappe' AND kontext_id = ?", (mappe_id,)
+        ).fetchall()]
+        return {
+            "format": "pinnwand-mappe",
+            "version": 1,
+            "mappe": dict(m),
+            "boards": boards,
+            "dokumente": dokumente,
+        }
+
+
 def faellige_karten(von: str, bis: str, nur_mappen: list[str] | None = None) -> list[FaelligEintrag]:
     """Alle Karten mit Faelligkeit im Zeitraum (fuer den Faelligkeits-Kalender) -
     auch erledigte, damit der Monat vollstaendig erzaehlt, was anstand."""

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ladeProjekte, ladeProjektDetail, aktualisiereMappe, ladePersonen } from '../../api'
+  import { ladeProjekte, ladeProjektDetail, aktualisiereMappe, ladePersonen, ladeDateiHerunter } from '../../api'
   import type { ProjektAufwand, ProjektDetail, Person, ProjektStatus } from '../../types'
   import { formatStd } from '../../zeit'
   import { zeigeToast } from '../../toaster.svelte'
@@ -109,6 +109,10 @@
             </button>
             <span class="status s-{p.status}">{statusText(p.status)}</span>
             <span class="owner" title="Verantwortlich">{p.owner ? p.owner : '-'}</span>
+            <button class="edit" aria-label="Projekt als JSON exportieren" title="Projekt als JSON exportieren"
+              onclick={() => ladeDateiHerunter(`/api/kanban/mappen/${p.mappe_id}/export`, `mappe-${p.mappe_id}.json`).catch(() => {})}>
+              <i class="fa-solid fa-file-export" aria-hidden="true"></i>
+            </button>
             <button class="edit" aria-label="Projekt bearbeiten" onclick={() => bearbeiten(p)}><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
           </div>
 

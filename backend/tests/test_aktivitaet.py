@@ -125,3 +125,30 @@ def test_faellig_kalender_liefert_zeitraum_mit_erledigt_flag(client):
     # Sortiert nach Datum
     daten = [e["faellig"] for e in r.json()]
     assert daten == sorted(daten)
+
+
+def test_export_board_und_mappe_vollstaendig(client):
+    b = _board(client, "Export")
+    spalte = b["spalten"][0]["id"]
+    k = _karte(client, b["id"], spalte, "Export-Karte", zustaendig="EX")
+    client.post("/api/kanban/zeiteintraege", json={"karte_id": k["id"], "datum": "2026-07-01", "sekunden": 600})
+    client.post("/api/kanban/dokumente", json={"kontext": "karte", "kontext_id": k["id"], "titel": "Notiz"})
+
+    r = client.get(f"/api/kanban/boards/{b['id']}/export")
+    assert r.status_code == 200, r.text
+    assert 'attachment' in r.headers.get("content-disposition", "")
+    daten = r.json()
+    assert daten["format"] == "pinnwand-board"
+    assert daten["board"]["id"] == b["id"]
+    assert any(x["id"] == k["id"] for x in daten["karten"])
+    assert any(x["karte_id"] == k["id"] for x in daten["zeiteintraege"])
+    assert any(x["kontext_id"] == k["id"] for x in daten["dokumente"])
+    # Labels/Checkliste/Kommentare sind echte Strukturen, kein JSON-String
+    karte = next(x for x in daten["karten"] if x["id"] == k["id"])
+    assert isinstance(karte["labels"], list)
+
+    m = client.get(f"/api/kanban/mappen/{daten['board']['mappe_id']}/export")
+    assert m.status_code == 200, m.text
+    mdaten = m.json()
+    assert mdaten["format"] == "pinnwand-mappe"
+    assert any(x["board"]["id"] == b["id"] for x in mdaten["boards"])

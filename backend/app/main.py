@@ -13,7 +13,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.config import VERSION, cors_origins, dienste_status, einstellungen
+from app.config import VERSION, aktuelle_version, cors_origins, dienste_status, einstellungen
 from app.modul_registry import (
     aggregiere_erweiterungen,
     init_fuer,
@@ -102,7 +102,8 @@ def erweiterungen() -> dict[str, list[dict]]:
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"status": "ok"}
+    # Fassung frisch aus version.json, damit offene Oberflächen eine neue Fassung bemerken und neu laden.
+    return {"status": "ok", "version": aktuelle_version()}
 
 
 @app.get("/api/dienste")

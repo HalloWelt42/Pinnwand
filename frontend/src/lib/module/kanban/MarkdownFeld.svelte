@@ -4,7 +4,9 @@
   // nurVollbild=true: Bearbeitung laeuft immer im Vollbild (z.B. Notizen).
   // ohneVorschau=true: Editor ist einspaltig (kein Vorschau-Bereich, z.B. Beschreibung).
   // ohneKnopf=true: kein eigener Bearbeiten-Knopf - der gerenderte Text ist anklickbar.
+  import { onMount } from 'svelte'
   import Markdown from '../../Markdown.svelte'
+  import { neuLadenAufhalten } from '../../fassung.svelte'
 
   let {
     titel,
@@ -38,6 +40,8 @@
   let gespeichert = $state(false)
   let fehler = $state(false)
   let timer: ReturnType<typeof setTimeout> | null = null
+  // Offener Editor mit noch nicht gespeichertem Text: eine neue Fassung wartet bis danach.
+  onMount(() => neuLadenAufhalten(() => bearbeiten && wert !== (text ?? '')))
 
   // Entwurf folgt der Karte (Wechsel ueber schluessel), nicht jeder Tasteneingabe.
   let zuletzt: string | null = null

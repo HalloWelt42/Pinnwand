@@ -1,7 +1,12 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import { erstelleMappe, erstellePerson, ladeLaender, feiertageUebernehmen, type Region } from './api'
+  import { neuLadenAufhalten } from './fassung.svelte'
 
   let { onFertig, onGeheZu }: { onFertig: () => void; onGeheZu: (ansicht: string) => void } = $props()
+
+  // Solange der Einrichtungs-Assistent offen ist, wartet eine neue Fassung.
+  onMount(() => neuLadenAufhalten(() => true))
 
   interface Schritt {
     id: string

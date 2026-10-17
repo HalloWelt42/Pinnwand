@@ -49,19 +49,19 @@ Modularisierung, nicht Wiederholung.
 
 ## Versionierung
 
-Die Version ist nicht zufällig verstreut, sondern bewusst an drei klar benannten
-Stellen gepflegt: `frontend/src/lib/version.ts`, `frontend/package.json` und
-`backend/app/config.py` (von dort beziehen Backend und Snapshots ihren Wert). Sie wird
-streng erhöht (Patch +0.0.1 je Änderung, Feature +0.1.0). Das ist sauber, aber drei
-Stellen müssen von Hand gleich gehalten werden - siehe Backlog.
+Einzige Quelle der Version ist `version.json` im Projektwurzelverzeichnis. Das Backend
+liest sie (`backend/app/config.py`, davon beziehen Backend und Snapshots ihren Wert;
+`/api/health` liest sie frisch), die Oberfläche baut sie beim Bau ein
+(`frontend/vite.config.ts`, `frontend/src/lib/version.ts`); `frontend/package.json`
+spiegelt sie. Sie wird streng erhöht (Patch +0.0.1 je Änderung, Feature +0.1.0).
+Meldet der Server eine andere Version als die eingebaute, lädt die Oberfläche von selbst
+neu (`frontend/src/lib/fassung.svelte.ts`).
 
 ## Offener Rest (bewusst, für spätere Runden)
 
 - localStorage-Zugriff: rund 40 direkte Zugriffe in 13 Dateien. Funktioniert, ist aber
   ein Kandidat für einen kleinen zentralen Helfer (`lib/storage.ts`) mit defensivem
   Lesen und Schreiben (try/catch, JSON), damit das Muster nicht überall wiederholt wird.
-- Eine Versionsquelle: ein einzelnes `VERSION`-File, aus dem Frontend und Backend lesen,
-  würde das Dreifach-Pflegen ersetzen.
 - persistence liefert teils rohe dicts: die Datenschicht könnte durchgängig die
   vorhandenen Pydantic-Modelle zurückgeben statt dicts, dann fällt manche Umwandlung in
   der dienst- und api-Schicht weg.

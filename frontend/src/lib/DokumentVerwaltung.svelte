@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import {
     ladeDokumente, erstelleDokument, aktualisiereDokument, loescheDokument,
     type Dokument, type DokumentKontext,
   } from './api'
   import { isoDatumZeit } from './zeit'
   import Markdown from './Markdown.svelte'
+  import { neuLadenAufhalten } from './fassung.svelte'
 
   let { kontext, kontextId }: { kontext: DokumentKontext; kontextId: string } = $props()
 
@@ -18,6 +20,8 @@
   let gespeichert = $state(false)
   let speicherfehler = $state(false)
   let spTimer: ReturnType<typeof setTimeout> | null = null
+  // Dokument mit noch nicht gespeichertem Text oder angefangener Titel: eine neue Fassung wartet bis danach.
+  onMount(() => neuLadenAufhalten(() => (aktiv !== null && inhalt !== aktiv.inhalt) || neuTitel.trim() !== ''))
 
   // Dokumentliste laedt neu, sobald sich der Kontext (Karte/Mappe) aendert.
   let zuletzt = $state<string | null>(null)

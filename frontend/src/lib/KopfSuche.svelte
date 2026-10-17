@@ -1,7 +1,9 @@
 <script lang="ts">
   // Zentrale Suche im Kopfbereich: ein Feld + Spracheingabe (Mikrofon), global ueber
   // allen Ansichten. Schreibt in den kopfSuche-Store und fuehrt in die Suche-Ansicht.
+  import { onMount } from 'svelte'
   import { sucheStatus, transkribiere, type SuchStatus } from './api'
+  import { neuLadenAufhalten } from './fassung.svelte'
   import { kopfSuche, sucheSetzen } from './suchkopf.svelte'
 
   let { onSuche }: { onSuche?: () => void } = $props()
@@ -10,6 +12,8 @@
   let status = $state<SuchStatus | null>(null)
   let aufnahme = $state(false)
   let recorder: MediaRecorder | null = null
+  // Während der Spracheingabe wartet eine neue Fassung.
+  onMount(() => neuLadenAufhalten(() => aufnahme))
   let brocken: Blob[] = []
   let timer: ReturnType<typeof setTimeout> | null = null
 

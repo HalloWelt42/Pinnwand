@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { ki, ladeKiStatus } from '../ki.svelte'
   import { kiAufgabe, type KiVorschlag } from '../api'
+  import { neuLadenAufhalten } from '../fassung.svelte'
 
   // Wiederverwendbarer KI-Knopf fuer datenreiche Stellen. Die KI ist immer die
   // zweite Option: sie schlaegt vor, der Mensch korrigiert per Checkliste und
@@ -35,6 +36,8 @@
   let auswahl = $state<Record<string, boolean>>({})
   let meldung = $state('')
   let gefragt = $state(false)
+  // Laufende Anfrage, angefangene Anweisung oder offene Vorschläge: eine neue Fassung wartet bis danach.
+  onMount(() => neuLadenAufhalten(() => laedt || (offen && (anweisung.trim() !== '' || vorschlaege.length > 0))))
 
   onMount(() => {
     if (!ki.geprueft) void ladeKiStatus()

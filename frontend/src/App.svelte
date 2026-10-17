@@ -19,6 +19,8 @@
   import Toast from './lib/Toast.svelte'
   import KopfSuche from './lib/KopfSuche.svelte'
   import LaufBar from './lib/LaufBar.svelte'
+  import FassungsBand from './lib/FassungsBand.svelte'
+  import { fassungVerfolgen } from './lib/fassung.svelte'
   import StundenLeiste from './lib/StundenLeiste.svelte'
   import Hilfe from './lib/Hilfe.svelte'
   import Glocke from './lib/Glocke.svelte'
@@ -281,6 +283,9 @@
     }
   }
 
+  // Neue Fassung verfolgen, auch vor der Anmeldung (lib/fassung.svelte.ts).
+  onMount(() => fassungVerfolgen())
+
   onMount(async () => {
     // Zuerst den Anmeldestatus klaeren. Ist Anmeldung erforderlich und niemand
     // angemeldet, zeigt sich die Login-Sperre und der Rest der App laedt nicht.
@@ -310,6 +315,7 @@
 </script>
 
 <div class="wurzel">
+<FassungsBand />
 <LaufBar />
 <StundenLeiste />
 <div class="app">

@@ -8,6 +8,7 @@ Abschalten der zugehörigen Funktion in der Oberfläche.
 """
 from __future__ import annotations
 
+import json
 import os
 import time
 from dataclasses import dataclass
@@ -15,11 +16,24 @@ from pathlib import Path
 
 import httpx
 
-# Zentrale Versionsangabe der Anwendung (Backend + Snapshots beziehen sich hierauf).
-VERSION = "0.73.6"
-
 # backend/app/config.py -> Projektwurzel (Pinnwand/)
 _PROJEKT_WURZEL = Path(__file__).resolve().parents[2]
+
+# Einzige Quelle der Fassung ist version.json im Projektwurzelverzeichnis; die Oberfläche baut sie beim Bau ein.
+_VERSIONSDATEI = _PROJEKT_WURZEL / "version.json"
+
+
+def aktuelle_version() -> str:
+    """version.json frisch lesen (für /api/health: die Oberfläche vergleicht ihre eingebaute Fassung damit)."""
+    try:
+        version = json.loads(_VERSIONSDATEI.read_text(encoding="utf-8")).get("version")
+        return version if isinstance(version, str) else "0.0.0"
+    except (OSError, ValueError):
+        return "0.0.0"
+
+
+# Fassung des laufenden Prozesses (Backend + Snapshots beziehen sich hierauf).
+VERSION = aktuelle_version()
 
 
 def _lade_dotenv() -> None:

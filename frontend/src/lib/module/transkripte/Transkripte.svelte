@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import {
     transkripteStatus,
     transkripteSuche,
@@ -23,6 +24,7 @@
   import { mmss } from '../../timer.svelte'
   import { leseText, schreibeText } from '../../uiSpeicher'
   import KiAssistent from '../../ki/KiAssistent.svelte'
+  import { neuLadenAufhalten } from '../../fassung.svelte'
 
   let { boardId }: { boardId: string } = $props()
   $effect(() => void boardId)
@@ -105,6 +107,8 @@
   let laeuft = $state(false)
   let timer: ReturnType<typeof setTimeout> | null = null
   let audioEl = $state<HTMLAudioElement | null>(null)
+  // Während der Wiedergabe wartet eine neue Fassung.
+  onMount(() => neuLadenAufhalten(() => !!audioEl && !audioEl.paused))
 
   // Marken (Karten-Verweise) des aktiven Transkripts + Deep-Link-Sprungziel.
   let marken = $state<TranskriptMarke[]>([])

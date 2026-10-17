@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
+  import { neuLadenAufhalten } from '../../fassung.svelte'
   import type { Aktivitaet, Anhang, Karte, Prioritaet, Spalte } from '../../types'
   import type { KarteAenderung, TranskriptTreffer, Person, KiVorschlag } from '../../api'
   import { transkripteSuche, ladePersonen, ladeKartenAktivitaet, ladeAnhaenge, anhangHochladen, anhangLoeschen, anhangHerunterladen, checklistePunktNeu, checklistePunktAendern, checklistePunktLoeschen } from '../../api'
@@ -93,6 +95,8 @@
   let anhangFehler = $state('')
   let anhangLaeuft = $state(false)
   let dateiwahl = $state<HTMLInputElement | null>(null)
+  // Laufendes Hochladen oder angefangener Kommentar bzw. Label: eine neue Fassung wartet bis danach.
+  onMount(() => neuLadenAufhalten(() => anhangLaeuft || kommentar.trim() !== '' || neuesLabel.trim() !== ''))
   $effect(() => {
     void karte.id
     anhangFehler = ''

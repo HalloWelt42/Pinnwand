@@ -3,7 +3,8 @@
   // schliesst), Escape schliesst, Fokus wandert beim Oeffnen ins Fenster.
   // Sichtbarkeit steuert der Aufrufer per {#if}; Inhalts-Markup und -Styles
   // bleiben beim Aufrufer (children-Snippet).
-  import type { Snippet } from 'svelte'
+  import { onMount, type Snippet } from 'svelte'
+  import { neuLadenAufhalten } from './fassung.svelte'
 
   let {
     ariaLabel,
@@ -36,6 +37,9 @@
   } = $props()
 
   let fenster = $state<HTMLDivElement | null>(null)
+
+  // Solange ein Dialog offen ist, wartet eine neue Fassung (er könnte Eingaben tragen).
+  onMount(() => neuLadenAufhalten(() => true))
 
   // Fokus beim Oeffnen ins Fenster, damit Escape und Tab dort starten.
   $effect(() => {

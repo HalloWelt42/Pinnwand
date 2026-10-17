@@ -2,6 +2,7 @@
 // Den Zustand (aktive Ansicht, aktives Board) hält die App; dieses Modul kapselt
 // das Lesen/Schreiben des Browser-Standorts und das Zerlegen von Deep-Links.
 
+import { vielleichtNeuLaden } from './fassung.svelte'
 import { kartenZeiger, oeffneKarte } from './navigation.svelte'
 
 // Startpfad frühzeitig sichern (bevor Effekte die URL anfassen können).
@@ -36,14 +37,19 @@ export function zerlegePfad(pfad: string): RoutenZiel {
 }
 
 // Pfad in die History schreiben (nur bei scharfem Routing und echter Änderung).
+// Ein Ortswechsel ist der ruhige Moment für eine neue Fassung: die Adresse steht schon, das Neuladen landet dort.
 export function schreibePfad(pfad: string): void {
   if (!routing.bereit) return
   if (typeof window !== 'undefined' && window.location.pathname !== pfad) {
     window.history.pushState(null, '', pfad)
+    vielleichtNeuLaden('ortswechsel')
   }
 }
 
 // Zurück/Vor im Browser: den dann aktuellen Pfad wieder auf den Zustand anwenden.
 export function beobachteStandort(anwenden: (pfad: string) => void): void {
-  window.addEventListener('popstate', () => anwenden(window.location.pathname))
+  window.addEventListener('popstate', () => {
+    vielleichtNeuLaden('ortswechsel')
+    anwenden(window.location.pathname)
+  })
 }

@@ -1,8 +1,13 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
+  import { neuLadenAufhalten } from './fassung.svelte'
   import { tts, pauseVorlesen, weiterVorlesen, stoppeVorlesen, setzeTempo } from './tts.svelte'
 
   const TEMPI = [0.75, 1, 1.25, 1.5, 1.75, 2]
   const fortschritt = $derived(tts.anzahl ? ((tts.index + 1) / tts.anzahl) * 100 : 0)
+
+  // Während des Vorlesens wartet eine neue Fassung.
+  onMount(() => neuLadenAufhalten(() => tts.laeuft))
 </script>
 
 {#if tts.laeuft}

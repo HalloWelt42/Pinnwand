@@ -4,6 +4,7 @@
     transkripteStatus,
     transkripteSuche,
     transkriptDetail,
+    transkriptTon,
     markenJeTranskript,
     erstelleMarke,
     ladeMappen,
@@ -107,6 +108,21 @@
   let laeuft = $state(false)
   let timer: ReturnType<typeof setTimeout> | null = null
   let audioEl = $state<HTMLAudioElement | null>(null)
+  // Ton des aktiven Transkripts als Blob-Adresse (mit Anmeldung geladen), beim Wechsel freigegeben
+  let tonUrl = $state<string | null>(null)
+  function tonFreigeben(): void {
+    if (tonUrl) URL.revokeObjectURL(tonUrl)
+    tonUrl = null
+  }
+  async function tonLaden(id: string): Promise<void> {
+    tonFreigeben()
+    try {
+      const url = await transkriptTon(id)
+      if (aktiv?.id === id) tonUrl = url
+      else URL.revokeObjectURL(url)
+    } catch { /* ohne Ton bleibt der Text */ }
+  }
+  onMount(() => tonFreigeben)
   // Während der Wiedergabe wartet eine neue Fassung.
   onMount(() => neuLadenAufhalten(() => !!audioEl && !audioEl.paused))
 
@@ -146,6 +162,8 @@
     } catch {
       aktiv = null
     }
+    if (aktiv?.audio_url) void tonLaden(id)
+    else tonFreigeben()
     await ladeMarkenDes(id)
   }
   // Wunsch aus einer verknuepften Karte: dieses Transkript oeffnen, ggf. an Position springen.
@@ -339,8 +357,8 @@
                 {tts.laeuft ? 'Stopp' : 'Vorlesen'}
               </button>
             </div>
-            {#if aktiv.audio_url}
-              <audio class="player" controls src={aktiv.audio_url} bind:this={audioEl}></audio>
+            {#if tonUrl}
+              <audio class="player" controls src={tonUrl} bind:this={audioEl}></audio>
             {/if}
             {#if marken.length}
               <div class="verknuepft">

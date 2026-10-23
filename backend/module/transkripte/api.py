@@ -5,7 +5,9 @@ Karte mit einer Stelle im Transkript samt editierbarer Zusammenfassung.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
+from starlette.background import BackgroundTask
 
 from . import dienst, marken
 from .models import (
@@ -90,6 +92,25 @@ def pool_entfernen(tid: str) -> None:
 @router.get("/{tid}/marken", response_model=MarkenJeTranskriptAntwort)
 def marken_je_transkript(tid: str) -> dict:
     return {"marken": marken.je_transkript(tid)}
+
+
+@router.get("/{tid}/ton")
+def ton(tid: str, request: Request) -> StreamingResponse:
+    """Ton des Transkripts, von der Transkription durchgereicht (der Browser kennt deren Schlüssel nicht)."""
+    offen = dienst.ton_oeffnen(tid, request.headers.get("range"))
+    if offen is None:
+        raise HTTPException(status_code=404, detail="Ton nicht verfügbar")
+    client, antwort = offen
+    kopf = {k: v for k, v in antwort.headers.items()
+            if k.lower() in ("content-length", "content-range", "accept-ranges", "cache-control")}
+
+    def schliessen() -> None:
+        antwort.close()
+        client.close()
+
+    return StreamingResponse(antwort.iter_bytes(), status_code=antwort.status_code, headers=kopf,
+                             media_type=antwort.headers.get("content-type", "audio/wav"),
+                             background=BackgroundTask(schliessen))
 
 
 @router.get("/{tid}")

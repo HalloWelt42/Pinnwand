@@ -80,12 +80,21 @@ class Einstellungen:
     qdrant_url: str
     tts_url: str
     transcripts_url: str
+    transcripts_schluessel: str
+    transcripts_ca: str
     stt_url: str
     agent_token: str
     ui_token: str
     mcp_aktiv: bool
     backup_auto: bool
     backup_behalten: int
+
+
+def _hausstelle() -> str:
+    """Stammzertifikat der Hausstelle (mkcert am Mac), mit dem die Apps auf dem Pi ausgewiesen sind; leer, wenn es fehlt."""
+    wurzel = os.environ.get("CAROOT") or str(Path.home() / "Library" / "Application Support" / "mkcert")
+    datei = Path(wurzel) / "rootCA.pem"
+    return str(datei) if datei.is_file() else ""
 
 
 def _lese_einstellungen() -> Einstellungen:
@@ -98,7 +107,9 @@ def _lese_einstellungen() -> Einstellungen:
         ki_modell=_env("PINNWAND_KI_MODELL"),
         qdrant_url=_env("PINNWAND_QDRANT_URL", "http://localhost:6333"),
         tts_url=_env("PINNWAND_TTS_URL", "http://127.0.0.1:8765"),
-        transcripts_url=_env("PINNWAND_TRANSCRIPTS_URL", "http://localhost:10031"),
+        transcripts_url=_env("PINNWAND_TRANSCRIPTS_URL", "https://192.168.178.49:8631"),
+        transcripts_schluessel=_env("PINNWAND_TRANSCRIPTS_SCHLUESSEL"),
+        transcripts_ca=_env("PINNWAND_TRANSCRIPTS_CA", _hausstelle()),
         stt_url=_env("PINNWAND_STT_URL"),
         agent_token=_env("PINNWAND_AGENT_TOKEN"),
         ui_token=_env("PINNWAND_UI_TOKEN"),
@@ -139,6 +150,7 @@ class Dienst:
     name: str
     url: str
     pruef_pfad: str = "/"
+    ca: str = ""                     # eigenes Stammzertifikat für https (leer: die üblichen Stellen)
 
 
 def optionale_dienste() -> list[Dienst]:
@@ -147,7 +159,7 @@ def optionale_dienste() -> list[Dienst]:
         Dienst("llm", "LLM und Embeddings", e.llm_url, "/v1/models"),
         Dienst("qdrant", "Vektor-Datenbank", e.qdrant_url, "/"),
         Dienst("tts", "Vorlesen", e.tts_url, "/health"),
-        Dienst("transcripts", "Transkriptionen", e.transcripts_url, "/api/search/stats"),
+        Dienst("transcripts", "Transkriptionen", e.transcripts_url, "/api/v1/app", e.transcripts_ca),
         Dienst("stt", "Spracheingabe", e.stt_url, "/"),
     ]
 
@@ -156,7 +168,7 @@ _cache: dict[str, tuple[float, bool]] = {}
 _CACHE_TTL = 10.0
 
 
-def erreichbar(url: str, pfad: str = "/") -> bool:
+def erreichbar(url: str, pfad: str = "/", ca: str = "") -> bool:
     """Prüft, ob ein Dienst antwortet. Ergebnis wird kurz zwischengespeichert."""
     if not url:
         return False
@@ -167,7 +179,7 @@ def erreichbar(url: str, pfad: str = "/") -> bool:
         return treffer[1]
     ok = False
     try:
-        antwort = httpx.get(url.rstrip("/") + pfad, timeout=1.5)
+        antwort = httpx.get(url.rstrip("/") + pfad, timeout=1.5, verify=ca or True)
         ok = antwort.status_code < 500
     except Exception:
         ok = False
@@ -185,7 +197,7 @@ def dienste_status() -> list[dict]:
                 "schluessel": d.schluessel,
                 "name": d.name,
                 "konfiguriert": konfiguriert,
-                "erreichbar": erreichbar(d.url, d.pruef_pfad) if konfiguriert else False,
+                "erreichbar": erreichbar(d.url, d.pruef_pfad, d.ca) if konfiguriert else False,
             }
         )
     return ausgabe

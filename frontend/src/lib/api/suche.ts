@@ -36,6 +36,14 @@ export const transkripteSuche = (q: string, limit = 30): Promise<{ treffer: Tran
 export const transkriptDetail = (id: string): Promise<TranskriptDetail> =>
   hole(`/api/transkripte/${id}`)
 
+// Ton eines Transkripts als Blob-Adresse: ein nacktes <audio src> sendet nie die Sitzung.
+// Der Aufrufer gibt die Adresse mit URL.revokeObjectURL wieder frei.
+export async function transkriptTon(id: string): Promise<string> {
+  const r = await fetch(`${BASIS}/api/transkripte/${id}/ton`, { headers: authKopf() })
+  if (!r.ok) throw new Error('Ton nicht verfügbar')
+  return URL.createObjectURL(await r.blob())
+}
+
 export const ladeMarken = (karteId: string): Promise<{ marken: TranskriptMarke[] }> =>
   hole(`/api/transkripte/marken?karte_id=${encodeURIComponent(karteId)}`)
 export const markenJeTranskript = (tid: string): Promise<{ marken: TranskriptMarke[] }> =>

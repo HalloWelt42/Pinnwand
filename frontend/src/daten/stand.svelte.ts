@@ -67,6 +67,8 @@ interface Serverstand {
   zeiteintraege: Zeiteintrag[];
   zeitkonten: Zeitkonto[];
   abwesenheiten: Abwesenheit[];
+  serien: Serie[];
+  termine: Termin[];
   hinweise: Hinweis[];
   vorlagen: Vorlage[];
   papierkorb: Geloescht[];
@@ -99,7 +101,7 @@ export const frisch = $state<Record<string, string>>({});
 const TEILE = {
   konten: "konten", boards: "boards", karten: "karten", gruppen: "gruppen", laufnummern: "laufnummern", ordner: "ordner",
   timer: "timer", zeiteintraege: "zeiteintraege", zeitkonten: "zeitkonten", abwesenheiten: "abwesenheiten",
-  hinweise: "hinweise", vorlagen: "vorlagen", papierkorb: "papierkorb", entfernt: "entfernt",
+  serien: "serien", termine: "termine", hinweise: "hinweise", vorlagen: "vorlagen", papierkorb: "papierkorb", entfernt: "entfernt",
 } as const satisfies Record<string, keyof Zustand>;
 
 type Zeile = { id: string; fassung?: number };
@@ -110,7 +112,7 @@ export async function laden(): Promise<void> {
   Object.assign(stand, {
     moduleDa: s.moduleDa, konten: s.konten, boards: s.boards, karten: s.karten, gruppen: s.gruppen, laufnummern: s.laufnummern, ordner: s.ordner,
     timer: s.timer, zeiteintraege: s.zeiteintraege, zeitkonten: s.zeitkonten, abwesenheiten: s.abwesenheiten,
-    hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, kartennamen: s.kartennamen,
+    serien: s.serien, termine: s.termine, hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, kartennamen: s.kartennamen,
     einstellungen: s.einstellungen, geladen: true,
   });
 }

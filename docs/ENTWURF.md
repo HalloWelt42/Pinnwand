@@ -170,6 +170,9 @@ Wo der Entwurf eine Frage offen ließ, gilt bis zu einer anderen Entscheidung:
 - Ein Konflikt entsteht nur, wenn dasselbe Feld inzwischen anders ist; andere Felder speichern weiter.
 - Der Papierkorb leert sich nicht von selbst. Das Kürzel eines Boards im Papierkorb bleibt vergeben.
 - Gebuchte Zeit bleibt bei endgültigem Entfernen einer Karte stehen und trägt deren gemerkten Namen (Stufe 2).
+- Fremde Zeiten und Timer sieht nur, wer im Board das Recht "Zeiten anderer sehen" hat; ohne das Recht ist die Zeit einer
+  Karte die eigene (Stufe 2).
+- Zeitkonto und Abwesenheiten ändert jede Person nur selbst; eine Freigabe durch andere kommt später (Abschnitt 10).
 - Ein Termin ohne Karte zählt nicht ins Ist (Stufe 3).
 
 Entschieden vom Nutzer (25.10.2026):

@@ -24,6 +24,19 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
 - M-26: Das Archiv lädt seitenweise vom Server, mit Nachladen beim Rollen und der Gesamtzahl im Kopf.
 - M-55: Ein Konflikt entsteht nur, wenn dasselbe Feld inzwischen anders ist; das Detail fragt dann nach.
 
+## In der App gebaut (Stufe 2, 25.10.2026)
+
+- M-80 bis M-90: Timer, Buchen, Deckel und Zeiteinträge rechnet der Server (`regeln/zeit.py`); eine Sitzung über
+  die Zeitumstellung zählt die echte Dauer. Die Rückfrage nach dem Deckel nimmt das echte Ende und bucht die Sitzung von
+  ihrem Beginn bis dahin neu.
+- M-83: Fremde Timer und Zeiten sieht nur, wer im Board das Recht "Zeiten anderer sehen" hat; ohne das Recht ist die
+  Zeit einer Karte die eigene und heißt im Detail so. Der Ereignisstrom ersetzt die Abfrage alle 60 Sekunden.
+- M-84: Auch das Abschalten der Zeiterfassung beendet die Timer des Boards und bucht.
+- M-85: Solange der eigene Timer läuft, tickt die Uhr im Sekundentakt.
+- Team: die Stunden kommen als Tagessummen vom Server (aus allen Boards, ohne Einträge), nur mit dem Recht
+  "Abwesenheiten sehen" für alle Mitglieder.
+- Vor der ersten Fassung des Zeitkontos gibt es kein Soll.
+
 ## Zählung
 
 | Stand | Zahl |

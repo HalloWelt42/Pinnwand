@@ -106,12 +106,11 @@
 <div class="pw-detail-kopf">
   <span class="pw-schluessel pw-detail-schluessel">{k.schluessel}</span>
   <span class="zustand" data-farbe={spalte.farbe}><span class="pw-farbpunkt"></span>{spalte.name}</span>
-  {#if board.module.zeiterfassung}
-    <span class="pw-umschalter" title="Arbeit hat Zeiterfassung, eine Idee nicht; Umschalten hält laufende Timer an und bucht">
-      <button class:an={k.art === "arbeit"} disabled={!schreiben} onclick={() => artSetzen(k.id, "arbeit")}><i class="fa-solid fa-briefcase"></i>Arbeit</button>
-      <button class="idee" class:an={k.art === "idee"} disabled={!schreiben} onclick={() => artSetzen(k.id, "idee")}><i class="fa-solid fa-lightbulb"></i>Idee</button>
-    </span>
-  {/if}
+  <span class="pw-umschalter" title={board.module.zeiterfassung ? "Arbeit hat Zeiterfassung, eine Idee nicht; Umschalten hält laufende Timer an und bucht"
+                                                                : "Arbeit oder Idee; nur Arbeit lässt sich mit anderen Karten verknüpfen"}>
+    <button class:an={k.art === "arbeit"} disabled={!schreiben} onclick={() => artSetzen(k.id, "arbeit")}><i class="fa-solid fa-briefcase"></i>Arbeit</button>
+    <button class="idee" class:an={k.art === "idee"} disabled={!schreiben} onclick={() => artSetzen(k.id, "idee")}><i class="fa-solid fa-lightbulb"></i>Idee</button>
+  </span>
   <span class="rechts">
     {#if board.module.vorlesen}<button class="knopf ohne symbol klein" title="Karte vorlesen"><i class="fa-solid fa-volume-high"></i></button>{/if}
     {#if darf(board, "karten.anlegen")}

@@ -68,6 +68,15 @@ def ablegen(k: Kontext, board_id: Kennung, art: Literal["karte", "spalte", "boar
     k.s.schreib("papierkorb", e.json_daten())
 
 
+def neue_zielspalte(k: Kontext, b: Board, alt: Kennung, ziel: Spalte | None) -> None:
+    """Serien, deren Zielspalte geht, legen ihre Karten danach in die Spalte, in die deren Karten wanderten, sonst in die
+    erste offene (behebt den Fehler aus M-106)."""
+    neu = ziel if ziel and not ziel.erledigt else next((x for x in b.spalten if not x.erledigt), None)
+    for d in k.s.alle("serien", "board=?", (b.id,)):
+        if d.get("zielspalte") == alt and neu:
+            k.s.schreib("serien", {**d, "zielspalte": neu.id})
+
+
 def gruppen_zurueck(k: Kontext, board_id: Kennung, karten: list[Karte]) -> None:
     """Wiederhergestellte Karten kommen in ihre Gruppe zurück, solange es sie gibt. Endete sie inzwischen, verbinden
     sich nur die Karten des Eintrags wieder, die sie teilten (mindestens zwei); sonst kommt die Karte ohne zurück."""
@@ -224,6 +233,7 @@ class Papierkorb:
             gruppen_aufraeumen(k, b.id, {c.gruppe for c in karten if c.gruppe})
             b.spalten = [x for x in b.spalten if x.id != s.id]
             k.s.schreib("boards", b.json_daten())
+            neue_zielspalte(k, b, s.id, ziel)
             if verschoben:
                 return f"Spalte {s.name} im Papierkorb; {verschoben}"
             return (f"Spalte {s.name} im Papierkorb" + (f" mit {anzahl(len(karten))}" if karten else "")

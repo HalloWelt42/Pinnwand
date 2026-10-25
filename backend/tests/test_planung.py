@@ -140,3 +140,13 @@ async def test_termine(pw: Pinnwand):
     a = await ok(pw, "bert", f"/termine/{t['id']}/verwerfen")
     assert a["meldung"] == "Abstimmung am Mi 28.10.: fand für dich nicht statt, es zählt keine Zeit"
     assert (await pw.stand("anna"))["termine"][0]["teilnehmer"] == ["1"]
+
+
+async def test_zielspalte_und_mitglied_gehen(pw: Pinnwand):
+    b = await mit_bert(pw)
+    s = (await runde(pw, b, zielspalte=spalte(b, "Dran")))["serie"]
+    await ok(pw, "anna", f"/boards/{b['id']}/spalten/{spalte(b, 'Dran')}/loeschen", {"nach": spalte(b, "Offen")})
+    s = (await pw.stand("anna"))["serien"][0]
+    assert s["zielspalte"] == spalte(b, "Offen")
+    await ok(pw, "anna", f"/boards/{b['id']}/mitglieder/entfernen", {"kellerwolke": "bert"})
+    assert (await pw.stand("anna"))["serien"][0]["teilnehmer"] == ["1"]

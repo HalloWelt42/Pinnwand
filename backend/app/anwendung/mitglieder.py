@@ -170,6 +170,9 @@ class Mitglieder:
                     vermerken(k, c, f"hat {name} als zuständig entfernt")
                     speichern(k, c)
                     frei += 1
+            for d in k.s.alle("serien", "board=?", (b.id,)):        # aus den Serien des Boards
+                if m.konto in d.get("teilnehmer", []):
+                    k.s.schreib("serien", {**d, "teilnehmer": [x for x in d["teilnehmer"] if x != m.konto]})
             for d in k.s.alle("ordner", "konto=?", (m.konto,)):
                 if b.id in d.get("boards", []):
                     k.s.schreib("ordner", {**d, "boards": [x for x in d["boards"] if x != b.id]})

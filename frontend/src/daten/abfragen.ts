@@ -96,10 +96,11 @@ export function istBereich(konto: string, von: string, bis: string): number {
   return tageVon(von, bis).reduce((s, t) => s + istAm(konto, t), 0);
 }
 
-/** Soll eines Tags aus der dann gültigen Fassung des Zeitkontos; ohne Zeitkonto nichts */
+/** Soll eines Tags aus der dann gültigen Fassung des Zeitkontos; ohne Zeitkonto nichts, auch nicht vor seiner ersten
+ *  Fassung (fassungAm nimmt dort die erste, damit Kalender und Vorschau ein Bundesland haben) */
 export function sollTag(konto: string, tag: string): TagSoll | null {
   const k = fassungAm(stand.zeitkonten, konto, tag);
-  return k ? sollAm(k, stand.abwesenheiten, tag) : null;
+  return k && k.ab <= tag ? sollAm(k, stand.abwesenheiten, tag) : null;
 }
 
 export function sollBereich(konto: string, von: string, bis: string): number {

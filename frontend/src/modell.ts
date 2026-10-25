@@ -218,6 +218,8 @@ export interface Karte {
   verlauf: Ereignis[];
   /** Platz in der Spalte (Gleitkomma mit Raum dazwischen); offene Spalten ordnen danach */
   reihe: number;
+  /** Schlüssel aus Boards, in denen die Karte vorher lag; ein alter Verweis führt weiter zu ihr */
+  frueher?: string[];
 }
 
 /** Verknüpfte Karten eines Boards: ziehen zusammen und teilen auf Wunsch ihre Zeit */

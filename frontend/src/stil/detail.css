@@ -35,6 +35,13 @@
 .pw-vorschlag-text { font-size: var(--klein); }
 .pw-vorschlag-knoepfe { display: flex; gap: var(--a2); flex-wrap: wrap; }
 .pw-nachtragen-dauer { width: 170px; }
+/* In ein anderes Board: erst das Board, dann die Spalte */
+.pw-umzug { display: flex; flex-direction: column; gap: var(--a2); padding: var(--a3) var(--a4); background: var(--karte-2); border-radius: var(--r3); }
+.pw-umzug .kopfzeile { display: flex; align-items: center; gap: var(--a2); }
+.pw-umzug .kopfzeile b { flex: 1; display: flex; align-items: center; gap: var(--a2); }
+.pw-umzug .schwach { margin: 0; font-size: var(--klein); }
+.pw-umzug .wahl { display: flex; flex-wrap: wrap; gap: var(--a2); }
+.pw-umzug .wahl .knopf { gap: var(--a2); }
 .pw-abschnitt { display: flex; flex-direction: column; gap: var(--a2); }
 .pw-abschnitt > .etikett { display: flex; align-items: center; gap: var(--a2); }
 .pw-abschnitt > .etikett .rechts { margin-left: auto; display: flex; gap: var(--a1); }

@@ -12,10 +12,10 @@ from pydantic import Field
 
 from ..modell import Board, Entfernt, Geloescht, Gruppe, Karte, Kennung, Konto, Modell, Spalte, Stelle
 from ..regeln.board import abschluss, hat_recht, spalte_von
-from .inhalt import anzahl, gleiche_karten
 from . import zeiterfassung
+from .inhalt import anzahl, gleiche_karten
 from .karten import einreihen, hinein
-from .kartenbasis import karten_der_spalte, speichern, vermerken
+from .kartenbasis import gruppen_aufraeumen, karten_der_spalte, speichern, vermerken
 from .rahmen import NAMEN_DER_RECHTE, Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
 
 
@@ -66,18 +66,6 @@ def ablegen(k: Kontext, board_id: Kennung, art: Literal["karte", "spalte", "boar
     e = Geloescht(id=neue_kennung("p"), board=board_id, art=art, spalte=spalte, karten=karten, stelle=stelle,
                   von=k.konto.id, am=k.jetzt, inhalt=inhalt)
     k.s.schreib("papierkorb", e.json_daten())
-
-
-def gruppen_aufraeumen(k: Kontext, board_id: Kennung, gruppen: set[Kennung]) -> None:
-    """Gruppen, aus denen Karten in den Papierkorb gingen: bleibt nur eine Karte übrig, endet die Gruppe (wie beim
-    Lösen)."""
-    for g in gruppen:
-        rest = [Karte.model_validate(d) for d in k.s.alle("karten", "board=?", (board_id,)) if d.get("gruppe") == g]
-        if len(rest) < 2:
-            for x in rest:
-                x.gruppe = None
-                speichern(k, x)
-            k.s.loesch("gruppen", g)
 
 
 def gruppen_zurueck(k: Kontext, board_id: Kennung, karten: list[Karte]) -> None:

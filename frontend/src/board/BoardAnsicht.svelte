@@ -52,14 +52,19 @@
     if (k) gehe(boardPfad(b.kuerzel, kartenNummer(k)));
   }
   const zurueck = () => gehe(boardPfad(b.kuerzel, ansicht === "board" ? "" : ansicht));
-  // die Karte im Pfad: liegt sie nicht im Zustand (archiviert), holt das Board sie einzeln; gibt es sie nicht (mehr) oder
-  // verschwindet sie (Papierkorb, von anderen gelöscht), schließt das Detail
+  // die Karte im Pfad: liegt sie nicht im Zustand (archiviert), holt das Board sie einzeln; ist sie in ein anderes Board
+  // gezogen, folgt das Detail ihr dorthin; gibt es sie nicht (mehr) oder verschwindet sie (Papierkorb, von anderen
+  // gelöscht), schließt das Detail
   const detail = $derived(nummer ? karteAusNummer(b, nummer)?.id : undefined);
   $effect(() => {
     if (!nummer || detail || !stand.boards.some((x) => x.id === boardId)) return;
     const n = nummer, brett = b, schluessel = `${b.kuerzel}-${nummer}`;
     void untrack(async () => {
-      if (!(await karteHolen(schluessel)) && !karteAusNummer(brett, n) && stand.boards.some((x) => x.id === brett.id)) {
+      const geholt = await karteHolen(schluessel);
+      const neu = geholt && geholt.board !== brett.id ? stand.boards.find((x) => x.id === geholt.board) : undefined;
+      if (geholt && neu) {
+        gehe(boardPfad(neu.kuerzel, kartenNummer(geholt)));
+      } else if (!geholt && !karteAusNummer(brett, n) && stand.boards.some((x) => x.id === brett.id)) {
         melden(`Die Karte ${schluessel} gibt es nicht (mehr)`);
         zurueck();
       }

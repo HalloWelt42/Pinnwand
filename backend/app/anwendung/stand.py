@@ -143,8 +143,14 @@ class Abfragen:
         return Team(personen=personen, ist={p: dict(t) for p, t in ist.items()})
 
     async def karte(self, konto: Konto, schluessel: str) -> dict:
-        """Eine Karte einzeln über ihren Schlüssel, auch eine archivierte (ein direkter Pfad öffnet jede Karte, M-09)."""
-        zeilen = await self.a.v.alle("karten", "schluessel=?", (schluessel.upper(),))
+        """Eine Karte einzeln über ihren Schlüssel, auch eine archivierte oder umgezogene (ein direkter Pfad öffnet jede
+        Karte, M-09)."""
+        gesucht = schluessel.upper()
+        zeilen = await self.a.v.alle("karten", "schluessel=?", (gesucht,))
+        if not zeilen:
+            # in ein anderes Board gezogen: der alte Schlüssel führt weiter zu ihr
+            zeilen = [d for d in await self.a.v.alle("karten", "daten LIKE ?", (f'%"{gesucht}"%',))
+                      if gesucht in d.get("frueher", [])]
         if not zeilen:
             raise Abgelehnt(f"Die Karte {schluessel} gibt es nicht", 404)
         d = zeilen[0]

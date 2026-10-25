@@ -81,6 +81,29 @@ def erledigt_spalte(b: Board) -> Spalte | None:
     return next((s for s in b.spalten if s.erledigt), None)
 
 
+def uebertragen(quelle: Board, ziel: Board, c: Karte) -> int:
+    """Eine Karte für ein anderes Board angleichen: Labels und eigene Felder gelten weiter, wenn das Ziel welche mit
+    gleichem Namen (und bei Feldern gleicher Art, bei Auswahl mit der Option) hat; Zuständige bleiben, wenn sie dort
+    Mitglied sind. Ergebnis: wie viele Labels und Felder ohne Gegenstück entfallen."""
+    labels = {l.name.casefold(): l.id for l in ziel.labels}
+    namen = {l.id: l.name.casefold() for l in quelle.labels}
+    neu_labels = [labels[namen[x]] for x in c.labels if x in namen and namen[x] in labels]
+    felder = {f.name.casefold(): f for f in ziel.felder}
+    alt_felder = {f.id: f for f in quelle.felder}
+    neu_felder: dict[Kennung, str] = {}
+    for fid, wert in c.felder.items():
+        alt = alt_felder.get(fid)
+        f = felder.get(alt.name.casefold()) if alt else None
+        if f and f.art == alt.art and (f.art != "auswahl" or wert in (f.optionen or [])):
+            neu_felder[f.id] = wert
+    entfallen = len(c.labels) - len(neu_labels) + len(c.felder) - len(neu_felder)
+    mitglieder = {m.konto for m in ziel.mitglieder if m.konto}
+    c.labels = list(dict.fromkeys(neu_labels))
+    c.felder = neu_felder
+    c.zustaendig = [x for x in c.zustaendig if x in mitglieder]
+    return entfallen
+
+
 #: Erlaubte Werte der Einstellungen eines Boards und der Grenze einer Spalte (ganze Zahlen, einschließlich), gleich
 #: EINSTELLUNG_GRENZEN in frontend/src/regeln/board.ts
 EINSTELLUNG_GRENZEN: dict[str, tuple[int, int]] = {

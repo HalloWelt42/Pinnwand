@@ -170,6 +170,14 @@ def timer_im_board_beenden(k: Kontext, board_id: Kennung, konto: Kennung | None 
     return beenden(k, [t for t in timer if konto is None or t.konto == konto], {})
 
 
+def zeit_umziehen(k: Kontext, karte_id: Kennung, board_id: Kennung) -> None:
+    """Die Zeit einer Karte zieht mit ihr in ein anderes Board: ihre Einträge gehören dann dorthin (und sind dort
+    sichtbar, wo man Zeiten anderer sehen darf)."""
+    for e in eintraege(k, "karte=?", (karte_id,)):
+        e.board = board_id
+        schreiben(k, e)
+
+
 def gestoppt(sek: int) -> str:
     """Zusatz für die Meldung, wenn dabei der eigene Timer gestoppt wurde."""
     return f"; dein Timer ist gestoppt, {dauer_text(sek)} gebucht" if sek else ""

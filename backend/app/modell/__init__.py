@@ -196,6 +196,8 @@ class Karte(Modell):
     verlauf: list[Ereignis] = Field(default_factory=list)
     #: Platz in der Spalte (Gleitkomma mit Raum dazwischen); die Oberfläche ordnet danach
     reihe: float = 0
+    #: Schlüssel aus Boards, in denen die Karte vorher lag; ein alter Verweis führt weiter zu ihr
+    frueher: list[str] = Field(default_factory=list)
     fassung: int = 0
 
 

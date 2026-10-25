@@ -9,10 +9,10 @@ from __future__ import annotations
 from typing import Literal
 
 from ..modell import Board, Ereignis, Gruppe, Karte, Kennung, Konto, Spalte
-from ..regeln.board import abschluss, spalte_von
+from ..regeln.board import abschluss, spalte_von, uebertragen
 from ..regeln.tage import ist_tag
 from . import hinweise, zeiterfassung
-from .kartenbasis import karte_lesen, karten_der_spalte, speichern, vermerken
+from .kartenbasis import gruppen_aufraeumen, karte_lesen, karten_der_spalte, speichern, vermerken
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
 
 #: Abstand der Reihe zwischen zwei Karten; wird er zu eng, nummeriert die Spalte neu
@@ -170,6 +170,47 @@ class Karten:
             einreihen(k, ziel, [c], None)
             speichern(k, c)
             return f"{q.schluessel} als {c.schluessel} dupliziert"
+
+        return await self.a.aendern(konto, arbeit)
+
+    async def umziehen(self, konto: Konto, karte_id: Kennung, board_id: Kennung, spalte: Kennung | None = None) -> Antwort:
+        """Eine Karte zieht in ein anderes Board (etwa vom Ideenboard aufs Arbeitsboard), ans Ende der Spalte (ohne: der
+        ersten offenen). Sie bekommt dort die nächste Nummer und die Kartenart des Boards; Labels und eigene Felder mit
+        gleichem Namen bleiben, Zuständige, wenn sie dort Mitglied sind. Die Verknüpfung endet, laufende Timer buchen,
+        ihre Zeit zieht mit; Inhalt, Checkliste, Kommentare, Anhänge und Verlauf bleiben. Der alte Schlüssel führt
+        weiter zu ihr. Rechte: Karten löschen im alten Board, Karten anlegen im neuen."""
+
+        def arbeit(k: Kontext) -> str:
+            c = karte_lesen(k, karte_id)
+            if c.board == board_id:
+                raise Abgelehnt("Die Karte liegt schon in diesem Board")
+            quelle = k.board_mit_recht(c.board, "karten.loeschen")
+            b = k.board_mit_recht(board_id, "karten.anlegen")
+            ziel = spalte_von(b, spalte) if spalte else next((s for s in b.spalten if not s.erledigt), None)
+            if ziel is None:
+                raise Abgelehnt(f"Diese Spalte gibt es im Board {b.name} nicht", 400)
+            gebucht = zeiterfassung.timer_beenden(k, [c])
+            alt, gruppe = c.schluessel, c.gruppe
+            entfallen = uebertragen(quelle, b, c)
+            c.board, c.gruppe, c.art = b.id, None, b.kartenart
+            c.schluessel = f"{b.kuerzel}-{k.naechste_nummer(b.id)}"
+            c.frueher = [*c.frueher, alt]
+            c.spalte, c.bewegt_am = ziel.id, k.jetzt
+            c.abgeschlossen = abschluss(c, k.heute) if ziel.erledigt else None
+            vermerken(k, c, f"hat sie aus {quelle.name} ({alt}) nach {b.name} verschoben")
+            einreihen(k, ziel, [c], None)
+            speichern(k, c)
+            if gruppe:
+                gruppen_aufraeumen(k, quelle.id, {gruppe})
+            zeiterfassung.zeit_umziehen(k, c.id, b.id)
+            teile = [f"{alt} ist jetzt {c.schluessel} in {b.name}, {ziel.name}"]
+            if entfallen:
+                teile.append(f"{entfallen} {'Label oder Feld' if entfallen == 1 else 'Labels und Felder'} ohne Gegenstück "
+                             f"{'entfällt' if entfallen == 1 else 'entfallen'}")
+            grenze = ueber_grenze(k, ziel)
+            if grenze:
+                teile.append(grenze)
+            return "; ".join(teile) + zeiterfassung.gestoppt(gebucht)
 
         return await self.a.aendern(konto, arbeit)
 

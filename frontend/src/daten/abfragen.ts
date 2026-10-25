@@ -185,6 +185,14 @@ export function darf(b: Board, recht: string): boolean {
   return hatRecht(b, recht, ICH, stand.moduleDa);
 }
 
+/** Boards, in die eine Karte ziehen kann: im eigenen Board das Recht "Karten löschen" (sie geht dort weg), im Ziel
+ *  "Karten anlegen" */
+export function umzugsziele(k: Karte): Board[] {
+  const von = stand.boards.find((b) => b.id === k.board);
+  if (!von || !darf(von, "karten.loeschen")) return [];
+  return stand.boards.filter((b) => b.id !== k.board && darf(b, "karten.anlegen"));
+}
+
 /** Pfad einer Karte im Detail: /board/prod/131 (auch aus dem Namen einer Karte außerhalb des Stands) */
 export function kartenNummer(k: Pick<Karte, "schluessel">): string {
   return k.schluessel.split("-")[1];

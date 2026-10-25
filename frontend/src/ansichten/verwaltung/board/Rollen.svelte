@@ -1,7 +1,7 @@
 <script lang="ts">
   // Rollen und Rechte: oben die Rollen (anlegen als Kopie einer anderen, umbenennen; die drei Start-Rollen bleiben),
-  // darunter die Matrix Rollen mal Rechte, gruppiert nach dem Modul, das die Rechte mitbringt. Rechte abgeschalteter
-  // Module ruhen (ausgegraut, mit Hinweis). Ein Häkchen wirkt sofort für alle Mitglieder dieser Rolle. Besitzer behalten
+  // darunter die Matrix Rollen mal Rechte, gruppiert nach dem Modul, das die Rechte mitbringt (nur Module, die diese
+  // Fassung anbietet). Rechte abgeschalteter Module ruhen (ausgegraut, mit Hinweis). Ein Häkchen wirkt sofort für alle Mitglieder dieser Rolle. Besitzer behalten
   // "Board verwalten" und "Mitglieder verwalten", damit immer jemand das Board führen kann.
   import { untrack } from "svelte";
   import { MODUL_NAME } from "../../../anzeige";
@@ -10,27 +10,38 @@
   } from "../../../daten/anwendung/boards.svelte";
   import { RECHTE } from "../../../daten/konstanten";
   import Person from "../../../board/Person.svelte";
+  import { stand } from "../../../daten/stand.svelte";
   import type { Board, ModulKennung, Recht, Rolle } from "../../../modell";
+  import { modulAn as modulEingeschaltet } from "../../../regeln/board";
   import { boardPfad } from "../../../weg.svelte";
 
-  let { board }: { board: Board; entwurf?: string } = $props();
+  let { board }: { board: Board } = $props();
 
-  const gruppen = (() => {
+  /** Rechte je Modul: der Kern und die Module, die diese Fassung anbietet */
+  const gruppen = $derived.by(() => {
     const g: { modul: "kern" | ModulKennung; rechte: Recht[] }[] = [];
-    for (const r of RECHTE) {
+    for (const r of RECHTE.filter((x) => x.modul === "kern" || stand.moduleDa.includes(x.modul))) {
       const vorhanden = g.find((x) => x.modul === r.modul);
       if (vorhanden) vorhanden.rechte.push(r);
       else g.push({ modul: r.modul, rechte: [r] });
     }
     return g;
-  })();
-  const modulAn = (m: "kern" | ModulKennung) => m === "kern" || board.module[m];
+  });
+  const modulAn = (m: "kern" | ModulKennung) => m === "kern" || modulEingeschaltet(board, m, stand.moduleDa);
   const fest = (rolle: Rolle, recht: string) => rolle.id === "besitzer" && BESITZER_FEST.includes(recht);
   const mitRolle = (id: string) => board.mitglieder.filter((m) => m.rolle === id);
 
-  function umbenennen(r: Rolle, e: Event): void {
+  async function umbenennen(r: Rolle, e: Event): Promise<void> {
     const feld = e.currentTarget as HTMLInputElement;
-    if (feld.value.trim() === r.name || !rolleUmbenennen(board.id, r.id, feld.value)) feld.value = r.name;
+    if (feld.value.trim() === r.name || !(await rolleUmbenennen(board.id, r.id, feld.value))) feld.value = r.name;
+  }
+  /** Häkchen setzen; abgelehnt steht wieder, was gilt */
+  async function haken(r: Rolle, recht: string, e: Event): Promise<void> {
+    const feld = e.currentTarget as HTMLInputElement;
+    if (!(await rechtSetzen(board.id, r.id, recht, feld.checked))) feld.checked = r.rechte.includes(recht);
+  }
+  async function loeschenBestaetigen(r: Rolle): Promise<void> {
+    if (await rolleLoeschen(board.id, r.id, ersatz)) loeschen = null;
   }
 
   let loeschen = $state<string | null>(null);
@@ -40,8 +51,8 @@
   let neuName = $state("");
   let kopie = $state("mitglied");
   const neuDoppelt = $derived(neuName.trim() ? rolleVergeben(board, neuName) : undefined);
-  function anlegen(): void {
-    if (rolleAnlegen(board.id, neuName, kopie)) neuName = "";
+  async function anlegen(): Promise<void> {
+    if (await rolleAnlegen(board.id, neuName, kopie)) neuName = "";
   }
 </script>
 
@@ -59,7 +70,7 @@
               <i class="fa-solid {r.id === 'besitzer' ? 'fa-crown' : r.vorgabe ? 'fa-user' : 'fa-user-gear'} pw-verwaltung-artsymbol"></i>
               <input class="eingabe pw-verwaltung-name" value={r.name} aria-label="Name der Rolle {r.name}" onchange={(e) => umbenennen(r, e)} />
               <span class="pw-personen" title="{leute.length} {leute.length === 1 ? 'Person hat' : 'Personen haben'} diese Rolle">
-                {#each leute as m (m.konto)}<Person id={m.konto} />{/each}
+                {#each leute as m (m.kellerwolke)}{#if m.konto}<Person id={m.konto} />{:else}<span class="pw-personenwahl-neu" title="{m.kellerwolke}, wartet auf die erste Anmeldung"><i class="fa-solid fa-user"></i></span>{/if}{/each}
                 <span class="mehr">{leute.length} {leute.length === 1 ? "Person" : "Personen"}</span></span>
               <span class="pw-angabe flaeche" title="Rechte dieser Rolle"><i class="fa-solid fa-key"></i>{r.rechte.length} {r.rechte.length === 1 ? "Recht" : "Rechte"}</span>
               {#if r.vorgabe}
@@ -79,7 +90,7 @@
                     </select>
                   {:else}Niemand hat sie.{/if}</div>
                 <span class="rechts"><button class="knopf klein" onclick={() => (loeschen = null)}>Abbrechen</button>
-                  <button class="knopf gefahr-voll klein" onclick={() => { if (rolleLoeschen(board.id, r.id, ersatz)) loeschen = null; }}><i class="fa-solid fa-trash-can"></i>Rolle löschen</button></span>
+                  <button class="knopf gefahr-voll klein" onclick={() => loeschenBestaetigen(r)}><i class="fa-solid fa-trash-can"></i>Rolle löschen</button></span>
               </div>
             {/if}
           </article>
@@ -101,7 +112,7 @@
       <h2 class="etikett">Rechte</h2>
       <div class="hinweis"><i class="fa-solid fa-bolt"></i>
         <div>Ein Häkchen wirkt sofort für alle Mitglieder mit dieser Rolle, auch auf Seiten, die gerade offen sind. Der Server prüft jedes Recht
-          auf jedem Weg: Oberfläche, Telefon, Assistent und Serien.</div></div>
+          auf jedem Weg, am Rechner wie am Telefon.</div></div>
       <div class="tabellen-raum pw-verwaltung-tabelle">
         <table class="tabelle karten pw-verwaltung-matrix">
           <thead><tr><th>Recht</th>{#each board.rollen as r (r.id)}<th class="haken">{r.name}</th>{/each}</tr></thead>
@@ -122,7 +133,7 @@
                   {#each board.rollen as r (r.id)}
                     <td class="haken" data-titel={r.name}>
                       <input type="checkbox" checked={r.rechte.includes(recht.id)} disabled={!an || fest(r, recht.id)}
-                             aria-label="{r.name}: {recht.name}" onchange={(e) => rechtSetzen(board.id, r.id, recht.id, (e.currentTarget as HTMLInputElement).checked)}
+                             aria-label="{r.name}: {recht.name}" onchange={(e) => haken(r, recht.id, e)}
                              title={fest(r, recht.id) ? "Besitzer behalten das immer, damit jemand das Board führen kann" : `${r.name}: ${recht.name}`} />
                       {#if fest(r, recht.id)}<i class="fa-solid fa-lock schwach" title="Fest für Besitzer"></i>{/if}
                     </td>

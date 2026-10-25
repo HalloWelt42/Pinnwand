@@ -8,13 +8,16 @@
   import type { Board, Farbe, Label } from "../../../modell";
   import Farbwahl from "../../../teile/Farbwahl.svelte";
 
-  let { board }: { board: Board; entwurf?: string } = $props();
+  let { board }: { board: Board } = $props();
 
   const tragen = (id: string) => stand.karten.filter((k) => k.board === board.id && k.labels.includes(id));
 
-  function umbenennen(l: Label, e: Event): void {
+  async function umbenennen(l: Label, e: Event): Promise<void> {
     const feld = e.currentTarget as HTMLInputElement;
-    if (feld.value.trim() === l.name || !labelAendern(board.id, l.id, { name: feld.value })) feld.value = l.name;
+    if (feld.value.trim() === l.name || !(await labelAendern(board.id, l.id, { name: feld.value }))) feld.value = l.name;
+  }
+  async function loeschenBestaetigen(l: Label): Promise<void> {
+    if (await labelLoeschen(board.id, l.id)) loeschen = null;
   }
 
   let loeschen = $state<string | null>(null);
@@ -23,8 +26,8 @@
   let neuName = $state("");
   let neuFarbe = $state<Farbe>("himmel");
   const neuDoppelt = $derived(neuName.trim() ? labelVergeben(board, neuName) : undefined);
-  function anlegen(): void {
-    if (labelAnlegen(board.id, neuName, neuFarbe)) neuName = "";
+  async function anlegen(): Promise<void> {
+    if (await labelAnlegen(board.id, neuName, neuFarbe)) neuName = "";
   }
 </script>
 
@@ -51,7 +54,7 @@
                 {#if n}Es hängt an {n === 1 ? "einer Karte" : `${n} Karten`} ({tragen(l.id).map((k) => k.schluessel).join(", ")}); dort fällt es weg,
                   sonst ändert sich nichts an den Karten.{:else}Keine Karte trägt es.{/if}</div>
               <span class="rechts"><button class="knopf klein" onclick={() => (loeschen = null)}>Abbrechen</button>
-                <button class="knopf gefahr-voll klein" onclick={() => { if (labelLoeschen(board.id, l.id)) loeschen = null; }}>
+                <button class="knopf gefahr-voll klein" onclick={() => loeschenBestaetigen(l)}>
                   <i class="fa-solid fa-trash-can"></i>Label löschen</button></span>
             </div>
           {/if}

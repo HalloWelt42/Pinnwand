@@ -1,33 +1,40 @@
 <script lang="ts">
-  // Allgemein: Name, festes Kürzel, Ordner (persönlich), Farbe; Alterung und Erledigt-Grenzen (bisher global, jetzt je
-  // Board); als Vorlage speichern; das Board in den Papierkorb (Rückfrage in der Fläche). Alles über die Anwendungsfälle.
+  // Allgemein: Name, festes Kürzel, Ordner (persönlich), Farbe, Art neuer Karten; Alterung und Erledigt-Grenzen je Board;
+  // als Vorlage speichern; das Board in den Papierkorb (Rückfrage in der Fläche). Alles über die Anwendungsfälle.
   import { laufendAuf } from "../../../daten/abfragen";
-  import { alsVorlageSpeichern, boardFarbeSetzen, boardUmbenennen, einstellungenSetzen, ordnerSetzen } from "../../../daten/anwendung/boards.svelte";
+  import {
+    alsVorlageSpeichern, boardFarbeSetzen, boardUmbenennen, einstellungenSetzen, kartenartSetzen, ordnerSetzen,
+  } from "../../../daten/anwendung/boards.svelte";
   import { boardInPapierkorb } from "../../../daten/anwendung/papierkorb.svelte";
   import { laufnummer, ordnerVon, stand } from "../../../daten/stand.svelte";
   import type { Board, BoardEinstellungen } from "../../../modell";
-  import { alterung } from "../../../regeln/board";
+  import { alterung, EINSTELLUNG_GRENZEN as GRENZEN } from "../../../regeln/board";
   import Farbwahl from "../../../teile/Farbwahl.svelte";
-  import { gehe } from "../../../weg.svelte";
-  import { EINSTELLUNG_GRENZEN as GRENZEN } from "../../../regeln/board";
   import Zahlfeld from "../../../teile/Zahlfeld.svelte";
+  import { gehe } from "../../../weg.svelte";
 
-  let { board }: { board: Board; entwurf?: string } = $props();
+  let { board }: { board: Board } = $props();
+
+  const KARTENARTEN = [["arbeit", "Arbeit", "fa-briefcase"], ["idee", "Idee", "fa-lightbulb"]] as const;
 
   const e = $derived(board.einstellungen);
   const karten = $derived(stand.karten.filter((k) => k.board === board.id));
   const laufend = $derived(karten.filter((k) => laufendAuf(k.id).length));
   const serien = $derived(stand.serien.filter((s) => s.board === board.id));
+  const mitModulen = $derived(stand.moduleDa.length > 0);
   let vorlageOffen = $state(false);
   let vorlageName = $state("");
   let papierkorb = $state(false);
 
-  function umbenennen(ev: Event): void {
+  async function umbenennen(ev: Event): Promise<void> {
     const feld = ev.currentTarget as HTMLInputElement;
-    if (!boardUmbenennen(board.id, feld.value)) feld.value = board.name;
+    if (!(await boardUmbenennen(board.id, feld.value))) feld.value = board.name;
   }
   function setzen(teil: Partial<BoardEinstellungen>): void {
-    einstellungenSetzen(board.id, teil);
+    void einstellungenSetzen(board.id, teil);
+  }
+  async function vorlageSpeichern(): Promise<void> {
+    if (await alsVorlageSpeichern(board.id, vorlageName)) vorlageOffen = false;
   }
   async function wegwerfen(): Promise<void> {
     if (await boardInPapierkorb(board.id)) gehe("/heute");
@@ -56,7 +63,8 @@
         </div>
       </div>
       <div class="einstellung">
-        <div><div class="name">Ordner</div><div class="erklaerung">Ordnet nur deine Seitenleiste; ein Ordner trägt keine Rechte.</div></div>
+        <div><div class="name">Ordner</div><div class="erklaerung">Ordnet nur deine Seitenleiste; ein Ordner trägt keine Rechte.
+          Anlegen und ordnen unter <a href="/einstellungen/ordner">Einstellungen, Ordner</a>.</div></div>
         <div class="wert">
           <select class="eingabe" value={ordnerVon(board.id)?.id ?? ""} aria-label="Ordner"
                   onchange={(ev) => ordnerSetzen(board.id, (ev.currentTarget as HTMLSelectElement).value)}>
@@ -68,6 +76,18 @@
       <div class="einstellung">
         <div><div class="name">Farbe</div><div class="erklaerung">Punkt in der Seitenleiste und im Kopf; unterscheidet die Boards.</div></div>
         <div class="wert"><Farbwahl wert={board.farbe} waehlen={(f) => f && boardFarbeSetzen(board.id, f)} wofuer="Farbe des Boards" /></div>
+      </div>
+      <div class="einstellung">
+        <div><div class="name">Neue Karten sind</div>
+          <div class="erklaerung">Vorgabe beim Anlegen; jede Karte lässt sich danach im Detail umschalten. Bestehende Karten bleiben, wie sie sind.</div></div>
+        <div class="wert">
+          <span class="stufen" role="radiogroup" aria-label="Art neuer Karten">
+            {#each KARTENARTEN as [art, name, symbol] (art)}
+              <button role="radio" aria-checked={board.kartenart === art} class:an={board.kartenart === art}
+                      onclick={() => kartenartSetzen(board.id, art)}><i class="fa-solid {symbol}"></i> {name}</button>
+            {/each}
+          </span>
+        </div>
       </div>
     </section>
 
@@ -112,7 +132,7 @@
       <div class="einstellung">
         <div><div class="name">Archiv ab</div>
           <div class="erklaerung">Erledigte Karten mit älterem Abschluss stehen nur im Archiv. Eine reine Ladegrenze: eine größere Zahl holt
-            sie zurück, Berichte zählen alle.</div></div>
+            sie zurück.</div></div>
         <div class="wert"><Zahlfeld wert={e.archivTage} setzen={(n) => n !== undefined && setzen({ archivTage: n })} min={GRENZEN.archivTage[0]}
                                     max={GRENZEN.archivTage[1]} name="Archiv ab Tagen" einheit="Tagen" /></div>
       </div>
@@ -123,7 +143,8 @@
       <div class="einstellung">
         <div><div class="name">Als Vorlage speichern</div>
           <div class="erklaerung">Aufbau ohne Karten und Mitglieder: {anzahl(board.spalten.length, "Spalte", "Spalten")},
-            {anzahl(board.felder.length, "Feld", "Felder")}, {anzahl(board.labels.length, "Label", "Labels")} und die Module.</div></div>
+            {anzahl(board.felder.length, "Feld", "Felder")}, {anzahl(board.labels.length, "Label", "Labels")}{mitModulen ? " und die Module" : ""};
+            sie steht danach beim Anlegen unter deinen eigenen Vorlagen.</div></div>
         <div class="wert">
           <button class="knopf" disabled={vorlageOffen} onclick={() => { vorlageOffen = true; vorlageName = board.name; }}>
             <i class="fa-solid fa-copy"></i>Als Vorlage speichern</button>
@@ -132,9 +153,9 @@
       {#if vorlageOffen}
         <div class="pw-verwaltung-formular">
           <input class="eingabe" bind:value={vorlageName} aria-label="Name der Vorlage" placeholder="Name der Vorlage"
-                 onkeydown={(ev) => { if (ev.key === "Enter" && alsVorlageSpeichern(board.id, vorlageName)) vorlageOffen = false; }} />
+                 onkeydown={(ev) => { if (ev.key === "Enter") void vorlageSpeichern(); }} />
           <button class="knopf ohne" onclick={() => (vorlageOffen = false)}>Abbrechen</button>
-          <button class="knopf" disabled={!vorlageName.trim()} onclick={() => { if (alsVorlageSpeichern(board.id, vorlageName)) vorlageOffen = false; }}>
+          <button class="knopf" disabled={!vorlageName.trim()} onclick={vorlageSpeichern}>
             <i class="fa-solid fa-check"></i>Vorlage speichern</button>
         </div>
       {/if}
@@ -144,13 +165,13 @@
       <h2 class="etikett">Board entfernen</h2>
       <div class="einstellung">
         <div><div class="name">In den Papierkorb</div>
-          <div class="erklaerung">Mit allen Karten, Zeiten, Kommentaren und Anhängen; wiederherstellen unter Einstellungen, Papierkorb.</div></div>
+          <div class="erklaerung">Mit allen Karten, Kommentaren und Anhängen; wiederherstellen unter Einstellungen, Papierkorb.</div></div>
         <div class="wert"><button class="knopf gefahr" disabled={papierkorb} onclick={() => (papierkorb = true)}><i class="fa-solid fa-trash-can"></i>In den Papierkorb</button></div>
       </div>
       {#if papierkorb}
         <div class="hinweis gefahr" role="alert"><i class="fa-solid fa-trash-can"></i>
-          <div><b>{board.name} in den Papierkorb legen?</b> {anzahl(karten.length, "Karte geht", "Karten gehen")} mit, samt Zeiten,
-            Kommentaren und Anhängen; das Board liegt dann im Papierkorb der Einstellungen und lässt sich dort wiederherstellen.
+          <div><b>{board.name} in den Papierkorb legen?</b> {anzahl(karten.length, "Karte geht", "Karten gehen")} mit, samt Kommentaren
+            und Anhängen; das Board liegt dann im Papierkorb der Einstellungen und lässt sich dort wiederherstellen.
             {#if board.mitglieder.length > 1}Die {anzahl(board.mitglieder.length - 1, "andere Person sieht", "anderen Mitglieder sehen")} es
               bis dahin nicht mehr.{/if}
             {#if laufend.length}Laufende Timer ({laufend.map((k) => k.schluessel).join(", ")}) halten an und buchen.{/if}

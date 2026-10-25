@@ -74,3 +74,35 @@ def spalte_von(b: Board, spalte: Kennung) -> Spalte | None:
 
 def erledigt_spalte(b: Board) -> Spalte | None:
     return next((s for s in b.spalten if s.erledigt), None)
+
+
+#: Erlaubte Werte der Einstellungen eines Boards und der Grenze einer Spalte (ganze Zahlen, einschließlich), gleich
+#: EINSTELLUNG_GRENZEN in frontend/src/regeln/board.ts
+EINSTELLUNG_GRENZEN: dict[str, tuple[int, int]] = {
+    "alterung": (0, 365),
+    "ladeschritt": (1, 500),
+    "archiv_tage": (1, 100_000),
+    "grenze": (1, 999),
+}
+#: Welche Grenze für welche Einstellung gilt, und wie sie in der Oberfläche heißt
+EINSTELLUNGEN: dict[str, tuple[str, str]] = {
+    "alterung_warnung": ("alterung", "Warnung ab"),
+    "alterung_gefahr": ("alterung", "Gefahr ab"),
+    "ladeschritt": ("ladeschritt", "Karten je Ladeschritt"),
+    "archiv_tage": ("archiv_tage", "Archiv ab"),
+}
+
+
+def zahl_fehler(art: str, wert: int) -> str | None:
+    """Grund, warum eine Zahl nicht in ihre Grenzen passt (wie das Zahlfeld der Oberfläche), sonst None."""
+    unten, oben = EINSTELLUNG_GRENZEN[art]
+    if unten <= wert <= oben:
+        return None
+    return f"ganze Zahl von {unten} bis {oben:,}".replace(",", ".")
+
+
+def einstellung_fehler(feld: str, wert: int) -> str | None:
+    """Grund, warum eine Einstellung des Boards so nicht geht, sonst None."""
+    art, name = EINSTELLUNGEN[feld]
+    fehler = zahl_fehler(art, wert)
+    return f"{name}: {fehler}" if fehler else None

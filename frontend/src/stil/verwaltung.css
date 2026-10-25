@@ -10,6 +10,8 @@
 
 /* ═══ Fläche einer Einstellungsseite ═══════════════════════════════════════════════════════════════════════ */
 
+/* Hülle der Seite eines Reiters ohne eigene Gestalt; ohne das Recht sperrt sie alle Eingaben darin */
+fieldset.pw-verwaltung-gesperrt { display: contents; border: 0; margin: 0; padding: 0; min-width: 0; }
 .pw-verwaltung-flaeche { display: flex; flex-direction: column; gap: var(--a4); min-width: 0; }
 .pw-verwaltung-flaeche > .bereich { min-width: 0; }
 .pw-verwaltung-flaeche > .bereich > * + * { margin-top: var(--a3); }

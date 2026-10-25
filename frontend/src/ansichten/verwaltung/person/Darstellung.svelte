@@ -1,8 +1,9 @@
 <script lang="ts">
   // Darstellung auf diesem Gerät: Thema (hell, dunkel, wie das System) und Schriftstufe (Klein ist die Vorgabe) mit
-  // Vorschau einer echten Karte in jeder Stufe. Eine Wahrheit mit der Leiste der Entwürfe (darstellung.svelte.ts); die
-  // Wahl gilt sofort für die ganze Seite und bleibt im Browser gemerkt.
-  import { board, karte } from "../../../daten/stand.svelte";
+  // Vorschau einer deiner Karten in jeder Stufe (ohne Karten keine Vorschau). Eine Wahrheit in darstellung.svelte.ts;
+  // die Wahl gilt sofort für die ganze Seite und bleibt im Browser gemerkt.
+  import { ICH } from "../../../daten/ich";
+  import { board, stand } from "../../../daten/stand.svelte";
   import Karte from "../../../board/Karte.svelte";
   import { darstellung, darstellungSetzen, type Schrift, type Thema } from "../../../darstellung.svelte";
 
@@ -12,8 +13,9 @@
     ["mittel", "Mittel", "Etwas größer, auch Etiketten und Zähler"],
     ["gross", "Groß", "Für Abstand zum Bildschirm"],
   ];
-  const probe = $derived(karte("c-131"));
-  const probeBoard = $derived(board("b-prod"));
+  /** eine Karte, für die du zuständig bist, sonst irgendeine aus deinen Boards */
+  const probe = $derived(stand.karten.find((k) => k.zustaendig.includes(ICH)) ?? stand.karten[0]);
+  const probeBoard = $derived(probe ? board(probe.board) : undefined);
 </script>
 
 <div class="rollfeld">
@@ -31,14 +33,14 @@
 
     <section class="bereich">
       <h2 class="etikett">Schriftstufe</h2>
-      <p class="pw-verwaltung-satz">Ändert alle Schriften und Abstände zusammen, nie einzeln. Die Vorschau zeigt dieselbe Karte in jeder Stufe.</p>
+      <p class="pw-verwaltung-satz">Ändert alle Schriften und Abstände zusammen, nie einzeln.{probe ? " Die Vorschau zeigt dieselbe Karte in jeder Stufe." : ""}</p>
       <div class="wahl pw-verwaltung-wahl pw-verwaltung-stufenwahl" role="radiogroup" aria-label="Schriftstufe">
         {#each STUFEN as [s, name, text] (s)}
           <label class:an={darstellung.schrift === s}>
             <input type="radio" name="schriftstufe" value={s} checked={darstellung.schrift === s} onchange={() => darstellungSetzen({ schrift: s })} />
             <span class="kreis"></span>
             <div><b>{name}</b><span>{text}</span>
-              {#if probe}<div class="pw-verwaltung-probe" data-schrift={s} inert><Karte karte={probe} board={probeBoard} /></div>{/if}</div>
+              {#if probe && probeBoard}<div class="pw-verwaltung-probe" data-schrift={s} inert><Karte karte={probe} board={probeBoard} /></div>{/if}</div>
           </label>
         {/each}
       </div>

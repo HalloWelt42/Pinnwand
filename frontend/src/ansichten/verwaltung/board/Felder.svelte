@@ -1,22 +1,25 @@
 <script lang="ts">
   // Eigene Felder des Boards: Name, Art (Text, Zahl, Datum, Auswahl, Verweis auf eine Karte), Optionen einer Auswahl,
   // "auf der Karte zeigen"; Reihenfolge per Ziehen am Griff (so stehen sie im Kartendetail und auf der Karte). Die Art
-  // bleibt fest, sobald Karten Werte tragen. Darunter, was Module mitbringen, und die Grundfelder. Alles über die
-  // Anwendungsfälle.
+  // bleibt fest, sobald Karten Werte tragen; eine entfernte Option fällt an den Karten weg. Darunter, was eingeschaltete
+  // Module mitbringen (nur, wenn diese Fassung Module anbietet), und die Grundfelder. Alles über die Anwendungsfälle.
   import { untrack } from "svelte";
   import { dragHandle, dragHandleZone, type DndEvent } from "svelte-dnd-action";
   import { MODULE } from "../../../anzeige";
+  import { darf } from "../../../daten/abfragen";
   import {
     feldAendern, feldAnlegen, feldLoeschen, feldOption, felderOrdnen, kartenMitWert,
   } from "../../../daten/anwendung/boards.svelte";
+  import { stand } from "../../../daten/stand.svelte";
   import type { Board, Feld, FeldArt } from "../../../modell";
+  import { modulAn } from "../../../regeln/board";
   import { GRUNDFELDER } from "../daten";
 
-  let { board }: { board: Board; entwurf?: string } = $props();
+  let { board }: { board: Board } = $props();
 
   const ARTEN: { art: FeldArt; name: string; symbol: string; text: string }[] = [
     { art: "text", name: "Text", symbol: "fa-font", text: "Eine Zeile Text, etwa ein Kunde oder eine Auftragsnummer." },
-    { art: "zahl", name: "Zahl", symbol: "fa-hashtag", text: "Eine Zahl, etwa eine Stückzahl; in Liste und Berichten summierbar." },
+    { art: "zahl", name: "Zahl", symbol: "fa-hashtag", text: "Eine Zahl, etwa eine Stückzahl; die Liste sortiert sie der Größe nach." },
     { art: "datum", name: "Datum", symbol: "fa-calendar-day", text: "Ein Tag im deutschen Format, etwa ein Liefertermin." },
     { art: "auswahl", name: "Auswahl", symbol: "fa-list", text: "Eine aus festen Optionen, etwa eine Maschine; im Filter wählbar." },
     { art: "verweis", name: "Verweis", symbol: "fa-link", text: "Verweis auf eine andere Karte, als Textfeld mit Vorschlägen." },
@@ -26,23 +29,29 @@
   // Ziehen ordnet erst die Anzeige, das Ablegen ruft den Anwendungsfall
   let items = $state<Feld[]>([]);
   $effect(() => { items = [...board.felder]; });
+  const ziehen = $derived(darf(board, "board.verwalten"));
   function erwaegen(e: CustomEvent<DndEvent<Feld>>): void { items = e.detail.items; }
-  function abgelegt(e: CustomEvent<DndEvent<Feld>>): void {
+  async function abgelegt(e: CustomEvent<DndEvent<Feld>>): Promise<void> {
     items = e.detail.items;
-    felderOrdnen(board.id, items.map((f) => f.id));
+    await felderOrdnen(board.id, items.map((f) => f.id));
     items = [...board.felder];
   }
 
   const anzahl = (n: number) => `${n} ${n === 1 ? "Karte" : "Karten"}`;
 
-  function umbenennen(f: Feld, e: Event): void {
+  async function umbenennen(f: Feld, e: Event): Promise<void> {
     const feld = e.currentTarget as HTMLInputElement;
-    if (feld.value.trim() === f.name || !feldAendern(board.id, f.id, { name: feld.value })) feld.value = f.name;
+    if (feld.value.trim() === f.name || !(await feldAendern(board.id, f.id, { name: feld.value }))) feld.value = f.name;
+  }
+  /** Art wählen; abgelehnt steht wieder die bisherige im Feld */
+  async function artWaehlen(f: Feld, e: Event): Promise<void> {
+    const feld = e.currentTarget as HTMLSelectElement;
+    if (!(await feldAendern(board.id, f.id, { art: feld.value as FeldArt }))) feld.value = f.art;
   }
 
   let option = $state<Record<string, string>>({});
-  function optionDazu(f: Feld): void {
-    if (feldOption(board.id, f.id, option[f.id] ?? "", true)) option[f.id] = "";
+  async function optionDazu(f: Feld): Promise<void> {
+    if (await feldOption(board.id, f.id, option[f.id] ?? "", true)) option[f.id] = "";
   }
 
   let loeschen = $state<string | null>(null);
@@ -50,10 +59,14 @@
 
   let neuName = $state("");
   let neuArt = $state<FeldArt>("text");
-  function anlegen(): void {
-    if (feldAnlegen(board.id, neuName, neuArt)) neuName = "";
+  async function anlegen(): Promise<void> {
+    if (await feldAnlegen(board.id, neuName, neuArt)) neuName = "";
   }
-  const vonModulen = $derived(MODULE.filter((m) => board.module[m.id] && m.felder.length));
+  async function loeschenBestaetigen(f: Feld): Promise<void> {
+    if (await feldLoeschen(board.id, f.id)) loeschen = null;
+  }
+  const mitModulen = $derived(stand.moduleDa.length > 0);
+  const vonModulen = $derived(MODULE.filter((m) => modulAn(board, m.id, stand.moduleDa) && m.felder.length));
 </script>
 
 <div class="rollfeld">
@@ -61,7 +74,7 @@
     <p class="pw-verwaltung-satz"><i class="fa-solid fa-circle-info"></i>Eigene Felder stehen im Kartendetail unter den Angaben, in dieser
       Reihenfolge; mit "auf der Karte" auch auf der Karte im Board.</p>
 
-    <div class="pw-verwaltung-liste" use:dragHandleZone={{ items, flipDurationMs: 160, type: "feld", dropTargetStyle: {} }}
+    <div class="pw-verwaltung-liste" use:dragHandleZone={{ items, flipDurationMs: 160, type: "feld", dropTargetStyle: {}, dragDisabled: !ziehen }}
          onconsider={erwaegen} onfinalize={abgelegt}>
       {#each items as f (f.id)}
         {@const mit = kartenMitWert(board.id, f.id)}
@@ -79,7 +92,7 @@
             <span class="angabe" title={mit.length ? `Die Art bleibt fest, solange ${anzahl(mit.length)} einen Wert tragen` : ART[f.art].text}>
               <span class="etikett">Art</span>
               <select class="eingabe" value={f.art} disabled={mit.length > 0} aria-label="Art des Feldes {f.name}"
-                      onchange={(e) => feldAendern(board.id, f.id, { art: (e.currentTarget as HTMLSelectElement).value as FeldArt })}>
+                      onchange={(e) => artWaehlen(f, e)}>
                 {#each ARTEN as a (a.art)}<option value={a.art}>{a.name}</option>{/each}
               </select>
               {#if mit.length}<i class="fa-solid fa-lock schwach"></i>{/if}</span>
@@ -105,7 +118,7 @@
                 {#if mit.length}{anzahl(mit.length)} tragen einen Wert ({mit.map((k) => k.schluessel).join(", ")}); die Werte fallen mit dem Feld weg.
                 {:else}Keine Karte trägt einen Wert.{/if}</div>
               <span class="rechts"><button class="knopf klein" onclick={() => (loeschen = null)}>Abbrechen</button>
-                <button class="knopf gefahr-voll klein" onclick={() => { if (feldLoeschen(board.id, f.id)) loeschen = null; }}>
+                <button class="knopf gefahr-voll klein" onclick={() => loeschenBestaetigen(f)}>
                   <i class="fa-solid fa-trash-can"></i>Feld löschen</button></span>
             </div>
           {/if}
@@ -135,16 +148,18 @@
     </section>
 
     <section class="bereich">
-      <h2 class="etikett">Felder der Module</h2>
-      <p class="pw-verwaltung-satz">Bringt ein Modul mit und nimmt es beim Abschalten wieder mit; hier nicht änderbar.</p>
-      <div class="pw-verwaltung-chips">
-        {#each vonModulen as m (m.id)}
-          {#each m.felder as f (f)}<span class="chip pw-verwaltung-fest"><i class="fa-solid {m.symbol}"></i>{f}<span class="schwach">{m.name}</span></span>{/each}
-        {:else}
-          <span class="schwach klein">Kein eingeschaltetes Modul bringt Felder mit.</span>
-        {/each}
-      </div>
-      <h2 class="etikett pw-verwaltung-abstand">Grundfelder jeder Karte</h2>
+      {#if mitModulen}
+        <h2 class="etikett">Felder der Module</h2>
+        <p class="pw-verwaltung-satz">Bringt ein Modul mit und nimmt es beim Abschalten wieder mit; hier nicht änderbar.</p>
+        <div class="pw-verwaltung-chips">
+          {#each vonModulen as m (m.id)}
+            {#each m.felder as f (f)}<span class="chip pw-verwaltung-fest"><i class="fa-solid {m.symbol}"></i>{f}<span class="schwach">{m.name}</span></span>{/each}
+          {:else}
+            <span class="schwach klein">Kein eingeschaltetes Modul bringt Felder mit.</span>
+          {/each}
+        </div>
+      {/if}
+      <h2 class="etikett" class:pw-verwaltung-abstand={mitModulen}>Grundfelder jeder Karte</h2>
       <p class="pw-verwaltung-satz">{GRUNDFELDER.join(", ")}.</p>
     </section>
   </div>

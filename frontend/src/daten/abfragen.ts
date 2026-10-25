@@ -3,7 +3,7 @@
 // die Ansichten fragen nur hier, nie mit eigener Rechnung.
 
 import { ZEITFENSTER_VORGABE } from "../anzeige";
-import type { Board, Karte, KellerwolkeDatei, KellerwolkePerson, Kennung, Prioritaet, Serie, Spalte, Termin, Timer, Zeitfenster } from "../modell";
+import type { Board, Karte, KellerwolkeDatei, KellerwolkePerson, Kennung, Ordner, Prioritaet, Serie, Spalte, Termin, Timer, Zeitfenster } from "../modell";
 import { abwesenheitAm, artName, fassungAm, sollAm, urlaubstage, type TagSoll } from "../regeln/arbeitszeit";
 import { feiertag } from "../regeln/feiertage";
 import { vorkommen, type Nachtragposten, type SerienUmfeld } from "../regeln/serien";
@@ -135,6 +135,18 @@ export function papierkorbVon(boardId: string) {
 /** Papierkorb der App: gelöschte Boards mit allem, was daran hing */
 export function boardsImPapierkorb() {
   return stand.papierkorb.filter((e) => e.art === "board");
+}
+
+/** Deine Boards nach deinen Ordnern (in deren Reihenfolge, auch leere Ordner), Boards ohne Ordner zuletzt in einer Gruppe
+ *  ohne Ordner (M-01); Seitenleiste und Telefon zeigen dieselbe Ordnung */
+export function boardGruppen(): { ordner: Ordner | null; boards: Board[] }[] {
+  const meine = stand.boards.filter((b) => b.mitglieder.some((m) => m.konto === ICH));
+  const gruppen = stand.ordner.map((o) => ({
+    ordner: o as Ordner | null, boards: o.boards.map((id) => meine.find((b) => b.id === id)).filter((b): b is Board => !!b),
+  }));
+  const einsortiert = new Set(gruppen.flatMap((g) => g.boards.map((b) => b.id)));
+  const ohne = meine.filter((b) => !einsortiert.has(b.id)).sort((a, b) => a.name.localeCompare(b.name, "de"));
+  return ohne.length ? [...gruppen, { ordner: null, boards: ohne }] : gruppen;
 }
 
 /** Rechte der angemeldeten Person in einem Board */

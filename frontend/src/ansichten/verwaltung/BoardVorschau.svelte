@@ -1,9 +1,11 @@
 <script lang="ts">
   // Vorschau beim Anlegen: so sieht das neue Board aus (Kopf, Spalten in ihren Farben, erste Kartennummer, Module, Felder,
-  // Labels, Rollen, Mitglieder), noch ohne Karten. Sie folgt jeder Wahl links sofort.
+  // Labels, Rollen, Mitglieder; Module nur, wenn diese Fassung welche anbietet), noch ohne Karten. Sie folgt jeder Wahl
+  // links sofort.
   import { MODULE } from "../../anzeige";
   import { RECHTE } from "../../daten/konstanten";
   import Person from "../../board/Person.svelte";
+  import { stand } from "../../daten/stand.svelte";
   import type { Farbe, KellerwolkePerson, Vorlage } from "../../modell";
 
   let { name, kuerzel, farbe, ordner, vorlage, mitglieder }: {
@@ -27,9 +29,11 @@
   </div>
   <div class="pfad"><i class="fa-regular fa-note-sticky"></i>Die erste Karte heißt <span class="pw-schluessel">{kuerzel || "?"}-1</span></div>
   <dl class="pw-verwaltung-bringt">
-    <dt>Module</dt>
-    <dd>{#each MODULE.filter((m) => vorlage.module.includes(m.id)) as m (m.id)}<span class="chip pw-verwaltung-fest"><i class="fa-solid {m.symbol}"></i>{m.name}</span>
-      {:else}keine, zuschaltbar in den Einstellungen{/each}</dd>
+    {#if stand.moduleDa.length}
+      <dt>Module</dt>
+      <dd>{#each MODULE.filter((m) => vorlage.module.includes(m.id)) as m (m.id)}<span class="chip pw-verwaltung-fest"><i class="fa-solid {m.symbol}"></i>{m.name}</span>
+        {:else}keine, zuschaltbar in den Einstellungen{/each}</dd>
+    {/if}
     <dt>Felder</dt><dd>{vorlage.felder.length ? vorlage.felder.map((f) => f.name).join(", ") : "nur die Grundfelder"}</dd>
     <dt>Labels</dt>
     <dd>{#each vorlage.labels as l (l.name)}<span class="pw-label" data-farbe={l.farbe}>{l.name}</span>{:else}keine{/each}</dd>

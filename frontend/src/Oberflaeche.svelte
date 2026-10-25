@@ -14,8 +14,11 @@
     return () => enden.forEach((ende) => ende());
   });
 
+  // "/" führt zu Heute; das Kürzel eines Boards steht im Pfad klein (/board/HAUS/12 wird /board/haus/12)
   $effect(() => {
     if (weg.pfad === "/") gehe("/heute", true);
+    const gross = weg.pfad.match(/^\/board\/([^/]*[A-Z][^/]*)(.*)$/);
+    if (gross) gehe(`/board/${gross[1].toLowerCase()}${gross[2]}${weg.suche}`, true);
   });
 
   const geraetArt = $derived(geraet.mobil ? "telefon" : "rechner");

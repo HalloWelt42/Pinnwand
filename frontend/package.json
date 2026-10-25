@@ -12,7 +12,7 @@
     "@fontsource/barlow": "^5.3.0",
     "@fontsource/chakra-petch": "^5.3.0",
     "@fortawesome/fontawesome-free": "^7.3.1",
-    "appkern-oberflaeche": "github:HalloWelt42/appkern#76b51b7",
+    "appkern-oberflaeche": "github:HalloWelt42/appkern#e7ff11e",
     "svelte-dnd-action": "^0.9.70"
   },
   "devDependencies": {

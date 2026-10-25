@@ -124,7 +124,8 @@ Mechanik) auf den Pi.
 
 ## 8. Betrieb
 
-- Pi, `https://192.168.178.49:8420` (Port frei geprüft am 25.10.2026), Daten im Datenordner auf dem Pi.
+- Pi, Port 8420 (frei geprüft am 25.10.2026), Adresse und Datenordner aus der privaten Wahrheit
+  (`handbuch ziel pinnwand`).
 - Ausrollen über die Vorlage des Appkerns, Handbuch-Seite und Einrichtungsskript mit Probelauf je Fassung.
 - Sicherung über das zentrale Sicherungswerkzeug (`~/Sicherungen`).
 - Alte App: läuft nicht mehr; ihre Datenbank (`backend/pinnwand.db`, nicht im Repo) bleibt unverändert liegen.

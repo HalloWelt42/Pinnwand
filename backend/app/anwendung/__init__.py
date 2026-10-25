@@ -14,6 +14,7 @@ from ..verzeichnis import Verzeichnis, einrichten
 from ..vorlagen import MITGELIEFERT
 from .boards import Boards, Zugang
 from .ereignisse import Ereignisse
+from .hinweise import Hinweise
 from .inhalt import Inhalte
 from .karten import Karten
 from .konten import Konten
@@ -30,13 +31,14 @@ class Dienste:
     boards: Boards
     karten: Karten
     inhalte: Inhalte
+    hinweise: Hinweise
 
     @classmethod
     def bauen(cls, db: Datenbank, zugang: Zugang, uhr: Uhr | None = None) -> Dienste:
         ereignisse = Ereignisse()
         a = Anwendung(Verzeichnis(db), ereignisse, uhr)
         return cls(anwendung=a, ereignisse=ereignisse, konten=Konten(a), abfragen=Abfragen(a), boards=Boards(a, zugang),
-                   karten=Karten(a), inhalte=Inhalte(a))
+                   karten=Karten(a), inhalte=Inhalte(a), hinweise=Hinweise(a))
 
 
 class Start(Begleiter):

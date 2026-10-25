@@ -12,6 +12,7 @@ from fastapi import FastAPI
 from appkern.app import Geruest
 
 from .anwendung import Dienste, Start
+from .anwendung.hinweise import Faelligkeit
 from .einstellungen import AppEinstellungen
 from .fassung import FASSUNG, WURZEL
 from .schnittstelle.rest import router
@@ -25,7 +26,7 @@ def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None, uh
                       daten=daten, einstellungen=AppEinstellungen, oberflaeche=WURZEL / "frontend" / "dist",
                       transport=transport)
     dienste = Dienste.bauen(geruest.db, GeruestZugang(geruest), uhr)
-    geruest.begleiter_anmelden(Start(geruest.db))
+    geruest.begleiter_anmelden(Start(geruest.db), Faelligkeit(dienste.hinweise))
     app = geruest.fastapi()
     app.state.geruest = geruest
     app.state.dienste = dienste

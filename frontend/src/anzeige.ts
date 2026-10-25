@@ -31,7 +31,7 @@ export const HINWEIS_WEGE: { id: HinweisWeg; name: string; symbol: string; text:
 export const HINWEIS_ARTEN: { art: HinweisArt; name: string; symbol: string; farbe: Farbe; text: string }[] = [
   { art: "zugewiesen", name: "Zugewiesen", symbol: "fa-user-plus", farbe: "himmel", text: "Jemand macht dich für eine Karte zuständig" },
   { art: "faellig", name: "Fällig", symbol: "fa-calendar-day", farbe: "koralle", text: "Eine deiner Karten ist heute fällig oder überfällig" },
-  { art: "erwaehnt", name: "Erwähnt", symbol: "fa-at", farbe: "violett", text: "Jemand erwähnt dich mit @ in einem Kommentar" },
+  { art: "erwaehnt", name: "Erwähnt", symbol: "fa-at", farbe: "violett", text: "Jemand erwähnt dich mit @ in Beschreibung, Notizen oder einem Kommentar" },
   { art: "termin", name: "Termin", symbol: "fa-calendar-days", farbe: "petrol", text: "Ein Termin mit dir steht an oder ändert sich" },
   { art: "kommentar", name: "Kommentar", symbol: "fa-comment", farbe: "stahl", text: "Neuer Kommentar an einer Karte, für die du zuständig bist" },
   { art: "verschoben", name: "Verschoben", symbol: "fa-right-left", farbe: "tuerkis", text: "Jemand verschiebt eine Karte, für die du zuständig bist" },

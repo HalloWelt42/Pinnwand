@@ -2,14 +2,12 @@
   // Drücken und Halten mit füllendem Ring: Folgenreiches (erledigen) geschieht erst, wenn der Ring voll ist. Loslassen
   // vorher bricht ab; ein kurzes Tippen löst nichts aus und meldet nur, dass gehalten werden muss. Geht mit Finger, Maus
   // und Tastatur (Leertaste oder Enter halten).
-  let { beschriftung, symbol = "fa-check", dauerMs = 900, vorfuehren = 0, aktion, fortschritt = $bindable(0), hinweis = $bindable(false) }: {
+  let { beschriftung, symbol = "fa-check", dauerMs = 900, aktion, fortschritt = $bindable(0), hinweis = $bindable(false) }: {
     /** wofür gehalten wird, für Vorlesen und Hinweis */
     beschriftung: string;
     symbol?: string;
     /** so lange halten, bis es gilt */
     dauerMs?: number;
-    /** Entwurf: Ring steht gerade auf diesem Anteil (0 bis 1) */
-    vorfuehren?: number;
     aktion: () => void;
     fortschritt?: number;
     /** kurz getippt statt gehalten */
@@ -22,7 +20,6 @@
   let rahmen = 0;
   let hinweisUhr: ReturnType<typeof setTimeout> | undefined;
 
-  $effect(() => { if (vorfuehren) fortschritt = vorfuehren; });
   $effect(() => () => { cancelAnimationFrame(rahmen); clearTimeout(hinweisUhr); });
 
   function schritt(): void {

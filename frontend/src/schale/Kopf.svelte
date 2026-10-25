@@ -1,7 +1,8 @@
 <script lang="ts">
   // Kopf: Marke, Suche über alle Boards (Sprung zur Karte über ihren Pfad), deine Stunden von heute und der Woche (aus
-  // deinen Zeiteinträgen und deinem Zeitkonto), dein Timer mit Anhalten, Fortsetzen und Stopp, Hinweise und das Konto.
-  import { istAm, kartenNummer, passt, sitzungSek, sollTag, timerVon, ungelesen, zeitDerKarte } from "../daten/abfragen";
+  // deinen Zeiteinträgen und deinem Zeitkonto) und dein Timer, wenn eines deiner Boards Zeit erfasst, Hinweise und das
+  // Konto.
+  import { istAm, kartenNummer, modulIrgendwo, passt, sitzungSek, sollTag, timerVon, ungelesen, zeitDerKarte } from "../daten/abfragen";
   import { anhalten, fortsetzen, stoppen } from "../daten/anwendung/timer.svelte";
   import { uhr } from "../daten/uhr.svelte";
   import { ICH } from "../daten/ich";
@@ -11,6 +12,7 @@
   import { plusTage, montagVon } from "../regeln/tage";
   import { boardPfad, gehe } from "../weg.svelte";
 
+  const zeiterfassung = $derived(modulIrgendwo("zeiterfassung"));
   const timer = $derived(timerVon(ICH));
   const timerKarte = $derived(timer ? karte(timer.karte) : undefined);
   const woche = $derived(Array.from({ length: 7 }, (_, i) => plusTage(montagVon(uhr.heute), i)));
@@ -56,10 +58,12 @@
   {/if}
 </div>
 <div class="kopf-aktionen">
-  <a class="pw-stunden" href="/zeiten" title="Gebucht und Soll aus deinem Zeitkonto; zum Stundenzettel">
-    <span class="wert"><span>Heute</span><b>{dauer(heuteIst)} <small>/ {dauer(heuteSoll)}</small></b></span>
-    <span class="wert"><span>Woche</span><b>{dauer(wocheIst)} <small>/ {dauer(wocheSoll)}</small></b></span>
-  </a>
+  {#if zeiterfassung}
+    <a class="pw-stunden" href="/zeiten" title="Gebucht und Soll aus deinem Zeitkonto; zum Stundenzettel">
+      <span class="wert"><span>Heute</span><b>{dauer(heuteIst)} <small>/ {dauer(heuteSoll)}</small></b></span>
+      <span class="wert"><span>Woche</span><b>{dauer(wocheIst)} <small>/ {dauer(wocheSoll)}</small></b></span>
+    </a>
+  {/if}
   {#if timer && timerKarte}
     <div class="pw-laeuft" class:angehalten={!timer.seit} title={timer.seit ? "Dein Timer läuft (eine Karte zur Zeit)" : "Dein Timer ist angehalten"}>
       <i class="fa-solid {timer.seit ? 'fa-circle-play pw-akzent' : 'fa-circle-pause'}"></i>

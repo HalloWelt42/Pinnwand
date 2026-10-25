@@ -2,9 +2,9 @@
   // Schale der Telefonansicht, eigener Aufbau statt verkleinerter Rechnerschale: oben ein schmaler Kopf (Zurück, Titel,
   // Hinweise mit Zahl), darunter auf Wunsch eine feste Leiste der Ansicht (Spalten eines Boards), der Inhalt mit eigenem
   // Rollfeld, dann fest unten Knöpfe der Ansicht, die eine Meldung mit Rückgängig (teile/Meldung), die Laufleiste des Timers
-  // und die Fußleiste mit vier Reitern. Die sicheren Ränder halten oben die Statusleiste und unten die Wischleiste frei.
+  // und die Fußleiste mit den Reitern (Zeit nur mit Zeiterfassung). Die sicheren Ränder halten oben die Statusleiste und unten die Wischleiste frei.
   import type { Snippet } from "svelte";
-  import { timerVon, ungelesen, zeitDerKarte } from "../../daten/abfragen";
+  import { modulIrgendwo, timerVon, ungelesen, zeitDerKarte } from "../../daten/abfragen";
   import { anhalten, fortsetzen } from "../../daten/anwendung/timer.svelte";
   import { ICH } from "../../daten/ich";
   import { dauer } from "../../daten/format";
@@ -33,12 +33,14 @@
     children: Snippet;
   } = $props();
 
-  const REITER: [Reiter, string, string, string][] = [
+  const ALLE_REITER: [Reiter, string, string, string][] = [
     ["heute", "Heute", "fa-sun", "/heute"],
     ["boards", "Boards", "fa-table-columns", "/boards"],
     ["zeit", "Zeit", "fa-stopwatch", "/zeiten"],
     ["erfassen", "Erfassen", "fa-circle-plus", "/erfassen"],
   ];
+  /** Zeit nur, wenn eines deiner Boards Zeit erfasst */
+  const REITER = $derived(ALLE_REITER.filter(([id]) => id !== "zeit" || modulIrgendwo("zeiterfassung")));
   const neu = $derived(ungelesen());
   /** dein Timer (läuft oder angehalten) und seine Karte; die Laufleiste fehlt auf Zeit und auf der Karte selbst */
   const timer = $derived(timerVon(ICH));

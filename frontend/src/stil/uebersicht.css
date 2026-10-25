@@ -6,6 +6,8 @@
 .pw-uebersicht-seite { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .pw-uebersicht-kopfteile { display: flex; flex-direction: column; gap: var(--a3); }
 .pw-uebersicht-spalten { overflow-x: clip; }
+/* ohne Termine und Serien: eine Spalte über die ganze Breite */
+.pw-uebersicht-spalten.einspaltig { grid-template-columns: minmax(0, 1fr); }
 .pw-uebersicht-seite .rollfeld { overflow-x: clip; }
 .pw-uebersicht-kopfsymbol { color: var(--text-3); font-size: 0.8em; }
 a.pw-uebersicht-boardverweis { color: var(--text-2); font-weight: 600; }

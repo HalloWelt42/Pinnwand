@@ -1,9 +1,10 @@
 <script lang="ts">
   // Heute: alles für dich aus allen Boards, in denen du Mitglied bist (Vorbild "Was steht an" der alten App). Links deine
-  // Karten nach Fälligkeit, rechts Termine und heute fällige Serienkarten, oben dein Timer. Abhaken, Timer und Zusagen
+  // Karten nach Fälligkeit, rechts Termine und heute fällige Serienkarten (nur mit dem Modul Serien), oben dein Timer
+  // (nur mit Zeiterfassung). Abhaken, Timer und Zusagen
   // laufen über die Anwendungsfälle; jede Karte öffnet über ihren Pfad. Ohne Verbindung bleibt der letzte Stand sichtbar
   // und alles Schreibende ist gesperrt, damit nichts scheinbar gespeichert wird.
-  import { meinTag, timerVon, type MeinTag, type TagEintrag } from "../../daten/abfragen";
+  import { meinTag, modulIrgendwo, timerVon, type MeinTag, type TagEintrag } from "../../daten/abfragen";
   import { uhr } from "../../daten/uhr.svelte";
   import { ICH } from "../../daten/ich";
   import { datumJahr } from "../../daten/format";
@@ -18,6 +19,8 @@
   }
 
   const getrennt = $derived(stand.verbindung === "getrennt");
+  const serien = $derived(modulIrgendwo("serien"));
+  const vorlesbar = $derived(modulIrgendwo("vorlesen"));
   const g = $derived(meinTag());
   const nichtsFaellig = $derived(faellige(g).length === 0);
   const termine = $derived(g.termine);
@@ -58,19 +61,21 @@
   <div class="rahmen-kopf">
     <div class="seitenkopf">
       <h1>Heute</h1>
-      <div class="aktionen">
-        <button class="knopf" class:aktiv={vorlesen} title="Tagesplan vorlesen: Überfälliges, Heute, Termine und Serien"
-                onclick={() => (vorlesen = !vorlesen)}><i class="fa-solid {vorlesen ? 'fa-stop' : 'fa-volume-high'}"></i>{vorlesen ? "Stopp" : "Vorlesen"}</button>
-      </div>
-      <div class="unterzeile">{datumJahr(uhr.heute, true)} · deine Karten, Termine und Serien aus {boardZahl} Boards</div>
+      {#if vorlesbar}
+        <div class="aktionen">
+          <button class="knopf" class:aktiv={vorlesen} title="Tagesplan vorlesen: Überfälliges, Heute, Termine und Serien"
+                  onclick={() => (vorlesen = !vorlesen)}><i class="fa-solid {vorlesen ? 'fa-stop' : 'fa-volume-high'}"></i>{vorlesen ? "Stopp" : "Vorlesen"}</button>
+        </div>
+      {/if}
+      <div class="unterzeile">{datumJahr(uhr.heute, true)} · deine Karten{serien ? ", Termine und Serien" : ""} aus {boardZahl}
+        {boardZahl === 1 ? "Board" : "Boards"}</div>
     </div>
     {#if getrennt || (timer && timerKarte)}
       <div class="pw-uebersicht-kopfteile">
         {#if getrennt}
           <div class="hinweis warnung"><i class="fa-solid fa-plug-circle-xmark"></i>
-            <div><b>Keine Verbindung zum Server.</b> Du siehst den letzten Stand. Abhaken, Timer und Zusagen sind gesperrt, bis sie
-              wieder steht; was du jetzt tust, wird nicht gespeichert. Die Pinnwand verbindet sich von selbst neu, nächster Versuch in
-              8 Sekunden.</div>
+            <div><b>Keine Verbindung zum Server.</b> Du siehst den letzten Stand. Ändern ist gesperrt, bis sie wieder steht; was du
+              jetzt tust, wird nicht gespeichert. Die Pinnwand verbindet sich von selbst neu.</div>
           </div>
         {/if}
         {#if timer && timerKarte}<Laufend {timer} karte={timerKarte} board={board(timerKarte.board)} gesperrt={getrennt} />{/if}
@@ -78,14 +83,14 @@
     {/if}
   </div>
 
-  <div class="spalten pw-uebersicht-spalten">
+  <div class="spalten pw-uebersicht-spalten" class:einspaltig={!serien}>
     <div class="rollfeld">
       {#if nichtsFaellig}
         <div class="leer pw-uebersicht-nichts">
           <i class="fa-solid fa-mug-hot"></i>
           <h2>Heute ist nichts fällig</h2>
-          <p>Keine überfällige Karte, nichts für heute oder die nächsten sieben Tage und keine Serie. Was dir jemand zuweist, erscheint
-            hier sofort.</p>
+          <p>Keine überfällige Karte und nichts für heute oder die nächsten sieben Tage{serien ? ", keine Serie" : ""}. Was dir jemand
+            zuweist, erscheint hier sofort.</p>
         </div>
       {:else}
         {#each gruppen as gr (gr.name)}
@@ -115,27 +120,29 @@
       {/if}
       {@render ohneDatum()}
     </div>
-    <div class="rollfeld">
-      <section class="pw-uebersicht-gruppe" aria-label="Termine heute">
-        <h2><i class="fa-solid fa-calendar-check"></i>Termine heute<span class="zaehler">{termine.heute.length}</span></h2>
-        {#each termine.heute as t (t.id)}
-          <TerminZeile termin={t} gesperrt={getrennt} />
-        {:else}
-          <p class="pw-uebersicht-ruhig"><i class="fa-solid fa-circle-check"></i>Heute keine Termine.</p>
-        {/each}
-        {#if termine.woche.length}
-          <div class="etikett">Nächste sieben Tage</div>
-          {#each termine.woche as t (t.id)}<TerminZeile termin={t} mitTag gesperrt={getrennt} />{/each}
-        {/if}
-      </section>
-      <section class="pw-uebersicht-gruppe" aria-label="Serien heute">
-        <h2 title="Heute fällige Karten aus Serien"><i class="fa-solid fa-repeat"></i>Serien heute<span class="zaehler">{g.serien.length}</span></h2>
-        {#each g.serien as e (e.karte.id)}
-          <HeuteZeile eintrag={e} uhrzeit={serienzeit(e)} gesperrt={getrennt} />
-        {:else}
-          <p class="pw-uebersicht-ruhig"><i class="fa-solid fa-circle-check"></i>Heute ist keine Serie fällig.</p>
-        {/each}
-      </section>
-    </div>
+    {#if serien}
+      <div class="rollfeld">
+        <section class="pw-uebersicht-gruppe" aria-label="Termine heute">
+          <h2><i class="fa-solid fa-calendar-check"></i>Termine heute<span class="zaehler">{termine.heute.length}</span></h2>
+          {#each termine.heute as t (t.id)}
+            <TerminZeile termin={t} gesperrt={getrennt} />
+          {:else}
+            <p class="pw-uebersicht-ruhig"><i class="fa-solid fa-circle-check"></i>Heute keine Termine.</p>
+          {/each}
+          {#if termine.woche.length}
+            <div class="etikett">Nächste sieben Tage</div>
+            {#each termine.woche as t (t.id)}<TerminZeile termin={t} mitTag gesperrt={getrennt} />{/each}
+          {/if}
+        </section>
+        <section class="pw-uebersicht-gruppe" aria-label="Serien heute">
+          <h2 title="Heute fällige Karten aus Serien"><i class="fa-solid fa-repeat"></i>Serien heute<span class="zaehler">{g.serien.length}</span></h2>
+          {#each g.serien as e (e.karte.id)}
+            <HeuteZeile eintrag={e} uhrzeit={serienzeit(e)} gesperrt={getrennt} />
+          {:else}
+            <p class="pw-uebersicht-ruhig"><i class="fa-solid fa-circle-check"></i>Heute ist keine Serie fällig.</p>
+          {/each}
+        </section>
+      </div>
+    {/if}
   </div>
 </div>

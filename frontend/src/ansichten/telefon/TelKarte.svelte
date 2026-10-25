@@ -15,12 +15,10 @@
   import HaltKnopf from "./HaltKnopf.svelte";
   import { telPfad } from "./weg";
 
-  let { karte: k, halten = false, vorfuehren = 0, ort = false, von = "" }: {
+  let { karte: k, halten = false, ort = false, von = "" }: {
     karte: Karte;
     /** Ring zum Erledigen per Halten */
     halten?: boolean;
-    /** Entwurf: Ring steht gerade auf diesem Anteil */
-    vorfuehren?: number;
     /** Board und Spalte zeigen (Listen über alle Boards) */
     ort?: boolean;
     /** woher der Weg ins Detail kommt (für Zurück) */
@@ -51,7 +49,7 @@
 
 <div class="pw-tel-karte" class:haelt={fortschritt > 0} class:idee={k.art === "idee"}>
   {#if kannErledigen}
-    <HaltKnopf beschriftung="{k.schluessel} erledigen" {vorfuehren} aktion={() => erledigen(k.id)} bind:fortschritt bind:hinweis />
+    <HaltKnopf beschriftung="{k.schluessel} erledigen" aktion={() => erledigen(k.id)} bind:fortschritt bind:hinweis />
   {:else if erledigt}
     <span class="pw-tel-erledigt" title="Erledigt"><i class="fa-solid fa-check"></i></span>
   {/if}

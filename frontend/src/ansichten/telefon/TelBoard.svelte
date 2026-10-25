@@ -6,7 +6,7 @@
   import { board, kartenDerSpalte, ordnerVon } from "../../daten/stand.svelte";
   import { ZEITFENSTER } from "../../anzeige";
   import type { Spalte } from "../../modell";
-  import { geraet } from "./geraet.svelte";
+  import { geraet, geraetMerken } from "./geraet.svelte";
   import TelefonSchale from "./TelefonSchale.svelte";
   import TelKarte from "./TelKarte.svelte";
   import { telPfad } from "./weg";
@@ -22,7 +22,10 @@
   const zahl = (s: Spalte): number => (s.erledigt ? sichtbareKarten(b, s) : kartenDerSpalte(s.id)).length;
   const ueber = (s: Spalte): boolean => !s.erledigt && s.grenze !== undefined && zahl(s) > s.grenze;
 
-  function waehlen(s: Spalte): void { geraet.spalte[b.id] = s.id; }
+  function waehlen(s: Spalte): void {
+    geraet.spalte[b.id] = s.id;
+    geraetMerken();
+  }
   function nachbar(schritt: number): void {
     const i = b.spalten.indexOf(aktiv) + schritt;
     if (i >= 0 && i < b.spalten.length) waehlen(b.spalten[i]);
@@ -36,7 +39,7 @@
   });
 </script>
 
-<TelefonSchale titel={b.name} unter="{b.kuerzel} · {ordner}" reiter="boards" zurueck={telPfad("/boards")}>
+<TelefonSchale titel={b.name} unter={ordner ? `${b.kuerzel} · ${ordner}` : b.kuerzel} reiter="boards" zurueck={telPfad("/boards")}>
   {#snippet leiste()}
     <div class="pw-tel-spalten" bind:this={streifen} aria-label="Spalten des Boards">
       {#each b.spalten as s (s.id)}

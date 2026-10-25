@@ -13,11 +13,6 @@
   import TelefonSchale from "./TelefonSchale.svelte";
   import TelKarte from "./TelKarte.svelte";
 
-  let { entwurf = "" }: { entwurf?: string } = $props();
-
-  /** Entwurf "halten": an dieser Karte füllt sich gerade der Ring */
-  const VORGEFUEHRT = "c-h61";
-
   const tag = $derived(meinTag(ICH));
   const karten = (liste: TagEintrag[]): Karte[] => liste.map((e) => e.karte);
   const gruppen = $derived([
@@ -51,7 +46,7 @@
   <section class="pw-tel-abschnitt" aria-label={g.name}>
     <div class="etikett">{g.name}<span class="zaehler {g.zahl}">{g.karten.length}</span></div>
     {#each g.karten as k (k.id)}
-      <TelKarte karte={k} ort von="heute" halten={g.id !== "fertig"} vorfuehren={entwurf === "halten" && k.id === VORGEFUEHRT ? 0.5 : 0} />
+      <TelKarte karte={k} ort von="heute" halten={g.id !== "fertig"} />
     {/each}
   </section>
 {/snippet}

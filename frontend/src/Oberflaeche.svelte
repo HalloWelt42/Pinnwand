@@ -1,7 +1,7 @@
 <script lang="ts">
-  // Die Pinnwand nach der Anmeldung: Zustand aus dem Server und Ereignisstrom, Uhr, Weg. Jeder Pfad zeigt die Ansicht aus
+  // Die Pinnwand nach der Anmeldung: Zustand aus dem Server und Ereignisstrom, Uhr, Weg, Verbindungen des Gerüsts. Jeder Pfad zeigt die Ansicht aus
   // der Wegetabelle (routen.ts), am Rechner in der Schale, am Telefon in der eigenen Ansicht. "/" führt zu Heute.
-  import { geraet } from "appkern-oberflaeche";
+  import { geraet, verbindungenVerfolgen } from "appkern-oberflaeche";
   import { onMount, untrack } from "svelte";
   import { stand, verbinden } from "./daten/stand.svelte";
   import { uhrStarten } from "./daten/uhr.svelte";
@@ -10,7 +10,7 @@
   import { gehe, weg, wegStarten } from "./weg.svelte";
 
   onMount(() => {
-    const enden = [verbinden(), uhrStarten(), wegStarten()];
+    const enden = [verbinden(), uhrStarten(), wegStarten(), verbindungenVerfolgen()];
     return () => enden.forEach((ende) => ende());
   });
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   // Eine Karte in Heute: abhaken (in die Erledigt-Spalte ihres Boards), über ihren Pfad öffnen, Timer starten,
-  // anhalten oder fortsetzen. Liegengeblieben und Blockiert stehen als Marke an der Karte, damit jede Karte in Heute
-  // genau einmal steht; die Schwellen sind die Alterung des Boards.
+  // anhalten oder fortsetzen. Liegengeblieben und Blockiert stehen zusätzlich als Marke an der Karte, auch wenn sie
+  // wegen ihrer Fälligkeit in einem anderen Abschnitt steht; die Schwellen sind die Alterung des Boards.
   import { kartenNummer, laufendAuf, timerErlaubt, timerVon, zeitDerKarte } from "../../beispiel/abfragen";
   import { erledigen } from "../../beispiel/anwendung/karten.svelte";
   import { anhalten, fortsetzen, starten } from "../../beispiel/anwendung/timer.svelte";

@@ -60,13 +60,15 @@ export function alterTage(bewegtAm: string): number {
   return tageZwischen(bewegtAm.slice(0, 10), HEUTE);
 }
 
-/** Fälligkeit relativ zu heute: "heute", "morgen", "2 Tage über", sonst Datum */
+/** Fälligkeit relativ zu heute: "heute", "morgen", "2 Tage über", sonst Datum; rot überfällig, Bernstein von heute bis
+ *  in zwei Tagen (Mechanik M-39) */
 export function faelligText(iso: string): { text: string; klasse: "" | "warnung" | "gefahr" } {
   const t = tageZwischen(HEUTE, iso);
   if (t < 0) return { text: `${-t} ${-t === 1 ? "Tag" : "Tage"} über`, klasse: "gefahr" };
-  if (t === 0) return { text: "heute", klasse: "warnung" };
-  if (t === 1) return { text: "morgen", klasse: "" };
-  return { text: datum(iso, true), klasse: "" };
+  const bald = t <= 2 ? "warnung" : "";
+  if (t === 0) return { text: "heute", klasse: bald };
+  if (t === 1) return { text: "morgen", klasse: bald };
+  return { text: datum(iso, true), klasse: bald };
 }
 
 /** Laufende Sekunden seit einem Zeitpunkt bis jetzt */

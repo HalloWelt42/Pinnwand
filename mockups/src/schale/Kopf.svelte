@@ -1,13 +1,14 @@
 <script lang="ts">
-  // Kopf: Marke, Suche über alle Boards, deine Stunden von heute und der Woche (aus deinen Zeiteinträgen und deinem
-  // Zeitkonto), dein Timer mit Anhalten, Fortsetzen und Stopp, Hinweise und das Konto aus der Kellerwolke.
-  import { istAm, sitzungSek, sollTag, timerVon, ungelesen, zeitDerKarte } from "../beispiel/abfragen";
+  // Kopf: Marke, Suche über alle Boards (Sprung zur Karte über ihren Pfad), deine Stunden von heute und der Woche (aus
+  // deinen Zeiteinträgen und deinem Zeitkonto), dein Timer mit Anhalten, Fortsetzen und Stopp, Hinweise und das Konto.
+  import { istAm, kartenNummer, passt, sitzungSek, sollTag, timerVon, ungelesen, zeitDerKarte } from "../beispiel/abfragen";
   import { anhalten, fortsetzen, stoppen } from "../beispiel/anwendung/timer.svelte";
   import { HEUTE, ICH } from "../beispiel/daten";
   import { dauer } from "../beispiel/format";
-  import { karte, konto } from "../beispiel/stand.svelte";
+  import { karte, konto, stand } from "../beispiel/stand.svelte";
   import Person from "../board/Person.svelte";
   import { plusTage, montagVon } from "../regeln/tage";
+  import { boardPfad, gehe } from "../weg.svelte";
 
   const timer = $derived(timerVon(ICH));
   const timerKarte = $derived(timer ? karte(timer.karte) : undefined);
@@ -17,10 +18,42 @@
   const wocheIst = $derived(woche.filter((t) => t <= HEUTE).reduce((s, t) => s + istAm(ICH, t), 0));
   const wocheSoll = $derived(woche.reduce((s, t) => s + (sollTag(ICH, t)?.sollSek ?? 0), 0));
   const zahl = $derived(ungelesen());
+
+  /** Suche über alle Boards, in denen du Mitglied bist: höchstens acht Treffer, Enter öffnet den ersten */
+  let suche = $state("");
+  const treffer = $derived.by(() => {
+    if (suche.trim().length < 2) return [];
+    const boards = stand.boards.filter((b) => b.mitglieder.some((m) => m.konto === ICH));
+    return stand.karten.flatMap((k) => {
+      const b = boards.find((x) => x.id === k.board);
+      return b && passt(k, b, suche) ? [{ k, b }] : [];
+    }).slice(0, 8);
+  });
+  function oeffnen(i = 0): void {
+    const t = treffer[i];
+    if (!t) return;
+    suche = "";
+    gehe(boardPfad(t.b.kuerzel, kartenNummer(t.k)));
+  }
 </script>
 
 <div class="marke"><span class="pw-marke-symbol"><i class="fa-solid fa-thumbtack"></i></span><span class="marke-name">Pinnwand</span></div>
-<label class="suche"><i class="fa-solid fa-magnifying-glass"></i><input placeholder="Karten in allen Boards suchen" /></label>
+<div class="pw-kopfsuche">
+  <label class="suche"><i class="fa-solid fa-magnifying-glass"></i><input placeholder="Karten in allen Boards suchen" bind:value={suche}
+    aria-label="Karten in allen Boards suchen" autocomplete="off"
+    onkeydown={(e) => { if (e.key === "Enter") oeffnen(); if (e.key === "Escape") suche = ""; }} /></label>
+  {#if suche.trim().length >= 2}
+    <div class="pw-kopfsuche-treffer" role="listbox" aria-label="Treffer">
+      {#each treffer as t, i (t.k.id)}
+        <button type="button" role="option" aria-selected={i === 0} onclick={() => oeffnen(i)}>
+          <span class="pw-farbpunkt" data-farbe={t.b.farbe}></span><span class="pw-schluessel">{t.k.schluessel}</span>
+          <span class="titel">{t.k.titel}</span><span class="board">{t.b.name}</span></button>
+      {:else}
+        <div class="leer-zeile">Keine Karte passt zu "{suche.trim()}".</div>
+      {/each}
+    </div>
+  {/if}
+</div>
 <div class="kopf-aktionen">
   <a class="pw-stunden" href="/zeiten" title="Gebucht und Soll aus deinem Zeitkonto; zum Stundenzettel">
     <span class="wert"><span>Heute</span><b>{dauer(heuteIst)} <small>/ {dauer(heuteSoll)}</small></b></span>

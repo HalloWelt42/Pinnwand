@@ -44,6 +44,11 @@
   const g = $derived(meinTag());
   const nichtsFaellig = $derived(faellige(g).length === 0);
   const termine = $derived(g.termine);
+  // Liegengeblieben und Blockiert als eigene Abschnitte (wie in der alten App), jede Karte nur einmal: was schon wegen
+  // Fälligkeit steht, steht nicht noch einmal; was liegt, steht nicht noch unter Blockiert oder Ohne Datum
+  const liegt = $derived(g.liegengeblieben);
+  const blockiert = $derived(g.blockiert.filter((e) => !liegt.includes(e)));
+  const ohneDatumRest = $derived(g.ohneDatum.filter((e) => !liegt.includes(e) && !blockiert.includes(e)));
   const timer = $derived(timerVon(ICH));
   const timerKarte = $derived(timer ? karte(timer.karte) : undefined);
   const boardZahl = $derived(stand.boards.filter((b) => b.mitglieder.some((m) => m.konto === ICH)).length);
@@ -63,8 +68,8 @@
 
 {#snippet ohneDatum()}
   <section class="pw-uebersicht-gruppe" aria-label="Ohne Datum">
-    <h2 title="Dir zugewiesen, ohne Fälligkeit"><i class="fa-solid fa-inbox"></i>Ohne Datum<span class="zaehler">{g.ohneDatum.length}</span></h2>
-    {#each g.ohneDatum as e (e.karte.id)}
+    <h2 title="Dir zugewiesen, ohne Fälligkeit"><i class="fa-solid fa-inbox"></i>Ohne Datum<span class="zaehler">{ohneDatumRest.length}</span></h2>
+    {#each ohneDatumRest as e (e.karte.id)}
       <HeuteZeile eintrag={e} gesperrt={getrennt} />
     {:else}
       <p class="pw-uebersicht-ruhig"><i class="fa-solid fa-circle-check"></i>Keine Karte ohne Fälligkeit.</p>
@@ -118,6 +123,18 @@
             {/each}
           </section>
         {/each}
+      {/if}
+      {#if liegt.length}
+        <section class="pw-uebersicht-gruppe" aria-label="Liegengeblieben">
+          <h2 title="Offen, ohne laufenden Timer und seit der Gefahrschwelle des Boards nicht bewegt"><i class="fa-solid fa-hourglass-end"></i>Liegengeblieben<span class="zaehler">{liegt.length}</span></h2>
+          {#each liegt as e (e.karte.id)}<HeuteZeile eintrag={e} gesperrt={getrennt} />{/each}
+        </section>
+      {/if}
+      {#if blockiert.length}
+        <section class="pw-uebersicht-gruppe" aria-label="Blockiert">
+          <h2 title="Offen und blockiert, mit Grund"><i class="fa-solid fa-ban"></i>Blockiert<span class="zaehler">{blockiert.length}</span></h2>
+          {#each blockiert as e (e.karte.id)}<HeuteZeile eintrag={e} gesperrt={getrennt} />{/each}
+        </section>
       {/if}
       {@render ohneDatum()}
     </div>

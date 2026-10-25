@@ -8,11 +8,32 @@ import { stand } from "../stand.svelte";
 import { aendern } from "./meldung.svelte";
 import { neueKennung } from "./zeiten.svelte";
 
+/** Unberührte Vorbuchungen von Serien an ganzen Abwesenheitstagen zurücknehmen (Mechanik M-109): die Person fällt aus
+ *  den Zuständigen; bleibt niemand, geht die Karte. Angefasste Karten (Zeit, andere Spalte, erledigt) bleiben stehen. */
+function vorbuchungenZuruecknehmen(a: Omit<Abwesenheit, "id">): number {
+  if ((a.anteil ?? 1) < 1) return 0;
+  let n = 0;
+  for (const k of [...stand.karten]) {
+    const s = k.serie ? stand.serien.find((x) => x.id === k.serie) : undefined;
+    if (!s || !k.faellig || k.faellig < a.von || k.faellig > a.bis || !k.zustaendig.includes(a.konto)) continue;
+    const unberuehrt = k.spalte === s.zielspalte && !k.abgeschlossen && !stand.zeiteintraege.some((e) => e.karte === k.id);
+    if (!unberuehrt) continue;
+    k.zustaendig = k.zustaendig.filter((x) => x !== a.konto);
+    if (!k.zustaendig.length) {
+      stand.reihen[k.spalte] = (stand.reihen[k.spalte] ?? []).filter((id) => id !== k.id);
+      stand.karten = stand.karten.filter((x) => x.id !== k.id);
+    }
+    n++;
+  }
+  return n;
+}
+
 export function eintragen(a: Omit<Abwesenheit, "id">): void {
   aendern(() => {
     stand.abwesenheiten = [...stand.abwesenheiten.filter((x) => !(x.konto === a.konto && x.von <= a.bis && a.von <= x.bis)),
       { ...a, id: neueKennung("a") }];
-    return `${artName(a)} eingetragen: ${spanne(a.von, a.bis)}`;
+    const n = vorbuchungenZuruecknehmen(a);
+    return `${artName(a)} eingetragen: ${spanne(a.von, a.bis)}` + (n ? `; ${n} ${n === 1 ? "Vorbuchung" : "Vorbuchungen"} einer Serie zurückgenommen` : "");
   });
 }
 

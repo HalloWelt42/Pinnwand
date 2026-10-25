@@ -89,6 +89,21 @@
 .pw-laeuft .zeit { font-family: var(--schrift-zahl); font-weight: 700; color: var(--akzent); font-size: var(--klein); min-width: 0; }
 .pw-laeuft.angehalten { background: var(--bereich); border-color: var(--rand); }
 .pw-laeuft.angehalten .zeit { color: var(--text-2); }
+/* Suche über alle Boards: die Treffer schweben unter dem Feld */
+.pw-kopfsuche { position: relative; flex: 1 1 auto; min-width: 0; max-width: 560px; display: flex; }
+@media (max-width: 980px) { .pw-kopfsuche { display: none; } }
+.pw-kopfsuche-treffer {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 60; display: flex; flex-direction: column; padding: var(--a1);
+  background: var(--karte); border: 1px solid var(--rand-stark); border-radius: var(--r2); box-shadow: var(--schatten-schwebend);
+}
+.pw-kopfsuche-treffer button {
+  display: flex; align-items: center; gap: var(--a2); padding: var(--a2) var(--a3); min-width: 0; border: 0; border-radius: var(--r1);
+  background: none; color: var(--text); text-align: left; cursor: pointer; font-size: var(--klein);
+}
+.pw-kopfsuche-treffer button:hover, .pw-kopfsuche-treffer button:focus-visible, .pw-kopfsuche-treffer button[aria-selected="true"] { background: var(--karte-2); }
+.pw-kopfsuche-treffer .titel { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-kopfsuche-treffer .board { color: var(--text-3); font-size: var(--marke); white-space: nowrap; }
+.pw-kopfsuche-treffer .leer-zeile { padding: var(--a2) var(--a3); font-size: var(--klein); color: var(--text-3); }
 .pw-glocke { position: relative; }
 .pw-glocke .zaehler { position: absolute; top: -6px; right: -6px; min-width: 22px; height: 20px; padding: 0 5px; }
 

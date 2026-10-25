@@ -1,7 +1,8 @@
 """Anwendungsfälle an Karten. Verschieben ist ein Weg für Ziehen, Status im Detail, Telefon, Liste und Sammelaktion:
 beim Spaltenwechsel beginnt das Alter neu, verknüpfte Karten desselben Boards ziehen mit ans Ende, in einer
 Erledigt-Spalte gibt es das Abschlussdatum (Serienkarten ihren Termintag); über der Grenze nur eine Warnung. Jede
-Bewegung steht im Verlauf der Karte. Neue Karten bekommen die nächste Nummer ihres Boards (Schlüssel HAUS-12)."""
+Bewegung steht im Verlauf der Karte, die Zuständigen bekommen einen Hinweis. Neue Karten bekommen die nächste Nummer
+ihres Boards (Schlüssel HAUS-12)."""
 
 from __future__ import annotations
 
@@ -10,6 +11,7 @@ from typing import Literal
 from ..modell import Board, Ereignis, Gruppe, Karte, Kennung, Konto, Spalte
 from ..regeln.board import abschluss, spalte_von
 from ..regeln.tage import ist_tag
+from . import hinweise
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
 
 #: Abstand der Reihe zwischen zwei Karten; wird er zu eng, nummeriert die Spalte neu
@@ -101,9 +103,11 @@ def hinein(k: Kontext, b: Board, ids: list[Kennung], ziel: Spalte, platz: int | 
     for c in karten:
         if c.id in wechselnde:
             wechseln(k, c, ziel, b, False)
+            hinweise.verschoben(k, b, c, ziel)
         speichern(k, c)
     for c in mit:
         wechseln(k, c, ziel, b, True)
+        hinweise.verschoben(k, b, c, ziel, mit=next(x for x in karten if x.gruppe == c.gruppe))
         speichern(k, c)
     erste = karten[0]
     if not wechselnde:
@@ -152,6 +156,7 @@ class Karten:
                 c.abgeschlossen = abschluss(c, k.heute)
             einreihen(k, ziel, [c], None)
             speichern(k, c)
+            hinweise.erwaehnt(k, b, c, sorted(hinweise.erwaehnte(k, b, c.beschreibung)))
             grenze = ueber_grenze(k, ziel)
             return f"{c.schluessel} in {ziel.name} angelegt" + (f"; {grenze}" if grenze else "")
 

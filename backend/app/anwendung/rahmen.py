@@ -16,7 +16,7 @@ from .ereignisse import Ereignisse, Geaendert
 
 #: Tabellen, deren Zeilen einem Board gehören (Ereignis an seine Mitglieder)
 JE_BOARD = {"karten": "board", "gruppen": "board", "laufnummern": "board", "papierkorb": "board", "entfernt": "board"}
-#: Tabellen, deren Zeilen einer Person gehören (Ereignis nur an sie)
+#: Tabellen, deren Zeilen einer Person gehören (Ereignis und Antwort nur an sie, auch in einer Änderung an einem Board)
 JE_KONTO = {"ordner": "konto", "hinweise": "konto", "vorlagen": "konto"}
 #: Zähler laufen nur vorwärts: Rückgängig lässt sie stehen (und prüft sie nicht)
 NUR_VORWAERTS = {"laufnummern"}
@@ -112,10 +112,10 @@ class Anwendung:
             return text, journal, empfaenger
 
         (text, journal, empfaenger), bilder = await self.v.transaktion(transaktion)
-        geaendert = [Geaendert(tabelle=b.tabelle, id=b.id, daten=b.nachher) for b in bilder]
-        self.ereignisse.senden(geaendert, empfaenger)
+        anteile = [(Geaendert(tabelle=b.tabelle, id=b.id, daten=b.nachher), _eigentuemer(b)) for b in bilder]
+        self._verteilen(anteile, empfaenger)
         return Antwort(meldung=text if melden else None, rueckgaengig=journal if (rueckgaengig and journal) else None,
-                       geaendert=geaendert)
+                       geaendert=[g for g, eigen in anteile if eigen is None or konto.id in eigen])
 
     async def rueckgaengig(self, konto: Konto, journal_id: Kennung) -> Antwort:
         """Stellt die Vorher-Stände einer Änderung her, wenn jede Zeile noch ihren Nachher-Stand hat."""
@@ -141,6 +141,17 @@ class Anwendung:
 
         return await self.aendern(konto, arbeit, rueckgaengig=False)
 
+    def _verteilen(self, anteile: list[tuple[Geaendert, set[Kennung] | None]], empfaenger: set[Kennung] | None) -> None:
+        """Geteilte Zeilen an alle Empfänger; Zeilen, die einer Person gehören (ein Hinweis an sie), nur an diese."""
+        if empfaenger is None:
+            self.ereignisse.senden([g for g, eigen in anteile if eigen is None], None)
+            empfaenger = set().union(*(eigen for _, eigen in anteile if eigen))
+            for konto in empfaenger:
+                self.ereignisse.senden([g for g, eigen in anteile if eigen and konto in eigen], {konto})
+            return
+        for konto in empfaenger:
+            self.ereignisse.senden([g for g, eigen in anteile if eigen is None or konto in eigen], {konto})
+
     def _empfaenger(self, s: Schreiber, bilder: list[Bild]) -> set[Kennung] | None:
         """Wer die Änderung sehen darf: Mitglieder der berührten Boards, die berührten Personen; None: alle."""
         konten: set[Kennung] = set()
@@ -161,3 +172,13 @@ class Anwendung:
             else:
                 return None                                  # Konten, Gruppen: alle Verbundenen
         return konten
+
+
+def _eigentuemer(b: Bild) -> set[Kennung] | None:
+    """Wem eine geschriebene Zeile allein gehört (Hinweise, Ordner, Vorlagen, Einstellungen einer Person); None: geteilt."""
+    if b.tabelle == "person_einstellungen":
+        return {b.id}
+    if b.tabelle in JE_KONTO:
+        feld = JE_KONTO[b.tabelle]
+        return {d[feld] for d in (b.vorher, b.nachher) if d and d.get(feld)} or None
+    return None

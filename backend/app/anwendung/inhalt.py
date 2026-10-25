@@ -1,7 +1,8 @@
 """Anwendungsfälle am Inhalt von Karten: Felder bearbeiten, Art umschalten, kommentieren, Sammelaktionen (zuweisen,
 Label, Priorität). Der Server prüft jeden Wert gegen das Board (Mitglieder, Labels, eigene Felder) und schreibt die
-Verlaufszeilen selbst. Ein Konflikt entsteht nur, wenn genau ein geändertes Feld inzwischen anders ist als die
-Oberfläche es kannte (M-55); dann wird nichts still überschrieben."""
+Verlaufszeilen selbst. Einen Hinweis bekommt, wer neu zuständig ist, wer mit @ erwähnt wird und wer für eine Karte
+zuständig ist, die einen Kommentar bekommt. Ein Konflikt entsteht nur, wenn genau ein geändertes Feld inzwischen anders
+ist als die Oberfläche es kannte (M-55); dann wird nichts still überschrieben."""
 
 from __future__ import annotations
 
@@ -11,6 +12,7 @@ from pydantic import Field
 
 from ..modell import Board, Farbe, Karte, Kennung, Kommentar, Konto, Modell, Prioritaet, Punkt
 from ..regeln.tage import datum_text, ist_tag
+from . import hinweise
 from .karten import TITEL_LAENGE, karte_lesen, speichern, vermerken
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext
 
@@ -168,11 +170,13 @@ class Inhalte:
                 raise Abgelehnt("Der Start liegt nach dem Fälligkeitstag")
             if all(_normal(jetzt.get(n)) == _normal(_roh(w)) for n, w in neu.items()):
                 return None
+            alt = c.model_copy(deep=True)
             for zeile in verlaufszeilen(k, c, neu):
                 vermerken(k, c, zeile)
             for name, wert in neu.items():
                 setattr(c, name, wert)
             speichern(k, c)
+            hinweise.nach_bearbeiten(k, b, alt, c)
             return f"{c.schluessel}: {(text or '').strip()[:200] or 'Gespeichert'}"
 
         return await self.a.aendern(konto, arbeit)
@@ -197,7 +201,7 @@ class Inhalte:
 
         def arbeit(k: Kontext) -> str:
             c = karte_lesen(k, karte_id)
-            k.board_mit_recht(c.board, "kommentieren")
+            b = k.board_mit_recht(c.board, "kommentieren")
             if not t:
                 raise Abgelehnt("Ein Kommentar braucht Text")
             if len(t) > KOMMENTAR_LAENGE:
@@ -205,6 +209,7 @@ class Inhalte:
             c.kommentare.append(Kommentar(von=konto.id, zeit=k.jetzt, text=t))
             vermerken(k, c, "hat kommentiert")
             speichern(k, c)
+            hinweise.nach_kommentar(k, b, c, t)
             return f"Kommentar an {c.schluessel} gespeichert"
 
         return await self.a.aendern(konto, arbeit)
@@ -220,6 +225,7 @@ class Inhalte:
                     c.zustaendig.append(person)
                     vermerken(k, c, f"hat {name} zugewiesen")
                     speichern(k, c)
+                    hinweise.zugewiesen(k, b, c, [person])
             return f"{anzahl(len(karten))} {name} zugewiesen"
 
         return await self.a.aendern(konto, arbeit)

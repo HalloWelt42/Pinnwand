@@ -30,7 +30,7 @@ async def test_erster_stand(pw: Pinnwand):
     s = await pw.stand("anna")
     assert s["ich"] == "1" and s["jetzt"] == "2026-10-27T10:00:00"
     assert [(k["kellerwolke"], k["kuerzel"]) for k in s["konten"]] == [("anna", "AN")]
-    assert {v["id"] for v in s["vorlagen"]} == {"v-aufgaben", "v-projekt", "v-ideen"}
+    assert {v["id"] for v in s["vorlagen"]} == {"v-leer", "v-aufgaben", "v-projekt", "v-ideen"}
     assert s["boards"] == [] and s["karten"] == []
 
 
@@ -42,7 +42,9 @@ async def test_board_aus_vorlage(pw: Pinnwand):
     assert [s.get("zeitfenster") for s in b["spalten"]] == [None, None, "heute"]
     assert b["mitglieder"] == [{"konto": "1", "kellerwolke": "anna", "rolle": "besitzer", "seit": "2026-10-27"}]
     assert [r["id"] for r in b["rollen"]] == ["besitzer", "mitglied", "leser"]
-    assert b["module"]["zeiterfassung"] and b["module"]["serien"] and not b["module"]["arbeitszeit"]
+    # Module bietet diese Fassung noch keine an: keines ist eingeschaltet, Karten sind trotzdem Arbeit
+    assert not any(b["module"].values()) and b["kartenart"] == "arbeit"
+    assert (await pw.stand("anna"))["moduleDa"] == []
 
 
 async def test_board_abgelehnt(pw: Pinnwand):
@@ -161,6 +163,11 @@ async def test_verknuepfte_ziehen_mit(pw: Pinnwand):
     r = await pw.post("anna", f"/karten/{a['id']}/verschieben", {"nach": spalte(b, "Dran")})
     assert r.json()["meldung"] == "HAUS-1 nach Dran; 1 verknüpfte zieht mit"
     assert (await karte(pw, "anna", "HAUS-2"))["verlauf"][-1]["text"] == "mit verknüpfter Karte verschoben nach Dran"
+
+    g = gruppen[0]["id"]
+    r = await pw.post("anna", f"/gruppen/{g}/zeit-teilen", {"an": False})
+    assert r.json()["meldung"] == "Jede Karte zeigt nur ihre eigene Zeit"
+    assert not (await pw.stand("anna"))["gruppen"][0]["zeitTeilen"]
 
     await pw.post("anna", f"/karten/{a['id']}/loesen")
     s = await pw.stand("anna")

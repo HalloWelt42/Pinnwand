@@ -18,6 +18,9 @@ Prioritaet = Literal["keine", "niedrig", "mittel", "hoch", "dringend"]
 HinweisArt = Literal["zugewiesen", "faellig", "erwaehnt", "termin", "kommentar", "verschoben"]
 HinweisWeg = Literal["pinnwand", "push", "assistent"]
 MODULE: tuple[str, ...] = ("zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte", "vorlesen", "ki")
+#: Module, die diese Fassung der Pinnwand anbietet; die übrigen lassen sich in keinem Board einschalten
+MODULE_DA: tuple[str, ...] = ()
+Kartenart = Literal["arbeit", "idee"]
 
 
 class Modell(BaseModel):
@@ -107,6 +110,8 @@ class Board(Modell):
     name: str
     kuerzel: str
     farbe: Farbe
+    #: Art neuer Karten, wenn beim Anlegen keine gewählt ist
+    kartenart: Kartenart = "arbeit"
     spalten: list[Spalte] = Field(default_factory=list)
     labels: list[Label] = Field(default_factory=list)
     felder: list[Feld] = Field(default_factory=list)
@@ -157,7 +162,7 @@ class Karte(Modell):
     schluessel: str
     spalte: Kennung
     titel: str
-    art: Literal["arbeit", "idee"] = "arbeit"
+    art: Kartenart = "arbeit"
     beschreibung: str | None = None
     notizen: str | None = None
     zustaendig: list[Kennung] = Field(default_factory=list)
@@ -242,6 +247,7 @@ class Vorlage(Modell):
     beschreibung: str
     symbol: str
     spalten: list[VorlageSpalte]
+    kartenart: Kartenart = "arbeit"
     felder: list[VorlageFeld] = Field(default_factory=list)
     labels: list[VorlageLabel] = Field(default_factory=list)
     module: list[str] = Field(default_factory=list)

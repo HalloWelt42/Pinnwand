@@ -1,6 +1,6 @@
 """Reine Regeln: Kürzel, Rechte mit Modulen, Alterung, Archiv, Abschluss, Tage."""
 
-from app.modell import Board, BoardEinstellungen, Karte, Mitglied
+from app.modell import MODULE_DA, Board, BoardEinstellungen, Karte, Mitglied
 from app.regeln.board import abschluss, alterung, fenster_ab, hat_recht, im_archiv
 from app.regeln.kuerzel import grundform, kuerzel_fehler, kuerzel_vorschlag, person_kuerzel
 from app.regeln.tage import ist_tag
@@ -29,7 +29,8 @@ def test_rechte_folgen_rolle_und_modul():
     assert hat_recht(b, "karten.verschieben", "1") and not hat_recht(b, "karten.verschieben", "2")
     assert hat_recht(b, "kommentieren", "2") and not hat_recht(b, "kommentieren", "9")
     assert not hat_recht(b, "zeit.buchen", "1")                      # Modul aus: Recht gilt nicht
-    assert hat_recht(board(zeiterfassung=True), "zeit.buchen", "1")
+    # ein Modul, das diese Fassung nicht anbietet, gibt auch eingeschaltet kein Recht
+    assert hat_recht(board(zeiterfassung=True), "zeit.buchen", "1") == ("zeiterfassung" in MODULE_DA)
 
 
 def test_alterung_archiv_abschluss():

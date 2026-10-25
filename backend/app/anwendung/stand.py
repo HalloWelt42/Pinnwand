@@ -4,7 +4,7 @@ Papierkorb ihrer Boards. Archivierte Karten und einzelne Karten kommen über eig
 
 from __future__ import annotations
 
-from ..modell import Board, Karte, Kennung, Konto, Modell
+from ..modell import MODULE_DA, Board, Karte, Kennung, Konto, Modell
 from ..regeln.board import hat_recht, im_archiv
 from .rahmen import Abgelehnt, Anwendung
 
@@ -12,6 +12,8 @@ from .rahmen import Abgelehnt, Anwendung
 class Stand(Modell):
     jetzt: str
     ich: Kennung
+    #: Module, die sich einschalten lassen (die übrigen bietet diese Fassung nicht an)
+    module_da: list[str]
     konten: list[dict]
     boards: list[dict]
     karten: list[dict]
@@ -56,7 +58,7 @@ class Abfragen:
                        if d.get("art") == "board" and _darf_board_zurueck(d, konto.id)]
         vorlagen = [d for d in await self.a.v.alle("vorlagen") if not d.get("konto") or d.get("konto") == konto.id]
         return Stand(
-            jetzt=self.a.uhr.jetzt(), ich=konto.id,
+            jetzt=self.a.uhr.jetzt(), ich=konto.id, module_da=list(MODULE_DA),
             konten=await self.a.v.alle("konten"),
             boards=[b.json_daten() for b in boards],
             karten=karten,

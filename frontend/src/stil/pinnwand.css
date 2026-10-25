@@ -1,0 +1,261 @@
+/* Eigener Stil der Pinnwand: nur, was der Leitstand des Appkerns nicht hat (Board, Spalten, Karten, Kartendetail,
+   Personen, Zeitleisten). Nur Marken des Appkerns; Klassen mit pw- vorne, damit nichts mit der Schale kollidiert. */
+
+/* ═══ Farben der Palette als Variable --f (Spalten, Labels, Cover, Personen) ═══════════════════════════════ */
+
+[data-farbe="tuerkis"] { --f: var(--tuerkis); }
+[data-farbe="minze"] { --f: var(--minze); }
+[data-farbe="honig"] { --f: var(--honig); }
+[data-farbe="petrol"] { --f: var(--petrol); }
+[data-farbe="rose"] { --f: var(--rose); }
+[data-farbe="koralle"] { --f: var(--koralle); }
+[data-farbe="sand"] { --f: var(--sand); }
+[data-farbe="himmel"] { --f: var(--himmel); }
+[data-farbe="flieder"] { --f: var(--flieder); }
+[data-farbe="violett"] { --f: var(--violett); }
+[data-farbe="stahl"] { --f: var(--stahl); }
+
+/* ═══ Kleine Bausteine ════════════════════════════════════════════════════════════════════════════════════ */
+
+/* Person: Kürzel im Kreis, getönt in ihrer Farbe; Name steht im Hinweis */
+.pw-person {
+  width: 30px; height: 30px; flex: none; border-radius: 50%; display: inline-grid; place-items: center;
+  font-family: var(--schrift-zahl); font-size: var(--marke); font-weight: 700; letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--f, var(--stahl)) var(--toenung), var(--karte)); color: var(--f, var(--stahl));
+  box-shadow: 0 0 0 2px var(--karte);
+}
+.pw-person.gross { width: 38px; height: 38px; font-size: var(--klein); }
+.pw-personen { display: inline-flex; align-items: center; gap: 3px; }
+.pw-personen .mehr { margin-left: 4px; font-size: var(--marke); color: var(--text-3); }
+
+/* Label: Wort und Farbe, nie Farbe allein */
+.pw-label {
+  display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px; border-radius: var(--r1);
+  font-size: var(--marke); font-weight: 600; white-space: nowrap;
+  background: color-mix(in srgb, var(--f, var(--stahl)) var(--toenung), transparent); color: var(--f, var(--stahl));
+}
+
+/* Kleine Angaben auf Karte und in Listen (Schlüssel, Fälligkeit, Alter, Zähler) */
+.pw-angabe {
+  display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 7px; border-radius: var(--r1);
+  font-family: var(--schrift-zahl); font-size: var(--marke); font-weight: 600; color: var(--text-2); white-space: nowrap;
+}
+.pw-angabe i { font-size: 12px; color: var(--text-3); }
+.pw-angabe.flaeche { background: var(--karte-2); }
+.pw-angabe.warnung { background: color-mix(in srgb, var(--warn) var(--toenung), transparent); color: var(--warn); }
+.pw-angabe.warnung i { color: var(--warn); }
+.pw-angabe.gefahr { background: color-mix(in srgb, var(--gefahr) var(--toenung), transparent); color: var(--gefahr); }
+.pw-angabe.gefahr i { color: var(--gefahr); }
+.pw-angabe.gut { color: var(--gut); }
+.pw-angabe.gut i { color: var(--gut); }
+.pw-schluessel { font-family: var(--schrift-zahl); font-size: var(--marke); font-weight: 600; color: var(--text-3); letter-spacing: 0.02em; }
+
+/* Farbpunkt einer Spalte oder eines Boards */
+.pw-farbpunkt { width: 10px; height: 10px; border-radius: 50%; background: var(--f, var(--stahl)); flex: none; display: inline-block; }
+
+/* Timer-Knopf: Abspielen; läuft er, Bernstein mit Zeit */
+.pw-timer {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 9px; border-radius: var(--r1);
+  border: 1px solid var(--rand); background: var(--karte-2); color: var(--text-2); cursor: pointer;
+  font-family: var(--schrift-zahl); font-size: var(--marke); font-weight: 600;
+}
+.pw-timer i { font-size: 11px; }
+.pw-timer:hover { color: var(--text); border-color: var(--rand-stark); }
+.pw-timer.laeuft { background: var(--akzent-flaeche); color: var(--auf-akzent); border-color: transparent; }
+.pw-timer.fremd { background: color-mix(in srgb, var(--akzent-flaeche) var(--toenung), transparent); color: var(--akzent); border-color: transparent; cursor: default; }
+
+/* ═══ Kopf: Stunden, laufender Timer, Hinweise, Konto ═════════════════════════════════════════════════════ */
+
+.pw-marke-symbol {
+  width: 36px; height: 36px; border-radius: var(--r2); display: grid; place-items: center; flex: none;
+  background: var(--app-farbe, var(--akzent-flaeche)); color: var(--auf-farbe);
+}
+.pw-marke-symbol i { font-size: 18px; }
+.pw-stunden { display: flex; gap: var(--a1); flex: none; color: inherit; text-decoration: none; }
+.pw-stunden:hover .wert { background: var(--karte-2); }
+.pw-stunden .wert {
+  display: inline-flex; flex-direction: column; justify-content: center; height: 44px; padding: 0 var(--a3);
+  border-radius: var(--r2); background: var(--bereich); line-height: 1.1;
+}
+.pw-stunden .wert span { font-size: var(--marke); color: var(--text-3); }
+.pw-stunden .wert b { font-family: var(--schrift-zahl); font-size: var(--klein); font-weight: 600; color: var(--text); }
+.pw-stunden .wert b small { color: var(--text-3); font-weight: 500; font-size: 1em; }
+.pw-laeuft {
+  display: inline-flex; align-items: center; gap: var(--a2); height: 44px; padding: 0 var(--a2) 0 var(--a3); flex: 0 1 auto; min-width: 0;
+  border-radius: var(--r2); background: color-mix(in srgb, var(--akzent-flaeche) var(--toenung), transparent);
+  border: 1px solid color-mix(in srgb, var(--akzent-flaeche) 45%, transparent);
+}
+.pw-laeuft .titel { min-width: 0; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--klein); }
+.pw-laeuft .zeit { font-family: var(--schrift-zahl); font-weight: 700; color: var(--akzent); font-size: var(--klein); min-width: 0; }
+.pw-laeuft.angehalten { background: var(--bereich); border-color: var(--rand); }
+.pw-laeuft.angehalten .zeit { color: var(--text-2); }
+/* Suche über alle Boards: die Treffer schweben unter dem Feld */
+.pw-kopfsuche { position: relative; flex: 1 1 auto; min-width: 0; max-width: 560px; display: flex; }
+@media (max-width: 980px) { .pw-kopfsuche { display: none; } }
+.pw-kopfsuche-treffer {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 60; display: flex; flex-direction: column; padding: var(--a1);
+  background: var(--karte); border: 1px solid var(--rand-stark); border-radius: var(--r2); box-shadow: var(--schatten-schwebend);
+}
+.pw-kopfsuche-treffer button {
+  display: flex; align-items: center; gap: var(--a2); padding: var(--a2) var(--a3); min-width: 0; border: 0; border-radius: var(--r1);
+  background: none; color: var(--text); text-align: left; cursor: pointer; font-size: var(--klein);
+}
+.pw-kopfsuche-treffer button:hover, .pw-kopfsuche-treffer button:focus-visible, .pw-kopfsuche-treffer button[aria-selected="true"] { background: var(--karte-2); }
+.pw-kopfsuche-treffer .titel { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-kopfsuche-treffer .board { color: var(--text-3); font-size: var(--marke); white-space: nowrap; }
+.pw-kopfsuche-treffer .leer-zeile { padding: var(--a2) var(--a3); font-size: var(--klein); color: var(--text-3); }
+.pw-glocke { position: relative; }
+.pw-glocke .zaehler { position: absolute; top: -6px; right: -6px; min-width: 22px; height: 20px; padding: 0 5px; }
+
+/* ═══ Seitenleiste: Ordner und Boards ═════════════════════════════════════════════════════════════════════ */
+
+.pw-ordner { display: flex; align-items: center; gap: var(--a2); padding: var(--a2) var(--a3) 2px; color: var(--text-3);
+             font-size: var(--marke); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.pw-ordner i { font-size: 12px; }
+.navi.pw-boardnavi { padding-left: calc(var(--a3) + 6px); }
+.navi.pw-boardnavi .pw-farbpunkt { margin: 0 6px; }
+.pw-boardkuerzel { display: none; }
+.pw-angabe.pw-idee, .pw-angabe.pw-idee i { color: var(--flieder); }
+.pw-akzent { color: var(--akzent); }
+/* schmale Seitenleiste (Symbolleiste des Leitstands unter 1240 px): Ordner als Trennstrich, Boards mit ihrem Kürzel */
+@media (max-width: 1240px) {
+  .pw-ordner { font-size: 0; justify-content: center; padding: var(--a3) 0 var(--a1); border-top: 1px solid var(--rand); margin-top: var(--a2); }
+  .pw-ordner i { font-size: 13px; }
+  .navi.pw-boardnavi { padding: 8px 0; }
+  .navi.pw-boardnavi .pw-farbpunkt { display: none; }
+  .navi.pw-boardnavi .pw-boardkuerzel {
+    display: inline-grid; place-items: center; height: 26px; padding: 0 5px; border-radius: var(--r1); letter-spacing: 0.02em;
+    font-family: var(--schrift-zahl); font-size: var(--marke); font-weight: 700;
+    background: color-mix(in srgb, var(--f, var(--stahl)) var(--toenung), transparent); color: var(--f, var(--stahl));
+  }
+}
+.pw-seite-fuss { margin-top: auto; padding-top: var(--a3); display: flex; flex-direction: column; gap: 2px; }
+
+/* Die eine Meldung nach jeder Änderung: am Rechner unten rechts über dem Fuß (am Telefon: telefon.css) */
+.pw-meldungen { position: fixed; right: var(--a5); bottom: calc(var(--fuss-hoehe) + var(--a3)); display: flex; flex-direction: column; gap: var(--a2); z-index: 30; max-width: min(460px, calc(100% - 2 * var(--a5))); }
+.pw-meldung { display: flex; align-items: center; gap: var(--a3); padding: var(--a3) var(--a3) var(--a3) var(--a4); border-radius: var(--r2);
+              background: var(--karte-2); box-shadow: var(--schatten-schwebend); border: 1px solid var(--rand-stark); font-size: var(--klein); }
+.pw-meldung > span { flex: 1; min-width: 0; }
+.pw-meldung i.zeichen { color: var(--info); }
+.pw-meldung.gefahr i.zeichen { color: var(--gefahr); }
+
+/* ═══ Galerie und Entwurfsleiste (nur in den Entwürfen) ═══════════════════════════════════════════════════ */
+
+.pw-galerie { height: 100vh; overflow-y: auto; overflow-x: clip; }
+.pw-galerie-innen { max-width: 1180px; margin: 0 auto; padding: var(--a6) var(--a5) 120px; display: flex; flex-direction: column; gap: var(--a4); }
+.pw-galerie-gruppe { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: var(--a3); }
+.pw-galerie a.karte { display: flex; flex-direction: column; gap: var(--a2); color: var(--text); }
+.pw-galerie a.karte .kopf-zeile { display: flex; align-items: center; gap: var(--a2); }
+.pw-galerie a.karte .kopf-zeile i { color: var(--akzent); width: 22px; text-align: center; }
+.pw-galerie a.karte p { margin: 0; color: var(--text-2); font-size: var(--klein); }
+.pw-entwurfsleiste {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: 2px; z-index: 100;
+  display: flex; align-items: center; gap: var(--a1); padding: 2px; border-radius: var(--r2); height: calc(var(--fuss-hoehe) - 4px);
+  background: var(--karte-2); border: 1px solid var(--rand-stark); box-shadow: var(--schatten-schwebend); max-width: calc(100vw - 24px);
+}
+.pw-entwurfsleiste .titel { font-size: var(--klein); color: var(--text-2); padding: 0 var(--a2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-entwurfsleiste .knopf { height: calc(var(--fuss-hoehe) - 10px); }
+.pw-entwurfsleiste .knopf.symbol { width: calc(var(--fuss-hoehe) - 10px); }
+/* eingeklappt: nur ein Griff am linken Rand, auf halber Höhe */
+.pw-entwurfsleiste.zu { left: 0; top: 50%; bottom: auto; transform: translateY(-50%); border-radius: 0 var(--r2) var(--r2) 0; opacity: 0.85; }
+
+/* Telefonrahmen der Entwürfe: 390 x 844 wie ein gängiges Telefon; der Inhalt ist die eigene Telefonansicht */
+.pw-buehne { height: 100vh; overflow: auto; display: flex; gap: var(--a6); align-items: flex-start; justify-content: center; padding: var(--a6) var(--a4) 90px; flex-wrap: wrap; background: var(--mulde, var(--hg)); }
+.pw-telefon { width: 390px; height: 844px; flex: none; border-radius: 46px; overflow: hidden; position: relative; background: var(--hg);
+              box-shadow: 0 0 0 10px var(--karte-3), var(--schatten-schwebend); display: flex; flex-direction: column; }
+.pw-buehne .erklaerung { max-width: 360px; color: var(--text-2); font-size: var(--klein); display: flex; flex-direction: column; gap: var(--a2); }
+.pw-buehne .erklaerung h2 { color: var(--text); }
+
+/* Auf einem echten Telefon (und in der Prüfung bei 390 px) füllt die Telefonansicht den Schirm, ohne Rahmen */
+@media (max-width: 600px) {
+  .pw-buehne { padding: 0; gap: 0; display: block; background: var(--hg); }
+  .pw-telefon { width: 100%; height: 100dvh; border-radius: 0; box-shadow: none; }
+  .pw-buehne .erklaerung { display: none; }
+}
+
+/* ═══ Gemeinsame Eingaben (teile/): Farbwahl, Personenwahl, Dauer, Datum ═══════════════════════════════════ */
+
+/* Farbwahl: Palette als Knöpfe, das Wort dabei; nie ein nativer Farbwähler */
+.pw-farbwahl { display: inline-flex; align-items: center; gap: var(--a2); flex-wrap: wrap; min-width: 0; }
+.pw-farbwahl .chip { height: 36px; }
+.pw-farbwahl .chip i { font-size: 11px; color: var(--text-3); }
+.pw-farbwahl-name { display: inline-flex; align-items: center; gap: 6px; font-size: var(--klein); color: var(--text-2); }
+.pw-farbwahl-palette { display: flex; flex-wrap: wrap; gap: 6px; }
+.pw-farbwahl-palette button { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; background: var(--f, var(--stahl)); cursor: pointer; }
+.pw-farbwahl-palette button.kein { background: var(--karte-2); border-color: var(--rand-stark); }
+.pw-farbwahl-palette button.gewaehlt { box-shadow: 0 0 0 2px var(--hg), 0 0 0 4px var(--text); }
+
+/* Person finden: Textfeld mit Vorschlägen, die den Inhalt darunter schieben (nichts überdeckt) */
+.pw-personenwahl { display: flex; flex-direction: column; gap: var(--a1); max-width: 460px; min-width: 0; }
+.pw-personenwahl .suche { flex: none; max-width: none; width: 100%; }
+.pw-personenwahl-vorschlaege { display: flex; flex-direction: column; padding: var(--a1); background: var(--karte); border: 1px solid var(--rand-stark); border-radius: var(--r2); }
+.pw-personenwahl-vorschlaege button {
+  display: flex; align-items: center; gap: var(--a3); padding: var(--a2) var(--a3); min-width: 0;
+  border: 0; border-radius: var(--r1); background: none; color: var(--text); text-align: left; cursor: pointer;
+}
+.pw-personenwahl-vorschlaege button:hover, .pw-personenwahl-vorschlaege button:focus-visible { background: var(--karte-2); }
+.pw-personenwahl-vorschlaege .wer { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; overflow-wrap: anywhere; }
+.pw-personenwahl-vorschlaege .woher { margin-left: auto; font-size: var(--marke); color: var(--text-3); text-align: right; }
+.pw-personenwahl-vorschlaege .leer-zeile { padding: var(--a2) var(--a3); font-size: var(--klein); color: var(--text-3); }
+.pw-personenwahl.schwebend { position: relative; }
+.pw-personenwahl.schwebend .pw-personenwahl-vorschlaege {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 40; min-width: 100%; width: max-content; max-width: 420px;
+  box-shadow: var(--schatten-schwebend);
+}
+.pw-personenwahl-neu { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; flex: none;
+                       background: var(--karte-2); color: var(--text-3); font-size: var(--klein); box-shadow: 0 0 0 2px var(--karte); }
+
+/* Dauer: ruhig wie Text, beim Überfahren und im Fokus als Feld erkennbar; Unlesbares rot statt still verworfen */
+.pw-dauerfeld {
+  width: 100%; min-width: 0; height: 34px; padding: 0 6px; text-align: right;
+  font-family: var(--schrift-zahl); font-size: var(--klein); font-weight: 600; color: var(--text);
+  background: transparent; border: 1px solid transparent; border-radius: var(--r1); outline: 0;
+}
+.pw-dauerfeld:hover { border-color: var(--rand-stark); background: var(--karte); }
+.pw-dauerfeld:focus { border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); background: var(--karte); }
+.pw-dauerfeld.gross { height: 38px; font-size: var(--gross); }
+.pw-dauerfeld.feld { border-color: var(--rand); background: var(--karte); text-align: left; padding: 0 var(--a3); height: 40px; }
+.pw-dauerfeld.falsch, .eingabe.falsch { border-color: color-mix(in srgb, var(--gefahr) 70%, transparent); background: color-mix(in srgb, var(--gefahr) 8%, var(--karte)); }
+
+/* Datum als Textfeld in deutscher Schreibweise, darunter, was verstanden wurde */
+.pw-datumfeld { display: inline-flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pw-datumfeld .eingabe { width: 100%; }
+.pw-datumfeld small { font-size: var(--marke); color: var(--text-3); min-height: 1.3em; }
+.pw-datumfeld small.falsch { color: var(--gefahr); }
+
+/* Markdown-Text (Beschreibung, Notizen, Kommentare) aus teile/markdown.ts, am Rechner und am Telefon gleich */
+.pw-md { overflow-wrap: anywhere; }
+.pw-md :is(p, ul, ol, pre, blockquote, .pw-md-tabelle, h1, h2, h3, h4, h5, h6, hr) { margin: 0 0 var(--a2); }
+.pw-md > :last-child { margin-bottom: 0; }
+.pw-md :is(ul, ol) { padding-left: 1.4em; }
+.pw-md li > :is(ul, ol) { margin: 2px 0 0; }
+.pw-md li.aufgabe { list-style: none; margin-left: -1.4em; }
+.pw-md li.aufgabe > i { display: inline-block; width: 1.4em; color: var(--text-3); }
+.pw-md :is(h1, h2, h3) { font-size: var(--titel); font-weight: 700; line-height: 1.3; }
+.pw-md :is(h4, h5, h6) { font-size: var(--gross); font-weight: 700; line-height: 1.3; }
+.pw-md :is(h5, h6) { color: var(--text-2); }
+.pw-md a { text-decoration: underline; text-underline-offset: 2px; }
+.pw-md code { font-family: var(--schrift-code); font-size: var(--klein); padding: 1px 4px; border-radius: var(--r1); background: var(--karte-2); }
+.pw-md pre { padding: var(--a3); border-radius: var(--r2); background: var(--karte-2); overflow-x: auto; }
+.pw-md pre code { padding: 0; background: none; }
+.pw-md blockquote { padding: var(--a2) var(--a3); border-radius: var(--r2); background: var(--karte-2); color: var(--text-2); }
+.pw-md hr { height: 1px; border: 0; background: var(--rand-stark); }
+.pw-md .pw-md-tabelle { overflow-x: auto; }
+.pw-md table { border-collapse: collapse; font-size: var(--klein); }
+.pw-md :is(th, td) { padding: 4px var(--a2); border: 1px solid var(--rand-stark); text-align: left; vertical-align: top; }
+.pw-md th { background: var(--karte-2); font-weight: 600; }
+.pw-md :is(th, td).mitte { text-align: center; }
+.pw-md :is(th, td).rechts { text-align: right; }
+.pw-md .pw-erwaehnt { color: var(--akzent); font-weight: 600; }
+
+/* Ganze Zahl in Grenzen (teile/Zahlfeld): Zahlenschrift, rechtsbündig, der Grund steht darunter */
+.pw-zahlfeld { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--a2); flex-wrap: wrap; min-width: 0; }
+.pw-zahlfeld .eingabe { width: 90px; height: 36px; text-align: right; font-family: var(--schrift-zahl); }
+.pw-zahlfeld .einheit { font-size: var(--klein); color: var(--text-3); }
+.pw-zahlfeld .fehler { flex-basis: 100%; font-size: var(--klein); color: var(--gefahr); }
+
+/* Farbe je Priorität, eine Zuordnung für Board, Liste und Detail (immer mit Wort oder Hinweis, nie Farbe allein) */
+[data-prioritaet] { --prio: var(--stahl); }
+[data-prioritaet="dringend"] { --prio: var(--gefahr); }
+[data-prioritaet="hoch"] { --prio: var(--warn); }
+[data-prioritaet="mittel"] { --prio: var(--honig); }

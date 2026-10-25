@@ -127,8 +127,8 @@ class Karten:
     async def anlegen(self, konto: Konto, board_id: Kennung, titel: str, spalte: Kennung | None = None,
                       art: Literal["arbeit", "idee"] | None = None, faellig: str | None = None,
                       beschreibung: str | None = None) -> Antwort:
-        """Neue Karte am Ende der Spalte (ohne: die erste offene), zuständig ist, wer sie anlegt. Ohne Art: Arbeit, wenn
-        das Board Zeit erfasst, sonst Idee."""
+        """Neue Karte am Ende der Spalte (ohne: die erste offene), zuständig ist, wer sie anlegt. Ohne Art: die Kartenart
+        des Boards."""
         titel = titel.strip()
 
         def arbeit(k: Kontext) -> str:
@@ -144,7 +144,7 @@ class Karten:
                 raise Abgelehnt("Diese Spalte gibt es in diesem Board nicht", 400)
             nummer = k.naechste_nummer(b.id)
             c = Karte(id=neue_kennung("c"), board=b.id, schluessel=f"{b.kuerzel}-{nummer}", spalte=ziel.id, titel=titel,
-                      art=art or ("arbeit" if b.module.get("zeiterfassung") else "idee"),
+                      art=art or b.kartenart,
                       beschreibung=(beschreibung or "").strip() or None, zustaendig=[konto.id], faellig=faellig or None,
                       bewegt_am=k.jetzt, erstellt_am=k.jetzt,
                       verlauf=[Ereignis(zeit=k.jetzt, von=konto.id, text="hat die Karte angelegt")])
@@ -213,6 +213,23 @@ class Karten:
             speichern(k, a)
             speichern(k, b)
             return f"{a.schluessel} und {b.schluessel} verknüpft: ziehen zusammen, Zeit wird geteilt"
+
+        return await self.a.aendern(konto, arbeit)
+
+    async def zeit_teilen(self, konto: Konto, gruppe_id: Kennung, an: bool) -> Antwort:
+        """Gemeinsame Zeit einer Gruppe zeigen oder nicht (gebucht wird immer je Karte)."""
+
+        def arbeit(k: Kontext) -> str | None:
+            d = k.s.lies("gruppen", gruppe_id)
+            if d is None:
+                raise Abgelehnt("Diese Verknüpfung gibt es nicht (mehr)", 404)
+            g = Gruppe.model_validate(d)
+            k.board_mit_recht(g.board, "karten.bearbeiten")
+            if g.zeit_teilen == an:
+                return None
+            g.zeit_teilen = an
+            k.s.schreib("gruppen", g.json_daten())
+            return "Die Gruppe zeigt ihre gemeinsame Zeit" if an else "Jede Karte zeigt nur ihre eigene Zeit"
 
         return await self.a.aendern(konto, arbeit)
 

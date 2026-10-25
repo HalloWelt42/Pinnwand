@@ -3,7 +3,7 @@ Abschlussdatum. Gleich frontend/src/regeln/board.ts; der Server prüft mit genau
 
 from __future__ import annotations
 
-from ..modell import Board, BoardEinstellungen, Karte, Kennung, Spalte
+from ..modell import MODULE_DA, Board, BoardEinstellungen, Karte, Kennung, Spalte
 from .tage import montag_von, plus_tage, tage_zwischen
 
 #: Rechte jedes Moduls; ein Recht eines abgeschalteten Moduls gilt nicht
@@ -34,7 +34,7 @@ def hat_recht(b: Board, recht: str, konto: Kennung) -> bool:
     if m is None:
         return False
     modul = modul_von(recht)
-    if modul != "kern" and not b.module.get(modul, False):
+    if modul != "kern" and not (modul in MODULE_DA and b.module.get(modul, False)):
         return False
     rolle = next((r for r in b.rollen if r.id == m.rolle), None)
     return rolle is not None and recht in rolle.rechte

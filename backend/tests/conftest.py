@@ -3,7 +3,6 @@ App-Schlüssel, bert und cora dürfen erst nach einer Einladung), feste Uhr, Anm
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -13,32 +12,7 @@ import pytest
 
 from app.main import app_bauen
 from app.uhr import Uhr
-
-PERSONEN = {"anna": "1", "bert": "2", "cora": "3"}
-PASSWORT = "geheim"
-
-
-def benutzer(name: str) -> dict:
-    return {"id": PERSONEN[name], "name": name, "rolle": "mitglied", "aktiv": True}
-
-
-def kellerwolke(request: httpx.Request) -> httpx.Response:
-    pfad = request.url.path
-    if pfad == "/api/v1/ablage/ich":
-        return httpx.Response(200, json={"app": "Pinnwand", "konto": "anna", "rechte": []})
-    if pfad == "/api/v1/auth/login":
-        e = json.loads(request.content)
-        if e["kennung"] not in PERSONEN or e["passwort"] != PASSWORT:
-            return httpx.Response(401, json={"detail": "Anmeldung fehlgeschlagen"})
-        return httpx.Response(200, json={"token": f"t-{e['kennung']}", "benutzer": benutzer(e["kennung"])})
-    if pfad == "/api/v1/auth/status":
-        name = (request.headers.get("x-kellerwolke-sitzung") or "").removeprefix("t-")
-        ok = name in PERSONEN
-        return httpx.Response(200, json={"angemeldet": ok, "benutzer": benutzer(name) if ok else None})
-    if pfad.startswith("/api/v1/auth/"):
-        return httpx.Response(200, json={})
-    return httpx.Response(404, json={"detail": "nicht da"})
-
+from nachgestellt import EINRICHTUNG, PASSWORT, kellerwolke
 
 @dataclass
 class Zeiger:
@@ -94,7 +68,7 @@ async def pw(tmp_path: Path):
     app = app_bauen(tmp_path / "daten", transport=httpx.MockTransport(kellerwolke), uhr=Uhr(zeiger))
     await app.state.geruest.starten()
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
-        r = await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_x"})
+        r = await c.post("/api/v1/einrichtung", json=EINRICHTUNG)
         assert r.status_code == 200, r.text
         p = Pinnwand(c, app, zeiger)
         assert (await p.anmelden("anna")).status_code == 200

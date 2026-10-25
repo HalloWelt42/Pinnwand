@@ -1,0 +1,351 @@
+/* Stil des Bereichs Zeit: Stundenzettel (pw-zeiten-), Arbeitszeit mit Zeitkonto, Kalender, Urlaub und Team
+   (pw-arbeitszeit-), Berichte (pw-berichte-), gemeinsame kleine Teile (pw-zeit-). Nur Marken des Appkerns; die Bausteine
+   des Leitstands bleiben unverändert, hier steht nur, was sie nicht haben. */
+
+/* ═══ Farben der Abwesenheiten: eine Stelle für alle Ansichten, immer mit Wort oder Kürzel ═══════════════ */
+
+.pw-zeiten-raum .art-urlaub { --f: var(--himmel); }
+.pw-zeiten-raum .art-krank { --f: var(--koralle); }
+.pw-zeiten-raum .art-frei { --f: var(--sand); }
+.pw-zeiten-raum .art-fortbildung { --f: var(--violett); }
+.pw-zeiten-raum .art-feiertag, .pw-zeiten-raum .ft { --f: var(--rose); }
+.pw-zeiten-raum .halb { --f: var(--honig); }
+
+/* ═══ Gemeinsame kleine Teile ═════════════════════════════════════════════════════════════════════════════ */
+
+.pw-zeiten-raum { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+/* Karte in Listen: Farbpunkt des Boards, Schlüssel, Titel */
+.pw-zeit-karte { display: flex; align-items: center; gap: var(--a2); min-width: 0; }
+.pw-zeit-karte .pw-schluessel { flex: none; }
+.pw-zeit-karte .titel { min-width: 0; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-zeit-karte a.titel:hover { color: var(--akzent); }
+.pw-zeit-karte.zwei .titel { white-space: normal; overflow-wrap: break-word; hyphens: auto; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
+.pw-zeit-karte .erledigt { color: var(--gut); font-size: var(--marke); flex: none; }
+.pw-zeit-karte .zustand { flex: none; }
+
+.pw-zeiten-raum .zeile-wert { display: flex; align-items: baseline; justify-content: space-between; gap: var(--a3); padding: 4px 0; font-size: var(--klein); }
+.pw-zeiten-raum .zeile-wert > span { color: var(--text-2); min-width: 0; }
+.pw-zeiten-raum .zeile-wert b { font-weight: 600; text-align: right; }
+.pw-zeiten-raum .zeile-wert b small { color: var(--text-3); font-weight: 500; font-size: var(--marke); }
+.pw-zeiten-raum .plus { color: var(--gut); }
+.pw-zeiten-raum .minus { color: var(--warn); }
+
+/* ═══ Zeiten: Stundenzettel ═══════════════════════════════════════════════════════════════════════════════ */
+
+.pw-zeiten-kopf { align-items: center; }
+.pw-zeiten-woche { display: inline-flex; align-items: center; gap: var(--a2); }
+.pw-zeiten-woche .text { display: flex; flex-direction: column; line-height: 1.2; min-width: 170px; text-align: center; }
+.pw-zeiten-woche .text b { font-family: var(--schrift-zahl); font-size: var(--titel); }
+.pw-zeiten-woche .text span { font-family: var(--schrift-zahl); font-size: var(--marke); color: var(--text-3); }
+a.kennzahl.pw-zeiten-verweis { color: var(--text); }
+a.kennzahl.pw-zeiten-verweis:hover { background: var(--karte); }
+.kennzahl.pw-zeiten-lauf { max-width: 100%; min-width: 0; }
+.kennzahl.pw-zeiten-lauf > span i { margin-right: 2px; }
+.kennzahl.pw-zeiten-lauf.laeuft > span { color: var(--akzent); }
+.kennzahl.pw-zeiten-lauf > small { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.pw-zeiten-blatt { background: var(--bereich); border-radius: var(--r2); padding: var(--a1) var(--a3) var(--a2); overflow-x: auto; overscroll-behavior-x: contain; }
+.pw-zeiten-tabelle { table-layout: fixed; min-width: 720px; }
+.pw-zeiten-tabelle col.karte { width: 34%; }
+.pw-zeiten-tabelle col.summe { width: 80px; }
+/* breit genug, wenn die Leiste offen ist: der Stundenzettel rückt neben sie und zeigt die Vorschau */
+@media (min-width: 1600px) {
+  .pw-zeiten-raum.mit-leiste > .rollfeld { padding-right: calc(min(560px, 100%) + var(--a4)); }
+  .pw-zeiten-raum.mit-leiste .pw-zeiten-tabelle col.karte { width: 30%; }
+}
+.pw-zeiten-tabelle th { vertical-align: bottom; }
+.pw-zeiten-tabelle th.tag { padding: var(--a1) 2px; text-align: right; }
+.pw-zeiten-tagknopf {
+  width: 100%; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; padding: 4px 6px; border: 1px solid transparent;
+  border-radius: var(--r1); background: transparent; cursor: pointer; color: var(--text-2); font: inherit; text-align: right;
+}
+.pw-zeiten-tagknopf:hover { border-color: var(--rand-stark); background: var(--karte); color: var(--text); }
+.pw-zeiten-tagknopf .wt { font-family: var(--schrift-zahl); font-size: var(--marke); font-weight: 700; letter-spacing: 0.04em; }
+.pw-zeiten-tagknopf .soll { font-size: var(--marke); font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-3); line-height: 1.2;
+                            max-width: 100%; overflow-wrap: break-word; hyphens: auto; }
+.pw-zeiten-tagknopf .soll.getoent { color: var(--f); }
+th.tag.heute .pw-zeiten-tagknopf { background: color-mix(in srgb, var(--info) 12%, transparent); color: var(--info); }
+th.tag.offen .pw-zeiten-tagknopf { border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); }
+.pw-zeiten-tabelle td { padding: 3px 4px; }
+.pw-zeiten-tabelle td.pw-zeiten-zelle, .pw-zeiten-tabelle tfoot td { text-align: right; }
+.pw-zeiten-tabelle td.frei { background: color-mix(in srgb, var(--karte-2) 45%, transparent); }
+.pw-zeiten-tabelle td.heute { background: color-mix(in srgb, var(--info) 6%, transparent); }
+.pw-zeiten-kartenzelle { display: flex; align-items: center; gap: var(--a2); min-width: 0; }
+.pw-zeiten-kartenzelle .pw-zeit-karte { flex: 1; }
+.pw-zeiten-kartenzelle .pw-timer { flex: none; }
+.pw-zeiten-ohne-timer { width: 32px; height: 28px; flex: none; }
+.pw-zeiten-laeuft { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; width: 100%; height: 34px; padding: 0 6px;
+                    border-radius: var(--r1); font-family: var(--schrift-zahl); font-size: var(--klein); font-weight: 700; color: var(--akzent);
+                    background: color-mix(in srgb, var(--akzent-flaeche) var(--toenung), transparent); }
+.pw-zeiten-laeuft .punkt { margin: 0; background: var(--akzent-flaeche); }
+.pw-zeiten-neu { display: inline-flex; align-items: center; justify-content: flex-end; width: 100%; height: 34px; padding: 0 6px; border-radius: var(--r1);
+                 font-family: var(--schrift-zahl); font-size: var(--klein); font-weight: 700; color: var(--akzent);
+                 box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--akzent-flaeche) 70%, transparent); }
+.pw-zeiten-woche-summe { font-family: var(--schrift-zahl); font-weight: 600; color: var(--text-2); }
+.pw-zeiten-rest td { color: var(--text-3); font-family: var(--schrift-zahl); }
+.pw-zeiten-tabelle tfoot td { font-family: var(--schrift-zahl); font-weight: 600; border-top: 1px solid var(--rand-stark); white-space: nowrap; }
+.pw-zeiten-tabelle tfoot td:first-child { font-family: var(--schrift); font-size: var(--marke); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); text-align: left; }
+.pw-zeiten-tabelle tfoot .summe td { color: var(--text); }
+.pw-zeiten-tabelle tfoot .soll td { color: var(--text-3); font-weight: 500; border-top-color: var(--rand); }
+.pw-zeiten-tabelle tfoot .differenz td { border-top-color: var(--rand); }
+.pw-zeiten-tabelle tfoot .differenz td.plus { color: var(--gut); }
+.pw-zeiten-tabelle tfoot .differenz td.minus { color: var(--warn); }
+
+/* Leiste rechts über dem Stundenzettel (Einträge eines Tags, Nachtragen), wie das Kartendetail über dem Board */
+.pw-zeiten-leiste {
+  position: absolute; top: 0; right: 0; bottom: 0; width: min(560px, 100%); z-index: 20; display: flex; flex-direction: column;
+  background: var(--hg); border: 1px solid var(--rand-stark); border-radius: var(--r3); box-shadow: var(--schatten-schwebend);
+}
+.pw-zeiten-leiste > .kopf { flex: none; display: flex; align-items: center; gap: var(--a2); padding: var(--a3) var(--a4); border-bottom: 1px solid var(--rand); flex-wrap: wrap; }
+.pw-zeiten-leiste > .kopf h2 { min-width: 0; overflow-wrap: anywhere; }
+.pw-zeiten-leiste > .kopf .rechts { margin-left: auto; }
+.pw-zeiten-leiste > .inhalt { flex: 1; min-height: 0; overflow-y: auto; overflow-x: clip; padding: var(--a4) var(--a5) var(--a5); display: flex; flex-direction: column; gap: var(--a3); }
+.pw-zeiten-leiste > .fuss { flex: none; display: flex; gap: var(--a2); padding: var(--a3) var(--a4); border-top: 1px solid var(--rand); flex-wrap: wrap; }
+.pw-zeiten-tageszahlen { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--a2); }
+.pw-zeiten-tageszahlen > span { display: flex; flex-direction: column; padding: var(--a2) var(--a3); background: var(--bereich); border-radius: var(--r2); min-width: 0; }
+.pw-zeiten-tageszahlen small { font-size: var(--marke); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); }
+.pw-zeiten-tageszahlen b { font-family: var(--schrift-zahl); font-size: var(--titel); font-weight: 600; }
+.pw-zeiten-tageszahlen b.laeuft { color: var(--akzent); }
+.zustand.pw-zeiten-grund { align-self: flex-start; height: auto; min-height: 26px; white-space: normal; padding: 3px 9px; }
+.pw-zeiten-rueckfrage .rechts { align-items: center; }
+.pw-zeiten-ende { display: inline-flex; align-items: center; gap: var(--a2); font-size: var(--klein); color: var(--text-2); }
+.pw-zeiten-ende .eingabe { width: 84px; height: 36px; }
+.pw-zeiten-eintraege { display: flex; flex-direction: column; gap: var(--a2); }
+.pw-zeiten-eintrag {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--a1) var(--a2); align-items: center;
+  padding: var(--a2) var(--a2) var(--a2) var(--a3); background: var(--karte); border-radius: var(--r2); border: 1px solid transparent;
+}
+.pw-zeiten-eintrag .was { min-width: 0; font-weight: 600; }
+.pw-zeiten-eintrag .mitte { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto 120px; gap: var(--a2); align-items: center; }
+.pw-zeiten-eintrag .uhr { font-size: var(--klein); color: var(--text-2); min-width: 0; }
+.pw-zeiten-eintrag .dauer { font-size: var(--gross); font-weight: 600; text-align: right; padding-right: 7px; }
+.pw-zeiten-eintrag .unten { grid-column: 1 / -1; display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; min-width: 0; }
+.pw-zeiten-eintrag .notiz { flex: 1 1 200px; height: 34px; font-size: var(--klein); background: var(--bereich); }
+.pw-zeiten-eintrag .spur { display: inline-flex; align-items: center; gap: 6px; font-size: var(--marke); color: var(--text-3); }
+.pw-zeiten-eintrag .spur.verweis { border: 0; background: transparent; padding: 0; cursor: pointer; font: inherit; font-size: var(--marke); color: var(--info); }
+.pw-zeiten-eintrag .spur.warn { color: var(--warn); }
+.pw-zeiten-eintrag.gedeckelt { border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+.pw-zeiten-eintrag.laeuft { border-color: color-mix(in srgb, var(--akzent-flaeche) 45%, transparent); }
+.pw-zeiten-eintrag .zustand .punkt { margin: 0; background: var(--akzent-flaeche); }
+.pw-zeiten-regel { font-size: var(--klein); }
+
+/* Nachtragen */
+.pw-zeiten-nachtragen section { display: flex; flex-direction: column; gap: var(--a2); }
+.pw-zeiten-nachtragen .etikett { display: flex; align-items: center; gap: var(--a2); }
+.pw-zeiten-nachtragen .suche { max-width: none; height: 42px; }
+.pw-zeiten-gewaehlt { display: flex; align-items: center; gap: var(--a2); padding: var(--a2) var(--a3); border-radius: var(--r2); flex-wrap: wrap;
+                      background: color-mix(in srgb, var(--akzent-flaeche) 8%, var(--karte)); border: 1px solid color-mix(in srgb, var(--akzent-flaeche) 50%, transparent); }
+.pw-zeiten-gewaehlt .pw-zeit-karte { flex: 1 1 260px; }
+.pw-zeiten-treffer { display: flex; flex-direction: column; gap: 2px; }
+.pw-zeiten-treffer .zeile { border: 0; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; padding: 8px var(--a3); }
+.pw-zeiten-treffer .zeile .pw-zeit-karte { flex: 1; }
+.pw-zeiten-treffer .spalte { flex: none; font-size: var(--marke); color: var(--text-3); }
+.pw-zeiten-tagwahl { display: flex; align-items: flex-start; gap: var(--a2); flex-wrap: wrap; }
+.pw-zeiten-gelesen { align-self: center; font-family: var(--schrift-zahl); font-size: var(--klein); color: var(--text-2); }
+.pw-zeiten-gelesen.falsch { color: var(--gefahr); font-family: var(--schrift); }
+.pw-zeiten-nachtragen-fuss { flex-direction: column; align-items: stretch; }
+.pw-zeiten-nachtragen-fuss .knoepfe { display: flex; gap: var(--a2); flex-wrap: wrap; }
+.pw-zeiten-wirkung { padding: var(--a2) var(--a3); background: var(--bereich); border-radius: var(--r2); }
+
+/* ═══ Arbeitszeit ═════════════════════════════════════════════════════════════════════════════════════════ */
+
+.rahmen-kopf .seitenkopf.pw-arbeitszeit-kopf { align-items: center; margin-bottom: 0; }
+.pw-arbeitszeit-kopf .reiter { margin: 0; }
+.pw-arbeitszeit-titel { display: flex; align-items: center; gap: var(--a2); margin-bottom: var(--a3); }
+.pw-arbeitszeit-konto { display: flex; flex-direction: column; gap: var(--a4); }
+.pw-arbeitszeit-paar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--a4); align-items: start; }
+.pw-arbeitszeit-paar > .bereich { min-width: 0; }
+.pw-arbeitszeit-paar tr.spaeter td { color: var(--text-3); }
+.pw-arbeitszeit-diff.plus { color: var(--gut); }
+.pw-arbeitszeit-diff.minus { color: var(--warn); }
+.pw-arbeitszeit-regel { margin-top: var(--a3); max-width: 70ch; }
+.pw-arbeitszeit-einstellungen .einstellung { padding-left: 0; padding-right: 0; }
+.pw-arbeitszeit-einstellungen .einstellung .wert { flex-wrap: wrap; }
+.pw-arbeitszeit-einstellungen .stufen { flex-wrap: nowrap; }
+.pw-arbeitszeit-einstellungen .stufen button { min-width: 0; padding: 0 var(--a2); }
+.pw-arbeitszeit-einstellungen .einstellung .wert select.eingabe { width: 100%; }
+.pw-arbeitszeit-halbe { flex-direction: column; align-items: flex-end; }
+.pw-arbeitszeit-halbe .chip { height: 34px; padding-right: 2px; }
+.pw-arbeitszeit-halbe .chip .knopf { width: 28px; height: 28px; }
+.pw-arbeitszeit-neu { display: flex; gap: var(--a1); flex-wrap: wrap; justify-content: flex-end; }
+.pw-arbeitszeit-einstellungen .einstellung .wert .pw-arbeitszeit-neu .eingabe { width: 86px; height: 36px; text-align: left; font-family: var(--schrift); }
+.pw-arbeitszeit-speichern { display: flex; align-items: flex-start; justify-content: flex-end; gap: var(--a2); padding-top: var(--a3); border-top: 1px solid var(--rand); flex-wrap: wrap; }
+.pw-arbeitszeit-speichern > .schwach { align-self: center; }
+
+/* Jahreskalender */
+.pw-arbeitszeit-spalten { padding-top: var(--a2); }
+.pw-arbeitszeit-jahr { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; margin-bottom: var(--a3); }
+.pw-arbeitszeit-jahr b { font-size: var(--titel); min-width: 3.2em; text-align: center; }
+.pw-arbeitszeit-monate { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 248px), 1fr)); gap: var(--a3); user-select: none; }
+.pw-arbeitszeit-monate.zieht { cursor: crosshair; }
+.pw-arbeitszeit-monat { background: var(--bereich); border-radius: var(--r2); padding: var(--a3); display: flex; flex-direction: column; gap: var(--a2); min-width: 0; }
+.pw-arbeitszeit-monat .gitter { display: grid; grid-template-columns: 26px repeat(7, minmax(0, 1fr)); gap: 2px; }
+.pw-arbeitszeit-monat .kw, .pw-arbeitszeit-monat .wt { font-size: var(--marke); color: var(--text-3); text-align: center; line-height: 24px; }
+.pw-arbeitszeit-monat .kw { font-family: var(--schrift-zahl); }
+.pw-arbeitszeit-monat .tag {
+  height: 28px; min-width: 0; padding: 0; border: 0; border-radius: var(--r1); cursor: pointer; touch-action: none;
+  font-family: var(--schrift-zahl); font-size: var(--marke); font-weight: 600; color: var(--text); background: var(--karte);
+}
+.pw-arbeitszeit-monat .tag:hover { box-shadow: inset 0 0 0 1px var(--rand-stark); }
+.pw-arbeitszeit-monat .tag.leer { background: transparent; cursor: default; }
+.pw-arbeitszeit-monat .tag.we { background: transparent; color: var(--text-3); }
+.pw-arbeitszeit-monat .tag.ft, .pw-arbeitszeit-monat .tag[class*="art-"] { background: color-mix(in srgb, var(--f) var(--toenung), transparent); color: var(--f); font-weight: 700; }
+.pw-arbeitszeit-monat .tag.halb, .pw-arbeitszeit-monat .tag.halbtag {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--f) var(--toenung), transparent) 50%, var(--karte) 50%); color: var(--f); font-weight: 700;
+}
+.pw-arbeitszeit-monat .tag.heute { box-shadow: inset 0 0 0 2px var(--info); }
+.pw-arbeitszeit-monat .tag.gewaehlt { box-shadow: inset 0 0 0 2px var(--akzent-flaeche); background: color-mix(in srgb, var(--akzent-flaeche) var(--toenung), var(--karte)); color: var(--text); }
+.pw-arbeitszeit-monat .worte { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: var(--marke); color: var(--text-2); min-height: 1.4em; }
+.pw-arbeitszeit-monat .worte li { display: flex; gap: 6px; align-items: baseline; min-width: 0; overflow-wrap: anywhere; }
+.pw-arbeitszeit-monat .worte li::before { content: ""; width: 8px; height: 8px; border-radius: 2px; flex: none; background: var(--f, var(--stahl)); transform: translateY(-1px); }
+
+.pw-arbeitszeit-seite { display: flex; flex-direction: column; gap: var(--a3); }
+.pw-arbeitszeit-auswahl { display: flex; flex-direction: column; gap: var(--a3); }
+.pw-arbeitszeit-auswahl .stufen button i, .pw-berichte-schritte .stufen button i { color: var(--text-3); }
+.pw-arbeitszeit-auswahl .stufen button.an i, .pw-berichte-schritte .stufen button.an i { color: var(--akzent); }
+.pw-arbeitszeit-schalter { display: flex; align-items: center; gap: var(--a3); font-weight: 600; flex-wrap: wrap; }
+.pw-arbeitszeit-wirkung { display: flex; flex-direction: column; }
+.pw-arbeitszeit-seite .knoepfe, .pw-arbeitszeit-formular .knoepfe { display: flex; gap: var(--a2); flex-wrap: wrap; }
+.pw-arbeitszeit-legende { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: var(--klein); color: var(--text-2); }
+.pw-arbeitszeit-legende.waagerecht { flex-direction: row; flex-wrap: wrap; gap: var(--a2) var(--a4); margin-top: var(--a3); }
+.pw-arbeitszeit-legende li { display: flex; align-items: center; gap: var(--a2); }
+.pw-arbeitszeit-legende .muster {
+  width: 26px; height: 22px; flex: none; border-radius: var(--r1); display: inline-grid; place-items: center; background: var(--karte);
+  font-family: var(--schrift-zahl); font-size: var(--marke); font-weight: 700; color: var(--f, var(--text-2)); box-shadow: inset 0 0 0 1px var(--rand);
+}
+.pw-arbeitszeit-legende .muster.we, .pw-arbeitszeit-legende .muster.frei { background: transparent; box-shadow: inset 0 0 0 1px var(--rand-stark); }
+.pw-arbeitszeit-legende .muster.ft, .pw-arbeitszeit-legende .muster[class*="art-"] { background: color-mix(in srgb, var(--f) var(--toenung), transparent); }
+.pw-arbeitszeit-legende .muster.halb, .pw-arbeitszeit-legende .muster.halbtag { background: linear-gradient(135deg, color-mix(in srgb, var(--f) var(--toenung), transparent) 50%, var(--karte) 50%); }
+.pw-arbeitszeit-legende .muster.heute { box-shadow: inset 0 0 0 2px var(--info); }
+.pw-arbeitszeit-legende .muster.da { background: color-mix(in srgb, var(--gut) 16%, transparent); }
+.pw-arbeitszeit-legende .muster.stunden { background: linear-gradient(90deg, color-mix(in srgb, var(--himmel) 14%, transparent), color-mix(in srgb, var(--himmel) 60%, transparent)); }
+.pw-arbeitszeit-legende .muster.imsoll { background: color-mix(in srgb, var(--gut) var(--toenung), transparent); color: var(--gut); }
+.pw-arbeitszeit-legende .muster.ueber { background: color-mix(in srgb, var(--warn) var(--toenung), transparent); color: var(--warn); }
+.pw-arbeitszeit-legende .muster.unter { background: color-mix(in srgb, var(--honig) var(--toenung), transparent); color: var(--honig); }
+
+/* Urlaub */
+.pw-arbeitszeit-formular { display: flex; flex-direction: column; gap: var(--a3); margin-bottom: var(--a4); }
+.pw-arbeitszeit-formular .pw-arbeitszeit-titel { margin-bottom: 0; }
+.pw-arbeitszeit-felder { display: grid; grid-template-columns: repeat(2, minmax(0, 220px)); gap: var(--a3); }
+.pw-arbeitszeit-felder label { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pw-arbeitszeit-fehler { display: flex; gap: var(--a2); align-items: center; color: var(--gefahr); font-size: var(--klein); }
+.pw-arbeitszeit-arten { grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); }
+.pw-arbeitszeit-arten b i { color: var(--text-3); margin-right: 2px; }
+.pw-arbeitszeit-unsichtbar { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.pw-arbeitszeit-art { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: var(--r1); font-size: var(--marke); font-weight: 700;
+                      background: color-mix(in srgb, var(--f, var(--stahl)) var(--toenung), transparent); color: var(--f, var(--stahl)); }
+.pw-arbeitszeit-tage { margin-top: var(--a3); padding-top: var(--a2); border-top: 1px solid var(--rand); display: flex; flex-direction: column; }
+.pw-arbeitszeit-tage .zeile-wert.schwach b { color: var(--text-3); font-weight: 500; }
+.pw-arbeitszeit-bruecke { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: var(--a3); align-items: center; padding: var(--a2) 0; border-top: 1px solid var(--rand); }
+.pw-arbeitszeit-bruecke > i { color: var(--text-3); }
+.pw-arbeitszeit-bruecke div { display: flex; flex-direction: column; min-width: 0; }
+.pw-arbeitszeit-bruecke b { font-family: var(--schrift-zahl); }
+
+/* Team */
+.pw-arbeitszeit-werkzeuge { padding-top: var(--a1); }
+.pw-arbeitszeit-werkzeuge .chip .pw-farbpunkt { margin-right: 2px; }
+.pw-arbeitszeit-trenner { width: 1px; align-self: stretch; background: var(--rand); margin: 0 var(--a1); }
+.pw-arbeitszeit-zeitraum { font-size: var(--klein); color: var(--text-2); min-width: 0; }
+.pw-arbeitszeit-recht { margin-bottom: var(--a3); }
+.pw-arbeitszeit-matrix-raum { overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: var(--a2); }
+.pw-arbeitszeit-matrix { width: 100%; min-width: calc(178px + 28 * 34px); table-layout: fixed; border-collapse: separate; border-spacing: 2px; }
+.pw-arbeitszeit-matrix col.person { width: 178px; }
+.pw-arbeitszeit-matrix th { font-weight: 600; color: var(--text-3); font-size: var(--marke); }
+.pw-arbeitszeit-matrix thead tr.kw th { text-align: left; padding: 0 4px; font-family: var(--schrift-zahl); letter-spacing: 0.04em; }
+.pw-arbeitszeit-matrix thead tr.tage th { padding: 2px 0; line-height: 1.15; }
+.pw-arbeitszeit-matrix thead tr.tage th span { display: block; font-weight: 500; }
+.pw-arbeitszeit-matrix thead tr.tage th b { display: block; color: var(--text-2); font-size: var(--marke); }
+.pw-arbeitszeit-matrix thead tr.tage th.we b { color: var(--text-3); font-weight: 500; }
+.pw-arbeitszeit-matrix thead tr.tage th.heute { background: color-mix(in srgb, var(--info) 14%, transparent); border-radius: var(--r1); }
+.pw-arbeitszeit-matrix thead tr.tage th.heute b, .pw-arbeitszeit-matrix thead tr.tage th.heute span { color: var(--info); }
+.pw-arbeitszeit-matrix th.person { position: sticky; left: 0; z-index: 1; background: var(--hg); text-align: left; padding: 4px var(--a2) 4px 0; }
+.pw-arbeitszeit-matrix tbody th.person .wer { display: flex; align-items: center; gap: var(--a2); min-width: 0; color: var(--text); font-size: var(--klein); }
+.pw-arbeitszeit-matrix tbody th.person .name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-arbeitszeit-matrix tbody th.person small { display: block; margin-top: 1px; font-weight: 500; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+.pw-arbeitszeit-matrix td {
+  height: 40px; padding: 0; text-align: center; border-radius: var(--r1); background: var(--karte);
+  font-family: var(--schrift-zahl); font-size: var(--marke); font-weight: 700; color: var(--text-2); overflow: hidden; white-space: nowrap;
+}
+.pw-arbeitszeit-matrix td.da { background: color-mix(in srgb, var(--gut) 16%, var(--karte)); }
+.pw-arbeitszeit-matrix td.frei { background: transparent; box-shadow: inset 0 0 0 1px var(--rand); }
+.pw-arbeitszeit-matrix td.ft, .pw-arbeitszeit-matrix td[class*="art-"] { background: color-mix(in srgb, var(--f) var(--toenung), var(--hg)); color: var(--f); }
+.pw-arbeitszeit-matrix td.halbtag { background: linear-gradient(135deg, color-mix(in srgb, var(--f) var(--toenung), var(--hg)) 50%, var(--karte) 50%); }
+.pw-arbeitszeit-matrix td.stunden { background: color-mix(in srgb, var(--himmel) var(--anteil, 12%), var(--karte)); color: var(--text); font-weight: 600; letter-spacing: -0.02em; }
+.pw-arbeitszeit-matrix td.imsoll { background: color-mix(in srgb, var(--gut) var(--toenung), var(--hg)); color: var(--gut); }
+.pw-arbeitszeit-matrix td.ueber { background: color-mix(in srgb, var(--warn) var(--toenung), var(--hg)); color: var(--warn); }
+.pw-arbeitszeit-matrix td.unter { background: color-mix(in srgb, var(--honig) var(--toenung), var(--hg)); color: var(--honig); }
+.pw-arbeitszeit-matrix td.heute { outline: 1px solid color-mix(in srgb, var(--info) 70%, transparent); outline-offset: -1px; }
+
+/* ═══ Berichte ════════════════════════════════════════════════════════════════════════════════════════════ */
+
+.pw-berichte-kette { margin-top: calc(-1 * var(--a2)); }
+.pw-berichte-schritte { display: flex; flex-direction: column; gap: var(--a3); }
+.pw-berichte-schritte h2 { display: flex; align-items: center; gap: var(--a2); margin-bottom: var(--a3); flex-wrap: wrap; }
+.pw-berichte-schritte h2 .zaehler { background: color-mix(in srgb, var(--akzent-flaeche) var(--toenung), transparent); color: var(--akzent); }
+.pw-berichte-gewaehlt { font-weight: 500; font-family: var(--schrift-zahl); }
+.pw-berichte-chips, .pw-berichte-personen, .pw-berichte-vorschlaege { display: flex; flex-wrap: wrap; gap: var(--a2); align-items: center; }
+.pw-berichte-chips + .pw-arbeitszeit-felder { margin-top: var(--a3); }
+.pw-berichte-schritte p.schwach { margin-top: var(--a2); }
+.pw-berichte-personen .chip { padding-left: 4px; padding-right: 2px; }
+.pw-berichte-personen .chip .knopf { width: 28px; height: 28px; }
+.pw-berichte-personen .suche { flex: 1 1 200px; max-width: 320px; height: 38px; }
+.pw-berichte-vorschlaege { margin-top: var(--a2); }
+.pw-berichte-vorschlaege .chip { padding-left: 4px; }
+.pw-berichte-personen .pw-person, .pw-berichte-vorschlaege .pw-person { width: 26px; height: 26px; box-shadow: none; }
+.pw-berichte-knoepfe { display: flex; gap: var(--a2); justify-content: flex-end; flex-wrap: wrap; padding-bottom: var(--a4); }
+.pw-berichte-rechts { display: flex; flex-direction: column; gap: var(--a3); }
+.pw-berichte-vorschaukopf { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; }
+.pw-berichte-vorschaukopf .pw-schluessel { min-width: 0; overflow-wrap: anywhere; }
+.pw-berichte-vorschaukopf .rechts { margin-left: auto; }
+.pw-berichte-blatt { background: var(--karte); border-radius: var(--r2); padding: var(--a5); box-shadow: var(--schatten); display: flex; flex-direction: column; gap: var(--a4); min-width: 0; }
+.pw-berichte-blatt header { display: flex; gap: var(--a3); align-items: center; padding-bottom: var(--a3); border-bottom: 1px solid var(--rand-stark); }
+.pw-berichte-blatt header > div { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pw-berichte-blatt header .schwach { font-size: var(--klein); }
+.pw-berichte-blatt section { display: flex; flex-direction: column; gap: var(--a2); min-width: 0; }
+.pw-berichte-blatt .tabelle th { background: var(--karte); }
+.pw-berichte-blatt .tabelle td { padding: 6px var(--a2); }
+.pw-berichte-blatt .tabelle th { padding: var(--a1) var(--a2); }
+.pw-berichte-blatt .tabelle td.zahl { font-family: var(--schrift-zahl); }
+.pw-berichte-blatt .tabelle { table-layout: fixed; }
+.pw-berichte-blatt .tabelle col.b-zahl { width: 14%; }
+.pw-berichte-blatt .tabelle col.b-kurz { width: 14%; }
+/* im Blatt wie in der Datei: Spaltenköpfe in normaler Schreibung, Schlüssel brechen nur an Leerzeichen und Bindestrichen */
+.pw-berichte-blatt .tabelle th { letter-spacing: 0; text-transform: none; font-size: var(--klein); color: var(--text-2); }
+.pw-berichte-blatt .tabelle td { overflow-wrap: break-word; }
+.pw-berichte-blatt .tabelle tfoot td { font-weight: 700; border-top: 1px solid var(--rand-stark); }
+.pw-berichte-blatt.tabelle-format { padding: var(--a3); }
+.pw-berichte-blatt.tabelle-format .tabelle td, .pw-berichte-blatt.tabelle-format .tabelle th { font-family: var(--schrift-zahl); box-shadow: inset 0 0 0 1px var(--rand); }
+.pw-berichte-text { margin: 0; padding: var(--a4); background: var(--mulde); border-radius: var(--r2); font-family: var(--schrift-code); font-size: var(--klein);
+                    line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text); }
+.pw-berichte-liste { display: flex; flex-direction: column; gap: var(--a2); margin-top: var(--a3); }
+.pw-berichte-eintrag { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: var(--a3); align-items: center; padding: var(--a2) var(--a3);
+                       background: var(--karte); border-radius: var(--r2); border: 1px solid transparent; }
+.pw-berichte-eintrag.neu { border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); }
+.pw-berichte-eintrag .art { color: var(--text-3); text-align: center; }
+.pw-berichte-eintrag .was { display: flex; flex-direction: column; min-width: 0; }
+.pw-berichte-eintrag .was b { font-weight: 600; overflow-wrap: anywhere; }
+.pw-berichte-eintrag .knoepfe { display: flex; gap: var(--a1); }
+
+/* Berichte: die Vorschau braucht mehr Breite als die Schritte (über 1240 px; darunter untereinander wie alle Spalten) */
+@media (min-width: 1241px) {
+  .spalten.pw-berichte-spalten { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+}
+.pw-arbeitszeit-liste td { overflow-wrap: anywhere; }
+
+/* ═══ Breiten: unter 1240 px stehen Paare untereinander ══════════════════════════════════════════════════ */
+
+@media (max-width: 1240px) {
+  .pw-arbeitszeit-paar { grid-template-columns: minmax(0, 1fr); }
+  /* die Karte des laufenden Timers steht im Kopf; hier reicht die Zeit, damit die Kennzahlen in einer Reihe bleiben */
+  .kennzahl.pw-zeiten-lauf > small { display: none; }
+  .pw-zeiten-tabelle col.karte { width: 32%; }
+  .pw-zeiten-tabelle col.summe { width: 64px; }
+  /* einspaltig: was du gerade eingibst und seine Wirkung stehen oben, Listen und Legende danach */
+  .pw-arbeitszeit-seite, .pw-arbeitszeit-links { display: contents; }
+  .pw-arbeitszeit-spalten > *, .pw-arbeitszeit-seite > *, .pw-arbeitszeit-links > * { order: 3; }
+  .pw-arbeitszeit-spalten .pw-arbeitszeit-vorn { order: 1; }
+  .pw-arbeitszeit-spalten .pw-arbeitszeit-mitte { order: 2; }
+  .pw-arbeitszeit-spalten .pw-arbeitszeit-spaeter { order: 4; }
+  .pw-arbeitszeit-formular { margin-bottom: 0; }
+}

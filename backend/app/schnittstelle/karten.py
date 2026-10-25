@@ -59,6 +59,10 @@ class Bearbeiten(Modell):
     text: str | None = None
 
 
+class ZeitTeilen(Modell):
+    an: bool
+
+
 class Art(Modell):
     art: Literal["arbeit", "idee"]
 
@@ -106,6 +110,10 @@ def router(z: Zugriff) -> APIRouter:
     @r.post("/karten/{karte_id}/loesen", response_model=Antwort)
     async def loesen(karte_id: Kennung, konto: Konto = Depends(ich)) -> Antwort:
         return await tun(d.karten.loesen(konto, karte_id))
+
+    @r.post("/gruppen/{gruppe_id}/zeit-teilen", response_model=Antwort)
+    async def zeit_teilen(gruppe_id: Kennung, e: ZeitTeilen, konto: Konto = Depends(ich)) -> Antwort:
+        return await tun(d.karten.zeit_teilen(konto, gruppe_id, e.an))
 
     @r.post("/karten/{karte_id}/duplizieren", response_model=Antwort)
     async def duplizieren(karte_id: Kennung, konto: Konto = Depends(ich)) -> Antwort:

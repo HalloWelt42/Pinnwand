@@ -14,6 +14,8 @@ const fassungEinsetzen = {
 export default defineConfig({
   plugins: [svelte(), fassungEinsetzen],
   define: { __APP_FASSUNG__: JSON.stringify(FASSUNG) },
+  // der Appkern liefert TypeScript-Quellen (auch .svelte.ts); das Vorbündeln beim Entwickeln kann sie nicht lesen
+  optimizeDeps: { exclude: ["appkern-oberflaeche"] },
   server: {
     port: 9420,
     strictPort: true,

@@ -9,7 +9,7 @@ import re
 from collections.abc import Iterable
 from typing import Protocol
 
-from ..modell import MODULE, Board, BoardEinstellungen, Farbe, Feld, Kennung, Konto, Label, Mitglied, Modell, Ordner, Spalte, Vorlage
+from ..modell import MODULE, MODULE_DA, Board, BoardEinstellungen, Farbe, Feld, Kennung, Konto, Label, Mitglied, Modell, Ordner, Spalte, Vorlage
 from ..regeln.kuerzel import kuerzel_fehler
 from ..vorlagen import start_rollen
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
@@ -80,7 +80,7 @@ class Boards:
             v = Vorlage.model_validate(d)
             vergeben = {b.get("farbe") for b in k.s.alle("boards")}
             b = Board(
-                id=neue_kennung("b"), name=name, kuerzel=kuerzel,
+                id=neue_kennung("b"), name=name, kuerzel=kuerzel, kartenart=v.kartenart,
                 farbe=next((f for f in NEU_FARBEN if f not in vergeben), NEU_FARBEN[0]),
                 spalten=[Spalte(id=neue_kennung("s"), name=s.name, farbe=s.farbe, erledigt=s.erledigt, grenze=s.grenze,
                                 zeitfenster=ZEITFENSTER_VORGABE if s.erledigt else None) for s in v.spalten],
@@ -88,7 +88,7 @@ class Boards:
                 felder=[Feld(id=neue_kennung("f"), **f.model_dump()) for f in v.felder],
                 rollen=start_rollen(),
                 mitglieder=[Mitglied(konto=konto.id, kellerwolke=konto.kellerwolke, rolle="besitzer", seit=k.heute)],
-                module={m: m in v.module for m in MODULE},
+                module={m: m in v.module and m in MODULE_DA for m in MODULE},
                 einstellungen=BoardEinstellungen(),
             )
             for e in einladungen:

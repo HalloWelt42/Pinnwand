@@ -1,0 +1,184 @@
+/* Verwaltung: Einstellungen eines Boards, Board anlegen, persönliche Einstellungen. Nur Marken des Appkerns, Bausteine
+   des Leitstands unverändert; Eigenes mit pw-verwaltung vorne. */
+
+/* ═══ Reiter im Kopf (Baustein reiter des Leitstands): ohne Abstand darunter, schmal ohne Symbole in einer Zeile ═══ */
+
+.reiter.pw-verwaltung-reiter { margin-bottom: 0; }
+@media (max-width: 1000px) {
+  .pw-verwaltung-reiter a i { display: none; }
+}
+
+/* ═══ Fläche einer Einstellungsseite ═══════════════════════════════════════════════════════════════════════ */
+
+.pw-verwaltung-flaeche { display: flex; flex-direction: column; gap: var(--a4); min-width: 0; }
+.pw-verwaltung-flaeche > .bereich { min-width: 0; }
+.pw-verwaltung-flaeche > .bereich > * + * { margin-top: var(--a3); }
+.pw-verwaltung-flaeche > .bereich > .einstellung + .einstellung { margin-top: 0; }
+.pw-verwaltung-flaeche > .etikett { margin-top: var(--a2); }
+.pw-verwaltung-satz { margin: 0; max-width: 900px; font-size: var(--klein); color: var(--text-2); }
+.pw-verwaltung-satz i { margin-right: var(--a2); color: var(--text-3); }
+.pw-verwaltung-erklaerung { display: block; font-size: var(--klein); color: var(--text-3); font-weight: 400; }
+.pw-verwaltung-fehler { display: block; font-size: var(--klein); color: var(--gefahr); }
+.pw-verwaltung-warnung { color: var(--warn); }
+.pw-verwaltung-warnung i { margin-right: var(--a1); }
+.pw-verwaltung-abstand { margin-top: var(--a4); }
+.pw-verwaltung-mit { min-height: 42px; display: inline-flex; align-items: center; font-size: var(--klein); color: var(--text-2); }
+
+/* Werte in Einstellungszeilen: Name als breites Textfeld, Kürzel fest, untereinander mit Meldung */
+.einstellung .wert .eingabe.pw-verwaltung-text { width: 100%; text-align: left; font-family: var(--schrift); }
+.einstellung .wert.pw-verwaltung-wert-spalte { flex-direction: column; align-items: flex-end; gap: var(--a1); }
+.pw-verwaltung-kuerzel { font-family: var(--schrift-zahl); font-weight: 700; font-size: var(--titel); letter-spacing: 0.06em;
+                         padding: 2px var(--a3); border-radius: var(--r2); background: var(--karte-2); }
+@media (max-width: 760px) {
+  .einstellung .wert.pw-verwaltung-wert-spalte { align-items: flex-start; }
+}
+
+/* Zeile zum Anlegen: Eingabe, Wahl, Knopf */
+.pw-verwaltung-formular { display: flex; align-items: center; gap: var(--a2) var(--a3); flex-wrap: wrap; min-width: 0; }
+/* mit Vorschlägen unter dem Feld: die Zeile richtet sich oben aus, die Vorschläge schieben, statt zu überdecken */
+.pw-verwaltung-formular:has(.pw-personenwahl) { align-items: flex-start; }
+.pw-verwaltung-formular > .pw-personenwahl { flex: 1 1 280px; }
+.pw-verwaltung-formular > .eingabe { flex: 1 1 220px; max-width: 420px; }
+.pw-verwaltung-formular > select.eingabe { flex: 0 1 auto; }
+.pw-verwaltung-formular > .pw-verwaltung-satz { flex: 1 1 320px; }
+
+/* Ganze Zahl mit Einheit */
+
+/* ═══ Listen: Spalten, Labels, Felder, Rollen ════════════════════════════════════════════════════════════ */
+
+.pw-verwaltung-liste { display: flex; flex-direction: column; gap: var(--a2); min-width: 0; }
+.pw-verwaltung-eintrag { display: flex; flex-direction: column; gap: var(--a2); min-width: 0; padding: var(--a3) var(--a4);
+                         background: var(--bereich); border-radius: var(--r2); border: 1px solid transparent; }
+.bereich .pw-verwaltung-eintrag { background: var(--karte); }
+.pw-verwaltung-eintrag.gefahr { border-color: color-mix(in srgb, var(--gefahr) 45%, transparent); }
+.pw-verwaltung-eintrag .oben { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; min-width: 0; }
+.pw-verwaltung-eintrag .oben .pw-verwaltung-name { flex: 1 1 200px; max-width: 420px; height: 38px; font-weight: 600; }
+.pw-verwaltung-eintrag .oben .pw-personen { margin-left: var(--a2); }
+.pw-verwaltung-eintrag .oben > :last-child { margin-left: auto; }
+/* Angaben in festen Spalten, damit sie über alle Einträge untereinander stehen */
+.pw-verwaltung-eintrag .angaben { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 290px)); align-items: center;
+                                  gap: var(--a2) var(--a4); padding-left: 32px; min-width: 0; }
+.pw-verwaltung-eintrag .angaben.pw-verwaltung-optionen { display: flex; flex-wrap: wrap; }
+.pw-verwaltung-eintrag .angabe { display: inline-flex; align-items: center; gap: var(--a2); flex-wrap: wrap; font-size: var(--klein); color: var(--text-2); min-width: 0; }
+.pw-verwaltung-eintrag .angabe select.eingabe { height: 36px; }
+/* die aufgeklappte Palette bricht in ihrer Angabe um, das Etikett bleibt davor */
+.pw-verwaltung-eintrag .angabe > .pw-farbwahl { flex: 1 1 0; }
+/* Labels gleich breit, damit die Namensfelder untereinander stehen */
+.pw-verwaltung-eintrag .oben > .pw-label { min-width: 96px; justify-content: center; }
+.pw-verwaltung-griff { width: 24px; height: 36px; display: inline-grid; place-items: center; flex: none; border-radius: var(--r1);
+                       color: var(--text-3); cursor: grab; }
+.pw-verwaltung-griff:hover { background: var(--karte-2); color: var(--text); }
+.pw-verwaltung-artsymbol { width: 24px; text-align: center; color: var(--text-3); flex: none; }
+.pw-verwaltung-optionen .chip { height: 34px; padding-right: 2px; cursor: default; }
+.pw-verwaltung-optionen .chip .knopf.symbol.klein { width: 28px; height: 28px; }
+.pw-verwaltung-optionen .eingabe { height: 34px; width: 180px; }
+.pw-verwaltung-chips { display: flex; flex-wrap: wrap; gap: var(--a2); }
+.pw-verwaltung-fest { cursor: default; height: 30px; }
+.pw-verwaltung-fest i { color: var(--text-3); }
+
+/* Rückfrage in einem Eintrag: Wahl, wohin die Karten gehen */
+.pw-verwaltung-rueckfrage .wahl { margin-top: var(--a2); }
+.pw-verwaltung-rueckfrage select.eingabe { height: 34px; margin-left: var(--a1); }
+.pw-verwaltung-rueckfrage .wahl label > div > span + span { margin-top: var(--a1); }
+.pw-verwaltung-folge { margin: var(--a2) 0 0; }
+.pw-verwaltung-folge i { margin-right: var(--a2); color: var(--text-3); }
+
+/* Wahlkarten mit verstecktem Knopf: der Kreis zeigt die Wahl, die Tastatur erreicht sie */
+.pw-verwaltung-wahl label { position: relative; }
+.pw-verwaltung-wahl input[type="radio"] { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.pw-verwaltung-wahl label:has(input:focus-visible) { outline: 2px solid color-mix(in srgb, var(--akzent-flaeche) 70%, transparent); outline-offset: 2px; }
+
+/* ═══ Tabellen: Rechte, Mitglieder, Hinweise ═════════════════════════════════════════════════════════════ */
+
+.pw-verwaltung-tabelle select.eingabe { height: 36px; max-width: 220px; }
+.pw-verwaltung-tabelle td.haken input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--gut); vertical-align: middle; }
+/* das Schloss steht neben dem Häkchen, ohne es aus der Mitte zu schieben */
+.pw-verwaltung-tabelle td.haken .fa-lock { position: absolute; margin: 4px 0 0 var(--a2); font-size: 12px; }
+.pw-verwaltung-matrix tr.gruppe td { background: var(--karte); }
+.pw-verwaltung-matrix tr.gruppe td > * + * { margin-left: var(--a2); }
+.pw-verwaltung-matrix tr.aus td { color: var(--text-3); }
+.pw-verwaltung-matrix tr.aus b { font-weight: 600; }
+@container tabelle (min-width: 901px) {
+  .pw-verwaltung-tabelle th.haken, .pw-verwaltung-tabelle td.haken { text-align: center; width: 150px; }
+  .pw-verwaltung-tabelle td.pw-verwaltung-aktion { text-align: right; }
+}
+.pw-verwaltung-person { display: flex; align-items: center; gap: var(--a3); min-width: 0; }
+.pw-verwaltung-person .wer, .pw-verwaltung-eingeladen .wer, .pw-verwaltung-konto .wer {
+  display: flex; flex-direction: column; min-width: 0; line-height: 1.3; overflow-wrap: anywhere;
+}
+.pw-verwaltung-datum { font-family: var(--schrift-zahl); white-space: nowrap; }
+.pw-verwaltung-zusatz td { padding-top: 0; }
+.pw-verwaltung-art { display: flex; gap: var(--a3); align-items: flex-start; min-width: 0; }
+.pw-verwaltung-art > i { width: 18px; text-align: center; margin-top: 4px; color: var(--text-3); flex: none; }
+.pw-verwaltung-schalterwort { margin-left: var(--a2); font-size: var(--klein); color: var(--text-2); vertical-align: middle; }
+.pw-verwaltung-tabelle .schalter { vertical-align: middle; }
+
+/* gewählte Person vor dem Einladen */
+.pw-verwaltung-gewaehlt { height: 40px; padding-right: 2px; }
+
+/* ═══ Module ═════════════════════════════════════════════════════════════════════════════════════════════ */
+
+.pw-verwaltung-module { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: var(--a3); }
+.pw-verwaltung-modul { height: 100%; display: flex; flex-direction: column; gap: var(--a3); }
+.pw-verwaltung-modul h3 { margin-bottom: 0; flex-wrap: wrap; }
+.pw-verwaltung-modul h3 .rechts { display: flex; align-items: center; gap: var(--a2); }
+.pw-verwaltung-modul h3 > i { color: var(--text-2); }
+.pw-verwaltung-modul.aus h3 > i { color: var(--text-3); }
+.pw-verwaltung-modul > p { color: var(--text-2); font-size: var(--klein); }
+.pw-verwaltung-bringt { display: grid; grid-template-columns: minmax(0, 100px) minmax(0, 1fr); gap: var(--a2) var(--a3); margin: 0; font-size: var(--klein); }
+.pw-verwaltung-bringt dt { color: var(--text-3); font-weight: 600; padding-top: 4px; }
+.pw-verwaltung-bringt dd { margin: 0; min-width: 0; display: flex; flex-wrap: wrap; gap: var(--a1) var(--a2); align-items: center; color: var(--text-2); padding-top: 4px; }
+
+/* ═══ Board anlegen: Schritte links, Vorschau rechts ═══════════════════════════════════════════════════════ */
+
+/* einspaltig (unter 1240 Pixeln) stehen Schritte und Vorschau oben, ohne gedehnte Zeilen */
+.spalten.pw-verwaltung-anlegen { align-content: start; }
+.pw-verwaltung-schritte { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--a4); }
+.pw-verwaltung-schritte > li { display: flex; flex-direction: column; gap: var(--a3); min-width: 0; }
+.pw-verwaltung-schritte h2 { display: flex; align-items: center; gap: var(--a3); flex-wrap: wrap; }
+.pw-verwaltung-schritte .stufen { align-self: flex-start; }
+.pw-verwaltung-nr { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; flex: none;
+                    font-family: var(--schrift-zahl); font-size: var(--klein); font-weight: 700; background: var(--karte-2); color: var(--text-2); }
+.pw-verwaltung-nr.fertig { background: color-mix(in srgb, var(--gut) var(--toenung), transparent); color: var(--gut); }
+.pw-verwaltung-frei { font-size: var(--klein); font-weight: 500; }
+.pw-verwaltung-vorlagen { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.pw-verwaltung-vorlagen b { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; }
+.pw-verwaltung-vorlagen b > i { color: var(--text-3); }
+.pw-verwaltung-reihe { color: var(--text-3); }
+.pw-verwaltung-raster { display: grid; grid-template-columns: minmax(0, 110px) minmax(0, 1fr); gap: var(--a2) var(--a3); align-items: center; }
+.pw-verwaltung-raster > label { font-weight: 600; font-size: var(--klein); color: var(--text-2); }
+.pw-verwaltung-raster > .eingabe { width: 100%; max-width: 420px; }
+.pw-verwaltung-raster .pw-verwaltung-kuerzelfeld { width: 130px; flex: none; font-family: var(--schrift-zahl); font-weight: 700; letter-spacing: 0.06em; }
+.pw-verwaltung-kuerzelchip { height: 32px; font-family: var(--schrift-zahl); font-weight: 700; letter-spacing: 0.04em; }
+.pw-verwaltung-eingeladen { display: flex; flex-direction: column; gap: 2px; }
+.pw-verwaltung-eingeladen .zeile { padding: 6px var(--a2); flex-wrap: wrap; }
+.pw-verwaltung-eingeladen .wer { flex: 1 1 160px; }
+.pw-verwaltung-eingeladen select.eingabe { height: 36px; }
+.pw-verwaltung-abschluss { display: flex; align-items: center; justify-content: flex-end; gap: var(--a2) var(--a3); flex-wrap: wrap; padding-top: var(--a4); }
+.pw-verwaltung-abschluss > span { flex: 1 1 260px; }
+
+.pw-verwaltung-vorschau { display: flex; flex-direction: column; gap: var(--a3); padding: var(--a4); min-width: 0; }
+.pw-verwaltung-vorschau .titel { display: flex; align-items: center; gap: var(--a2); font-size: var(--titel); min-width: 0; overflow-wrap: anywhere; }
+.pw-verwaltung-vorschau .pfad { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; font-size: var(--klein); color: var(--text-3); }
+.pw-verwaltung-minispalten { display: grid; grid-template-columns: repeat(var(--anzahl), minmax(0, 1fr)); gap: 6px; }
+/* Spalten der Vorschau: Fläche in ihrer Farbe, der Name im Wort; die Erledigt-Spalte mit Haken */
+.pw-verwaltung-minispalten .spalte { min-height: 110px; min-width: 0; padding: var(--a2); border-radius: var(--r2);
+                                     background: color-mix(in srgb, var(--f) 10%, var(--karte)); }
+.pw-verwaltung-minispalten .name { font-size: var(--marke); font-weight: 700; line-height: 1.25; color: var(--f); overflow-wrap: anywhere; }
+.pw-verwaltung-minispalten .erledigt { margin-left: 4px; color: var(--gut); }
+.pw-verwaltung-minispalten .grenze { display: block; margin-top: var(--a1); font-family: var(--schrift-zahl); font-size: var(--marke); color: var(--text-2); }
+
+/* ═══ Persönlich: Schriftstufe mit Vorschau, Push, Konto ════════════════════════════════════════════════════ */
+
+.pw-verwaltung-stufenwahl { grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); align-items: start; }
+.pw-verwaltung-probe { margin-top: var(--a3); padding: var(--a3); border-radius: var(--r2); background: var(--hg); font-size: var(--gross); }
+.pw-verwaltung-geraete { display: flex; align-items: center; gap: var(--a2); font-size: var(--klein); color: var(--text-2); }
+.pw-verwaltung-geraete i { color: var(--text-3); }
+.pw-verwaltung-konto { display: flex; align-items: center; gap: var(--a4); flex-wrap: wrap; }
+.pw-verwaltung-konto .wer { flex: 1 1 240px; }
+.pw-verwaltung-konto .wer b { font-size: var(--titel); }
+
+/* Papierkorb der App: gelöschte Boards */
+.pw-verwaltung-geloescht { display: flex; align-items: center; gap: var(--a3); flex-wrap: wrap; padding: var(--a2) 0; min-width: 0; }
+.pw-verwaltung-geloescht .wer { display: flex; flex-direction: column; min-width: 0; flex: 1 1 240px; line-height: 1.3; overflow-wrap: anywhere; }
+.pw-verwaltung-geloescht .rechts { margin-left: auto; display: flex; gap: var(--a2); flex-wrap: wrap; }

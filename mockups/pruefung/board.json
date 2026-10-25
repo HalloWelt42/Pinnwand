@@ -1,0 +1,18 @@
+{
+  "anmeldung": false,
+  "seiten": [
+    { "name": "galerie", "pfad": "/entwuerfe" },
+    { "name": "board", "pfad": "/board/prod" },
+    { "name": "detail", "pfad": "/board/prod/131" },
+    { "name": "bearbeiten", "pfad": "/board/prod/131?entwurf=bearbeiten" },
+    { "name": "gruppe", "pfad": "/board/prod/137" },
+    { "name": "ziehen", "pfad": "/board/prod?entwurf=ziehen" },
+    { "name": "schnell", "pfad": "/board/prod?entwurf=schnell" },
+    { "name": "suche", "pfad": "/board/prod?entwurf=suche" },
+    { "name": "live", "pfad": "/board/prod?entwurf=live" },
+    { "name": "konflikt", "pfad": "/board/prod/115?entwurf=konflikt" },
+    { "name": "erledigt", "pfad": "/board/prod?entwurf=erledigt" },
+    { "name": "ideen", "pfad": "/board/idee" },
+    { "name": "haus", "pfad": "/board/haus" }
+  ]
+}

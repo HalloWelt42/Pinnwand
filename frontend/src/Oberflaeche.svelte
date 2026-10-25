@@ -3,9 +3,10 @@
   // der Wegetabelle (routen.ts), am Rechner in der Schale, am Telefon in der eigenen Ansicht. "/" führt zu Heute.
   import { geraet, verbindungenVerfolgen } from "appkern-oberflaeche";
   import { onMount, untrack } from "svelte";
+  import { timerVon } from "./daten/abfragen";
   import { melden } from "./daten/anwendung/meldung.svelte";
   import { stand, verbinden } from "./daten/stand.svelte";
-  import { uhrStarten } from "./daten/uhr.svelte";
+  import { sekundentakt, uhrStarten } from "./daten/uhr.svelte";
   import { finden } from "./routen";
   import Schale from "./schale/Schale.svelte";
   import { gehe, weg, wegStarten } from "./weg.svelte";
@@ -14,6 +15,9 @@
     const enden = [verbinden(), uhrStarten(), wegStarten(), verbindungenVerfolgen()];
     return () => enden.forEach((ende) => ende());
   });
+
+  // solange dein Timer läuft, zählt die Uhr sekundengenau (M-85)
+  $effect(() => sekundentakt(!!timerVon()?.seit));
 
   // "/" führt zu Heute; das Kürzel eines Boards steht im Pfad klein (/board/HAUS/12 wird /board/haus/12)
   $effect(() => {

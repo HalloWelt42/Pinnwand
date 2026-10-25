@@ -6,14 +6,14 @@ daten:
   - "Pi: {{wurzel}}/daten/pinnwand.sqlite, alle Boards, Karten, Ordner, Hinweise, Vorlagen, das Journal für Rückgängig und die Einstellungen"
   - "Kellerwolke: Anhänge der Karten in der Ablage der Pinnwand, ein Ordner je Board"
 sicherung:
-  - "Datenbank: jedes Ausrollen legt vor dem Neustart eine Kopie nach {{wurzel}}/sicherungen (die letzten zehn bleiben)"
+  - "Datenbank: jede Nacht ab 3 Uhr und vor jedem Ausrollen eine Kopie nach {{wurzel}}/sicherungen (die jüngsten zehn bleiben); das Werkzeug Sicherungen holt sie auf den Mac"
   - "Anhänge: liegen in der Kellerwolke und sind mit ihr gesichert"
 schluessel_orte:
   - "Pi: Einstellungen in {{wurzel}}/daten/pinnwand.sqlite: App-Schlüssel der Kellerwolke (in der Oberfläche unter Einstellungen, verdeckt)"
   - "Pi: {{wurzel}}/zertifikate/, Blattzertifikat mit Schlüssel aus der Hausstelle"
   - "Mac: backend/.env.test im Klon, Modus 0600, Testzugang zur Kellerwolke der Entwicklung (nur für den Verbundtest)"
 einrichten: einrichten.sh
-stand: f92fa5e
+stand: bea0d74
 ---
 
 # Pinnwand
@@ -67,7 +67,7 @@ Probe: `test -f frontend/dist/index.html && backend/.venv/bin/python -m pytest -
 Auf dem Pi den Ordner vorbereiten, bevor Docker ihn anlegt (sonst gehört er root):
 
 ```
-mkdir -p {{wurzel}}/daten
+mkdir -p {{wurzel}}/daten {{wurzel}}/sicherungen
 ```
 
 Aus der Sicherung zusätzlich die jüngste Kopie als `{{wurzel}}/daten/pinnwand.sqlite` ablegen (Besitzer `pi`, Benutzer
@@ -96,8 +96,9 @@ Probe: die eingeladene Person meldet sich an und sieht das Board in der Seitenle
 
 ## Sicherung und Rückspielen
 
-Datenbank: jedes Ausrollen legt vor dem Neustart eine stimmige Kopie von `pinnwand.sqlite` nach
-`{{wurzel}}/sicherungen/pinnwand-<Zeit>.sqlite`; die letzten zehn bleiben. Zurückspielen: auf dem Pi im Ordner
+Datenbank: die App legt jede Nacht ab 3 Uhr, das Ausrollen vor jedem Neustart eine stimmige Kopie von `pinnwand.sqlite`
+nach `{{wurzel}}/sicherungen/pinnwand-<Zeit>.sqlite`; die jüngsten zehn bleiben. Das Werkzeug
+`~/Entwicklung/Werkzeuge/Sicherungen` holt sie jeden Morgen auf den Mac nach `~/Sicherungen/pinnwand`. Zurückspielen: auf dem Pi im Ordner
 {{wurzel}} `docker compose -f compose.pi.yml stop pinnwand`, die Kopie als `daten/pinnwand.sqlite` ablegen (die Dateien
 `pinnwand.sqlite-wal` und `pinnwand.sqlite-shm` daneben entfernen), `docker compose -f compose.pi.yml start pinnwand`.
 
@@ -114,4 +115,4 @@ Karte hängt.
   von selbst neu und holt den ganzen Stand; Änderungen sind solange gesperrt, damit nichts scheinbar gespeichert wird.
 - Eine Änderung wird mit "inzwischen geändert" abgelehnt: jemand anders hat dasselbe Feld kurz vorher geändert. Das
   Kartendetail fragt, ob der jetzige Stand bleiben oder die eigene Änderung gelten soll.
-- Docker legt `daten/` für root an: den Ordner vor dem ersten Start als `pi` anlegen (Schritt 2).
+- Docker legt `daten/` oder `sicherungen/` für root an: die Ordner vor dem ersten Start als `pi` anlegen (Schritt 2).

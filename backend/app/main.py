@@ -19,17 +19,22 @@ from .schnittstelle import anhaenge
 from .schnittstelle.ablage import KellerwolkeAblage
 from .schnittstelle.rest import router
 from .schnittstelle.zugang import GeruestZugang
+from .sicherung import Nachtsicherung
 from .uhr import Uhr
 
 
-def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None, uhr: Uhr | None = None) -> FastAPI:
-    """`transport` und `uhr` nur für Tests (Kellerwolke und Leitstelle nachgestellt, feste Uhr)."""
+def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None, uhr: Uhr | None = None,
+              sicherungen: Path | None = None) -> FastAPI:
+    """`transport` und `uhr` nur für Tests (Kellerwolke und Leitstelle nachgestellt, feste Uhr). Die Nachtsicherung
+    schreibt nach `sicherungen` (ohne Angabe neben den Daten: im Container /app/sicherungen)."""
     geruest = Geruest(name="Pinnwand", kennung="pinnwand", rolle="plant Arbeit auf Boards", symbol="fa-thumbtack", farbe="#2f8f86", fassung=FASSUNG,
                       daten=daten, einstellungen=AppEinstellungen, oberflaeche=WURZEL / "frontend" / "dist",
                       transport=transport)
     ablage = KellerwolkeAblage(geruest)
     dienste = Dienste.bauen(geruest.db, GeruestZugang(geruest), ablage, uhr)
-    geruest.begleiter_anmelden(Start(geruest.db), Faelligkeit(dienste.hinweise))
+    geruest.begleiter_anmelden(Start(geruest.db), Faelligkeit(dienste.hinweise),
+                               Nachtsicherung(Path(geruest.db.pfad), sicherungen or daten.parent / "sicherungen", "pinnwand",
+                                              dienste.anwendung.uhr))
     app = geruest.fastapi()
     app.state.geruest = geruest
     app.state.dienste = dienste

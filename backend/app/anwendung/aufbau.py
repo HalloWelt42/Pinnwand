@@ -12,7 +12,7 @@ from typing import Any
 from ..modell import Board, Farbe, Feld, FeldArt, Karte, Kennung, Konto, Label, Modell, Spalte, Zeitfenster
 from ..regeln.board import abschluss, spalte_von, zahl_fehler
 from .boards import ZEITFENSTER_VORGABE, am_board, anzahl, name_pruefen, neue_reihenfolge, vergeben
-from .karten import speichern
+from .kartenbasis import speichern
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
 
 

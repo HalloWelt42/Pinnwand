@@ -11,7 +11,8 @@ from typing import Literal
 from ..modell import Board, Ereignis, Gruppe, Karte, Kennung, Konto, Spalte
 from ..regeln.board import abschluss, spalte_von
 from ..regeln.tage import ist_tag
-from . import hinweise
+from . import hinweise, zeiterfassung
+from .kartenbasis import karte_lesen, karten_der_spalte, speichern, vermerken
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
 
 #: Abstand der Reihe zwischen zwei Karten; wird er zu eng, nummeriert die Spalte neu
@@ -19,26 +20,6 @@ ABSTAND = 1024.0
 ENG = 1e-6
 #: Längster Titel einer Karte (Zeichen)
 TITEL_LAENGE = 300
-
-
-def karte_lesen(k: Kontext, karte_id: Kennung) -> Karte:
-    d = k.s.lies("karten", karte_id)
-    if d is None:
-        raise Abgelehnt("Diese Karte gibt es nicht (mehr)", 404)
-    return Karte.model_validate(d)
-
-
-def karten_der_spalte(k: Kontext, spalte_id: Kennung) -> list[Karte]:
-    return [Karte.model_validate(d) for d in k.s.alle("karten", "spalte=?", (spalte_id,), "reihe")]
-
-
-def vermerken(k: Kontext, karte: Karte, text: str) -> None:
-    """Eine Zeile im Verlauf der Karte (M-64)."""
-    karte.verlauf.append(Ereignis(zeit=k.jetzt, von=k.konto.id, text=text))
-
-
-def speichern(k: Kontext, karte: Karte) -> Karte:
-    return Karte.model_validate(k.s.schreib("karten", karte.json_daten()))
 
 
 def verknuepfbar(a: Karte, b: Karte) -> bool:
@@ -75,14 +56,16 @@ def einreihen(k: Kontext, ziel: Spalte, karten: list[Karte], platz: int | None) 
         c.reihe = unten + schritt * (i + 1)
 
 
-def wechseln(k: Kontext, karte: Karte, ziel: Spalte, b: Board, mitgezogen: bool) -> None:
-    """Eine Karte kommt in eine andere Spalte: Alter, Abschluss, Verlauf (Timer halten mit Stufe 2 an)."""
+def wechseln(k: Kontext, karte: Karte, ziel: Spalte, b: Board, mitgezogen: bool) -> int:
+    """Eine Karte kommt in eine andere Spalte: Alter, Abschluss, Verlauf; in einer Erledigt-Spalte enden ihre Timer und
+    buchen. Ergebnis: die dabei gebuchte eigene Zeit."""
     alt = spalte_von(b, karte.spalte)
     karte.spalte = ziel.id
     karte.bewegt_am = k.jetzt
     karte.abgeschlossen = abschluss(karte, k.heute) if ziel.erledigt else None
     vermerken(k, karte, f"mit verknüpfter Karte verschoben nach {ziel.name}" if mitgezogen
               else "hat sie erledigt" if ziel.erledigt else f"hat sie von {alt.name if alt else '?'} nach {ziel.name} verschoben")
+    return zeiterfassung.timer_beenden(k, [karte]) if ziel.erledigt else 0
 
 
 def hinein(k: Kontext, b: Board, ids: list[Kennung], ziel: Spalte, platz: int | None) -> str:
@@ -98,16 +81,17 @@ def hinein(k: Kontext, b: Board, ids: list[Kennung], ziel: Spalte, platz: int | 
     mit = list({c.id: c for c in mit}.values())
     wechselnde = {c.id for c in karten if c.spalte != ziel.id}
     einreihen(k, ziel, karten, platz)
+    gebucht = 0
     for c in karten:
         if c.id in wechselnde:
-            wechseln(k, c, ziel, b, False)
+            gebucht += wechseln(k, c, ziel, b, False)
             hinweise.verschoben(k, b, c, ziel)
         speichern(k, c)
     # erst jetzt, da die bewegten Karten in der Spalte stehen, reihen sich die mitgezogenen dahinter ein
     if mit:
         einreihen(k, ziel, mit, None)
     for c in mit:
-        wechseln(k, c, ziel, b, True)
+        gebucht += wechseln(k, c, ziel, b, True)
         hinweise.verschoben(k, b, c, ziel, mit=next(x for x in karten if x.gruppe == c.gruppe))
         speichern(k, c)
     erste = karten[0]
@@ -122,7 +106,7 @@ def hinein(k: Kontext, b: Board, ids: list[Kennung], ziel: Spalte, platz: int | 
     grenze = ueber_grenze(k, ziel)
     if grenze:
         teile.append(grenze)
-    return "; ".join(teile)
+    return "; ".join(teile) + zeiterfassung.gestoppt(gebucht)
 
 
 class Karten:

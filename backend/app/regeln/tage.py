@@ -43,3 +43,14 @@ def datum_text(t: str) -> str:
     """Tag lesbar mit Wochentag: "Di 27.10.2026" (wie datumJahr der Oberfläche)."""
     d = tag(t)
     return f"{TAGE_KURZ[d.weekday()]} {d.day:02d}.{d.month:02d}.{d.year}"
+
+
+def datum_kurz(t: str) -> str:
+    """Tag lesbar ohne Jahr: "Di 27.10." (wie datum der Oberfläche mit Wochentag)."""
+    d = tag(t)
+    return f"{TAGE_KURZ[d.weekday()]} {d.day:02d}.{d.month:02d}."
+
+
+def spanne_text(von: str, bis: str) -> str:
+    """Zeitraum zweier Tage wie spanne der Oberfläche: "Di 27.10.2026" oder "Mo 26.10. bis Fr 30.10.2026"."""
+    return datum_text(von) if von == bis else f"{datum_kurz(von)} bis {datum_text(bis)}"

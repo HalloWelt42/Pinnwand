@@ -28,13 +28,18 @@ def mitglied(b: Board, konto: Kennung):
     return next((m for m in b.mitglieder if m.konto == konto), None)
 
 
+def modul_an(b: Board, modul: str) -> bool:
+    """Ist ein Modul in diesem Board an? Nur Module, die diese Fassung anbietet, können an sein."""
+    return modul in MODULE_DA and b.module.get(modul, False)
+
+
 def hat_recht(b: Board, recht: str, konto: Kennung) -> bool:
     """Hat die Person in diesem Board das Recht über ihre Rolle? Rechte abgeschalteter Module gelten nicht."""
     m = mitglied(b, konto)
     if m is None:
         return False
     modul = modul_von(recht)
-    if modul != "kern" and not (modul in MODULE_DA and b.module.get(modul, False)):
+    if modul != "kern" and not modul_an(b, modul):
         return False
     rolle = next((r for r in b.rollen if r.id == m.rolle), None)
     return rolle is not None and recht in rolle.rechte

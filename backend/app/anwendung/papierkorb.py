@@ -13,7 +13,9 @@ from pydantic import Field
 from ..modell import Board, Entfernt, Geloescht, Gruppe, Karte, Kennung, Konto, Modell, Spalte, Stelle
 from ..regeln.board import abschluss, hat_recht, spalte_von
 from .inhalt import anzahl, gleiche_karten
-from .karten import einreihen, hinein, karten_der_spalte, speichern, vermerken
+from . import zeiterfassung
+from .karten import einreihen, hinein
+from .kartenbasis import karten_der_spalte, speichern, vermerken
 from .rahmen import NAMEN_DER_RECHTE, Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
 
 
@@ -191,13 +193,15 @@ class Papierkorb:
 
         def arbeit(k: Kontext) -> str:
             b, karten = gleiche_karten(k, ids, "karten.loeschen")
+            gebucht = zeiterfassung.timer_beenden(k, karten)
             for c in karten:
                 platz = [x.id for x in karten_der_spalte(k, c.spalte)].index(c.id)
                 k.s.loesch("karten", c.id)
                 vermerken(k, c, "hat sie in den Papierkorb gelegt")
                 ablegen(k, b.id, "karte", [c], Stelle(spalte=c.spalte, platz=platz))
             gruppen_aufraeumen(k, b.id, {c.gruppe for c in karten if c.gruppe})
-            return f"{anzahl(len(karten))} im Papierkorb, mit Kommentaren und Anhängen wiederherstellbar"
+            return (f"{anzahl(len(karten))} im Papierkorb, mit Kommentaren und Anhängen wiederherstellbar"
+                    + zeiterfassung.gestoppt(gebucht))
 
         return await self.a.aendern(konto, arbeit)
 
@@ -220,6 +224,7 @@ class Papierkorb:
             wandern = [c.id for c in karten_der_spalte(k, s.id)]
             verschoben = hinein(k, b, wandern, ziel, None) if ziel and wandern else ""
             karten = karten_der_spalte(k, s.id)
+            gebucht = zeiterfassung.timer_beenden(k, karten)
             for c in karten:
                 k.s.loesch("karten", c.id)
                 vermerken(k, c, f"hat sie mit der Spalte {s.name} in den Papierkorb gelegt")
@@ -229,7 +234,8 @@ class Papierkorb:
             k.s.schreib("boards", b.json_daten())
             if verschoben:
                 return f"Spalte {s.name} im Papierkorb; {verschoben}"
-            return f"Spalte {s.name} im Papierkorb" + (f" mit {anzahl(len(karten))}" if karten else "")
+            return (f"Spalte {s.name} im Papierkorb" + (f" mit {anzahl(len(karten))}" if karten else "")
+                    + zeiterfassung.gestoppt(gebucht))
 
         return await self.a.aendern(konto, arbeit)
 
@@ -240,6 +246,7 @@ class Papierkorb:
         def arbeit(k: Kontext) -> str:
             b = k.board_mit_recht(board_id, "board.verwalten")
             karten = [Karte.model_validate(d) for d in k.s.alle("karten", "board=?", (b.id,), "spalte, reihe")]
+            gebucht = zeiterfassung.timer_beenden(k, karten)
             gruppen = [Gruppe.model_validate(d) for d in k.s.alle("gruppen", "board=?", (b.id,))]
             ordner = [d for d in k.s.alle("ordner") if b.id in d.get("boards", [])]
             for c in karten:
@@ -251,7 +258,8 @@ class Papierkorb:
             k.s.loesch("boards", b.id)
             inhalt = BoardInhalt(board=b, gruppen=gruppen, ordner=[d["id"] for d in ordner])
             ablegen(k, b.id, "board", karten, Stelle(), inhalt=inhalt.json_daten())
-            return f"{b.name} mit {anzahl(len(karten))} im Papierkorb; wiederherstellen unter Einstellungen, Papierkorb"
+            return (f"{b.name} mit {anzahl(len(karten))} im Papierkorb; wiederherstellen unter Einstellungen, Papierkorb"
+                    + zeiterfassung.gestoppt(gebucht))
 
         return await self.a.aendern(konto, arbeit)
 

@@ -43,6 +43,9 @@ class Pinnwand:
     async def post(self, wer: str, pfad: str, daten: dict | None = None) -> httpx.Response:
         return await self.c.post(f"/api/v1{pfad}", headers=self.kopf[wer], json=daten or {})
 
+    async def delete(self, wer: str, pfad: str) -> httpx.Response:
+        return await self.c.delete(f"/api/v1{pfad}", headers=self.kopf[wer])
+
     async def stand(self, wer: str) -> dict:
         r = await self.get(wer, "/stand")
         assert r.status_code == 200, r.text

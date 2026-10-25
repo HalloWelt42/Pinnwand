@@ -25,7 +25,7 @@ from typing import Literal, Protocol
 
 from ..modell import Anhang, AnhangArt, Board, Karte, Kennung, Konto, Modell
 from ..regeln.board import mitglied
-from .karten import karte_lesen, speichern, vermerken
+from .kartenbasis import karte_lesen, speichern, vermerken
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext
 
 #: höchstens so groß darf eine Datei sein (wie in der alten App)

@@ -33,15 +33,13 @@ def art_name(a: Abwesenheit) -> str:
 
 
 def abwesenheit_fehler(von: str, bis: str, anteil: float | None) -> str | None:
-    """Grund, warum eine Abwesenheit so nicht geht, sonst None."""
+    """Grund, warum eine Abwesenheit so nicht geht, sonst None. Halbe Tage gelten für jeden Tag des Zeitraums."""
     if not ist_tag(von) or not ist_tag(bis):
         return "Von und bis müssen Tage sein"
     if bis < von:
         return "Bis liegt vor von"
     if anteil is not None and anteil != 0.5:
         return "Ein Tag zählt ganz oder halb"
-    if anteil == 0.5 and von != bis:
-        return "Ein halber Tag ist ein einzelner Tag"
     return None
 
 

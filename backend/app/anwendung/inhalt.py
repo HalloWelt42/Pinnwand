@@ -13,7 +13,9 @@ from pydantic import Field
 from ..modell import Board, Farbe, Karte, Kennung, Kommentar, Konto, Modell, Prioritaet, Punkt
 from ..regeln.tage import datum_text, ist_tag
 from . import hinweise
-from .karten import TITEL_LAENGE, karte_lesen, speichern, vermerken
+from . import zeiterfassung
+from .karten import TITEL_LAENGE
+from .kartenbasis import karte_lesen, speichern, vermerken
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext
 
 PRIORITAETEN = {"keine": "Keine", "niedrig": "Niedrig", "mittel": "Mittel", "hoch": "Hoch", "dringend": "Dringend"}
@@ -191,8 +193,9 @@ class Inhalte:
                 return None
             c.art = art
             vermerken(k, c, "hat sie zur Idee gemacht" if art == "idee" else "hat sie zur Arbeit gemacht")
+            gebucht = zeiterfassung.timer_beenden(k, [c]) if art == "idee" else 0
             speichern(k, c)
-            return f"{c.schluessel} ist jetzt {'eine Idee' if art == 'idee' else 'Arbeit'}"
+            return f"{c.schluessel} ist jetzt {'eine Idee' if art == 'idee' else 'Arbeit'}" + zeiterfassung.gestoppt(gebucht)
 
         return await self.a.aendern(konto, arbeit)
 

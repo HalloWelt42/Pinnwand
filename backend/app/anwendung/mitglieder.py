@@ -13,7 +13,8 @@ from ..regeln.board import modul_von, spalte_von
 from ..vorlagen import ALLE_RECHTE
 from .aufbau import karten_des_boards
 from .boards import am_board, anzahl, name_pruefen, vergeben
-from .karten import speichern, vermerken
+from . import zeiterfassung
+from .kartenbasis import speichern, vermerken
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
 
 #: Rechte, die Besitzer immer behalten, damit jemand das Board führen kann
@@ -160,6 +161,7 @@ class Mitglieder:
             b.mitglieder = [x for x in b.mitglieder if x.kellerwolke != m.kellerwolke]
             if not m.konto:
                 return f"Die Einladung an {name} ist zurückgenommen"
+            zeiterfassung.timer_im_board_beenden(k, b.id, m.konto)
             frei = 0
             for c in karten_des_boards(k, b):
                 spalte = spalte_von(b, c.spalte)

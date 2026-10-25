@@ -17,6 +17,7 @@ from ..regeln.board import einstellung_fehler
 from ..regeln.kuerzel import KUERZEL_MUSTER, Inhaber, abwandlungen, kuerzel_fehler
 from ..verzeichnis import Schreiber
 from ..vorlagen import start_rollen
+from . import zeiterfassung
 from .papierkorb import geloeschtes_board
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
 
@@ -309,7 +310,10 @@ class Boards:
                 return None
             b.module[modul] = an
             name = MODUL_NAMEN[modul]
-            return f"{name} in {b.name} eingeschaltet" if an else f"{name} in {b.name} ausgeblendet; die Daten bleiben"
+            if an:
+                return f"{name} in {b.name} eingeschaltet"
+            gebucht = zeiterfassung.timer_im_board_beenden(k, b.id) if modul == "zeiterfassung" else 0
+            return f"{name} in {b.name} ausgeblendet; die Daten bleiben" + zeiterfassung.gestoppt(gebucht)
 
         return await am_board(self.a, konto, board_id, "board.verwalten", tun)
 

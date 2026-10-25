@@ -13,6 +13,7 @@ from ..uhr import Uhr
 from ..verzeichnis import Verzeichnis, einrichten
 from ..vorlagen import MITGELIEFERT
 from .anhaenge import Ablage, Anhaenge
+from .arbeitszeit import Arbeitszeit
 from .aufbau import Aufbau
 from .boards import Boards, Zugang
 from .ereignisse import Ereignisse
@@ -25,6 +26,7 @@ from .ordner import Persoenliches
 from .papierkorb import Papierkorb
 from .rahmen import Anwendung
 from .stand import Abfragen
+from .zeiterfassung import Zeiterfassung
 
 
 @dataclass
@@ -42,6 +44,8 @@ class Dienste:
     mitglieder: Mitglieder
     persoenlich: Persoenliches
     anhaenge: Anhaenge
+    zeiterfassung: Zeiterfassung
+    arbeitszeit: Arbeitszeit
 
     @classmethod
     def bauen(cls, db: Datenbank, zugang: Zugang, ablage: Ablage, uhr: Uhr | None = None) -> Dienste:
@@ -50,7 +54,8 @@ class Dienste:
         konten = Konten(a)
         return cls(anwendung=a, ereignisse=ereignisse, konten=konten, abfragen=Abfragen(a), boards=Boards(a, zugang),
                    karten=Karten(a), inhalte=Inhalte(a), hinweise=Hinweise(a), papierkorb=Papierkorb(a), aufbau=Aufbau(a),
-                   mitglieder=Mitglieder(a), persoenlich=Persoenliches(a, konten), anhaenge=Anhaenge(a, ablage))
+                   mitglieder=Mitglieder(a), persoenlich=Persoenliches(a, konten), anhaenge=Anhaenge(a, ablage),
+                   zeiterfassung=Zeiterfassung(a), arbeitszeit=Arbeitszeit(a))
 
 
 class Start(Begleiter):

@@ -13,7 +13,7 @@ from ..anwendung import Dienste
 from ..anwendung.rahmen import Antwort
 from ..anwendung.stand import Stand
 from ..modell import Kennung, Konto
-from . import anhaenge, aufbau, boards, hinweise, karten, mitglieder, ordner, papierkorb
+from . import anhaenge, arbeitszeit, aufbau, boards, hinweise, karten, mitglieder, ordner, papierkorb, zeiterfassung
 from .zugriff import Zugriff
 
 
@@ -55,6 +55,6 @@ def router(geruest: Geruest, d: Dienste) -> APIRouter:
 
         return StreamingResponse(strom(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
 
-    for bereich in (boards, karten, aufbau, mitglieder, ordner, papierkorb, hinweise, anhaenge):
+    for bereich in (boards, karten, aufbau, mitglieder, ordner, papierkorb, hinweise, anhaenge, zeiterfassung, arbeitszeit):
         r.include_router(bereich.router(z))
     return r

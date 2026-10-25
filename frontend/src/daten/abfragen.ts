@@ -23,7 +23,7 @@ export function timerVon(konto = ICH): Timer | undefined {
   return stand.timer.find((t) => t.konto === konto);
 }
 
-/** Laufende Timer auf einer Karte (jede Person hat höchstens einen) */
+/** Laufende Timer auf einer Karte (jede Person hat höchstens einen; die anderer nur mit dem Recht "Zeiten anderer sehen") */
 export function laufendAuf(karteId: string): Timer[] {
   return stand.timer.filter((t) => t.karte === karteId && t.seit);
 }
@@ -31,6 +31,15 @@ export function laufendAuf(karteId: string): Timer[] {
 /** Sekunden der laufenden Sitzung eines Timers (0, wenn angehalten) */
 export function sitzungSek(t: Timer | undefined): number {
   return t?.seit ? laufendSek(t.seit) : 0;
+}
+
+/** Sekunden der laufenden Sitzung, die auf einen Tag fallen: über Mitternacht zählt jeder Tag seinen Teil, wie der
+ *  Server beim Anhalten bucht */
+export function sitzungAm(t: Timer | undefined, tag: string): number {
+  if (!t?.seit) return 0;
+  const von = Math.max(new Date(t.seit).getTime(), new Date(`${tag}T00:00:00`).getTime());
+  const bis = Math.min(new Date(uhr.jetzt).getTime(), new Date(`${plusTage(tag, 1)}T00:00:00`).getTime());
+  return Math.max(0, (bis - von) / 1000);
 }
 
 /** Darf auf dieser Karte ein Timer laufen? Nur Arbeit, nicht erledigt, Board mit Zeiterfassung, Recht zum Buchen */
@@ -42,7 +51,8 @@ export function timerErlaubt(k: Karte, konto = ICH): boolean {
 
 // ═══ Zeit einer Karte ════════════════════════════════════════════════════════════════════════════════════
 
-/** Gebuchte Zeit einer Karte: Summe ihrer Einträge, mit den laufenden Sitzungen */
+/** Gebuchte Zeit einer Karte: Summe ihrer Einträge, mit den laufenden Sitzungen. Der Stand hat nur, was du siehst: ohne
+ *  das Recht "Zeiten anderer sehen" im Board der Karte ist das deine Zeit auf ihr */
 export function zeitDerKarte(karteId: string, mitLaufend = true): number {
   const gebucht = stand.zeiteintraege.filter((e) => e.karte === karteId).reduce((s, e) => s + e.sekunden, 0);
   return gebucht + (mitLaufend ? laufendAuf(karteId).reduce((s, t) => s + sitzungSek(t), 0) : 0);
@@ -54,14 +64,18 @@ export function zeitDerGruppe(k: Karte): number {
   return ids.reduce((s, id) => s + zeitDerKarte(id), 0);
 }
 
-/** Name und Board einer Karte für Zeiteinträge, auch wenn sie im Papierkorb liegt oder entfernt ist */
+/** Name und Board einer Karte für Zeiteinträge, auch wenn sie im Papierkorb liegt, entfernt ist oder nicht im Stand
+ *  steht (archiviert, Board verlassen: dann kommt der Name aus den Kartennamen des Stands, die Karte gibt es noch) */
 export function kartenName(karteId: string): { schluessel: string; titel: string; board: string; zustand: "da" | "papierkorb" | "entfernt" } {
   const k = karte(karteId);
   if (k) return { schluessel: k.schluessel, titel: k.titel, board: k.board, zustand: "da" };
   const p = stand.papierkorb.flatMap((e) => e.karten).find((x) => x.id === karteId);
   if (p) return { schluessel: p.schluessel, titel: p.titel, board: p.board, zustand: "papierkorb" };
   const e = stand.entfernt.find((x) => x.karte === karteId);
-  return { schluessel: e?.schluessel ?? "", titel: e?.titel ?? "Entfernte Karte", board: e?.board ?? "", zustand: "entfernt" };
+  if (e) return { schluessel: e.schluessel, titel: e.titel, board: e.board, zustand: "entfernt" };
+  const n = stand.kartennamen.find((x) => x.karte === karteId);
+  if (n) return { schluessel: n.schluessel, titel: n.titel, board: n.board, zustand: "da" };
+  return { schluessel: "", titel: "Entfernte Karte", board: "", zustand: "entfernt" };
 }
 
 /** Zeiteinträge einer Person von bis (einschließlich) */
@@ -71,12 +85,10 @@ export function eintraegeVon(kontoId: string, von: string, bis = von) {
 
 // ═══ Ist und Soll einer Person ═══════════════════════════════════════════════════════════════════════════
 
-/** Ist eines Tags: Einträge, nicht einzeln geführte Zeit und die laufende Sitzung von heute */
+/** Ist eines Tags: Einträge und der Teil der laufenden Sitzung an diesem Tag */
 export function istAm(konto: string, tag: string): number {
   const eintraege = stand.zeiteintraege.filter((e) => e.konto === konto && e.datum === tag).reduce((s, e) => s + e.sekunden, 0);
-  const t = timerVon(konto);
-  const laufend = t?.seit && t.seit.slice(0, 10) === tag ? sitzungSek(t) : 0;
-  return eintraege + laufend;
+  return eintraege + sitzungAm(timerVon(konto), tag);
 }
 
 /** Ist eines Zeitraums: die Summe der Tage */
@@ -108,6 +120,18 @@ export function urlaub(konto: string, jahr = Number(uhr.heute.slice(0, 4))): { a
   const genommen = urlaubstage(k, stand.abwesenheiten, jahr, uhr.heute);
   const geplant = urlaubstage(k, stand.abwesenheiten, jahr, uhr.heute, true);
   return { anspruch, genommen, geplant, rest: anspruch - genommen - geplant };
+}
+
+/** Tagessummen der Mitglieder eines Boards für die Ansicht Team: wen du dort siehst (mit dem Recht "Abwesenheiten
+ *  sehen" alle, sonst dich) und je Person und Tag die gebuchten Sekunden aus allen Boards, ohne Einträge */
+export interface TeamTage {
+  personen: Kennung[];
+  ist: Record<Kennung, Record<string, number>>;
+}
+
+/** Kommt vom Server, nicht aus dem Zustand: Zeiten anderer in fremden Boards stehen nie im Stand */
+export function teamTage(boardId: Kennung, von: string, bis: string, signal?: AbortSignal): Promise<TeamTage> {
+  return hole<TeamTage>(`/team/${encodeURIComponent(boardId)}?von=${von}&bis=${bis}`, { signal });
 }
 
 // ═══ Board ═══════════════════════════════════════════════════════════════════════════════════════════════
@@ -160,8 +184,8 @@ export function darf(b: Board, recht: string): boolean {
   return hatRecht(b, recht, ICH, stand.moduleDa);
 }
 
-/** Pfad einer Karte im Detail: /board/prod/131 */
-export function kartenNummer(k: Karte): string {
+/** Pfad einer Karte im Detail: /board/prod/131 (auch aus dem Namen einer Karte außerhalb des Stands) */
+export function kartenNummer(k: Pick<Karte, "schluessel">): string {
   return k.schluessel.split("-")[1];
 }
 

@@ -1,12 +1,13 @@
 // Wege der Pinnwand: welcher Pfad welche Ansicht zeigt. Jeder Bereich trägt seine Wege in ansichten/<bereich>/routen.ts
 // ein; die erste passende gilt. Am Telefon gelten die Wege der Telefonansicht (dieselben Pfade, eigene Ansichten).
-// Bereiche späterer Stufen (Zeit, Planung) kommen mit ihrer Stufe dazu.
+// Bereiche späterer Stufen (Planung, Berichte) kommen mit ihrer Stufe dazu.
 
 import type { Component } from "svelte";
 import BoardAnsicht from "./board/BoardAnsicht.svelte";
 import { ROUTEN as TELEFON } from "./ansichten/telefon/routen";
 import { ROUTEN as UEBERSICHT } from "./ansichten/uebersicht/routen";
 import { ROUTEN as VERWALTUNG } from "./ansichten/verwaltung/routen";
+import { ROUTEN as ZEIT } from "./ansichten/zeit/routen";
 import { boardAusKuerzel } from "./daten/stand.svelte";
 
 export interface Treffer {
@@ -41,7 +42,7 @@ const BOARD: Route[] = [
   },
 ];
 
-export const ROUTEN: Route[] = [...BOARD, ...UEBERSICHT, ...VERWALTUNG, ...TELEFON];
+export const ROUTEN: Route[] = [...BOARD, ...UEBERSICHT, ...VERWALTUNG, ...ZEIT, ...TELEFON];
 
 export function finden(pfad: string, geraet: "rechner" | "telefon"): Treffer | null {
   for (const r of ROUTEN.filter((x) => x.geraet === geraet)) {

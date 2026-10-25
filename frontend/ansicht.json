@@ -12,7 +12,13 @@
     { "name": "board-einstellungen", "abfrage": "/api/v1/stand", "pfad": "/board/{boards.0.kuerzel}/einstellungen", "nur": [1920, 1440, 1280, 1100, 900] },
     { "name": "board-neu", "pfad": "/boards/neu", "nur": [1920, 1440, 1280, 1100, 900] },
     { "name": "einstellungen", "pfad": "/einstellungen", "nur": [1920, 1440, 1280, 1100, 900] },
+    { "name": "zeiten", "pfad": "/zeiten", "nur": [1920, 1440, 1280, 1100, 900] },
+    { "name": "arbeitszeit", "pfad": "/arbeitszeit", "nur": [1920, 1440, 1280, 1100, 900] },
+    { "name": "arbeitszeit-kalender", "pfad": "/arbeitszeit/kalender", "nur": [1920, 1440, 1280, 1100, 900] },
+    { "name": "arbeitszeit-urlaub", "pfad": "/arbeitszeit/urlaub", "nur": [1920, 1440, 1280, 1100, 900] },
+    { "name": "arbeitszeit-team", "pfad": "/arbeitszeit/team", "nur": [1920, 1440, 1280, 1100, 900] },
     { "name": "telefon-boards", "pfad": "/boards", "nur": [390] },
-    { "name": "telefon-erfassen", "pfad": "/erfassen", "nur": [390] }
+    { "name": "telefon-erfassen", "pfad": "/erfassen", "nur": [390] },
+    { "name": "telefon-zeiten", "pfad": "/zeiten", "nur": [390] }
   ]
 }

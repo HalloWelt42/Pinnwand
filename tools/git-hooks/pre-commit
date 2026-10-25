@@ -5,6 +5,15 @@
 # (appkern.werkzeuge). Danach die Regeln des Repos (regelpruefung.sh): keine fremden Verweise, keine Geheimnisse, echte
 # Umlaute in der Doku.
 set -euo pipefail
+# >>> handbuch: Seite und Einrichtungsskript prüfen (eingesetzt von "handbuch einbinden", nicht von Hand ändern)
+handbuch_befehl="$(command -v handbuch || true)"
+[ -n "$handbuch_befehl" ] || handbuch_befehl="$HOME/.local/bin/handbuch"
+if [ ! -x "$handbuch_befehl" ]; then
+  echo "Abbruch: das Werkzeug handbuch fehlt (Handbuch, Grundlage Mac)" >&2
+  exit 1
+fi
+"$handbuch_befehl" vor-commit "$(git rev-parse --show-toplevel)" || exit 1
+# <<< handbuch
 cd "$(git rev-parse --show-toplevel)"
 backend/.venv/bin/python -m appkern.werkzeuge vor-dem-commit
 DATEIEN="$(git diff --cached --name-only --diff-filter=ACM)"

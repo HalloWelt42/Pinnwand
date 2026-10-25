@@ -11,7 +11,8 @@
   import { darf, filterAktiv, kartenNummer, papierkorbVon, type Sortierung } from "../daten/abfragen";
   import { spalteAnlegen, spaltenOrdnen } from "../daten/anwendung/boards.svelte";
   import { ICH } from "../daten/ich";
-  import { board, karte, konto, ordnerVon } from "../daten/stand.svelte";
+  import { board, karte, karteAusNummer, karteHolen, konto, ordnerVon } from "../daten/stand.svelte";
+  import { melden } from "../daten/anwendung/meldung.svelte";
   import Kartendetail from "../detail/Kartendetail.svelte";
   import type { Farbe, Spalte as SpalteT } from "../modell";
   import Farbwahl from "../teile/Farbwahl.svelte";
@@ -24,7 +25,7 @@
   import { abheben, istSchatten } from "./schatten";
   import Spalte from "./Spalte.svelte";
 
-  let { boardId, ansicht = "board", detail }: { boardId: string; ansicht?: string; detail?: string } = $props();
+  let { boardId, ansicht = "board", nummer = "" }: { boardId: string; ansicht?: string; nummer?: string } = $props();
 
   const b = $derived(board(boardId));
   const Andere = $derived(BOARDANSICHTEN[ansicht]);
@@ -52,7 +53,19 @@
   }
   const zurueck = () => gehe(boardPfad(b.kuerzel, ansicht === "board" ? "" : ansicht));
   // liegt die offene Karte nicht mehr im Board (Papierkorb, von anderen gelöscht), schließt das Detail
-  $effect(() => { if (detail && !karte(detail)) untrack(zurueck); });
+  // die Karte im Pfad: liegt sie nicht im Zustand (archiviert), holt das Board sie einzeln; gibt es sie nicht (mehr) oder
+  // verschwindet sie (Papierkorb, von anderen gelöscht), schließt das Detail
+  const detail = $derived(nummer ? karteAusNummer(b, nummer)?.id : undefined);
+  $effect(() => {
+    if (!nummer || detail) return;
+    const schluessel = `${b.kuerzel}-${nummer}`;
+    void untrack(async () => {
+      if (!(await karteHolen(schluessel)) && nummer && !karteAusNummer(b, nummer)) {
+        melden(`Die Karte ${schluessel} gibt es nicht (mehr)`);
+        zurueck();
+      }
+    });
+  });
 
   const darstellung = $derived<Record<string, "offen">>(detail ? { [detail]: "offen" } : {});
   const ANSICHTEN = [["board", "Board", "fa-table-columns"], ["liste", "Liste", "fa-table-list"], ["kalender", "Kalender", "fa-calendar-days"],

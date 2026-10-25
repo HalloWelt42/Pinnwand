@@ -7,7 +7,7 @@ import BoardAnsicht from "./board/BoardAnsicht.svelte";
 import { ROUTEN as TELEFON } from "./ansichten/telefon/routen";
 import { ROUTEN as UEBERSICHT } from "./ansichten/uebersicht/routen";
 import { ROUTEN as VERWALTUNG } from "./ansichten/verwaltung/routen";
-import { boardAusKuerzel, karteAusNummer } from "./daten/stand.svelte";
+import { boardAusKuerzel } from "./daten/stand.svelte";
 
 export interface Treffer {
   /** Eintrag der Seitenleiste, der aktiv ist */
@@ -35,10 +35,8 @@ const BOARD: Route[] = [
       if (!b) return null;
       const teil = m[2] ?? "";
       const nr = /^\d+$/.test(teil) ? teil : "";
-      // ein direkter Pfad öffnet jede Karte des Boards, auch eine archivierte außerhalb des Zeitfensters (einzeln geladen)
-      const detail = nr ? karteAusNummer(b, nr)?.id : undefined;
-      return { navi: b.id, komponente: BoardAnsicht,
-               werte: { boardId: b.id, ansicht: nr || !teil ? "board" : teil, detail } };
+      // ein direkter Pfad öffnet jede Karte des Boards, auch eine archivierte (das Board holt sie einzeln)
+      return { navi: b.id, komponente: BoardAnsicht, werte: { boardId: b.id, ansicht: nr || !teil ? "board" : teil, nummer: nr } };
     },
   },
 ];

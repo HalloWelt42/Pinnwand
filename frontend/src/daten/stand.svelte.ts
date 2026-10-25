@@ -181,6 +181,19 @@ export function verbinden(): () => void {
   return () => halt.abort();
 }
 
+/** Eine Karte einzeln vom Server in den Zustand holen (etwa eine archivierte über ihren Pfad, M-09); Ergebnis: ob es sie
+ *  gibt und du sie sehen darfst */
+export async function karteHolen(schluessel: string): Promise<boolean> {
+  try {
+    const d = await hole<Geaendert["daten"]>(`/karten/${encodeURIComponent(schluessel)}`);
+    if (!d) return false;
+    uebernehmen([{ tabelle: "karten", id: d.id, daten: d }]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function board(id: string): Board {
   return stand.boards.find((b) => b.id === id) ?? stand.boards[0];
 }

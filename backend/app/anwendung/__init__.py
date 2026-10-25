@@ -12,6 +12,7 @@ from appkern.datenbank import Datenbank
 from ..uhr import Uhr
 from ..verzeichnis import Verzeichnis, einrichten
 from ..vorlagen import MITGELIEFERT
+from .anhaenge import Ablage, Anhaenge
 from .boards import Boards, Zugang
 from .ereignisse import Ereignisse
 from .inhalt import Inhalte
@@ -30,13 +31,14 @@ class Dienste:
     boards: Boards
     karten: Karten
     inhalte: Inhalte
+    anhaenge: Anhaenge
 
     @classmethod
-    def bauen(cls, db: Datenbank, zugang: Zugang, uhr: Uhr | None = None) -> Dienste:
+    def bauen(cls, db: Datenbank, zugang: Zugang, ablage: Ablage, uhr: Uhr | None = None) -> Dienste:
         ereignisse = Ereignisse()
         a = Anwendung(Verzeichnis(db), ereignisse, uhr)
         return cls(anwendung=a, ereignisse=ereignisse, konten=Konten(a), abfragen=Abfragen(a), boards=Boards(a, zugang),
-                   karten=Karten(a), inhalte=Inhalte(a))
+                   karten=Karten(a), inhalte=Inhalte(a), anhaenge=Anhaenge(a, ablage))
 
 
 class Start(Begleiter):

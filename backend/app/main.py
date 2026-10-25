@@ -14,6 +14,8 @@ from appkern.app import Geruest
 from .anwendung import Dienste, Start
 from .einstellungen import AppEinstellungen
 from .fassung import FASSUNG, WURZEL
+from .schnittstelle import anhaenge
+from .schnittstelle.ablage import KellerwolkeAblage
 from .schnittstelle.rest import router
 from .schnittstelle.zugang import GeruestZugang
 from .uhr import Uhr
@@ -24,12 +26,14 @@ def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None, uh
     geruest = Geruest(name="Pinnwand", kennung="pinnwand", rolle="plant Arbeit auf Boards", symbol="fa-thumbtack", farbe="#2f8f86", fassung=FASSUNG,
                       daten=daten, einstellungen=AppEinstellungen, oberflaeche=WURZEL / "frontend" / "dist",
                       transport=transport)
-    dienste = Dienste.bauen(geruest.db, GeruestZugang(geruest), uhr)
+    ablage = KellerwolkeAblage(geruest)
+    dienste = Dienste.bauen(geruest.db, GeruestZugang(geruest), ablage, uhr)
     geruest.begleiter_anmelden(Start(geruest.db))
     app = geruest.fastapi()
     app.state.geruest = geruest
     app.state.dienste = dienste
     app.include_router(router(geruest, dienste))
+    app.include_router(anhaenge.inhalt(geruest, dienste, ablage))
     geruest.oberflaeche_ausliefern(app)
     return app
 

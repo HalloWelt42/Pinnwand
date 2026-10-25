@@ -133,13 +133,23 @@ class Kommentar(Modell):
     text: str
 
 
+AnhangArt = Literal["pdf", "bild", "tabelle", "text", "ton"]
+
+
 class Anhang(Modell):
+    """Eine Datei an einer Karte: hochgeladen in den Ordner des Boards in der Ablage der Pinnwand, oder aus der eigenen
+    Kellerwolke verknüpft (die Datei bleibt, wo sie ist). Der Name ist an der Karte eindeutig."""
+
     name: str
     groesse: str
-    art: Literal["pdf", "bild", "tabelle", "text", "ton"]
+    art: AnhangArt
     verknuepft: bool | None = None
     #: Kennung der Datei in der Kellerwolke
     datei: str | None = None
+    #: Weg der Datei in der Kellerwolke vom Konto aus, mit Namen ("Apps/Pinnwand/Haushalt/Skizze.png")
+    pfad: str | None = None
+    #: wer sie angehängt hat; bei einer verknüpften: in wessen Kellerwolke sie liegt
+    von: Kennung | None = None
 
 
 class TranskriptMarke(Modell):

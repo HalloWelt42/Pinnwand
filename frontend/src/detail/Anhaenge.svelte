@@ -1,13 +1,16 @@
 <script lang="ts">
   // Anhänge der Karte (M-63, E-15): hochladen über die Dateiwahl oder durch Ziehen auf den Abschnitt, aus der eigenen
-  // Kellerwolke verknüpfen, öffnen (die Datei aus der Kellerwolke in einem neuen Reiter) und entfernen mit Rückgängig.
-  // Hochgeladenes liegt in der Kellerwolke im Ordner des Boards. Ändern nur mit dem Recht, die Karte zu bearbeiten.
+  // Kellerwolke verknüpfen, öffnen in einem neuen Reiter und entfernen mit Rückgängig. Hochgeladenes liegt in der
+  // Kellerwolke im Ordner des Boards und öffnet sich für jedes Mitglied; Verknüpftes öffnet sich in der Kellerwolke der
+  // Person, die es verknüpft hat. Ändern nur mit dem Recht, die Karte zu bearbeiten.
   import { ablageOrt, dateiAdresse, entfernen, GRENZE_MB, hochladen } from "../daten/anwendung/anhaenge.svelte";
+  import { ICH } from "../daten/ich";
+  import { konto } from "../daten/stand.svelte";
   import type { Anhang, Board, Karte } from "../modell";
   import { SYMBOL } from "./anhang";
   import Kellerwolkewahl from "./Kellerwolkewahl.svelte";
 
-  let { karte, board, schreiben }: { karte: Karte; board: Board; schreiben: boolean } = $props();
+  let { karte, schreiben }: { karte: Karte; board: Board; schreiben: boolean } = $props();
 
   let wahl = $state<HTMLInputElement>();
   let wolkeOffen = $state(false);
@@ -40,8 +43,13 @@
     hochladen(karte.id, Array.from(e.dataTransfer?.files ?? []));
   }
 
-  function oeffnen(a: Anhang): void {
-    window.open(dateiAdresse(karte, a), "_blank", "noopener");
+  function herkunft(a: Anhang): string {
+    if (!a.verknuepft) return `${a.groesse} · Kellerwolke, ${ablageOrt(a)}`;
+    return !a.von || a.von === ICH ? "verknüpft aus deiner Kellerwolke" : `verknüpft aus der Kellerwolke von ${konto(a.von).name}`;
+  }
+
+  function oeffnen(adresse: string): void {
+    window.open(adresse, "_blank", "noopener");
   }
 </script>
 
@@ -59,11 +67,18 @@
     <Kellerwolkewahl {karte} schliessen={() => (wolkeOffen = false)} />
   {/if}
   {#each karte.anhaenge as a (a.name)}
+    {@const adresse = dateiAdresse(karte, a)}
     <div class="pw-anhang">
       <i class="fa-solid {SYMBOL[a.art]}"></i>
-      <button class="name pw-anhang-name" title="{a.name} öffnen" onclick={() => oeffnen(a)}>{a.name}</button>
-      <span class="meta">{a.verknuepft ? "verknüpft aus deiner Kellerwolke" : `${a.groesse} · Kellerwolke, ${ablageOrt(board)}`}</span>
-      <button class="knopf ohne symbol klein" title="Öffnen" onclick={() => oeffnen(a)}><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+      {#if adresse}
+        <button class="name pw-anhang-name" title="{a.name} öffnen" onclick={() => oeffnen(adresse)}>{a.name}</button>
+      {:else}
+        <span class="name">{a.name}</span>
+      {/if}
+      <span class="meta">{herkunft(a)}</span>
+      {#if adresse}
+        <button class="knopf ohne symbol klein" title="Öffnen" onclick={() => oeffnen(adresse)}><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+      {/if}
       {#if schreiben}
         <button class="knopf ohne symbol klein" title={a.verknuepft ? "Verknüpfung lösen (Rückgängig möglich)" : "Entfernen (Rückgängig möglich)"}
                 onclick={() => entfernen(karte.id, a.name)}><i class="fa-solid fa-xmark"></i></button>

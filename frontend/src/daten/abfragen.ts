@@ -2,8 +2,9 @@
 // Hinweise, sichtbare Karten einer Spalte. In der App liefert das die Schnittstelle (dieselben Regeln auf dem Server);
 // die Ansichten fragen nur hier, nie mit eigener Rechnung.
 
+import { hole } from "appkern-oberflaeche";
 import { ZEITFENSTER_VORGABE } from "../anzeige";
-import type { Board, Karte, KellerwolkeDatei, KellerwolkePerson, Kennung, Prioritaet, Serie, Spalte, Termin, Timer, Zeitfenster } from "../modell";
+import type { Board, Karte, KellerwolkeOrdner, KellerwolkePerson, Kennung, Prioritaet, Serie, Spalte, Termin, Timer, Zeitfenster } from "../modell";
 import { abwesenheitAm, artName, fassungAm, sollAm, urlaubstage, type TagSoll } from "../regeln/arbeitszeit";
 import { feiertag } from "../regeln/feiertage";
 import { vorkommen, type Nachtragposten, type SerienUmfeld } from "../regeln/serien";
@@ -410,7 +411,8 @@ export function verknuepfTreffer(k: Karte, suche: string, hoechstens = 8): Karte
     && (x.titel.toLowerCase().includes(s) || x.schluessel.toLowerCase().includes(s))).slice(0, hoechstens);
 }
 
-/** Deine Dateien in der Kellerwolke zum Anhängen; bis die Dateiwahl der Kellerwolke angebunden ist, keine */
-export function kellerwolkeDateien(): KellerwolkeDatei[] {
-  return [];
+/** Ein Ordner deiner Kellerwolke zum Anhängen (null: Meine Dateien): was die Kellerwolke dir dort zeigt, Ordner zuerst.
+ *  Kommt vom Server, nicht aus dem Zustand: die Pinnwand sieht deine Dateien nur mit deiner Anmeldung */
+export function kellerwolkeDateien(ordner: string | null, signal?: AbortSignal): Promise<KellerwolkeOrdner> {
+  return hole<KellerwolkeOrdner>(`/anhaenge/kellerwolke${ordner ? `?ordner=${encodeURIComponent(ordner)}` : ""}`, { signal });
 }

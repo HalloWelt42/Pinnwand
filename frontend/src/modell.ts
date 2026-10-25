@@ -25,12 +25,26 @@ export interface KellerwolkePerson {
   konto?: Kennung;
 }
 
-/** Eine Datei in deiner Kellerwolke, wie die Dateiwahl sie zeigt (zum Verknüpfen an einer Karte) */
+/** Ein Eintrag deiner Kellerwolke, wie die Dateiwahl ihn zeigt (zum Verknüpfen an einer Karte): Ordner zum Hineingehen,
+ *  Dateien zum Wählen */
 export interface KellerwolkeDatei {
-  pfad: string;
+  /** Kennung in der Kellerwolke */
+  id: string;
+  typ: "ordner" | "datei";
   name: string;
+  /** Ordner, in dem er liegt (null: Meine Dateien), und dessen Weg vom Konto aus ("Dokumente/Angebote") */
+  ordner: string | null;
+  pfad: string;
   groesse: string;
   art: Anhang["art"];
+}
+
+/** Ein Ordner deiner Kellerwolke in der Dateiwahl (id null: Meine Dateien) */
+export interface KellerwolkeOrdner {
+  id: string | null;
+  /** Weg vom Konto bis hier: Meine Dateien, dann die Ordner */
+  kette: { id: string | null; name: string }[];
+  eintraege: KellerwolkeDatei[];
 }
 
 /** Persönlicher Ordner in der Seitenleiste: ordnet nur, trägt keine Rechte; jede Person ordnet ihre Boards selbst */
@@ -143,12 +157,20 @@ export interface Kommentar {
   text: string;
 }
 
+/** Eine Datei an einer Karte: hochgeladen in den Ordner des Boards in der Ablage der Pinnwand, oder aus der eigenen
+ *  Kellerwolke verknüpft (die Datei bleibt, wo sie ist). Der Name ist an der Karte eindeutig */
 export interface Anhang {
   name: string;
   groesse: string;
   art: "pdf" | "bild" | "tabelle" | "text" | "ton";
   /** aus der eigenen Kellerwolke verknüpft statt hochgeladen */
   verknuepft?: boolean;
+  /** Kennung der Datei in der Kellerwolke */
+  datei?: string;
+  /** Weg der Datei in der Kellerwolke vom Konto aus, mit Namen ("Apps/Pinnwand/Haushalt/Skizze.png") */
+  pfad?: string;
+  /** wer sie angehängt hat; bei einer verknüpften: in wessen Kellerwolke sie liegt */
+  von?: Kennung;
 }
 
 export interface TranskriptMarke {

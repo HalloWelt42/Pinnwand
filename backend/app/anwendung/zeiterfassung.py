@@ -45,6 +45,13 @@ def schluessel_von(k: Kontext, karte_id: Kennung) -> str:
     return (d or {}).get("schluessel") or "die Karte"
 
 
+def wofuer(k: Kontext, e: Zeiteintrag) -> str:
+    """Wofür ein Eintrag gebucht ist, für Meldungen: Schlüssel der Karte oder Titel des Termins."""
+    if e.karte:
+        return schluessel_von(k, e.karte)
+    return (k.s.lies("termine", e.termin or "") or {}).get("titel") or "der Termin"
+
+
 def name_von(k: Kontext, konto: Kennung) -> str:
     return (k.s.lies("konten", konto) or {}).get("name") or "jemand"
 
@@ -235,6 +242,13 @@ def zerlegung_loesen(k: Kontext, e: Zeiteintrag) -> None:
     e.zerlegt = None
 
 
+def bestaetigung_zuruecknehmen(k: Kontext, e: Zeiteintrag) -> None:
+    """Ein gelöschter Eintrag eines Termins nimmt die Bestätigung zurück: der Termin wartet wieder im Nachtrag."""
+    d = k.s.lies("termine", e.termin or "")
+    if d and e.konto in d.get("bestaetigt", []):
+        k.s.schreib("termine", {**d, "bestaetigt": [x for x in d["bestaetigt"] if x != e.konto]})
+
+
 # ═══ Deckel ═══════════════════════════════════════════════════════════════════════════════════════════════════════════
 
 def gedeckelte_sitzung(k: Kontext, ids: list[Kennung]) -> tuple[Deckel, list[Zeiteintrag]]:
@@ -399,7 +413,7 @@ class Zeiterfassung:
             else:
                 verlaengern(e, sek)
             schreiben(k, e)
-            return f"{schluessel_von(k, e.karte)} {datum_kurz(e.datum)}: {dauer_text(alt)} auf {dauer_text(sek)} geändert"
+            return f"{wofuer(k, e)} {datum_kurz(e.datum)}: {dauer_text(alt)} auf {dauer_text(sek)} geändert"
 
         return await self.a.aendern(konto, arbeit)
 
@@ -418,8 +432,9 @@ class Zeiterfassung:
             e.datum = tag
             schreiben(k, e)
             text = f"Zeiteintrag ({dauer_text(e.sekunden)}) von {datum_kurz(alt)} auf {datum_kurz(tag)} gelegt"
-            verlauf_an(k, e.karte, None, f"hat einen {text}")
-            return f"{schluessel_von(k, e.karte)}: {text}"
+            if e.karte:
+                verlauf_an(k, e.karte, None, f"hat einen {text}")
+            return f"{wofuer(k, e)}: {text}"
 
         return await self.a.aendern(konto, arbeit)
 
@@ -447,7 +462,10 @@ class Zeiterfassung:
             zerlegung_loesen(k, e)
             k.s.loesch("zeiteintraege", e.id)
             text = f"Zeiteintrag ({dauer_text(e.sekunden)}, {datum_kurz(e.datum)})"
-            verlauf_an(k, e.karte, None, f"hat einen {text} gelöscht")
+            if e.karte:
+                verlauf_an(k, e.karte, None, f"hat einen {text} gelöscht")
+            if e.termin:
+                bestaetigung_zuruecknehmen(k, e)
             return f"{text} gelöscht"
 
         return await self.a.aendern(konto, arbeit)

@@ -38,6 +38,8 @@ class Stand(Modell):
     zeitkonten: list[dict]
     abwesenheiten: list[dict]
     kartennamen: list[Kartenname]
+    serien: list[dict]
+    termine: list[dict]
 
 
 class Team(Modell):
@@ -78,6 +80,8 @@ class Abfragen:
                        if d.get("art") == "board" and _darf_board_zurueck(d, konto.id)]
         vorlagen = [d for d in await self.a.v.alle("vorlagen") if not d.get("konto") or d.get("konto") == konto.id]
         timer, zeiteintraege = await self._zeit(konto, boards)
+        serien = await self.a.v.alle("serien", f"board IN ({frage})", tuple(ids)) if ids else []
+        termine = await self.a.v.alle("termine", f"board IN ({frage})", tuple(ids), "datum") if ids else []
         personen = sichtbare_personen(alle_boards, konto.id)
         return Stand(
             jetzt=self.a.uhr.jetzt(), ich=konto.id, module_da=list(MODULE_DA),
@@ -96,7 +100,10 @@ class Abfragen:
             zeiteintraege=zeiteintraege,
             zeitkonten=await self._von_personen("zeitkonten", personen),
             abwesenheiten=await self._von_personen("abwesenheiten", personen),
-            kartennamen=await self._kartennamen({d["karte"] for d in [*zeiteintraege, *timer]} - {d["id"] for d in karten}),
+            kartennamen=await self._kartennamen({d["karte"] for d in [*zeiteintraege, *timer] if d.get("karte")}
+                                                - {d["id"] for d in karten}),
+            serien=serien,
+            termine=termine,
         )
 
     async def _zeit(self, konto: Konto, boards: list[Board]) -> tuple[list[dict], list[dict]]:

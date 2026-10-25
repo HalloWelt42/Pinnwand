@@ -1,6 +1,7 @@
 """Wer welche Zeile sieht: eine Regel für den Stand, die Ereignisse und die Antwort einer Änderung (BAU.md, Abschnitt 7).
 
-- Boards und ihre Zeilen (Karten, Gruppen, Laufnummern, Papierkorb, Entferntes): die Mitglieder des Boards.
+- Boards und ihre Zeilen (Karten, Gruppen, Laufnummern, Papierkorb, Entferntes, Serien, Termine): die Mitglieder des
+  Boards.
 - Zeilen einer Person (Ordner, Hinweise, eigene Vorlagen, Einstellungen): nur sie.
 - Zeiteinträge und Timer: die Person selbst und die Mitglieder des Boards mit dem Recht "Zeiten anderer sehen".
 - Zeitkonten und Abwesenheiten: die Person selbst und, wer mit ihr in einem Board ist und dort das Recht
@@ -18,7 +19,8 @@ from ..regeln.board import hat_recht
 from ..verzeichnis import Schreiber
 
 #: Tabellen, deren Zeilen einem Board gehören, mit dem Feld des Boards
-JE_BOARD = {"karten": "board", "gruppen": "board", "laufnummern": "board", "papierkorb": "board", "entfernt": "board"}
+JE_BOARD = {"karten": "board", "gruppen": "board", "laufnummern": "board", "papierkorb": "board", "entfernt": "board",
+            "serien": "board", "termine": "board"}
 #: Tabellen, deren Zeilen einer Person gehören, mit dem Feld der Person
 JE_KONTO = {"ordner": "konto", "hinweise": "konto", "vorlagen": "konto"}
 #: Zeit auf Karten: gehört einer Person, liegt in einem Board

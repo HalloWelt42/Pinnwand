@@ -15,7 +15,7 @@ from ..regeln.board import abschluss, hat_recht, spalte_von
 from . import zeiterfassung
 from .inhalt import anzahl, gleiche_karten
 from .karten import einreihen, hinein
-from .kartenbasis import gruppen_aufraeumen, karten_der_spalte, speichern, vermerken
+from .kartenbasis import gruppen_aufraeumen, karten_der_spalte, serientag_auslassen, serientag_zurueck, speichern, vermerken
 from .rahmen import NAMEN_DER_RECHTE, Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
 
 
@@ -130,6 +130,7 @@ def karte_zurueck(k: Kontext, e: Geloescht) -> str:
         c.abgeschlossen = abschluss(c, k.heute) if ziel.erledigt else None
     angleichen(b, c)
     gruppen_zurueck(k, b.id, [c])
+    serientag_zurueck(k, c)
     vermerken(k, c, "hat sie wiederhergestellt")
     einreihen(k, ziel, [c], e.stelle.platz)
     speichern(k, c)
@@ -149,6 +150,7 @@ def spalte_zurueck(k: Kontext, e: Geloescht) -> str:
     gruppen_zurueck(k, b.id, e.karten)
     for c in e.karten:
         angleichen(b, c)
+        serientag_zurueck(k, c)
         vermerken(k, c, f"hat sie mit der Spalte {s.name} wiederhergestellt")
         speichern(k, c)
     return f"Spalte {s.name} wiederhergestellt, an der alten Stelle in {b.name}"
@@ -183,6 +185,7 @@ class Papierkorb:
             b, karten = gleiche_karten(k, ids, "karten.loeschen")
             gebucht = zeiterfassung.timer_beenden(k, karten)
             for c in karten:
+                serientag_auslassen(k, c)
                 platz = [x.id for x in karten_der_spalte(k, c.spalte)].index(c.id)
                 k.s.loesch("karten", c.id)
                 vermerken(k, c, "hat sie in den Papierkorb gelegt")
@@ -214,6 +217,7 @@ class Papierkorb:
             karten = karten_der_spalte(k, s.id)
             gebucht = zeiterfassung.timer_beenden(k, karten)
             for c in karten:
+                serientag_auslassen(k, c)
                 k.s.loesch("karten", c.id)
                 vermerken(k, c, f"hat sie mit der Spalte {s.name} in den Papierkorb gelegt")
             ablegen(k, b.id, "spalte", karten, Stelle(platz=b.spalten.index(s)), spalte=s)

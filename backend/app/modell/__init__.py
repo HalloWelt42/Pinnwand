@@ -19,7 +19,7 @@ HinweisArt = Literal["zugewiesen", "faellig", "erwaehnt", "termin", "kommentar",
 HinweisWeg = Literal["pinnwand", "push", "assistent"]
 MODULE: tuple[str, ...] = ("zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte", "vorlesen", "ki")
 #: Module, die diese Fassung der Pinnwand anbietet; die übrigen lassen sich in keinem Board einschalten
-MODULE_DA: tuple[str, ...] = ("zeiterfassung", "arbeitszeit")
+MODULE_DA: tuple[str, ...] = ("zeiterfassung", "arbeitszeit", "serien")
 Kartenart = Literal["arbeit", "idee"]
 
 
@@ -288,7 +288,7 @@ class Geloescht(Modell):
     inhalt: dict | None = None
 
 
-Herkunft = Literal["timer", "hand", "korrektur", "serie"]
+Herkunft = Literal["timer", "hand", "korrektur", "serie", "termin"]
 
 
 class Sitzung(Modell):
@@ -306,11 +306,12 @@ class Deckel(Modell):
 
 
 class Zeiteintrag(Modell):
-    """Gebuchte Zeit einer Person auf einer Karte an einem Tag; die Zeit einer Karte ist die Summe ihrer Einträge. Das
-    Board der Karte steht dabei, danach richtet sich, wer den Eintrag sieht."""
+    """Gebuchte Zeit einer Person an einem Tag, auf einer Karte oder einem bestätigten Termin (genau eins); die Zeit einer
+    Karte ist die Summe ihrer Einträge. Das Board steht dabei, danach richtet sich, wer den Eintrag sieht."""
 
     id: Kennung
-    karte: Kennung
+    karte: Kennung | None = None
+    termin: Kennung | None = None
     board: Kennung
     konto: Kennung
     datum: str
@@ -371,6 +372,67 @@ class Abwesenheit(Modell):
     #: halber Tag: 0,5; leer: ganze Tage
     anteil: float | None = None
     notiz: str | None = None
+
+
+Rhythmus = Literal["taeglich", "werktags", "woechentlich", "monatlich"]
+Monatsregel = Literal["tag", "erster-werktag", "letzter-werktag"]
+
+
+class Auslass(Modell):
+    """Ein bewusst gelöschter Serientag: kommt nie wieder, auch nicht nach Ändern oder Fortsetzen."""
+
+    tag: str
+    von: Kennung
+    am: str
+
+
+class Serie(Modell):
+    """Wiederkehrende Karte: der Server legt im Vorlauf ihre Karten in die Zielspalte, fällig am Termintag, die Dauer als
+    Schätzung. Ob ein Tag angefasst ist, steht an seiner Karte (siehe regeln/serien.py)."""
+
+    id: Kennung
+    board: Kennung
+    titel: str
+    beschreibung: str | None = None
+    labels: list[Kennung] = Field(default_factory=list)
+    rhythmus: Rhythmus
+    #: Wochentage bei wöchentlichem Rhythmus (0 Sonntag bis 6 Samstag)
+    tage: list[int] | None = None
+    monatsregel: Monatsregel | None = None
+    #: Tag im Monat bei der Monatsregel "tag" (größer als der Monat: dessen letzter Tag)
+    monatstag: int | None = None
+    uhrzeit: str | None = None
+    dauer_min: int
+    zielspalte: Kennung
+    teilnehmer: list[Kennung]
+    #: Anker des Rhythmus: erster möglicher Tag
+    ab: str
+    #: letzter möglicher Tag; leer: ohne Ende
+    bis: str | None = None
+    #: so viele Tage im Voraus liegen die Karten (0: nur heute)
+    vorlauf_tage: int = 0
+    wochenenden_ueberspringen: bool = False
+    feiertage_ueberspringen: bool = True
+    pausiert_seit: str | None = None
+    fortgesetzt: str | None = None
+    auslass: list[Auslass] = Field(default_factory=list)
+    #: vergangene Tage, die im Nachtrag verworfen wurden (fanden nicht statt)
+    verworfen: list[str] = Field(default_factory=list)
+
+
+class Termin(Modell):
+    """Einmaliger Termin ohne Karte: vorher sagen Teilnehmer zu, danach bestätigt jeder seine Zeit (sie zählt dann)."""
+
+    id: Kennung
+    board: Kennung
+    titel: str
+    datum: str
+    von: str
+    bis: str
+    teilnehmer: list[Kennung]
+    ort: str | None = None
+    zugesagt: list[Kennung] = Field(default_factory=list)
+    bestaetigt: list[Kennung] = Field(default_factory=list)
 
 
 class Kartenname(Modell):

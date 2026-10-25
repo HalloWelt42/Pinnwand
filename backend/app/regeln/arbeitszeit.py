@@ -4,7 +4,7 @@ Regeln (frontend/src/regeln/arbeitszeit.ts, feiertage.ts); Berichte bringen sie 
 
 from __future__ import annotations
 
-from ..modell import Abwesenheit, Halbtagsregel
+from ..modell import Abwesenheit, Halbtagsregel, Kennung, Zeitkonto
 from .tage import ist_tag
 
 #: Namen der Arten wie ARTEN in frontend/src/regeln/arbeitszeit.ts (name und knapp)
@@ -60,3 +60,17 @@ def zeitkonto_fehler(ab: str, wochenstunden: float, tage: list[int], bundesland:
         if not 1 <= r.monat <= 12 or not 1 <= r.tag <= TAGE_IM_MONAT[r.monat - 1] or not r.name.strip():
             return "Ein halber Tag braucht Tag, Monat und Namen"
     return None
+
+
+def fassung_am(fassungen: list[Zeitkonto], konto: Kennung, tag: str) -> Zeitkonto | None:
+    """Die Fassung des Zeitkontos, die an einem Tag gilt: die jüngste mit ab bis zu diesem Tag, sonst die erste (für das
+    Bundesland vor dem Beginn), wie fassungAm der Oberfläche."""
+    eigene = sorted((z for z in fassungen if z.konto == konto), key=lambda z: z.ab)
+    gueltig = [z for z in eigene if z.ab <= tag]
+    return gueltig[-1] if gueltig else (eigene[0] if eigene else None)
+
+
+def ganztags_abwesend(liste: list[Abwesenheit], konto: Kennung, tag: str) -> str | None:
+    """Name einer ganztägigen Abwesenheit der Person an diesem Tag, sonst None."""
+    a = next((x for x in liste if x.konto == konto and x.von <= tag <= x.bis), None)
+    return art_name(a) if a and (a.anteil or 1) >= 1 else None

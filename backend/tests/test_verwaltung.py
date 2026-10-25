@@ -81,15 +81,15 @@ async def test_einstellungen_in_grenzen(pw: Pinnwand):
 
 async def test_module_bietet_diese_fassung_nicht_an(pw: Pinnwand, monkeypatch: pytest.MonkeyPatch):
     b = await pw.board("anna")
-    await abgelehnt(pw, "anna", f"/boards/{b['id']}/module/serien", {"an": True}, 400,
+    await abgelehnt(pw, "anna", f"/boards/{b['id']}/module/berichte", {"an": True}, 400,
                     "Dieses Modul bietet diese Pinnwand nicht an")
     await abgelehnt(pw, "anna", f"/boards/{b['id']}/module/gibt-es-nicht", {"an": False}, 400,
                     "Dieses Modul bietet diese Pinnwand nicht an")
-    assert not (await board(pw))["module"]["serien"]
+    assert not (await board(pw))["module"]["berichte"]
     # bietet eine spätere Fassung ein Modul an, schaltet derselbe Weg es
-    monkeypatch.setattr("app.anwendung.boards.MODULE_DA", ("zeiterfassung", "arbeitszeit", "serien"))
-    a = await ok(pw, "anna", f"/boards/{b['id']}/module/serien", {"an": True})
-    assert a["meldung"] == "Serien und Termine in Haushalt eingeschaltet" and (await board(pw))["module"]["serien"]
+    monkeypatch.setattr("app.anwendung.boards.MODULE_DA", ("zeiterfassung", "arbeitszeit", "serien", "berichte"))
+    a = await ok(pw, "anna", f"/boards/{b['id']}/module/berichte", {"an": True})
+    assert a["meldung"] == "Berichte in Haushalt eingeschaltet" and (await board(pw))["module"]["berichte"]
 
 
 async def test_als_vorlage_speichern(pw: Pinnwand):
@@ -277,7 +277,7 @@ async def test_rollen_und_rechte(pw: Pinnwand):
     for rolle, daten, meldung in [
         ("besitzer", {"recht": "board.verwalten", "an": False}, "Besitzer behalten Board verwalten und Mitglieder verwalten"),
         ("leser", {"recht": "gibt.es.nicht", "an": True}, "Dieses Recht gibt es nicht"),
-        ("leser", {"recht": "serien.verwalten", "an": True}, "Dieses Recht gehört zu einem Modul, das diese Pinnwand nicht anbietet"),
+        ("leser", {"recht": "berichte.erstellen", "an": True}, "Dieses Recht gehört zu einem Modul, das diese Pinnwand nicht anbietet"),
     ]:
         await abgelehnt(pw, "anna", f"{pfad}/{rolle}/recht", daten, 400, meldung)
     await abgelehnt(pw, "bert", f"{pfad}/leser/recht", {"recht": "karten.anlegen", "an": True}, 403,

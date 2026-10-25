@@ -26,6 +26,7 @@ NAMEN_DER_RECHTE = {
     "karten.loeschen": "Karten löschen", "kommentieren": "Kommentieren", "papierkorb.leeren": "Papierkorb leeren",
     "zeit.buchen": "Eigene Zeit buchen", "zeit.andere.sehen": "Zeiten anderer sehen",
     "zeit.andere.bearbeiten": "Zeiten anderer bearbeiten", "abwesenheit.sehen": "Abwesenheiten sehen",
+    "serien.verwalten": "Serien verwalten", "berichte.erstellen": "Berichte erstellen",
 }
 
 

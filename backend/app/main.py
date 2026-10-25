@@ -13,6 +13,7 @@ from appkern.app import Geruest
 
 from .anwendung import Dienste, Start
 from .anwendung.hinweise import Faelligkeit
+from .anwendung.serien import Vorbuchung
 from .einstellungen import AppEinstellungen
 from .fassung import FASSUNG, WURZEL
 from .schnittstelle import anhaenge
@@ -32,7 +33,7 @@ def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None, uh
                       transport=transport)
     ablage = KellerwolkeAblage(geruest)
     dienste = Dienste.bauen(geruest.db, GeruestZugang(geruest), ablage, uhr)
-    geruest.begleiter_anmelden(Start(geruest.db), Faelligkeit(dienste.hinweise),
+    geruest.begleiter_anmelden(Start(geruest.db), Vorbuchung(dienste.serien), Faelligkeit(dienste.hinweise),
                                Nachtsicherung(Path(geruest.db.pfad), sicherungen or daten.parent / "sicherungen", "pinnwand",
                                               dienste.anwendung.uhr))
     app = geruest.fastapi()

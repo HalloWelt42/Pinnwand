@@ -1,6 +1,7 @@
 """Anwendungsfälle des Moduls Arbeitszeit, je Person für sich (E-07): Abwesenheiten eintragen und entfernen, eine neue
 Fassung des Zeitkontos. Jede Person ändert nur ihre eigenen, und nur, wenn das Modul in einem ihrer Boards an ist. Eine
-neue Abwesenheit ersetzt überlappende derselben Person; frühere Tage behalten bei einer neuen Fassung ihr Soll."""
+neue Abwesenheit ersetzt überlappende derselben Person und nimmt sie aus unberührten Vorbuchungen der Serien; frühere
+Tage behalten bei einer neuen Fassung ihr Soll."""
 
 from __future__ import annotations
 
@@ -8,6 +9,7 @@ from ..modell import Abwesenheit, AbwesenheitArt, Board, Halbtagsregel, Kennung,
 from ..regeln.arbeitszeit import abwesenheit_fehler, art_name, zeitkonto_fehler
 from ..regeln.board import mitglied, modul_an
 from ..regeln.tage import datum_text, spanne_text
+from . import serien
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
 
 
@@ -43,7 +45,9 @@ class Arbeitszeit:
             a = Abwesenheit(id=neue_kennung("a"), konto=k.konto.id, von=von, bis=bis, art=art, anteil=anteil,
                             notiz=notiz.strip() or None)
             k.s.schreib("abwesenheiten", a.json_daten())
-            return f"{art_name(a)} eingetragen: {spanne_text(von, bis)}" + (f"; ersetzt {anzahl(len(ersetzt))}" if ersetzt else "")
+            n = serien.ohne_person(k, k.konto.id, von, bis) if anteil is None else 0
+            return (f"{art_name(a)} eingetragen: {spanne_text(von, bis)}" + (f"; ersetzt {anzahl(len(ersetzt))}" if ersetzt else "")
+                    + (f"; {n} {'Vorbuchung' if n == 1 else 'Vorbuchungen'} einer Serie zurückgenommen" if n else ""))
 
         return await self.a.aendern(konto, arbeit)
 

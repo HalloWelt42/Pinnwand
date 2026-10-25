@@ -89,15 +89,15 @@ def erwaehnte(k: Kontext, b: Board, text: str | None) -> set[Kennung]:
 
 # --- Anlässe (in der Transaktion der auslösenden Änderung) -----------------------------------------------------------
 
-def melden(k: Kontext, b: Board, art: HinweisArt, an: Iterable[Kennung], karte: Karte, text: str) -> None:
+def melden(k: Kontext, b: Board, art: HinweisArt, an: Iterable[Kennung], karte: Karte | None, text: str) -> None:
     """Ein Hinweis je Person: nie an die handelnde, nur an Mitglieder des Boards, nur wenn die Person die Art in der
-    Pinnwand bekommen will."""
+    Pinnwand bekommen will. Ohne Karte (ein Termin) führt der Hinweis zu den Serien und Terminen."""
     mitglieder = {m.konto for m in b.mitglieder if m.konto}
     for konto in dict.fromkeys(an):
         if konto == k.konto.id or konto not in mitglieder or not will(k, konto, art):
             continue
-        h = Hinweis(id=neue_kennung("h"), konto=konto, art=art, zeit=k.jetzt, von=k.konto.id, board=b.id, karte=karte.id,
-                    text=text)
+        h = Hinweis(id=neue_kennung("h"), konto=konto, art=art, zeit=k.jetzt, von=k.konto.id, board=b.id,
+                    karte=karte.id if karte else None, text=text)
         k.s.schreib("hinweise", h.json_daten())
 
 
@@ -221,6 +221,8 @@ class Hinweise:
             n = 0
             for d in k.s.alle("karten", "json_extract(daten, '$.faellig') <= ?", (k.heute,), "schluessel"):
                 c = Karte.model_validate(d)
+                if c.serie:                                   # Serientage stehen in Heute unter Serien
+                    continue
                 b = boards.get(c.board)
                 spalte = spalte_von(b, c.spalte) if b else None
                 if b is None or spalte is None or spalte.erledigt:

@@ -143,7 +143,6 @@ async def test_wege_je_art(pw: Pinnwand):
     for daten, meldung in [
         ({"art": "verschoben", "weg": "push", "an": True}, "Den Weg Push aufs Telefon bietet diese Pinnwand nicht an"),
         ({"art": "faellig", "weg": "assistent", "an": True}, "Den Weg Über den Assistenten bietet diese Pinnwand nicht an"),
-        ({"art": "termin", "weg": "pinnwand", "an": False}, "Hinweise der Art Termin bietet diese Pinnwand nicht an"),
     ]:
         r = await pw.post("bert", "/hinweise/weg", daten)
         assert (r.status_code, r.json()["detail"]) == (400, meldung)

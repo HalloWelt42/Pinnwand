@@ -12,7 +12,7 @@ from ..modell import Board, Ereignis, Gruppe, Karte, Kennung, Konto, Spalte
 from ..regeln.board import abschluss, spalte_von, uebertragen
 from ..regeln.tage import ist_tag
 from . import hinweise, zeiterfassung
-from .kartenbasis import gruppen_aufraeumen, karte_lesen, karten_der_spalte, speichern, vermerken
+from .kartenbasis import gruppen_aufraeumen, karte_lesen, karten_der_spalte, serientag_auslassen, speichern, vermerken
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
 
 #: Abstand der Reihe zwischen zwei Karten; wird er zu eng, nummeriert die Spalte neu
@@ -190,9 +190,10 @@ class Karten:
             if ziel is None:
                 raise Abgelehnt(f"Diese Spalte gibt es im Board {b.name} nicht", 400)
             gebucht = zeiterfassung.timer_beenden(k, [c])
+            serientag_auslassen(k, c)                       # ein Serientag zieht als einfache Karte um
             alt, gruppe = c.schluessel, c.gruppe
             entfallen = uebertragen(quelle, b, c)
-            c.board, c.gruppe, c.art = b.id, None, b.kartenart
+            c.board, c.gruppe, c.serie, c.art = b.id, None, None, b.kartenart
             c.schluessel = f"{b.kuerzel}-{k.naechste_nummer(b.id)}"
             c.frueher = [*c.frueher, alt]
             c.spalte, c.bewegt_am = ziel.id, k.jetzt

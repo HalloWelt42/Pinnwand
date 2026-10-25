@@ -47,6 +47,9 @@ TABELLEN_DER_STUFEN: tuple[tuple[Tabelle, ...], ...] = ((
     Tabelle("timer", ("konto", "karte", "board")),
     Tabelle("zeitkonten", ("konto", "ab")),
     Tabelle("abwesenheiten", ("konto", "von", "bis")),
+), (
+    Tabelle("serien", ("board",)),
+    Tabelle("termine", ("board", "datum")),
 ))
 TABELLEN: dict[str, Tabelle] = {t.name: t for stufe in TABELLEN_DER_STUFEN for t in stufe}
 
@@ -82,6 +85,10 @@ STUFEN: list[str] = [
     CREATE INDEX timer_board ON timer(board);
     CREATE UNIQUE INDEX zeitkonten_ab ON zeitkonten(konto, ab);
     CREATE INDEX abwesenheiten_konto ON abwesenheiten(konto, von);
+    """,
+    _tabellen_sql(2) + """
+    CREATE INDEX serien_board ON serien(board);
+    CREATE INDEX termine_board ON termine(board, datum);
     """,
 ]
 

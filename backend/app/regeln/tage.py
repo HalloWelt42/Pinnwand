@@ -54,3 +54,23 @@ def datum_kurz(t: str) -> str:
 def spanne_text(von: str, bis: str) -> str:
     """Zeitraum zweier Tage wie spanne der Oberfläche: "Di 27.10.2026" oder "Mo 26.10. bis Fr 30.10.2026"."""
     return datum_text(von) if von == bis else f"{datum_kurz(von)} bis {datum_text(bis)}"
+
+
+def wochentag(t: str) -> int:
+    """0 Sonntag, 1 Montag bis 6 Samstag, wie die Oberfläche (Zeitkonto.tage, Serie.tage)."""
+    return (tag(t).weekday() + 1) % 7
+
+
+def ist_wochenende(t: str) -> bool:
+    return wochentag(t) in (0, 6)
+
+
+def tage_von(von: str, bis: str) -> list[str]:
+    """Alle Tage von bis einschließlich bis."""
+    a, b = tag(von), tag(bis)
+    return [(a + timedelta(days=i)).isoformat() for i in range((b - a).days + 1)]
+
+
+def tage_im_monat(jahr: int, monat: int) -> int:
+    folgemonat = date(jahr + monat // 12, monat % 12 + 1, 1)
+    return (folgemonat - timedelta(days=1)).day

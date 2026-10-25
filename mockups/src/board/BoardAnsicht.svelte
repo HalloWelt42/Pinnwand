@@ -2,7 +2,10 @@
   // Ein Board: fester Kopf (Name, Ansichten, Mitglieder, Einstellungen), Werkzeugleiste (Suche, Filter, Sortierung) und
   // der Spaltenstreifen oder eine andere Ansicht (Liste, Kalender, Zeitachse). Das Kartendetail fährt rechts über das
   // Board und hat seinen eigenen Pfad (/board/prod/131); Schließen führt zurück auf /board/prod.
+  import { untrack } from "svelte";
   import { darf, kartenNummer, papierkorbVon } from "../beispiel/abfragen";
+  import { erledigen } from "../beispiel/anwendung/karten.svelte";
+  import { melden } from "../beispiel/anwendung/meldung.svelte";
   import { ICH } from "../beispiel/daten";
   import { board, karte, ordnerVon, stand } from "../beispiel/stand.svelte";
   import Kartendetail from "../detail/Kartendetail.svelte";
@@ -22,14 +25,15 @@
     ziehen: { ziehen: { karte: "c-137", nach: "s-arbeit" } },
     schnell: { schnell: "s-eingang" },
     suche: { filter: "Gehäuse" },
-    live: { fremd: "c-115", meldung: "Anna Berger hat PROD-115 geändert: fällig Mi 28.10." },
+    live: { fremd: "c-115", vorbereiten: () => melden("Anna Berger hat PROD-115 geändert: fällig Mi 28.10.") },
     konflikt: { konflikt: true },
-    erledigt: { meldung: "PROD-131 erledigt: Timer angehalten, 0:44 gebucht" },
+    erledigt: { vorbereiten: () => erledigen("c-131") },
   };
   const zustand = $derived(ENTWUERFE[entwurf] ?? {});
   const b = $derived(board(boardId));
   const Andere = $derived(BOARDANSICHTEN[ansicht]);
-  $effect(() => { if (zustand.meldung) stand.meldung = { text: zustand.meldung }; });
+  // ein vorgeführter Zustand richtet sich nach dem Ausgangsstand über die Anwendungsfälle ein (einmal je Entwurf)
+  $effect(() => { const z = zustand; untrack(() => z.vorbereiten?.()); });
 
   function oeffnen(id: string): void {
     const k = karte(id);

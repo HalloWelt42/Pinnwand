@@ -29,30 +29,41 @@ function anfangsreihen(): Record<string, string[]> {
   return r;
 }
 
-export const stand = $state({
-  /** Personen mit Konto in der Pinnwand (aus der Kellerwolke; neue kommen mit der ersten Einladung dazu) */
-  konten: structuredClone(KONTEN) as Konto[],
-  boards: structuredClone(BOARDS) as Board[],
-  karten: structuredClone(ALLE_KARTEN) as Karte[],
-  gruppen: structuredClone(GRUPPEN) as Gruppe[],
-  /** Reihenfolge der Karten je Spalte (alle Karten der Spalte; Erledigt-Spalten zeigen davon ihr Zeitfenster) */
-  reihen: anfangsreihen(),
-  ordner: structuredClone(ORDNER) as Ordner[],
-  timer: structuredClone(TIMER) as Timer[],
-  zeiteintraege: structuredClone([...ZEITEINTRAEGE, ...ZEITEINTRAEGE_ZEIT, ...ZEITEINTRAEGE_PLANUNG, ...ZEITEINTRAEGE_UEBERSICHT]) as Zeiteintrag[],
-  zeitkonten: structuredClone(ZEITKONTEN) as Zeitkonto[],
-  abwesenheiten: structuredClone([...ABWESENHEITEN, ...ABWESENHEITEN_ZEIT]) as Abwesenheit[],
-  serien: structuredClone(SERIEN) as Serie[],
-  termine: structuredClone(TERMINE) as Termin[],
-  hinweise: structuredClone(HINWEISE) as Hinweis[],
-  einstellungen: structuredClone(EINSTELLUNGEN_PERSON) as PersonEinstellungen,
-  papierkorb: structuredClone(PAPIERKORB) as Geloescht[],
-  /** endgültig entfernte Karten: ihr Name für die Zeiteinträge, die weiter gebucht sind */
-  entfernt: [] as Entfernt[],
-  /** Verbindung zum Ereignisstrom; getrennt: letzter Stand sichtbar, Schreibendes gesperrt */
-  verbindung: "verbunden" as Verbindung,
-  meldung: null as Meldung | null,
-});
+/** Der Ausgangsstand aus den Beispieldaten, frisch kopiert */
+function ausgangsstand() {
+  return {
+    /** Personen mit Konto in der Pinnwand (aus der Kellerwolke; neue kommen mit der ersten Einladung dazu) */
+    konten: structuredClone(KONTEN) as Konto[],
+    boards: structuredClone(BOARDS) as Board[],
+    karten: structuredClone(ALLE_KARTEN) as Karte[],
+    gruppen: structuredClone(GRUPPEN) as Gruppe[],
+    /** Reihenfolge der Karten je Spalte (alle Karten der Spalte; Erledigt-Spalten zeigen davon ihr Zeitfenster) */
+    reihen: anfangsreihen(),
+    ordner: structuredClone(ORDNER) as Ordner[],
+    timer: structuredClone(TIMER) as Timer[],
+    zeiteintraege: structuredClone([...ZEITEINTRAEGE, ...ZEITEINTRAEGE_ZEIT, ...ZEITEINTRAEGE_PLANUNG, ...ZEITEINTRAEGE_UEBERSICHT]) as Zeiteintrag[],
+    zeitkonten: structuredClone(ZEITKONTEN) as Zeitkonto[],
+    abwesenheiten: structuredClone([...ABWESENHEITEN, ...ABWESENHEITEN_ZEIT]) as Abwesenheit[],
+    serien: structuredClone(SERIEN) as Serie[],
+    termine: structuredClone(TERMINE) as Termin[],
+    hinweise: structuredClone(HINWEISE) as Hinweis[],
+    einstellungen: structuredClone(EINSTELLUNGEN_PERSON) as PersonEinstellungen,
+    papierkorb: structuredClone(PAPIERKORB) as Geloescht[],
+    /** endgültig entfernte Karten: ihr Name für die Zeiteinträge, die weiter gebucht sind */
+    entfernt: [] as Entfernt[],
+    /** Verbindung zum Ereignisstrom; getrennt: letzter Stand sichtbar, Schreibendes gesperrt */
+    verbindung: "verbunden" as Verbindung,
+    meldung: null as Meldung | null,
+  };
+}
+
+export const stand = $state(ausgangsstand());
+
+/** Zurück zum Ausgangsstand: jeder vorgeführte Zustand (?entwurf=...) beginnt hier und richtet sich danach über die
+ *  Anwendungsfälle ein, damit nichts aus einem anderen Entwurf hineinwirkt und die ganze Seite zusammenpasst */
+export function zuruecksetzen(): void {
+  Object.assign(stand, ausgangsstand());
+}
 
 /** Die Teile des Zustands, die Rückgängig wiederherstellt (alles außer Meldung und Verbindung) */
 export const DATEN = ["konten", "boards", "karten", "gruppen", "reihen", "ordner", "timer", "zeiteintraege", "zeitkonten", "abwesenheiten",

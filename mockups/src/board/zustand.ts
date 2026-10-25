@@ -15,5 +15,6 @@ export interface BoardZustand {
   fremd?: string;
   /** Speichern auf veralteter Fassung abgelehnt */
   konflikt?: boolean;
-  meldung?: string;
+  /** richtet den Zustand nach dem Ausgangsstand ein, über die Anwendungsfälle (etwa: eine Karte erledigen) */
+  vorbereiten?: () => void;
 }

@@ -4,6 +4,7 @@
   // gehört nur zu den Entwürfen: Galerie, blättern, Thema, Schriftstufe (Vorgabe Klein).
   import { onMount } from "svelte";
   import Galerie from "./galerie/Galerie.svelte";
+  import { zuruecksetzen } from "./beispiel/stand.svelte";
   import { finden } from "./routen";
   import Schale from "./schale/Schale.svelte";
   import { weg, wegStarten, wert } from "./weg.svelte";
@@ -20,6 +21,16 @@
   const z = $derived(nr >= 0 ? ZUSTAENDE[nr] : undefined);
   const vorher = $derived(adresse(ZUSTAENDE[((nr < 0 ? 0 : nr) - 1 + ZUSTAENDE.length) % ZUSTAENDE.length]));
   const nachher = $derived(adresse(ZUSTAENDE[((nr < 0 ? -1 : nr) + 1) % ZUSTAENDE.length]));
+
+  // Ein vorgeführter Zustand beginnt beim Ausgangsstand, wer ihn verlässt, kehrt dorthin zurück: so wirkt nichts aus
+  // einem Entwurf in einen anderen. Vor dem Zeichnen, damit die Ansicht des Entwurfs sich danach einrichtet.
+  let letzterEntwurf = wert("entwurf");
+  $effect.pre(() => {
+    if (entwurf !== letzterEntwurf) {
+      letzterEntwurf = entwurf;
+      zuruecksetzen();
+    }
+  });
 
   // Thema und Schriftstufe: eine Wahrheit mit der Einstellung Darstellung (darstellung.svelte.ts)
   onMount(darstellungAnwenden);

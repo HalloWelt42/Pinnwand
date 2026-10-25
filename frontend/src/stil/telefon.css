@@ -4,17 +4,16 @@
 
 /* ═══ Schale: Kopf, Leiste, Rollfeld, Meldung, Laufleiste, Fußleiste ═════════════════════════════════════════ */
 
-/* Sichere Ränder: am Gerät aus env() (Statusleiste oben, Wischleiste unten; ohne Angabe des Geräts 0). Im Rahmen der
-   Entwürfe (breites Fenster) gelten die eines gängigen Telefons mit 390 x 844 Punkten, damit der Entwurf zeigt, was frei bleibt. */
+/* Die Telefonansicht füllt den Schirm; die Seite selbst rollt nie, nur der Inhalt */
+.pw-telefon-app { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Sichere Ränder: am Gerät aus env() (Statusleiste oben, Wischleiste unten; ohne Angabe des Geräts 0) */
 .pw-tel {
   --pw-tel-oben: env(safe-area-inset-top, 0px);
   --pw-tel-unten: env(safe-area-inset-bottom, 0px);
   flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; overflow: hidden;
   background: var(--hg); color: var(--text);
   -webkit-tap-highlight-color: transparent;
-}
-@media (min-width: 601px) {
-  .pw-tel { --pw-tel-oben: 47px; --pw-tel-unten: 34px; }
 }
 
 /* Berührflächen am Telefon: Knöpfe, Chips und Eingaben des Leitstands in Telefonhöhe */
@@ -77,7 +76,7 @@
 
 /* Fußleiste mit vier Reitern; die Leiste reicht bis an den unteren Rand, die Reiter stehen über der Wischleiste */
 .pw-tel-fuss {
-  flex: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: var(--a1) var(--a1) var(--pw-tel-unten);
+  flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); padding: var(--a1) var(--a1) var(--pw-tel-unten);
   background: var(--leiste); border-top: 1px solid var(--rand);
 }
 .pw-tel-fuss a {

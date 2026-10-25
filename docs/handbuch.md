@@ -3,7 +3,7 @@ zweck: "Plant Arbeit auf Boards: Karten in Spalten mit der Mechanik der alten Pi
 geraet: [pi]
 abhaengigkeiten: [kellerwolke, appkern]
 daten:
-  - "Pi: {{wurzel}}/daten/pinnwand.sqlite, alle Boards, Karten, Ordner, Hinweise, Vorlagen, Zeiteinträge, Timer, Zeitkonten und Abwesenheiten, das Journal für Rückgängig und die Einstellungen"
+  - "Pi: {{wurzel}}/daten/pinnwand.sqlite, alle Boards, Karten, Ordner, Hinweise, Vorlagen, Zeiteinträge, Timer, Zeitkonten, Abwesenheiten, Serien und Termine, das Journal für Rückgängig und die Einstellungen"
   - "Kellerwolke: Anhänge der Karten in der Ablage der Pinnwand, ein Ordner je Board"
 sicherung:
   - "Datenbank: jede Nacht ab 3 Uhr und vor jedem Ausrollen eine Kopie nach {{wurzel}}/sicherungen (die jüngsten zehn bleiben); das Werkzeug Sicherungen holt sie auf den Mac"
@@ -28,9 +28,10 @@ allen, die das Board sehen, und lassen sich in der Meldung rückgängig machen.
 Angemeldet wird mit dem Konto der [[Kellerwolke]]; wer zu einem Board eingeladen wird, darf die App ab dann nutzen.
 Anhänge liegen in der Kellerwolke. Die Oberfläche läuft am Rechner und als eigene Ansicht am Telefon unter {{adresse}}.
 
-Zeiterfassung (Timer je Person, Stundenzettel) und Arbeitszeit (Zeitkonto, Urlaub, Team) sind Module, die man je Board
-in seinen Einstellungen unter Module einschaltet. Die Pinnwand entsteht in Stufen: Boards (Stufe 1) und Zeit (Stufe 2)
-sind da, Planung und Verbund folgen. Was eine Stufe noch nicht hat, zeigt die Oberfläche nicht.
+Zeiterfassung (Timer je Person, Stundenzettel), Arbeitszeit (Zeitkonto, Urlaub, Team) sowie Serien und Termine sind
+Module, die man je Board in seinen Einstellungen unter Module einschaltet; die Karten der Serien legt die Pinnwand jeden
+Tag selbst an. Die Pinnwand entsteht in Stufen: Boards, Zeit und Planung sind da, der Verbund folgt. Was eine Stufe noch
+nicht hat, zeigt die Oberfläche nicht.
 
 ## Was sie braucht
 

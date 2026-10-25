@@ -139,7 +139,7 @@
 .pw-serien-tag { width: 136px; font-family: var(--schrift-zahl); }
 .pw-felder .wert .name-neben { display: inline-flex; align-items: center; gap: var(--a2); color: var(--text-2); font-size: var(--klein); margin-left: var(--a3); }
 .pw-felder .wert .name-neben i { color: var(--text-3); font-size: 13px; }
-.pw-serien-formular .pw-felder .eingabe.pw-serien-kurz { width: 96px; }
+.pw-felder .eingabe.pw-serien-kurz { width: 96px; }
 .pw-serien-formular .pw-felder .eingabe.pw-serien-tag { width: 136px; }
 
 .pw-serien-tage { display: flex; flex-direction: column; gap: var(--a2); }

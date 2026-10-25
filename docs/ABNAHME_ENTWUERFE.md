@@ -39,6 +39,17 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
   "Abwesenheiten sehen" für alle Mitglieder.
 - Vor der ersten Fassung des Zeitkontos gibt es kein Soll.
 
+## In der App gebaut (Stufe 3, 25.10.2026)
+
+- M-106, M-107: Die Karten der Serientage legt der Server an (beim Anlegen, Ändern, Fortsetzen und einmal je Tag);
+  ob ein Tag angefasst ist, steht an seiner Karte (Spalte, erledigt, Zeit, Verlauf), nicht in einer eigenen Liste.
+- M-108: Auch eine Serienkarte, die in ein anderes Board zieht, lässt ihren Tag aus.
+- M-109, M-110: Ändern und Pause nehmen unberührte Vorbuchungen ohne Papierkorb zurück, Löschen legt sie in den
+  Papierkorb; eine gelöschte Zielspalte gibt ihren Serien die Spalte, in die ihre Karten wanderten.
+- M-111: Bestätigte Terminzeit zählt ins Ist und steht im Stundenzettel (Entscheidung des Nutzers); einen bestätigten
+  Eintrag löschen nimmt die Bestätigung zurück. Serienkarten bekommen keinen Hinweis "fällig".
+- Im Terminformular stehen Beginn und Ende wieder schmal nebeneinander (im Entwurf liefen sie über die ganze Breite).
+
 ## Zählung
 
 | Stand | Zahl |

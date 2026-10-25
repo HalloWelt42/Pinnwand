@@ -1,5 +1,7 @@
 // Zustände einer Board-Ansicht, die die Entwürfe vorführen (in der App ergeben sie sich aus Bedienung und Daten).
 
+import type { AnsichtVorgabe } from "./ansicht.svelte";
+
 export interface BoardZustand {
   /** Karte im Detail geöffnet */
   detail?: string;
@@ -7,8 +9,17 @@ export interface BoardZustand {
   bearbeiten?: "beschreibung";
   /** Schnelleingabe in dieser Spalte offen */
   schnell?: string;
-  /** Suche oder Filter aktiv: Ziehen pausiert, Erledigte werden ohne Zeitfenster durchsucht */
-  filter?: string;
+  /** Ansichtszustand zum Beginn (Suche, Filter, Sortierung, eingeklappte Spalten, Zeitfenster); gemerkt wird er nicht */
+  ansicht?: AnsichtVorgabe;
+  /** Filtertafel offen */
+  tafel?: boolean;
+  /** Menü dieser Spalte offen, mit rueckfrage die Rückfrage zum Löschen */
+  menue?: string;
+  rueckfrage?: boolean;
+  /** Eingabe einer neuen Spalte offen */
+  neueSpalte?: boolean;
+  /** Kette in Aktion: von dieser Karte auf jene gezogen, der Zeiger über dem Ziel */
+  kette?: { quelle: string; ziel: string };
   /** Ziehen in Aktion: welche Karte, wohin */
   ziehen?: { karte: string; nach: string };
   /** Jemand anderes hat gerade diese Karte geändert */

@@ -1,17 +1,39 @@
-/* Stil des Boards: Kopf und Werkzeugleiste, Spaltenstreifen, Spalten, Karten, Schnelleingabe, Ziehen. Farben, Schriften
-   und Größen nur aus den Marken des Appkerns. */
+/* Stil des Boards: Kopf und Werkzeugleiste mit Filtertafel, Spaltenstreifen, Spalten mit Grenze und Menü, Karten,
+   Schnelleingabe, Ziehen und Kette. Farben, Schriften und Größen nur aus den Marken des Appkerns. */
 
 /* ═══ Board ═══════════════════════════════════════════════════════════════════════════════════════════════ */
 
 .pw-boardkopf { display: flex; align-items: center; gap: var(--a3); flex-wrap: wrap; }
 .pw-boardkopf h1 { display: flex; align-items: center; gap: var(--a3); min-width: 0; }
+.pw-boardkopf .reiter { margin: 0; }
 .pw-boardkopf .pfad { font-size: var(--klein); color: var(--text-3); width: 100%; margin-top: calc(-1 * var(--a2)); display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; }
 .pw-boardkopf .rechts { margin-left: auto; display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; }
 .pw-werkzeuge { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; padding: 0 var(--a6) var(--a3); }
-.pw-werkzeuge .suche { max-width: 360px; height: 40px; }
+.pw-werkzeuge .suche { flex: 1 1 200px; min-width: 160px; max-width: 360px; height: 40px; }
 .pw-werkzeuge .rechts { margin-left: auto; display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; }
-.pw-werkzeuge .pausiert { display: inline-flex; align-items: center; gap: var(--a2); height: 36px; padding: 0 var(--a3); border-radius: var(--r2);
-                          background: color-mix(in srgb, var(--info) var(--toenung), transparent); color: var(--info); font-size: var(--klein); font-weight: 600; }
+/* Verschieben pausiert: ein Klick setzt Suche, Filter, Personen und Sortierung zurück; ohne Sperre hält es nur den Platz */
+.pw-pausiert.frei { visibility: hidden; }
+.pw-pausiert {
+  display: inline-flex; align-items: center; gap: var(--a2); height: 36px; padding: 0 var(--a3); border-radius: var(--r2); cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--info) 35%, transparent); background: color-mix(in srgb, var(--info) var(--toenung), transparent);
+  color: var(--info); font-size: var(--klein); font-weight: 600;
+}
+.pw-pausiert:hover { border-color: var(--info); }
+.pw-pausiert i { font-size: 12px; }
+
+/* Filtertafel: feste Leiste unter der Werkzeugleiste, je Art eine Zeile */
+/* höchstens 40 Prozent der Höhe, damit das Board sichtbar bleibt; was mehr ist, rollt in der Tafel */
+.pw-filtertafel {
+  flex: none; max-height: 40vh; overflow-y: auto; margin: 0 var(--a6) var(--a3); padding: var(--a3) var(--a4); background: var(--bereich);
+  border-radius: var(--r3); border: 1px solid var(--rand); display: flex; flex-direction: column; gap: var(--a2);
+}
+.pw-filtertafel-zeile { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.pw-filtertafel-zeile .etikett { width: 96px; flex: none; }
+.pw-filtertafel-zeile .chip { height: 32px; }
+.pw-filtertafel-zeile .chip .pw-person { width: 24px; height: 24px; margin-left: -3px; }
+.pw-filtertafel-zeile .stufen button { height: 30px; }
+.pw-filtertafel-fuss { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; font-size: var(--klein); }
+.pw-filtertafel-fuss .schwach { margin-right: auto; }
 
 /* Spaltenstreifen: eigenes Rollfeld (seitlich nur hier, nie die Seite); jede Spalte rollt in sich */
 .pw-streifen {
@@ -19,27 +41,80 @@
   overflow-x: auto; overflow-y: hidden; padding: 0 var(--a6) var(--a4);
   overscroll-behavior-x: contain;
 }
+.pw-spaltenreihe { display: flex; gap: var(--a3); align-items: stretch; flex: none; min-height: 0; }
 .pw-spalte {
-  width: 320px; flex: none; display: flex; flex-direction: column; min-height: 0;
+  position: relative; width: 320px; flex: none; display: flex; flex-direction: column; min-height: 0;
   background: var(--bereich); border-radius: var(--r3, var(--r2));
 }
 .pw-spalte.eingeklappt { width: 52px; }
 .pw-spalte.ziel { background: color-mix(in srgb, var(--akzent-flaeche) 8%, var(--bereich)); outline: 1px dashed color-mix(in srgb, var(--akzent-flaeche) 55%, transparent); }
+.pw-spalte-gezogen { box-shadow: var(--schatten-schwebend); outline: 1px solid color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); }
 .pw-spalte-kopf { display: flex; align-items: center; gap: var(--a2); padding: var(--a3) var(--a3) var(--a2); }
 .pw-spalte-kopf .name { font-weight: 700; font-size: var(--gross); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pw-spalte-kopf .rechts { margin-left: auto; display: flex; align-items: center; gap: 2px; }
-.pw-spalte-kopf .griff { color: var(--text-3); cursor: grab; }
 .pw-spalte-kopf .knopf.symbol.klein { width: 32px; height: 32px; }
-.pw-grenze.ueber { background: color-mix(in srgb, var(--warn) var(--toenung), transparent); color: var(--warn); }
-.pw-spalte-leiste { display: flex; align-items: center; gap: var(--a2); padding: 0 var(--a3) var(--a2); font-size: var(--klein); color: var(--text-3); }
-.pw-spalte-leiste select.eingabe { height: 34px; font-size: var(--klein); }
+.pw-spalte-griff { display: inline-grid; place-items: center; width: 20px; height: 28px; margin-right: -4px; flex: none; color: var(--text-3); cursor: grab; border-radius: var(--r1); }
+.pw-spalte-griff:hover { color: var(--text); background: var(--karte-2); }
+/* Grenze: dünner Füllbalken unter dem Kopf in der Farbe der Spalte, Bernstein genau an der Grenze, rot darüber */
+.pw-grenzbalken { height: 4px; margin: -4px var(--a3) 4px; border-radius: 2px; background: var(--mulde); overflow: hidden; flex: none; }
+.pw-grenzbalken > span { display: block; height: 100%; border-radius: 2px; background: var(--f, var(--stahl)); }
+.pw-grenzbalken.voll > span { background: var(--akzent-flaeche); }
+.pw-grenzbalken.ueber > span { background: var(--gefahr); }
+.pw-spalte-leiste { display: flex; align-items: center; gap: var(--a2); padding: 0 var(--a3) var(--a2); font-size: var(--klein); color: var(--text-3); min-height: 34px; }
+.pw-spalte-leiste select.eingabe { height: 34px; font-size: var(--klein); min-width: 0; }
+.pw-spalte-geladen { margin-left: auto; font-family: var(--schrift-zahl); white-space: nowrap; }
 .pw-spalte-karten { flex: 1; min-height: 60px; overflow-y: auto; overflow-x: clip; padding: 2px var(--a2) var(--a2); display: flex; flex-direction: column; gap: var(--a2); }
 .pw-spalte-fuss { padding: var(--a2); display: flex; flex-direction: column; gap: var(--a2); }
 .pw-spalte-fuss .knopf { justify-content: flex-start; width: 100%; }
-.pw-spalte.eingeklappt .pw-spalte-kopf { flex-direction: column; padding: var(--a3) 0; }
-.pw-spalte.eingeklappt .senkrecht { writing-mode: vertical-rl; font-weight: 700; color: var(--text-2); padding: var(--a2) 0; }
-.pw-neue-spalte { width: 280px; flex: none; display: flex; flex-direction: column; gap: var(--a2); }
 .pw-mehr { display: flex; align-items: center; justify-content: space-between; gap: var(--a2); font-size: var(--klein); color: var(--text-3); padding: 0 var(--a1); }
+
+/* Eingeklappt: schmal, senkrechter Name, Zahl; bleibt Ablagezone mit einem Strich je Karte */
+.pw-spalte.eingeklappt .pw-spalte-kopf { flex-direction: column; padding: var(--a2) 0 var(--a1); gap: var(--a1); }
+.pw-spalte.eingeklappt .pw-spalte-griff { margin: 0; height: 22px; }
+.pw-aufklappen { display: flex; flex-direction: column; align-items: center; gap: var(--a2); padding: var(--a2) 0; width: 44px; border: 0; border-radius: var(--r2);
+                 background: none; color: var(--text-2); cursor: pointer; }
+.pw-aufklappen:hover { background: var(--karte); color: var(--text); }
+.pw-aufklappen .zaehler { min-width: 0; padding: 0 5px; }
+.pw-aufklappen .senkrecht { writing-mode: vertical-rl; font-weight: 700; color: var(--text-2); max-height: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-striche { flex: 1; min-height: 60px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: var(--a2) 0 var(--a3);
+              border-radius: var(--r2); margin: 0 4px 4px; }
+.pw-striche.pw-ablagezone { background: color-mix(in srgb, var(--f, var(--stahl)) 10%, transparent); }
+.pw-strich { display: block; width: 24px; height: 5px; flex: none; border-radius: 3px; background: color-mix(in srgb, var(--f, var(--stahl)) 70%, transparent); }
+
+/* Platzhalter beim Ziehen: das Element des Schattens blendet die Bibliothek aus, der gestrichelte Platz darin bleibt */
+.pw-schatten { visibility: visible; }
+.pw-karte.platzhalter.pw-schatten { min-height: 64px; align-items: center; justify-content: center; color: var(--text-3); font-size: var(--klein); cursor: default; }
+.pw-strich.pw-schatten { height: 14px; background: transparent; border: 1px dashed color-mix(in srgb, var(--f, var(--stahl)) 80%, transparent); }
+.pw-spalten-platz { background: transparent; }
+.pw-spalten-platz .pw-schatten { flex: 1; margin: 0; display: flex; align-items: center; justify-content: center; gap: var(--a2); border-radius: var(--r3);
+                                 border: 1px dashed var(--rand-stark); color: var(--text-3); font-size: var(--klein); }
+
+/* Menü einer Spalte: schwebt in der Spalte unter dem Kopf */
+.pw-spaltenmenue {
+  position: absolute; top: 48px; left: var(--a2); right: var(--a2); z-index: 6; max-height: calc(100% - 56px); overflow-y: auto;
+  display: flex; flex-direction: column; gap: var(--a3); padding: var(--a3); outline: 0;
+  background: var(--karte); border: 1px solid var(--rand-stark); border-radius: var(--r3); box-shadow: var(--schatten-schwebend);
+}
+.pw-spaltenmenue-feld { display: flex; flex-direction: column; gap: var(--a1); min-width: 0; }
+.pw-spaltenmenue-feld > .eingabe { width: 100%; height: 36px; }
+.pw-spaltenmenue-feld .pw-verwaltung-zahl { justify-content: flex-start; }
+.pw-spaltenmenue-befehle { display: flex; flex-direction: column; gap: 2px; padding-top: var(--a2); border-top: 1px solid var(--rand); }
+.pw-spaltenmenue-befehle .knopf { justify-content: flex-start; width: 100%; }
+.pw-spaltenmenue .hinweis { padding: var(--a3); }
+.pw-spaltenmenue .wahl { gap: var(--a2); margin-top: var(--a2); }
+.pw-spaltenmenue .wahl label { position: relative; padding: var(--a2) var(--a3); background: var(--karte); }
+.pw-spaltenmenue .wahl input[type="radio"] { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.pw-spaltenmenue .wahl label:has(input:focus-visible) { outline: 2px solid color-mix(in srgb, var(--akzent-flaeche) 70%, transparent); outline-offset: 2px; }
+.pw-spaltenmenue .wahl select.eingabe { display: block; width: 100%; height: 36px; margin: var(--a1) 0; }
+.pw-spaltenmenue-warnung { color: var(--warn); }
+.pw-spaltenmenue-warnung i { margin-right: var(--a1); }
+
+/* Neue Spalte am Ende des Streifens */
+.pw-neue-spalte { width: 280px; flex: none; display: flex; flex-direction: column; gap: var(--a2); }
+.pw-neue-spalte-flaeche { display: flex; flex-direction: column; gap: var(--a2); padding: var(--a3); background: var(--bereich); border-radius: var(--r3);
+                          border: 1px solid color-mix(in srgb, var(--akzent-flaeche) 55%, transparent); }
+.pw-neue-spalte-flaeche .zeile-knoepfe { display: flex; gap: var(--a2); flex-wrap: wrap; }
+.pw-neue-spalte-flaeche .hinweistext { font-size: var(--marke); color: var(--text-3); }
 
 /* Karte im Board */
 .pw-karte {
@@ -57,6 +132,10 @@
 .pw-karte.geaendert { border-color: color-mix(in srgb, var(--info) 55%, transparent); }
 .pw-karte .cover { height: 6px; border-radius: var(--r1); background: var(--f, var(--stahl)); margin-bottom: 2px; }
 .pw-karte .titel { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.pw-karte-auszug {
+  margin: -2px 0 0; font-size: var(--klein); line-height: 1.4; color: var(--text-2); overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+}
 .pw-karte .labels { display: flex; flex-wrap: wrap; gap: 4px; }
 .pw-karte .felder { display: flex; flex-wrap: wrap; gap: 2px var(--a3); font-size: var(--klein); color: var(--text-2); }
 .pw-karte .felder span b { color: var(--text-3); font-weight: 500; }
@@ -70,6 +149,40 @@
 .pw-fortschritt > span { display: block; height: 100%; background: var(--gut); border-radius: 3px; }
 .pw-fortschritt.zeit > span { background: var(--akzent-flaeche); }
 .pw-fortschritt.ueber > span { background: var(--warn); }
+
+/* Aktionen beim Überfahren oder mit dem Fokus: Kette und Papierkorb oben rechts */
+.pw-karte-aktionen { position: absolute; top: 6px; right: 6px; z-index: 1; display: flex; gap: 4px; opacity: 0; transition: opacity var(--schnell); }
+.pw-karte:hover .pw-karte-aktionen, .pw-karte:focus-within .pw-karte-aktionen, .pw-karte.kettenquelle .pw-karte-aktionen { opacity: 1; }
+.pw-karte-aktion {
+  width: 30px; height: 30px; display: grid; place-items: center; border-radius: var(--r2); cursor: pointer;
+  border: 1px solid var(--rand-stark); background: var(--karte-2); color: var(--text-2); font-size: 13px;
+}
+.pw-karte-aktion:hover { background: var(--karte-3); color: var(--text); }
+.pw-kettengriff { cursor: grab; touch-action: none; }
+.pw-karte.kettenquelle { opacity: 0.6; border: 1px dashed var(--info); }
+.pw-karte.kettenziel { border-color: var(--info); background: color-mix(in srgb, var(--info) 10%, var(--karte)); }
+/* die Marke folgt dem Zeiger; rechts im Fenster steht sie links davon */
+.pw-kettenmarke {
+  position: fixed; z-index: 50; pointer-events: none; transform: translate(14px, 14px);
+  display: inline-flex; align-items: center; gap: var(--a2); height: 32px; padding: 0 var(--a3); border-radius: var(--r2); white-space: nowrap;
+  background: var(--karte); border: 1px dashed var(--info); color: var(--text); font-size: var(--klein); font-weight: 600; box-shadow: var(--schatten-schwebend);
+}
+.pw-kettenmarke.links { transform: translate(calc(-100% - 14px), 14px); }
+.pw-kettenmarke i { color: var(--info); }
+.pw-kettenmarke.bereit { border-style: solid; background: color-mix(in srgb, var(--info) 14%, var(--karte)); }
+
+/* Marker der Karte: Gruppe (gefüllt bei geteilter Zeit), Priorität als Punkt mit Wort im Hinweis, Zeit über der Schätzung */
+.pw-gruppe { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--info) 45%, transparent); color: var(--info); }
+.pw-gruppe i { color: var(--info); }
+.pw-gruppe.geteilt { box-shadow: none; background: color-mix(in srgb, var(--info) var(--toenung), transparent); }
+.pw-prio { width: 10px; height: 10px; border-radius: 50%; flex: none; display: inline-block; background: var(--stahl); }
+.pw-prio[data-prioritaet="dringend"] { background: var(--gefahr); }
+.pw-prio[data-prioritaet="hoch"] { background: var(--warn); }
+.pw-prio[data-prioritaet="mittel"] { background: var(--honig); }
+.pw-prio[data-prioritaet="niedrig"] { background: var(--stahl); }
+.pw-timer.ueber { color: var(--gefahr); border-color: color-mix(in srgb, var(--gefahr) 55%, transparent); }
+.pw-timer.laeuft.ueber { background: var(--gefahr-flaeche); color: var(--auf-farbe); border-color: transparent; }
+.pw-timer.fremd.ueber { background: color-mix(in srgb, var(--gefahr) var(--toenung), transparent); }
 
 /* Schnelleingabe in einer Spalte */
 .pw-schnell { background: var(--karte); border-radius: var(--r2); padding: var(--a2); display: flex; flex-direction: column; gap: var(--a2);

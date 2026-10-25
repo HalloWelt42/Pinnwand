@@ -153,6 +153,24 @@ export function dauerAendern(id: string, sek: number): void {
   });
 }
 
+/** Tag eines Eintrags ändern (Tagesliste an der Karte, Mechanik M-88): der Eintrag zieht auf den neuen Tag, Dauer,
+ *  Uhrzeiten und Herkunft bleiben. War die Sitzung an Mitternacht zerlegt, verlieren beide Teile den Bezug aufeinander. */
+export function datumAendern(id: string, tag: string): void {
+  const e = stand.zeiteintraege.find((x) => x.id === id);
+  if (!e || e.datum === tag) return;
+  aendern(() => {
+    const alt = e.datum;
+    if (e.zerlegt) {
+      const teil = stand.zeiteintraege.find((x) => x.karte === e.karte && x.konto === e.konto && x.datum === e.zerlegt && x.zerlegt === alt);
+      if (teil) teil.zerlegt = undefined;
+      e.zerlegt = undefined;
+    }
+    e.datum = tag;
+    vermerken(e.karte, `hat einen Zeiteintrag (${dauer(e.sekunden)}) von ${datum(alt, true)} auf ${datum(tag, true)} gelegt`);
+    return `${schluessel(e.karte)}: Eintrag (${dauer(e.sekunden)}) von ${datum(alt, true)} auf ${datum(tag, true)} gelegt`;
+  });
+}
+
 export function notizAendern(id: string, notiz: string): void {
   const e = stand.zeiteintraege.find((x) => x.id === id);
   if (e && (e.notiz ?? "") !== notiz) e.notiz = notiz || undefined;

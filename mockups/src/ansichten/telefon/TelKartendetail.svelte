@@ -3,12 +3,13 @@
   // großem Knopf, Timer starten oder anhalten, Checkliste abhaken, Kommentare lesen und schreiben. Bearbeiten der Felder
   // bleibt am Rechner. Der Status ändert sich über denselben Weg wie das Ziehen im Board.
   import { PRIORITAETEN } from "../../anzeige";
+  import { markdownHtml } from "../../teile/markdown";
   import { kartenName, timerErlaubt, timerVon, zeitDerKarte } from "../../beispiel/abfragen";
   import { bearbeiten, kommentieren } from "../../beispiel/anwendung/karten.svelte";
   import { anhalten, fortsetzen, starten, stoppen } from "../../beispiel/anwendung/timer.svelte";
   import { ICH } from "../../beispiel/daten";
   import { alterTage, datum, dauer, faelligText, uhrzeit, wann } from "../../beispiel/format";
-  import { board, karte as holeKarte, konto } from "../../beispiel/stand.svelte";
+  import { board, karte as holeKarte, konto, stand } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
   import { boardPfad, wert } from "../../weg.svelte";
   import TelefonSchale from "./TelefonSchale.svelte";
@@ -52,8 +53,8 @@
     const liste = k.checkliste.map((p, j) => (j === i ? { ...p, erledigt: !p.erledigt } : p));
     bearbeiten(k.id, { checkliste: liste }, liste[i].erledigt ? `Punkt "${liste[i].text}" erledigt` : `Punkt "${liste[i].text}" wieder offen`);
   }
-  const erwaehnungen = (text: string): string =>
-    text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/@(\w+)/g, '<span class="erwaehnt">@$1</span>');
+  /** Beschreibung und Kommentare sind Markdown, dargestellt mit demselben sicheren Darsteller wie am Rechner */
+  const md = { erwaehnung: (w: string) => stand.konten.find((x) => x.name.split(" ")[0].toLowerCase() === w.toLowerCase())?.name };
 </script>
 
 <TelefonSchale titel={k.schluessel} unter={b.name} reiter="boards" {zurueck} karte={k.id}>
@@ -147,7 +148,7 @@
   {#if k.beschreibung}
     <section class="pw-tel-abschnitt" aria-label="Beschreibung">
       <div class="etikett">Beschreibung</div>
-      <div class="pw-tel-text">{@html k.beschreibung}</div>
+      <div class="pw-tel-text pw-md">{@html markdownHtml(k.beschreibung, md)}</div>
     </section>
   {/if}
 
@@ -157,7 +158,7 @@
       <div class="pw-tel-kommentar">
         <Person id={c.von} />
         <div class="blase"><div class="kopfzeile"><b>{konto(c.von).name}</b><span>{wann(c.zeit)}</span></div>
-          <div>{@html erwaehnungen(c.text)}</div></div>
+          <div class="pw-md">{@html markdownHtml(c.text, md)}</div></div>
       </div>
     {/each}
     <div class="pw-tel-schreiben">

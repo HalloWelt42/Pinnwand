@@ -154,8 +154,8 @@ export const KARTEN: Karte[] = [
   { ...LEER, id: "c-131", board: "b-prod", schluessel: "PROD-131", spalte: "s-arbeit", titel: "Angebot Schaltschrankgehäuse kalkulieren", art: "arbeit",
     zustaendig: ["k-max"], prioritaet: "dringend", labels: ["l-kunde", "l-angebot"], faellig: "2026-10-27", schaetzungMin: 180,
     start: "2026-10-26", bewegtAm: "2026-10-26T08:15:00", erstelltAm: "2026-10-22T13:30:00",
-    beschreibung: "<p>Kunde möchte <strong>120 Gehäuse</strong> in RAL 7035, Lieferung bis KW 50.</p><ul><li>Blechstärke 1,5 mm</li><li>Montageplatte verzinkt</li><li>Türanschlag rechts</li></ul><p>Preise der Lieferanten liegen im Anhang.</p>",
-    notizen: "<p>Telefonat 26.10.: Kunde akzeptiert Teillieferung, wenn die ersten 40 Stück bis KW 48 kommen.</p>",
+    beschreibung: "Kunde möchte **120 Gehäuse** in RAL 7035, Lieferung bis KW 50.\n\n- Blechstärke 1,5 mm\n- Montageplatte verzinkt\n- Türanschlag rechts\n\nPreise der Lieferanten liegen im Anhang.",
+    notizen: "Telefonat 26.10.: Kunde akzeptiert Teillieferung, wenn die ersten 40 Stück bis KW 48 kommen.",
     checkliste: [{ text: "Materialpreise einholen", erledigt: true }, { text: "Laserzeit schätzen", erledigt: true }, { text: "Pulverbeschichtung anfragen", erledigt: false }, { text: "Angebot schreiben", erledigt: false }],
     kommentare: [
       { von: "k-anna", zeit: "2026-10-26T15:40:00", text: "Pulverbeschichtung bei Fa. Rother angefragt, Antwort morgen früh." },

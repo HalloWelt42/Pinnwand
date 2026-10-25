@@ -1,16 +1,19 @@
 <script lang="ts">
   // Zeiterfassung an der Karte (Modul Zeiterfassung): dein Timer, die Ticketzeit (Summe aller Einträge; setzen bucht die
-  // Differenz heute bei dir), die Schätzung, Zeit nachtragen und die Einträge je Tag und Person. Eigene Einträge sind
-  // löschbar, fremde nur mit dem Recht "Zeiten anderer bearbeiten". Gebucht wird nur über die Anwendungsfälle.
+  // Differenz heute bei dir), die Schätzung, Zeit nachtragen (Enter in Tag oder Dauer bucht) und die Einträge je Tag und
+  // Person (M-86 bis M-88). In einer Zeile ändert ein Klick auf den Tag das Datum, die Dauer ist direkt änderbar, X
+  // löscht; das gilt für eigene Einträge, für fremde nur mit dem Recht "Zeiten anderer bearbeiten". Gebucht und geändert
+  // wird nur über die Anwendungsfälle, jede Änderung mit Rückgängig.
+  import { tick } from "svelte";
   import { darf, laufendAuf, timerErlaubt, timerVon, zeitDerKarte } from "../beispiel/abfragen";
   import { bearbeiten } from "../beispiel/anwendung/karten.svelte";
   import { anhalten, fortsetzen, starten, stoppen } from "../beispiel/anwendung/timer.svelte";
-  import { buchen, loeschen, ticketzeitSetzen } from "../beispiel/anwendung/zeiten.svelte";
+  import { buchen, dauerAendern, datumAendern, loeschen, ticketzeitSetzen } from "../beispiel/anwendung/zeiten.svelte";
   import { HEUTE, ICH } from "../beispiel/daten";
   import { datum, dauer } from "../beispiel/format";
   import { konto, stand } from "../beispiel/stand.svelte";
   import { HERKUNFT } from "../anzeige";
-  import type { Board, Karte } from "../modell";
+  import type { Board, Karte, Zeiteintrag } from "../modell";
   import Person from "../board/Person.svelte";
   import DatumFeld from "../teile/DatumFeld.svelte";
   import DauerFeld from "../teile/DauerFeld.svelte";
@@ -26,6 +29,32 @@
   const anteil = $derived(karte.schaetzungMin ? gesamt / 60 / karte.schaetzungMin : 0);
   let tag = $state(HEUTE);
   let nachtrag = $state(0);
+  /** Eintrag, dessen Tag gerade geändert wird */
+  let tagAendern = $state<string | null>(null);
+
+  function aenderbar(z: Zeiteintrag): boolean {
+    return z.konto === ICH || andereBearbeiten;
+  }
+
+  /** nachtragen; die Dauer leert sich erst, wenn gebucht ist (getrennt bleibt sie stehen) */
+  function nachtragen(): void {
+    if (!nachtrag) return;
+    const vorher = stand.zeiteintraege.length;
+    buchen(karte.id, tag, nachtrag);
+    if (stand.zeiteintraege.length > vorher) nachtrag = 0;
+  }
+
+  /** Enter in Tag oder Dauer bucht (die Felder übernehmen ihren Wert schon beim Enter) */
+  function taste(e: KeyboardEvent): void {
+    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") nachtragen();
+  }
+
+  async function tagOeffnen(id: string, zelle: HTMLElement): Promise<void> {
+    const zeile = zelle.closest(".pw-tageszeile");
+    tagAendern = id;
+    await tick();
+    zeile?.querySelector<HTMLInputElement>(".pw-tageszeile-tag input")?.select();
+  }
 </script>
 
 <section class="pw-abschnitt">
@@ -59,19 +88,34 @@
       <div class="schwach pw-zeit-gruppe"><i class="fa-solid fa-link"></i> Zusammen mit der Gruppe {dauer(gesamt + gruppenSek)}; jede Sekunde zählt einmal</div>
     {/if}
     {#if darf(board, "zeit.buchen")}
-      <div class="pw-nachtragen">
-        <DatumFeld {tag} ontag={(t) => (tag = t)} breite="150px" titel="Tag des Eintrags" />
-        <span class="pw-nachtragen-dauer"><DauerFeld sek={nachtrag} klasse="feld" platzhalter="0:30 oder 1,5" titel="Dauer wie 0:30, 1,5 oder 90min" onwert={(s) => (nachtrag = s)} /></span>
-        <button class="knopf klein" disabled={!nachtrag} onclick={() => { buchen(karte.id, tag, nachtrag); nachtrag = 0; }}><i class="fa-solid fa-plus"></i>Tag buchen</button>
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="pw-nachtragen" onkeydown={taste}>
+        <DatumFeld {tag} ontag={(t) => (tag = t)} breite="150px" titel="Tag des Eintrags; Enter bucht" />
+        <span class="pw-nachtragen-dauer"><DauerFeld sek={nachtrag} klasse="feld" platzhalter="0:30 oder 1,5" titel="Dauer wie 0:30, 1,5 oder 90min; Enter bucht" onwert={(s) => (nachtrag = s)} /></span>
+        <button class="knopf klein" disabled={!nachtrag} onclick={nachtragen}><i class="fa-solid fa-plus"></i>Tag buchen</button>
       </div>
     {/if}
     <div class="pw-tageszeilen">
       {#each eintraege as z (z.id)}
+        {@const zeiten = `${z.von ? ` ${z.von}` : ""}${z.bis ? ` bis ${z.bis}` : ""}`}
         <div class="pw-tageszeile">
-          <span>{datum(z.datum, true)}{z.von ? ` ${z.von}` : ""}{z.bis ? ` bis ${z.bis}` : ""}</span>
+          {#if tagAendern === z.id}
+            <span class="pw-tageszeile-tag" onfocusout={() => (tagAendern = null)}>
+              <DatumFeld tag={z.datum} ontag={(t) => datumAendern(z.id, t)} titel="Tag des Eintrags; Enter übernimmt, Escape verwirft" />
+            </span>
+          {:else if aenderbar(z)}
+            <button class="pw-tageszeile-tag" title="Tag ändern" onclick={(e) => tagOeffnen(z.id, e.currentTarget)}>{datum(z.datum, true)}<span class="schwach">{zeiten}</span></button>
+          {:else}
+            <span class="pw-tageszeile-tag">{datum(z.datum, true)}<span class="schwach">{zeiten}</span></span>
+          {/if}
           <span class="wer"><Person id={z.konto} /><span class="schwach">{HERKUNFT[z.herkunft]}{z.sitzungen ? `, ${z.sitzungen.length} Sitzungen` : ""}</span></span>
-          <span class="dauer">{dauer(z.sekunden)}</span>
-          {#if z.konto === ICH || andereBearbeiten}
+          {#if aenderbar(z)}
+            <span class="dauer"><DauerFeld sek={z.sekunden} leerErlaubt={false} titel="Dauer ändern wie 1:30, 1,5 oder 90min"
+                                           onwert={(s) => { if (s > 0) dauerAendern(z.id, s); }} /></span>
+          {:else}
+            <span class="dauer">{dauer(z.sekunden)}</span>
+          {/if}
+          {#if aenderbar(z)}
             <button class="knopf ohne symbol klein" title="Eintrag löschen (Rückgängig möglich)" onclick={() => loeschen(z.id)}><i class="fa-solid fa-xmark"></i></button>
           {:else}
             <i class="fa-solid fa-lock schwach" title="Eintrag einer anderen Person"></i>

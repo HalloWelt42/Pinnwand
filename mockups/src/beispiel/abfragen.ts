@@ -185,6 +185,77 @@ export function passt(k: Karte, b: Board, suche: string | string[]): boolean {
   return w.every((x) => t.includes(x));
 }
 
+// ═══ Filter und Sortierung der Werkzeugleiste (Board, Liste, Kalender, Zeitachse) ═══════════════════════════
+
+/** Suche und Filter der Werkzeugleiste eines Boards. Ein leerer Teil filtert nicht; innerhalb eines Teils reicht ein
+ *  Treffer (oder), über die Teile muss alles passen (und). Mechanik M-91 bis M-93. */
+export interface Kartenfilter {
+  /** Volltext wie passt(): jedes Wort muss vorkommen */
+  suche: string;
+  /** zuständig ist eine dieser Personen */
+  personen: Kennung[];
+  prioritaeten: Prioritaet[];
+  labels: Kennung[];
+  /** eigene Felder mit Auswahl: je Feld einer dieser Werte */
+  felder: Record<Kennung, string[]>;
+}
+
+export function leererFilter(): Kartenfilter {
+  return { suche: "", personen: [], prioritaeten: [], labels: [], felder: {} };
+}
+
+/** Gilt eine Suche oder ein Filter? Dann ist Ziehen gesperrt und Erledigte zeigen alle außerhalb des Archivs (M-25) */
+export function filterAktiv(f: Kartenfilter): boolean {
+  return woerter(f.suche).length > 0 || f.personen.length > 0 || f.prioritaeten.length > 0 || f.labels.length > 0
+    || Object.values(f.felder).some((w) => w.length > 0);
+}
+
+/** Die eine Abfrage für Suche und Filter in jeder Ansicht eines Boards */
+export function kartePasst(k: Karte, b: Board, f: Kartenfilter): boolean {
+  return (!f.personen.length || k.zustaendig.some((p) => f.personen.includes(p)))
+    && (!f.prioritaeten.length || f.prioritaeten.includes(k.prioritaet))
+    && (!f.labels.length || k.labels.some((l) => f.labels.includes(l)))
+    && Object.entries(f.felder).every(([feld, werte]) => !werte.length || werte.includes(k.felder[feld] ?? ""))
+    && passt(k, b, f.suche);
+}
+
+/** Ordnung offener Spalten (M-94): von Hand, nach Fälligkeit (früheste zuerst, ohne Datum am Ende) oder nach Priorität */
+export type Sortierung = "manuell" | "faellig" | "prioritaet";
+
+/** Offene Karten nach der Sortierung; bei Gleichstand bleibt die Reihenfolge von Hand */
+export function kartenOrdnen(karten: Karte[], s: Sortierung): Karte[] {
+  if (s === "manuell") return karten;
+  return [...karten].sort(s === "faellig" ? (a, b) => (a.faellig ?? "9999").localeCompare(b.faellig ?? "9999")
+    : (a, b) => RANG[a.prioritaet] - RANG[b.prioritaet]);
+}
+
+/** Erledigte neueste zuerst nach Abschluss, am selben Tag die zuletzt abgelegte zuerst (M-28); die Ordnung steht fest */
+function neuesteZuerst(karten: Karte[]): Karte[] {
+  const am = (k: Karte) => k.abgeschlossen ?? k.bewegtAm.slice(0, 10);
+  return [...karten].sort((a, b) => am(b).localeCompare(am(a)) || b.bewegtAm.localeCompare(a.bewegtAm));
+}
+
+/** Was eine Spalte im Board zeigt */
+export interface Spalteninhalt {
+  /** alle Karten der Spalte (Erledigt: außerhalb des Archivs), nie nur die Treffer: daran hängen Zahl und Grenze (M-14) */
+  alle: number;
+  /** die gezeigten Karten in ihrer Ordnung: offene von Hand oder nach der Sortierung, erledigte neueste zuerst */
+  karten: Karte[];
+  /** Erledigt bei Suche, Filter oder Sortierung: ohne Zeitfenster, alle passenden außerhalb des Archivs (M-25) */
+  ohneFenster: boolean;
+}
+
+export function spalteninhalt(b: Board, s: Spalte, f: Kartenfilter, sortierung: Sortierung, fenster: Zeitfenster): Spalteninhalt {
+  if (!s.erledigt) {
+    const alle = kartenDerSpalte(s.id);
+    return { alle: alle.length, karten: kartenOrdnen(alle.filter((k) => kartePasst(k, b, f)), sortierung), ohneFenster: false };
+  }
+  const ausserhalb = erledigteOhneArchiv(b, s);
+  const ohneFenster = filterAktiv(f) || sortierung !== "manuell";
+  const grund = ohneFenster ? ausserhalb : sichtbareKarten(b, s, fenster);
+  return { alle: ausserhalb.length, karten: neuesteZuerst(grund.filter((k) => kartePasst(k, b, f))), ohneFenster };
+}
+
 // ═══ Mein Tag (Heute am Rechner und am Telefon) ══════════════════════════════════════════════════════════
 
 /** "Diese Woche": fällig in den nächsten sieben Tagen */

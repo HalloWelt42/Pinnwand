@@ -222,3 +222,28 @@
 .pw-datumfeld .eingabe { width: 100%; }
 .pw-datumfeld small { font-size: var(--marke); color: var(--text-3); min-height: 1.3em; }
 .pw-datumfeld small.falsch { color: var(--gefahr); }
+
+/* Markdown-Text (Beschreibung, Notizen, Kommentare) aus teile/markdown.ts, am Rechner und am Telefon gleich */
+.pw-md { overflow-wrap: anywhere; }
+.pw-md :is(p, ul, ol, pre, blockquote, .pw-md-tabelle, h1, h2, h3, h4, h5, h6, hr) { margin: 0 0 var(--a2); }
+.pw-md > :last-child { margin-bottom: 0; }
+.pw-md :is(ul, ol) { padding-left: 1.4em; }
+.pw-md li > :is(ul, ol) { margin: 2px 0 0; }
+.pw-md li.aufgabe { list-style: none; margin-left: -1.4em; }
+.pw-md li.aufgabe > i { display: inline-block; width: 1.4em; color: var(--text-3); }
+.pw-md :is(h1, h2, h3) { font-size: var(--titel); font-weight: 700; line-height: 1.3; }
+.pw-md :is(h4, h5, h6) { font-size: var(--gross); font-weight: 700; line-height: 1.3; }
+.pw-md :is(h5, h6) { color: var(--text-2); }
+.pw-md a { text-decoration: underline; text-underline-offset: 2px; }
+.pw-md code { font-family: var(--schrift-code); font-size: var(--klein); padding: 1px 4px; border-radius: var(--r1); background: var(--karte-2); }
+.pw-md pre { padding: var(--a3); border-radius: var(--r2); background: var(--karte-2); overflow-x: auto; }
+.pw-md pre code { padding: 0; background: none; }
+.pw-md blockquote { padding: var(--a2) var(--a3); border-radius: var(--r2); background: var(--karte-2); color: var(--text-2); }
+.pw-md hr { height: 1px; border: 0; background: var(--rand-stark); }
+.pw-md .pw-md-tabelle { overflow-x: auto; }
+.pw-md table { border-collapse: collapse; font-size: var(--klein); }
+.pw-md :is(th, td) { padding: 4px var(--a2); border: 1px solid var(--rand-stark); text-align: left; vertical-align: top; }
+.pw-md th { background: var(--karte-2); font-weight: 600; }
+.pw-md :is(th, td).mitte { text-align: center; }
+.pw-md :is(th, td).rechts { text-align: right; }
+.pw-md .pw-erwaehnt { color: var(--akzent); font-weight: 600; }

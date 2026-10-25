@@ -9,6 +9,10 @@
   display: flex; flex-direction: column; background: var(--hg); box-shadow: 0 0 0 1px var(--rand-stark), var(--schatten-schwebend);
 }
 .pw-detail.voll { width: 100%; }
+/* der Fokus liegt beim Öffnen auf der Leiste selbst; sie ist eine Fläche, kein Bedienelement */
+.pw-detail:focus-visible { outline: none; }
+/* ein Textfeld im Vollbild nimmt die ganze Breite des Boards */
+.pw-detail:has(.pw-textfeld-voll) { width: 100%; }
 .pw-detail-kopf { flex: none; display: flex; align-items: center; gap: var(--a2); padding: var(--a3) var(--a4); border-bottom: 1px solid var(--rand); flex-wrap: wrap; }
 .pw-detail-kopf .rechts { margin-left: auto; display: flex; gap: var(--a1); align-items: center; }
 .pw-detail-inhalt { flex: 1; min-height: 0; overflow-y: auto; overflow-x: clip; padding: var(--a4) var(--a5) var(--a6); display: flex; flex-direction: column; gap: var(--a5); }
@@ -40,6 +44,26 @@
 .pw-text p:last-child { margin-bottom: 0; }
 .pw-text ul { margin: 0 0 var(--a2); padding-left: 1.2em; }
 .pw-text.noch-leer { color: var(--text-3); }
+button.pw-text { width: 100%; text-align: left; font: inherit; }
+.pw-text.nur-lesen { cursor: default; }
+.pw-text.nur-lesen:hover { border-color: transparent; }
+.pw-textfeld-knoepfe { display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; }
+.pw-textfeld-stand { font-size: var(--marke); color: var(--text-3); }
+.pw-textfeld-stand.offen { color: var(--warn); }
+
+/* Textfeld im Vollbild: Eingabe links, Vorschau rechts, über dem ganzen Detail */
+.pw-textfeld-voll { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; background: var(--hg); outline: none; }
+.pw-textfeld-voll-kopf { flex: none; display: flex; align-items: center; gap: var(--a2); padding: var(--a3) var(--a4); border-bottom: 1px solid var(--rand); flex-wrap: wrap; }
+.pw-textfeld-voll-kopf b { font-size: var(--titel); }
+.pw-textfeld-voll-kopf .rechts { margin-left: auto; display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; }
+.pw-textfeld-voll-raum { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--a4); padding: var(--a4) var(--a5) var(--a5); }
+.pw-textfeld-eingabe { width: 100%; height: 100%; min-height: 0; resize: none; padding: var(--a3) var(--a4); border-radius: var(--r2); outline: 0;
+                       border: 1px solid color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); background: var(--karte); color: var(--text);
+                       font-family: var(--schrift-code); font-size: var(--klein); line-height: 1.6; }
+.pw-textfeld-vorschau { min-height: 0; overflow-y: auto; padding: var(--a3) var(--a4); border-radius: var(--r2); background: var(--karte); line-height: 1.55; }
+@media (max-width: 760px) { .pw-textfeld-voll-raum { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); } }
+
+/* Markdown dargestellt (Beschreibung, Notizen, Kommentare, Vorschau) */
 .pw-text.bearbeiten { cursor: auto; border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); padding: 0; }
 .pw-text.bearbeiten textarea { width: 100%; border: 0; background: transparent; color: var(--text); padding: var(--a3) var(--a4); min-height: 180px; resize: vertical; outline: 0; font-family: var(--schrift-code); font-size: var(--klein); line-height: 1.6; }
 .pw-felder { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr); gap: var(--a2) var(--a3); align-items: center; }
@@ -57,7 +81,13 @@
 .pw-zeitblock .schaetzung .pw-dauerfeld { width: 90px; }
 .pw-zeitblock .gross .pw-dauerfeld { width: 170px; font-size: var(--kennzahl); font-weight: 700; text-align: left; height: 44px; color: inherit; }
 .pw-tageszeilen { display: flex; flex-direction: column; gap: 2px; }
-.pw-tageszeile { display: grid; grid-template-columns: 110px minmax(0, 1fr) 90px auto; gap: var(--a2); align-items: center; padding: 4px var(--a2); border-radius: var(--r1); font-size: var(--klein); }
+.pw-tageszeile { display: grid; grid-template-columns: 128px minmax(0, 1fr) 90px auto; gap: var(--a2); align-items: center; padding: 4px var(--a2); border-radius: var(--r1); font-size: var(--klein); }
+.pw-tageszeile-tag { min-width: 0; display: flex; flex-wrap: wrap; column-gap: 4px; padding: 4px 6px; margin-left: -6px; font: inherit; color: var(--text); text-align: left;
+                     background: none; border: 1px solid transparent; border-radius: var(--r1); }
+button.pw-tageszeile-tag { cursor: pointer; }
+button.pw-tageszeile-tag:hover { border-color: var(--rand-stark); background: var(--karte); }
+.pw-tageszeile-tag .pw-datumfeld { width: 100%; }
+.pw-tageszeile .dauer .pw-dauerfeld { height: 30px; }
 .pw-tageszeile:hover { background: var(--karte-2); }
 .pw-tageszeile .wer { display: flex; align-items: center; gap: var(--a2); min-width: 0; color: var(--text-2); }
 .pw-tageszeile .dauer { font-family: var(--schrift-zahl); font-weight: 600; text-align: right; }
@@ -65,22 +95,62 @@
 .pw-nachtragen .eingabe { height: 36px; }
 .pw-liste-klein { display: flex; flex-direction: column; gap: 2px; }
 .pw-liste-klein .zeile { padding: 6px var(--a2); }
-.pw-punkt { display: flex; align-items: center; gap: var(--a3); padding: 6px var(--a2); border-radius: var(--r1); }
+.pw-checkliste-balken { margin-bottom: var(--a1); }
+.pw-punkt { display: flex; align-items: center; gap: var(--a3); min-height: 40px; padding: 2px var(--a2); border-radius: var(--r1); }
 .pw-punkt:hover { background: var(--karte); }
 .pw-punkt input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--gut); flex: none; }
-.pw-punkt.erledigt span { color: var(--text-3); text-decoration: line-through; }
+.pw-punkt-text { flex: 1; min-width: 0; padding: 0; font: inherit; color: var(--text); text-align: left; background: none; border: 0; overflow-wrap: anywhere; }
+button.pw-punkt-text { cursor: text; }
+.pw-punkt.erledigt .pw-punkt-text { color: var(--text-3); text-decoration: line-through; }
+.pw-punkt-name { flex: 1; min-width: 0; height: 34px; }
 .pw-punkt .weg { margin-left: auto; opacity: 0; }
-.pw-punkt:hover .weg { opacity: 1; }
+.pw-punkt:hover .weg, .pw-punkt:focus-within .weg { opacity: 1; }
 .pw-anhang { display: flex; align-items: center; gap: var(--a3); padding: var(--a2) var(--a3); background: var(--karte); border-radius: var(--r2); }
 .pw-anhang > i { width: 22px; text-align: center; font-size: 18px; color: var(--text-3); }
 .pw-anhang .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pw-anhang .meta { font-size: var(--marke); color: var(--text-3); }
+.pw-anhang .meta { flex: 0 1 auto; min-width: 0; font-size: var(--marke); color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pw-anhang-name { padding: 0; font: inherit; color: var(--text); text-align: left; background: none; border: 0; cursor: pointer; }
+.pw-anhang-name:hover, .pw-detail-verweis:hover { text-decoration: underline; text-underline-offset: 2px; }
+.pw-detail-verweis { color: var(--text); }
+.pw-anhaenge { border-radius: var(--r2); transition: background var(--schnell), box-shadow var(--schnell); }
+.pw-anhaenge.darueber { background: color-mix(in srgb, var(--info) 8%, transparent); box-shadow: 0 0 0 var(--a2) color-mix(in srgb, var(--info) 8%, transparent); }
+.pw-anhang-ablage { display: flex; align-items: center; justify-content: center; gap: var(--a2); padding: var(--a3); border-radius: var(--r2);
+                    color: var(--info); font-size: var(--klein); font-weight: 600; background: color-mix(in srgb, var(--info) var(--toenung), transparent); }
+
+/* Wahl aus der Kellerwolke: eine Fläche im Abschnitt Anhänge */
+.pw-wolkenwahl { display: flex; flex-direction: column; gap: var(--a2); padding: var(--a3); border-radius: var(--r2); background: var(--bereich);
+                 border: 1px solid var(--rand-stark); outline: none; }
+.pw-wolkenwahl-kopf { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; }
+.pw-wolkenwahl-kopf > i { color: var(--text-3); }
+.pw-wolkenwahl-suche { margin-left: auto; flex: 1 1 220px; max-width: 320px; }
+.pw-wolkenwahl-liste { display: flex; flex-direction: column; gap: 2px; max-height: 280px; overflow-y: auto; }
+.pw-wolkenwahl-datei { display: flex; align-items: center; gap: var(--a3); padding: 6px var(--a2); border-radius: var(--r1); cursor: pointer; }
+.pw-wolkenwahl-datei:hover { background: var(--karte); }
+.pw-wolkenwahl-datei.schon { cursor: default; }
+.pw-wolkenwahl-datei input { width: 18px; height: 18px; flex: none; accent-color: var(--akzent-flaeche); }
+.pw-wolkenwahl-datei > i { width: 20px; text-align: center; color: var(--text-3); }
+.pw-wolkenwahl-datei .wer { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; overflow-wrap: anywhere; }
+.pw-wolkenwahl-datei .pfad, .pw-wolkenwahl-datei .meta { font-size: var(--marke); color: var(--text-3); }
+.pw-wolkenwahl-datei .meta { white-space: nowrap; }
+.pw-wolkenwahl .leer-zeile { padding: var(--a2); font-size: var(--klein); color: var(--text-3); }
+.pw-wolkenwahl-fuss { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; }
+.pw-wolkenwahl-fuss .schwach { flex: 1 1 220px; min-width: 0; font-size: var(--marke); }
+
+/* Suche zum Verknüpfen: Treffer schieben den Inhalt darunter (nichts überdeckt) */
+.pw-detail-suchfeld { display: flex; flex-direction: column; gap: var(--a1); }
+.pw-detail-treffer { display: flex; flex-direction: column; padding: var(--a1); background: var(--karte); border: 1px solid var(--rand-stark); border-radius: var(--r2); }
+.pw-detail-treffer button { display: flex; align-items: center; gap: var(--a2); min-width: 0; padding: var(--a2) var(--a3); border: 0; border-radius: var(--r1);
+                            background: none; color: var(--text); text-align: left; cursor: pointer; font-size: var(--klein); }
+.pw-detail-treffer button[aria-selected="true"], .pw-detail-treffer button:focus-visible { background: var(--karte-2); }
+.pw-detail-treffer .titel { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.pw-detail-treffer .woher { flex: none; max-width: 45%; font-size: var(--marke); color: var(--text-3); text-align: right; }
+.pw-detail-treffer .leer-zeile { padding: var(--a2) var(--a3); font-size: var(--klein); color: var(--text-3); }
 .pw-kommentar { display: flex; gap: var(--a3); }
 .pw-kommentar .blase { flex: 1; min-width: 0; background: var(--karte); border-radius: var(--r2); padding: var(--a2) var(--a3); }
 .pw-kommentar .blase .kopf-zeile { display: flex; gap: var(--a2); align-items: baseline; font-size: var(--klein); }
 .pw-kommentar .blase .kopf-zeile b { font-weight: 600; }
 .pw-kommentar .blase .kopf-zeile span { color: var(--text-3); font-size: var(--marke); }
-.pw-kommentar .erwaehnt { color: var(--akzent); font-weight: 600; }
+.pw-kommentar .blase .pw-md { overflow-wrap: anywhere; }
 .pw-verlauf { display: flex; flex-direction: column; gap: 4px; font-size: var(--klein); color: var(--text-2); }
 .pw-verlauf .zeit { min-width: 92px; font-family: var(--schrift-zahl); font-size: var(--marke); }
 .pw-detail-fuss { flex: none; display: flex; align-items: center; gap: var(--a2); padding: var(--a3) var(--a4); border-top: 1px solid var(--rand); flex-wrap: wrap; }

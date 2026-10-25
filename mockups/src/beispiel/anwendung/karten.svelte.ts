@@ -106,14 +106,8 @@ export function erledigen(id: Kennung): void {
   if (ziel) verschieben(id, ziel.id);
 }
 
-/** Getippter oder gesprochener Text als Absätze (die Beschreibung einer Karte ist formatierter Text) */
-function alsAbsaetze(text: string): string {
-  const sicher = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  return sicher.split(/\n+/).map((z) => z.trim()).filter(Boolean).map((z) => `<p>${z}</p>`).join("");
-}
-
 /** Neue Karte ans Ende der Spalte: Schlüssel aus der Laufnummer des Boards (nie wiederverwendet), du bist zuständig;
- *  die Beschreibung kommt als Text und wird hier zu Absätzen */
+ *  die Beschreibung ist Markdown-Text, wie getippt oder gesprochen */
 export function anlegen(boardId: Kennung, spalteId: Kennung,
                         felder: { titel: string; art?: "arbeit" | "idee"; faellig?: string; beschreibung?: string }): Karte | undefined {
   const b = board(boardId);
@@ -127,7 +121,7 @@ export function anlegen(boardId: Kennung, spalteId: Kennung,
     stand.karten.push({
       id, board: b.id, schluessel: `${b.kuerzel}-${b.laufnummer}`, spalte: spalte.id, titel,
       art: felder.art ?? (b.module.zeiterfassung ? "arbeit" : "idee"),
-      beschreibung: felder.beschreibung?.trim() ? alsAbsaetze(felder.beschreibung) : undefined, zustaendig: [ICH],
+      beschreibung: felder.beschreibung?.trim() || undefined, zustaendig: [ICH],
       prioritaet: "keine", faellig: felder.faellig, labels: [], checkliste: [], kommentare: [], bewegtAm: JETZT, erstelltAm: JETZT,
       felder: {}, anhaenge: [], transkripte: [], verlauf: [{ zeit: JETZT, von: ICH, text: "hat die Karte angelegt" }],
     });

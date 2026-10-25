@@ -12,12 +12,15 @@ from appkern.datenbank import Datenbank
 from ..uhr import Uhr
 from ..verzeichnis import Verzeichnis, einrichten
 from ..vorlagen import MITGELIEFERT
+from .aufbau import Aufbau
 from .boards import Boards, Zugang
 from .ereignisse import Ereignisse
 from .hinweise import Hinweise
 from .inhalt import Inhalte
 from .karten import Karten
 from .konten import Konten
+from .mitglieder import Mitglieder
+from .ordner import Persoenliches
 from .papierkorb import Papierkorb
 from .rahmen import Anwendung
 from .stand import Abfragen
@@ -34,13 +37,18 @@ class Dienste:
     inhalte: Inhalte
     hinweise: Hinweise
     papierkorb: Papierkorb
+    aufbau: Aufbau
+    mitglieder: Mitglieder
+    persoenlich: Persoenliches
 
     @classmethod
     def bauen(cls, db: Datenbank, zugang: Zugang, uhr: Uhr | None = None) -> Dienste:
         ereignisse = Ereignisse()
         a = Anwendung(Verzeichnis(db), ereignisse, uhr)
-        return cls(anwendung=a, ereignisse=ereignisse, konten=Konten(a), abfragen=Abfragen(a), boards=Boards(a, zugang),
-                   karten=Karten(a), inhalte=Inhalte(a), hinweise=Hinweise(a), papierkorb=Papierkorb(a))
+        konten = Konten(a)
+        return cls(anwendung=a, ereignisse=ereignisse, konten=konten, abfragen=Abfragen(a), boards=Boards(a, zugang),
+                   karten=Karten(a), inhalte=Inhalte(a), hinweise=Hinweise(a), papierkorb=Papierkorb(a), aufbau=Aufbau(a),
+                   mitglieder=Mitglieder(a), persoenlich=Persoenliches(a, konten))
 
 
 class Start(Begleiter):

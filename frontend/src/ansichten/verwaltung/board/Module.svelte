@@ -1,15 +1,18 @@
 <script lang="ts">
-  // Module des Boards: je Modul ein Schalter mit dem, was es bringt (Ansichten, Felder, Rechte). Abschalten blendet es in
-  // Board, Karten und Rollen aus; seine Daten bleiben und sind beim Einschalten wieder da. Schalten über den Anwendungsfall.
+  // Module des Boards: je Modul, das diese Fassung anbietet, ein Schalter mit dem, was es bringt (Ansichten, Felder,
+  // Rechte); den Reiter gibt es nur, wenn sie welche anbietet. Abschalten blendet ein Modul in Board, Karten und Rollen
+  // aus; seine Daten bleiben und sind beim Einschalten wieder da. Schalten über den Anwendungsfall.
   import { MODULE } from "../../../anzeige";
   import { modulSchalten } from "../../../daten/anwendung/boards.svelte";
   import { RECHTE } from "../../../daten/konstanten";
+  import { stand } from "../../../daten/stand.svelte";
   import type { Board } from "../../../modell";
   import { boardPfad } from "../../../weg.svelte";
 
-  let { board }: { board: Board; entwurf?: string } = $props();
+  let { board }: { board: Board } = $props();
 
   const GRUPPEN = [["fach", "Fachmodule"], ["anbindung", "Anbindungen an andere Apps"]] as const;
+  const angeboten = (art: string) => MODULE.filter((m) => m.art === art && stand.moduleDa.includes(m.id));
   const rechte = (id: string) => RECHTE.filter((r) => r.modul === id);
 </script>
 
@@ -19,10 +22,10 @@
       <div>Abschalten blendet ein Modul in Board, Karten und <a href={boardPfad(board.kuerzel, "einstellungen/rollen")}>Rollen</a> aus. Seine Daten
         bleiben (Zeiten, Serien, Marken) und sind beim Einschalten wieder da.</div></div>
 
-    {#each GRUPPEN as [art, titel] (art)}
+    {#each GRUPPEN.filter(([art]) => angeboten(art).length) as [art, titel] (art)}
       <h2 class="etikett">{titel}</h2>
       <div class="pw-verwaltung-module">
-        {#each MODULE.filter((m) => m.art === art) as m (m.id)}
+        {#each angeboten(art) as m (m.id)}
           {@const an = board.module[m.id]}
           <div>
             <article class="karte pw-verwaltung-modul" class:aus={!an} aria-label="Modul {m.name}">

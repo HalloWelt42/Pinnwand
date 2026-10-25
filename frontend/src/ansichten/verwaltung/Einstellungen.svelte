@@ -1,26 +1,30 @@
 <script lang="ts">
   // Persönliche Einstellungen (/einstellungen/<reiter>): Darstellung auf diesem Gerät, Hinweise je Art und Weg, das
-  // Konto aus der Kellerwolke und die Gestaltung aus dem Appkern. Einstellungen eines Boards stehen im Board, das
-  // Zeitkonto unter Arbeitszeit; hier steht nur, was dir allein gehört.
+  // Konto aus der Kellerwolke, deine Ordner, der Papierkorb der App und die Gestaltung aus dem Appkern. Einstellungen
+  // eines Boards stehen im Board; hier steht nur, was dir allein gehört.
+  import { modulIrgendwo } from "../../daten/abfragen";
   import type { Component } from "svelte";
   import Gestaltung from "appkern-oberflaeche/gestaltung";
   import { PERSON_REITER } from "./daten";
   import Darstellung from "./person/Darstellung.svelte";
   import Hinweise from "./person/Hinweise.svelte";
   import Konto from "./person/Konto.svelte";
+  import Ordner from "./person/Ordner.svelte";
   import Papierkorb from "./person/Papierkorb.svelte";
 
-  let { reiter = "darstellung", entwurf = "" }: { reiter?: string; entwurf?: string } = $props();
+  let { reiter = "darstellung" }: { reiter?: string } = $props();
 
-  const SEITEN: Record<string, Component<any>> = { darstellung: Darstellung, hinweise: Hinweise, konto: Konto, papierkorb: Papierkorb };
+  const SEITEN: Record<string, Component<any>> = { darstellung: Darstellung, hinweise: Hinweise, konto: Konto, ordner: Ordner, papierkorb: Papierkorb };
   const Seite = $derived(SEITEN[reiter]);
+  /** Das Zeitkonto gibt es, sobald eines deiner Boards Arbeitszeit eingeschaltet hat */
+  const arbeitszeit = $derived(modulIrgendwo("arbeitszeit"));
 </script>
 
 <div class="rahmen-kopf">
   <div class="seitenkopf">
     <h1>Einstellungen</h1>
-    <div class="unterzeile">Was nur dich betrifft. Einstellungen eines Boards findest du im Board, dein Zeitkonto unter
-      <a href="/arbeitszeit">Arbeitszeit</a>.</div>
+    <div class="unterzeile">Was nur dich betrifft. Einstellungen eines Boards findest du im Board{#if arbeitszeit}, dein Zeitkonto unter
+      <a href="/arbeitszeit">Arbeitszeit</a>{/if}.</div>
   </div>
   <nav class="reiter pw-verwaltung-reiter" aria-label="Persönliche Einstellungen">
     {#each PERSON_REITER as r (r.id)}
@@ -30,7 +34,7 @@
   </nav>
 </div>
 {#if Seite}
-  <Seite {entwurf} />
+  <Seite />
 {:else}
   <div class="rollfeld"><Gestaltung familie="leitstand" /></div>
 {/if}

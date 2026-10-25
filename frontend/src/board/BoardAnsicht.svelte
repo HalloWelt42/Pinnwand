@@ -79,10 +79,10 @@
   let spaltenZug = $state.raw<SpalteT[] | null>(null);
   const spalten = $derived(spaltenZug ?? b.spalten);
   function spaltenErwaegen(e: CustomEvent<DndEvent<SpalteT>>): void { spaltenZug = e.detail.items; }
-  function spaltenAbgelegt(e: CustomEvent<DndEvent<SpalteT>>): void {
-    const ids = e.detail.items.map((s) => s.id);
+  async function spaltenAbgelegt(e: CustomEvent<DndEvent<SpalteT>>): Promise<void> {
+    spaltenZug = e.detail.items;
+    await spaltenOrdnen(b.id, spaltenZug.map((s) => s.id));
     spaltenZug = null;
-    spaltenOrdnen(b.id, ids);
   }
 
   // Neue Spalte (M-12): Name in der Fläche, Enter legt an, Escape bricht ab; ans Ende, ohne Grenze, offen
@@ -93,8 +93,8 @@
     neuFarbe = FARBEN.find((f) => !b.spalten.some((s) => s.farbe === f)) ?? "himmel";
     neueSpalte = true;
   }
-  function neueAnlegen(): void {
-    if (spalteAnlegen(b.id, neuName, neuFarbe)) neueSpalte = false;
+  async function neueAnlegen(): Promise<void> {
+    if (await spalteAnlegen(b.id, neuName, neuFarbe)) neueSpalte = false;
   }
   function neueTaste(e: KeyboardEvent): void {
     if (e.key === "Enter") neueAnlegen();

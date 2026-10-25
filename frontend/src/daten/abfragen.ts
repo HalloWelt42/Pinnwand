@@ -137,7 +137,6 @@ export function boardsImPapierkorb() {
   return stand.papierkorb.filter((e) => e.art === "board");
 }
 
-/** Rechte der angemeldeten Person in einem Board */
 /** Deine Boards nach deinen Ordnern (in deren Reihenfolge, auch leere Ordner), Boards ohne Ordner zuletzt in einer Gruppe
  *  ohne Ordner (M-01); Seitenleiste und Telefon zeigen dieselbe Ordnung */
 export function boardGruppen(): { ordner: Ordner | null; boards: Board[] }[] {
@@ -155,6 +154,7 @@ export function modulIrgendwo(m: ModulKennung): boolean {
   return stand.boards.some((b) => b.mitglieder.some((x) => x.konto === ICH) && modulAn(b, m, stand.moduleDa));
 }
 
+/** Rechte der angemeldeten Person in einem Board */
 export function darf(b: Board, recht: string): boolean {
   return hatRecht(b, recht, ICH, stand.moduleDa);
 }

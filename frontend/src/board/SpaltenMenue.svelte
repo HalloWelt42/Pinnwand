@@ -50,9 +50,9 @@
     anker?.focus();
   }
 
-  function umbenennen(e: Event): void {
+  async function umbenennen(e: Event): Promise<void> {
     const feld = e.currentTarget as HTMLInputElement;
-    if (!spalteAendern(board.id, spalte.id, { name: feld.value })) feld.value = spalte.name;
+    if (feld.value.trim() === spalte.name || !(await spalteAendern(board.id, spalte.id, { name: feld.value }))) feld.value = spalte.name;
   }
   function nameTaste(e: KeyboardEvent): void {
     const feld = e.currentTarget as HTMLInputElement;
@@ -150,7 +150,7 @@
       {/if}
       {#if !spalte.erledigt}
         <button class="knopf ohne klein" onclick={() => tun(() => zurErledigtSpalte(board.id, spalte.id))}
-                title="Ihre Karten gelten dann als erledigt (Abschluss heute, laufende Timer halten an und buchen); die bisherige Erledigt-Spalte wird offen">
+                title="Ihre Karten gelten dann als erledigt (Abschluss heute); die bisherige Erledigt-Spalte wird offen">
           <i class="fa-regular fa-circle-check"></i>Zur Erledigt-Spalte machen</button>
       {/if}
       {#if loeschbar}

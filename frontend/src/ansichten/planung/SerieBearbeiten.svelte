@@ -87,7 +87,7 @@
     if (JSON.stringify(s.labels) !== JSON.stringify(o.labels)) a.push("Labels");
     if (s.vorlaufTage !== o.vorlaufTage) a.push(`Vorlauf ${s.vorlaufTage} Tage`);
     if (s.feiertageUeberspringen !== o.feiertageUeberspringen) a.push(s.feiertageUeberspringen ? "Feiertage auslassen" : "Feiertage nicht auslassen");
-    if (s.ab !== o.ab || s.bis !== o.bis) a.push("Zeitraum");
+    if (s.ab !== o.ab || (s.bis ?? "") !== (o.bis ?? "")) a.push("Zeitraum");
     if ((s.beschreibung ?? "") !== (o.beschreibung ?? "")) a.push("Beschreibung");
     return a;
   });

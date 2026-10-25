@@ -15,7 +15,9 @@ backend/app/
   verzeichnis/      SQLite über appkern.datenbank: Schema in Stufen, Zugriff je Aggregat, Journal
   anwendung/        Anwendungsfälle, der einzige Weg zu schreiben (Rechte, Regeln, Fassung, Journal, Ereignis); je
                     Bereich ein Modul: karten, inhalt, boards, aufbau, mitglieder, ordner, papierkorb, hinweise,
-                    anhaenge; rahmen.py ist der Rahmen jeder Änderung, stand.py die Abfragen
+                    anhaenge, zeiterfassung, arbeitszeit; rahmen.py ist der Rahmen jeder Änderung, sicht.py die
+                    Regel, wer welche Zeile sieht, stand.py die Abfragen, kartenbasis.py Lesen und Schreiben einer
+                    Karte für alle Bereiche
   schnittstelle/    REST unter /api/v1 und der Ereignisstrom; je Bereich ein Router, beide nur über die Anwendung;
                     Adapter auf Dienste des Gerüsts hinter Schnittstellen der Anwendung (zugang.py: Weitere Konten,
                     ablage.py: Ablage der Kellerwolke für Anhänge)
@@ -93,7 +95,90 @@ Oberfläche mit Anmeldung und Board. (2) Die übrigen Anwendungsfälle je Bereic
 Oberfläche verdrahtet. (3) Ansichtsprüfung in allen Breiten, Abnahme gegen `ABNAHME_ENTWUERFE.md`, Handbuch-Seite,
 Ausrollen auf den Pi.
 
-## 7. Prüfen
+## 7. Stufe 2: Zeit
+
+Timer je Person, Zeiteinträge, Stundenzettel, Arbeitszeit und Urlaub mit Soll und Ist, Feiertage je Bundesland,
+Jahreskalender und Team; am Telefon Timer und Zeit buchen. Der Server bietet die Module `zeiterfassung` und
+`arbeitszeit` an (`MODULE_DA`).
+
+### Daten
+
+Felder wie `frontend/src/modell.ts`, dazu:
+
+- `zeiteintraege` (Spalten konto, karte, board, datum): Zeiteintrag mit `board`, dem Board der Karte; danach richtet
+  sich, wer ihn sieht. `gedeckelt` ist `{seit, bis, sekunden}`: die echte Sitzung als Zeitpunkte, die Spanne für
+  Menschen rechnet die Oberfläche.
+- `timer` (Spalten konto, karte, board): Timer mit `id` (gleich dem Konto, je Person einer) und `board`.
+- `zeitkonten` (Spalten konto, ab): Zeitkonto mit `id`; je Konto und Tag `ab` eine Fassung.
+- `abwesenheiten` (Spalten konto, von, bis): Abwesenheit.
+
+### Wer was sieht
+
+Eine Regel für Stand, Ereignis und Antwort (`anwendung/sicht.py`):
+
+- Zeiteinträge und Timer: die Person selbst; dazu die Mitglieder des Boards mit dem Recht "Zeiten anderer sehen".
+  Ohne das Recht ist die Zeit einer Karte die eigene, und die Oberfläche nennt sie so.
+- Zeitkonten und Abwesenheiten: die Person selbst; dazu, wer mit ihr in einem Board mit dem Modul Arbeitszeit ist und
+  dort das Recht "Abwesenheiten sehen" hat.
+- Der Rahmen verteilt je Zeile und Person: den neuen Stand an alle, die ihn sehen; den Wegfall an alle, die nur den
+  alten sahen. Die bisherigen Sonderwege (Zeilen je Board, je Person) sind Fälle dieser einen Regel.
+- Ändern sich an einem Board Module, Rollen oder Mitglieder, lädt die Oberfläche den ganzen Stand neu, denn daraus folgt,
+  was sie sieht.
+- `stand` liefert dazu `kartennamen` (je Karte Kennung, Board, Schlüssel und Titel) für Karten, auf die sichtbare Einträge
+  zeigen, die selbst nicht im Stand sind (archiviert, Board verlassen); endgültig entfernte stehen in `entfernt`.
+
+### Ändern
+
+- Timer und eigene Einträge: Recht "Eigene Zeit buchen" im Board der Karte; Einträge anderer: "Zeiten anderer
+  bearbeiten". Ein Timer läuft nur auf Arbeit außerhalb einer Erledigt-Spalte.
+- Zeitkonto und Abwesenheiten: nur die eigenen, und nur, wenn das Modul Arbeitszeit in einem eigenen Board an ist.
+- Regeln einer Sitzung (`regeln/zeit.py`, wie `sitzungBuchen` der Entwürfe): gebucht wird bis jetzt; an Mitternacht
+  zerlegt (jeder Teil trägt in `zerlegt` den Tag des Nachbarteils); ein Teil allein geht in den Timer-Eintrag der Karte
+  an diesem Tag (`sitzungen`), sonst entstehen eigene Einträge; über 12 Stunden sind die ersten 12 gebucht, mit
+  `gedeckelt`. Korrigieren bucht die Sitzung neu von `seit` bis zum genannten Ende ohne Deckel, Bestätigen nimmt nur
+  den Vermerk.
+- Timer enden und buchen bei: Ablegen in einer Erledigt-Spalte, Idee, Papierkorb (Karte, Spalte, Board), Entfernen
+  eines Mitglieds (sein Timer im Board), Abschalten der Zeiterfassung (alle im Board). Die Meldung nennt die eigene
+  gebuchte Zeit.
+- Eine neue Abwesenheit ersetzt überlappende derselben Person (Serien kommen mit Stufe 3 dazu).
+
+### Wege
+
+Antwort wie immer (`{meldung, rueckgaengig, geaendert}`); Felder in camelCase.
+
+| Weg | Inhalt | Anwendungsfall der Entwürfe |
+|---|---|---|
+| `POST /timer/starten` | `{karte}` | `starten` |
+| `POST /timer/anhalten`, `/timer/fortsetzen`, `/timer/stoppen` | leer | `anhalten`, `fortsetzen`, `stoppen` |
+| `POST /zeiten` | `{karte, datum, sekunden, notiz?}` | `buchen` |
+| `POST /zeiten/tag` | `{karte, datum, sekunden}` | `setzeTageszeit` |
+| `POST /zeiten/ticketzeit` | `{karte, sekunden}` (Summe der sichtbaren Einträge) | `ticketzeitSetzen` |
+| `POST /zeiten/deckel` | `{ids, ende}` (Ende als `JJJJ-MM-TTTHH:MM`) | `deckelKorrigieren` |
+| `POST /zeiten/deckel/bestaetigen` | `{ids}` | `deckelBestaetigen` |
+| `POST /zeiten/{id}/dauer` | `{sekunden}` | `dauerAendern` |
+| `POST /zeiten/{id}/datum` | `{datum}` | `datumAendern` |
+| `POST /zeiten/{id}/notiz` | `{notiz}` (still, ohne Rückweg) | `notizAendern` |
+| `DELETE /zeiten/{id}` | leer | Eintrag löschen |
+| `POST /abwesenheiten` | `{von, bis, art, anteil?, notiz?}` | `eintragen` |
+| `POST /abwesenheiten/entfernen` | `{ids}` | `entfernen` |
+| `POST /zeitkonten` | `{ab, wochenstunden, tage, bundesland, urlaubsanspruch, resturlaubVorjahr, halbtage}` | `zeitkontoSpeichern` |
+| `GET /team/{board}?von=&bis=` | Antwort `{personen, ist}`: `ist[konto][tag]` Sekunden aus allen Boards | Team |
+
+`/team` zeigt mit dem Recht "Abwesenheiten sehen" alle Mitglieder des Boards, sonst nur dich; nur Tagessummen, keine
+Einträge.
+
+### Oberfläche
+
+- Ansichten aus `mockups/src/ansichten/zeit/` (ohne Berichte, die kommen mit Stufe 4) und
+  `mockups/src/ansichten/telefon/Zeiten.svelte`; Wege `/zeiten`, `/arbeitszeit[/kalender|urlaub|team]`, der Reiter
+  Zeiten am Telefon; Timer im Kopf, Laufend in Heute, Zeiterfassung im Kartendetail.
+- `daten/anwendung/timer.svelte.ts`, `zeiten.svelte.ts`, `abwesenheiten.svelte.ts` rufen die Wege oben. Solange der
+  eigene Timer läuft, tickt die Uhr im Sekundentakt (M-85).
+
+Reihenfolge: (1) Backend mit Tests gegen diesen Vertrag, (2) Oberfläche gleichzeitig dagegen, (3) zusammenführen,
+Ansichtsprüfung, Rauchtest, Ausrollen.
+
+## 8. Prüfen
 
 - Tests je Anwendungsfall (Recht, Regel, Fassung, Journal, Rückgängig, Ereignis) gegen eine Datenbank im Speicher; der
   Verbundtest des Gerüsts gegen die Entwicklungs-Kellerwolke.

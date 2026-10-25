@@ -42,3 +42,16 @@ async def test_terminname_ausserhalb_des_stands(pw: Pinnwand):
     s = await pw.stand("bert")
     assert s["termine"] == [] and [e["termin"] for e in s["zeiteintraege"]] == [t["id"]]
     assert s["terminnamen"] == [{"termin": t["id"], "board": b["id"], "titel": "Abstimmung", "datum": "2026-10-27"}]
+
+
+async def test_zusammenfuehren_nennt_die_geltende_zeit(pw: Pinnwand):
+    b = await pw.board("anna")
+    a, c, d, e = [await pw.karte("anna", b, t) for t in ("Fenster", "Rahmen", "Dach", "Rinne")]
+    await ok(pw, "anna", f"/karten/{a['id']}/verknuepfen", {"mit": c["id"]})
+    await ok(pw, "anna", f"/karten/{d['id']}/verknuepfen", {"mit": e["id"]})
+    s = await pw.stand("anna")
+    erste = next(x for x in s["karten"] if x["id"] == a["id"])["gruppe"]
+    await ok(pw, "anna", f"/gruppen/{erste}/zeit-teilen", {"an": False})
+    m = (await ok(pw, "anna", f"/karten/{a['id']}/verknuepfen", {"mit": d["id"]}))["meldung"]
+    assert m == ("HAUS-1 und HAUS-3 verknüpft: ziehen zusammen, Zeit wird nicht geteilt; "
+                 "es gilt die Einstellung der Verknüpfung von HAUS-1")

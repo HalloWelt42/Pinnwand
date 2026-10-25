@@ -22,6 +22,13 @@ ENG = 1e-6
 TITEL_LAENGE = 300
 
 
+def gruppe_lesen(k: Kontext, gruppe_id: Kennung) -> Gruppe:
+    d = k.s.lies("gruppen", gruppe_id)
+    if d is None:
+        raise Abgelehnt("Diese Verknüpfung gibt es nicht (mehr)", 404)
+    return Gruppe.model_validate(d)
+
+
 def verknuepfbar(a: Karte, b: Karte) -> bool:
     """Eine andere Arbeitskarte desselben Boards, noch nicht in derselben Gruppe (M-74)."""
     return a.id != b.id and a.board == b.board and a.art == "arbeit" and b.art == "arbeit" and not (a.gruppe and a.gruppe == b.gruppe)
@@ -225,12 +232,15 @@ class Karten:
             if not verknuepfbar(a, b):
                 raise Abgelehnt("Verknüpfen geht nur mit einer anderen Arbeitskarte desselben Boards, die noch nicht "
                                 "in derselben Gruppe ist")
+            hinweis = ""
             if not a.gruppe and not b.gruppe:
                 g = Gruppe(id=neue_kennung("g"), board=board.id)
                 k.s.schreib("gruppen", g.json_daten())
                 a.gruppe = b.gruppe = g.id
             elif a.gruppe and b.gruppe:
                 alt = b.gruppe
+                if gruppe_lesen(k, alt).zeit_teilen != gruppe_lesen(k, a.gruppe).zeit_teilen:
+                    hinweis = f"; es gilt die Einstellung der Verknüpfung von {a.schluessel}"
                 for d in k.s.alle("karten", "board=?", (board.id,)):
                     if d.get("gruppe") == alt and d["id"] not in (a.id, b.id):
                         x = Karte.model_validate(d)
@@ -244,7 +254,9 @@ class Karten:
             vermerken(k, b, f"hat sie mit {a.schluessel} verknüpft")
             speichern(k, a)
             speichern(k, b)
-            return f"{a.schluessel} und {b.schluessel} verknüpft: ziehen zusammen, Zeit wird geteilt"
+            teilen = gruppe_lesen(k, a.gruppe or "").zeit_teilen
+            return (f"{a.schluessel} und {b.schluessel} verknüpft: ziehen zusammen, "
+                    f"Zeit wird {'geteilt' if teilen else 'nicht geteilt'}{hinweis}")
 
         return await self.a.aendern(konto, arbeit)
 
@@ -252,10 +264,7 @@ class Karten:
         """Gemeinsame Zeit einer Gruppe zeigen oder nicht (gebucht wird immer je Karte)."""
 
         def arbeit(k: Kontext) -> str | None:
-            d = k.s.lies("gruppen", gruppe_id)
-            if d is None:
-                raise Abgelehnt("Diese Verknüpfung gibt es nicht (mehr)", 404)
-            g = Gruppe.model_validate(d)
+            g = gruppe_lesen(k, gruppe_id)
             k.board_mit_recht(g.board, "karten.bearbeiten")
             if g.zeit_teilen == an:
                 return None

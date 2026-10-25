@@ -245,7 +245,31 @@ Ansichten `mockups/src/ansichten/planung/` Serien, SerieBearbeiten, Teilnehmer, 
 `/serien/neu`, `/serien/<kennung>`; Heute, Kalender und Zeitachse lesen Serien und Termine schon aus dem Zustand. Der
 Stundenzettel führt Termine als eigene Zeilen.
 
-## 9. Prüfen
+## 9. Stufe 4: Verbund, zuerst Berichte
+
+Berichte brauchen keine andere App außer der Kellerwolke; sie kommen zuerst (Modul `berichte` in `MODULE_DA`). Die
+Anbindungen an Assistent, Transkription, Vertonung, KI und Push folgen je mit eigenem Vertrag.
+
+### Berichte
+
+- Arten wie `mockups/src/ansichten/zeit/bericht.ts`: Stundennachweis je Person (Soll, Ist, Differenz je Tag mit
+  Karten und Abwesenheiten), Zeiten je Board und Karte, erledigte Karten. Den Inhalt (`BerichtInhalt`: Titel, Zeitraum,
+  Abschnitte mit Spalten, Zeilen, Summe, Fuß) rechnet der Server, mit denselben Regeln wie die Oberfläche (Soll aus dem
+  Zeitkonto mit Feiertagen, Halbtagen und Abwesenheiten in `regeln/arbeitszeit.py`).
+- Wer was im Bericht sieht: im Stundennachweis du und, wen du über "Abwesenheiten sehen" siehst (wie im Team), Ist aus
+  allen Boards, Karten nur, wo du ihre Zeit siehst; in den Board-Berichten nur Boards mit dem Modul Berichte und dem Recht
+  "Berichte erstellen", Zeiten anderer nur mit "Zeiten anderer sehen".
+- Formate: PDF (Schrift Barlow, eingebettet), Tabelle (CSV mit Semikolon, UTF-8 mit Kennung, für Tabellenprogramme),
+  Markdown. Die Datei liegt in der Ablage der Pinnwand in der Kellerwolke im Ordner `Berichte`; der Eintrag
+  (`berichte`, Spalte konto) gehört der Person, die ihn erstellt hat, und nur sie sieht und lädt ihn.
+
+| Weg | Inhalt |
+|---|---|
+| `POST /berichte/vorschau` | Auswahl `{art, von, bis, boards, personen, format}`; Antwort `BerichtInhalt` |
+| `POST /berichte` | dieselbe Auswahl; erstellt die Datei und den Eintrag |
+| `GET /inhalt/berichte/{id}` | die Datei (über das Inhalts-Cookie wie bei Anhängen) |
+
+## 10. Prüfen
 
 - Tests je Anwendungsfall (Recht, Regel, Fassung, Journal, Rückgängig, Ereignis) gegen eine Datenbank im Speicher; der
   Verbundtest des Gerüsts gegen die Entwicklungs-Kellerwolke.

@@ -19,7 +19,7 @@ HinweisArt = Literal["zugewiesen", "faellig", "erwaehnt", "termin", "kommentar",
 HinweisWeg = Literal["pinnwand", "push", "assistent"]
 MODULE: tuple[str, ...] = ("zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte", "vorlesen", "ki")
 #: Module, die diese Fassung der Pinnwand anbietet; die übrigen lassen sich in keinem Board einschalten
-MODULE_DA: tuple[str, ...] = ("zeiterfassung", "arbeitszeit", "serien")
+MODULE_DA: tuple[str, ...] = ("zeiterfassung", "arbeitszeit", "serien", "berichte")
 Kartenart = Literal["arbeit", "idee"]
 
 
@@ -454,6 +454,28 @@ class Terminname(Modell):
     board: Kennung
     titel: str
     datum: str
+
+
+BerichtArt = Literal["stundennachweis", "board", "erledigt"]
+BerichtFormat = Literal["pdf", "tabelle", "markdown"]
+
+
+class Bericht(Modell):
+    """Ein erstellter Bericht: die Datei liegt in der Ablage der Pinnwand in der Kellerwolke (Ordner Berichte), der
+    Eintrag gehört der Person, die ihn erstellt hat."""
+
+    id: Kennung
+    konto: Kennung
+    art: BerichtArt
+    titel: str
+    zeitraum: str
+    format: BerichtFormat
+    #: Name der Datei
+    datei: str
+    #: Kennung der Datei in der Kellerwolke
+    datei_id: str
+    erstellt: str
+    groesse: str
 
 
 class Entfernt(Modell):

@@ -50,6 +50,14 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
   Eintrag löschen nimmt die Bestätigung zurück. Serienkarten bekommen keinen Hinweis "fällig".
 - Im Terminformular stehen Beginn und Ende wieder schmal nebeneinander (im Entwurf liefen sie über die ganze Breite).
 
+## In der App gebaut (Stufe 4, Berichte, 25.10.2026)
+
+- Den Inhalt eines Berichts rechnet der Server; die Vorschau zeigt genau ihn, mit Dateiname, und bei Markdown den Text
+  der Datei. Das PDF ist mit Barlow gesetzt, die Tabelle ist CSV mit Semikolon.
+- Im Stundennachweis stehen außer dir nur Personen, deren Abwesenheiten du siehst (wie im Team); im Entwurf war es das
+  Recht "Zeiten anderer sehen". In Board-Berichten zählt die Zeit anderer nur mit diesem Recht.
+- Vorlesen eines Berichts kommt mit der Anbindung der Vertonung; bis dahin steht dort nur Herunterladen.
+
 ## Nachbesserungen in der App (25.10.2026)
 
 - M-74: Beim Zusammenführen zweier Verknüpfungen nennt die Meldung, ob die Zeit geteilt wird und welche Einstellung

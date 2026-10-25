@@ -161,9 +161,11 @@ class Inhalte:
                 if name in neu and _normal(jetzt.get(name)) != _normal(alt):
                     raise Abgelehnt(f"{c.schluessel} wurde inzwischen geändert ({name}); deine Änderung ist nicht gespeichert", 409)
             pruefen(k, b, neu)
+            # nur, wer Start oder Fällig setzt, muss sie stimmig setzen; der Timer setzt den Start einer überfälligen Karte
+            # zu Recht nach den Fälligkeitstag, und dann bleiben alle anderen Felder bearbeitbar
             start = neu.get("start", c.start)
             faellig = neu.get("faellig", c.faellig)
-            if start and faellig and start > faellig:
+            if ("start" in neu or "faellig" in neu) and start and faellig and start > faellig:
                 raise Abgelehnt("Der Start liegt nach dem Fälligkeitstag")
             if all(_normal(jetzt.get(n)) == _normal(_roh(w)) for n, w in neu.items()):
                 return None

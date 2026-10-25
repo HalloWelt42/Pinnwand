@@ -51,6 +51,19 @@ async def test_felder_abgelehnt(pw: Pinnwand):
         assert (r.status_code, r.json()["detail"]) == (400, meldung)
 
 
+async def test_ueberfaellig_gestartet_bleibt_bearbeitbar(pw: Pinnwand):
+    b = await pw.board("anna")
+    k = await pw.karte("anna", b, "Fenster")
+    await bearbeiten(pw, "anna", k, {"faellig": "2026-10-26"})
+    # der Timer setzt den Start auf heute, nach den Fälligkeitstag: so war es wirklich
+    assert (await pw.post("anna", "/timer/starten", {"karte": k["id"]})).status_code == 200
+    assert (await karte(pw, "anna", "HAUS-1"))["start"] == "2026-10-27"
+    assert (await bearbeiten(pw, "anna", k, {"notizen": "erst heute angefangen"})).status_code == 200
+    # wer Start oder Fällig selbst setzt, setzt sie stimmig
+    r = await bearbeiten(pw, "anna", k, {"start": "2026-10-28"})
+    assert (r.status_code, r.json()["detail"]) == (400, "Der Start liegt nach dem Fälligkeitstag")
+
+
 async def test_konflikt_nur_beim_selben_feld(pw: Pinnwand):
     b = await pw.board("anna", einladungen=[{"kellerwolke": "bert"}])
     await pw.anmelden("bert")

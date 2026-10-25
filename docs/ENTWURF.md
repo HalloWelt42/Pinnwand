@@ -173,10 +173,11 @@ Wo der Entwurf eine Frage offen ließ, gilt bis zu einer anderen Entscheidung:
 - Fremde Zeiten und Timer sieht nur, wer im Board das Recht "Zeiten anderer sehen" hat; ohne das Recht ist die Zeit einer
   Karte die eigene (Stufe 2).
 - Zeitkonto und Abwesenheiten ändert jede Person nur selbst; eine Freigabe durch andere kommt später (Abschnitt 10).
-- Ein Termin ohne Karte zählt nicht ins Ist (Stufe 3).
 
 Entschieden vom Nutzer (25.10.2026):
 
+- Die Zeit eines Termins ohne Karte zählt nach der Bestätigung ins Ist und in den Stundenzettel (Nutzer: "Ja, nach
+  Bestätigung"); vorher steht der Termin nur in Heute, Kalender und Zeitachse.
 - Karten ziehen zwischen Boards um (Nutzer: "vom ideenboard muss ich auch sachen auf das arbeitsboard schieben
   können"): im Kartendetail und am Telefon unter Verschieben; die Karte bekommt im Ziel die nächste Nummer und die
   Kartenart des Boards, Labels und eigene Felder mit gleichem Namen bleiben, Zuständige, wenn sie dort Mitglied sind;

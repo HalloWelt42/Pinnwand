@@ -121,7 +121,15 @@ function einspielen(g: Geaendert): boolean {
   const i = liste.findIndex((z) => z.id === g.id);
   if (teil === "boards") {
     const mitglied = !!g.daten && (g.daten as unknown as Board).mitglieder.some((m) => m.konto === ICH);
-    if ((i < 0) === mitglied) return true;                     // neu sichtbar oder nicht mehr: den ganzen Stand holen
+    // nicht mehr sichtbar: sofort heraus, dann den ganzen Stand holen (Karten, Papierkorb); neu sichtbar: seine Karten fehlen
+    if (!mitglied) {
+      if (i >= 0) liste.splice(i, 1);
+      return i >= 0;
+    }
+    if (i < 0) {
+      liste.push(g.daten!);
+      return true;
+    }
   }
   if (!g.daten) {
     if (i >= 0) liste.splice(i, 1);

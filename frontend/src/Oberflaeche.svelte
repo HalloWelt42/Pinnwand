@@ -3,6 +3,7 @@
   // der Wegetabelle (routen.ts), am Rechner in der Schale, am Telefon in der eigenen Ansicht. "/" führt zu Heute.
   import { geraet, verbindungenVerfolgen } from "appkern-oberflaeche";
   import { onMount, untrack } from "svelte";
+  import { melden } from "./daten/anwendung/meldung.svelte";
   import { stand, verbinden } from "./daten/stand.svelte";
   import { uhrStarten } from "./daten/uhr.svelte";
   import { finden } from "./routen";
@@ -28,14 +29,25 @@
     const p = weg.pfad, g = geraetArt, n = stand.boards.length;
     return stand.geladen && n >= 0 ? untrack(() => finden(p, g)) : null;
   });
+  // die Werte der Ansicht bleiben lesbar, auch wenn der Weg gerade wegfällt (eine Antwort kommt noch an)
+  const werte = $derived(treffer?.werte ?? {});
+
+  // ein Board im Pfad, das es für dich nicht (mehr) gibt (gelöscht, nicht mehr Mitglied, vertippt): zu Heute
+  $effect(() => {
+    const b = weg.pfad.match(/^\/board\/([^/]+)/);
+    if (stand.geladen && b && !treffer) {
+      melden(`Das Board ${b[1].toUpperCase()} gibt es für dich nicht (mehr)`);
+      gehe("/heute", true);
+    }
+  });
 </script>
 
 {#if !stand.geladen}
   <div class="anmeldung pw-laedt"><span>Lädt die Boards ...</span></div>
 {:else if treffer && geraetArt === "telefon"}
-  <div class="pw-telefon-app"><treffer.komponente {...treffer.werte} /></div>
+  <div class="pw-telefon-app"><treffer.komponente {...werte} /></div>
 {:else if treffer}
-  <Schale aktiv={treffer.navi}><treffer.komponente {...treffer.werte} /></Schale>
+  <Schale aktiv={treffer.navi}><treffer.komponente {...werte} /></Schale>
 {:else}
   <Schale aktiv=""><div class="rollfeld"><div class="hinweis warnung"><i class="fa-solid fa-triangle-exclamation"></i>
     <div>Diesen Weg gibt es nicht: {weg.pfad}. <a href="/heute">Zu Heute</a></div></div></div></Schale>

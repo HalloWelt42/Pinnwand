@@ -11,7 +11,7 @@
   import { darf, filterAktiv, kartenNummer, papierkorbVon, type Sortierung } from "../daten/abfragen";
   import { spalteAnlegen, spaltenOrdnen } from "../daten/anwendung/boards.svelte";
   import { ICH } from "../daten/ich";
-  import { board, karte, karteAusNummer, karteHolen, konto, mitKonto, ordnerVon } from "../daten/stand.svelte";
+  import { board, karte, karteAusNummer, karteHolen, konto, mitKonto, ordnerVon, stand } from "../daten/stand.svelte";
   import { melden } from "../daten/anwendung/meldung.svelte";
   import Kartendetail from "../detail/Kartendetail.svelte";
   import type { Farbe, Spalte as SpalteT } from "../modell";
@@ -52,15 +52,14 @@
     if (k) gehe(boardPfad(b.kuerzel, kartenNummer(k)));
   }
   const zurueck = () => gehe(boardPfad(b.kuerzel, ansicht === "board" ? "" : ansicht));
-  // liegt die offene Karte nicht mehr im Board (Papierkorb, von anderen gelöscht), schließt das Detail
   // die Karte im Pfad: liegt sie nicht im Zustand (archiviert), holt das Board sie einzeln; gibt es sie nicht (mehr) oder
   // verschwindet sie (Papierkorb, von anderen gelöscht), schließt das Detail
   const detail = $derived(nummer ? karteAusNummer(b, nummer)?.id : undefined);
   $effect(() => {
-    if (!nummer || detail) return;
-    const schluessel = `${b.kuerzel}-${nummer}`;
+    if (!nummer || detail || !stand.boards.some((x) => x.id === boardId)) return;
+    const n = nummer, brett = b, schluessel = `${b.kuerzel}-${nummer}`;
     void untrack(async () => {
-      if (!(await karteHolen(schluessel)) && nummer && !karteAusNummer(b, nummer)) {
+      if (!(await karteHolen(schluessel)) && !karteAusNummer(brett, n) && stand.boards.some((x) => x.id === brett.id)) {
         melden(`Die Karte ${schluessel} gibt es nicht (mehr)`);
         zurueck();
       }

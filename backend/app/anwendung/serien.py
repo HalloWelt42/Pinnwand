@@ -81,6 +81,7 @@ class Lage:
             c = Karte.model_validate(d)
             if c.serie and c.faellig:
                 self.karten[(c.serie, c.faellig)] = c
+        self.zeit_an = {d["id"] for d in k.s.alle("boards") if modul_an(Board.model_validate(d), "zeiterfassung")}
         self.gebucht: dict[Kennung, set[Kennung]] = {}
         ids = [c.id for c in self.karten.values()]
         if ids:
@@ -105,7 +106,9 @@ class Lage:
             c = self.karten.get((serie_id, tag))
             if c is None or c.id in ohne:
                 return None
-            return TagKarte(c.id, list(c.zustaendig), sorted(self.gebucht.get(c.id, ())), self.angefasst(s, c))
+            # ohne Zeiterfassung im Board wartet nichts auf Bestätigung: der Tag gilt allen als gezählt
+            gebucht = sorted(self.gebucht.get(c.id, ())) if c.board in self.zeit_an else list(c.zustaendig)
+            return TagKarte(c.id, list(c.zustaendig), gebucht, self.angefasst(s, c))
 
         def feiertag_von(konto: Kennung, tag: str) -> str | None:
             z = fassung_am(self.zeitkonten, konto, tag)

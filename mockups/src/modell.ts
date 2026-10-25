@@ -1,18 +1,31 @@
 // Datenmodell der Oberfläche der neuen Pinnwand. In den Entwürfen kommen die Werte aus den Beispieldaten, in der App
-// aus der Schnittstelle; die Ansichten kennen nur diese Typen.
+// aus der Schnittstelle; die Ansichten kennen nur diese Typen. Was sich aus anderen Werten ergibt (gebuchte Zeit einer
+// Karte, Urlaubstage, nächster Tag einer Serie), steht hier nicht, sondern wird gerechnet (beispiel/abfragen.ts).
 
 export type Kennung = string;
 
 /** Farben der Palette des Appkerns (Marken), für Spalten, Labels, Cover und Personen. */
 export type Farbe = "tuerkis" | "minze" | "honig" | "petrol" | "rose" | "koralle" | "sand" | "himmel" | "flieder" | "violett" | "stahl";
 
+/** Eine Person mit ihrem Kellerwolke-Konto; die Pinnwand legt Konten nicht selbst an */
 export interface Konto {
   id: Kennung;
   name: string;
   kuerzel: string;
   farbe: Farbe;
+  /** Kennung im Kellerwolke-Konto (Anmeldung, Einladen per Name) */
+  kellerwolke: string;
 }
 
+/** Eine Person aus den Konten der Kellerwolke, gefunden per Name beim Einladen */
+export interface KellerwolkePerson {
+  kennung: string;
+  name: string;
+  /** Konto in der Pinnwand, wenn die Person schon in einem Board ist */
+  konto?: Kennung;
+}
+
+/** Persönlicher Ordner in der Seitenleiste: ordnet nur, trägt keine Rechte; jede Person ordnet ihre Boards selbst */
 export interface Ordner {
   id: Kennung;
   name: string;
@@ -36,6 +49,7 @@ export interface Spalte {
   /** Grenze offener Karten (Warnung beim Überschreiten), leer: keine */
   grenze?: number;
   eingeklappt?: boolean;
+  /** Vorgabe des Zeitfensters einer Erledigt-Spalte */
   zeitfenster?: Zeitfenster;
 }
 
@@ -72,6 +86,20 @@ export interface Rolle {
 export interface Mitglied {
   konto: Kennung;
   rolle: Kennung;
+  /** Tag des Beitritts */
+  seit: string;
+}
+
+/** Einstellungen eines Boards (in der alten App global, jetzt je Board) */
+export interface BoardEinstellungen {
+  /** Sanduhr auf der Karte als Warnung ab so vielen Tagen im Status, 0: aus */
+  alterungWarnung: number;
+  /** als Gefahr ab so vielen Tagen, 0: aus; unabhängig von der Warnung */
+  alterungGefahr: number;
+  /** Karten je Ladeschritt einer Erledigt-Spalte */
+  ladeschritt: number;
+  /** erledigte Karten mit älterem Abschluss stehen nur im Archiv */
+  archivTage: number;
 }
 
 export interface Board {
@@ -79,8 +107,8 @@ export interface Board {
   name: string;
   /** Kürzel der Kartenschlüssel, bleibt beim Umbenennen fest */
   kuerzel: string;
-  ordner: Kennung;
   farbe: Farbe;
+  /** zuletzt vergebene Kartennummer; Nummern werden nie wiederverwendet */
   laufnummer: number;
   spalten: Spalte[];
   labels: Label[];
@@ -88,6 +116,7 @@ export interface Board {
   rollen: Rolle[];
   mitglieder: Mitglied[];
   module: Record<ModulKennung, boolean>;
+  einstellungen: BoardEinstellungen;
 }
 
 export type Prioritaet = "keine" | "niedrig" | "mittel" | "hoch" | "dringend";
@@ -142,16 +171,12 @@ export interface Karte {
   cover?: Farbe;
   blockiert?: string;
   schaetzungMin?: number;
-  /** Summe der Zeiteinträge in Sekunden */
-  erfasstSek: number;
-  /** läuft der Timer einer Person auf dieser Karte: seit wann (ISO) und wer */
-  laeuft?: { seit: string; konto: Kennung };
   /** letzter Spaltenwechsel (Alter im Status) */
   bewegtAm: string;
   erstelltAm: string;
   /** Abschlussdatum bei Karten in Erledigt-Spalten */
   abgeschlossen?: string;
-  /** Verknüpfte Aufgaben mit geteilter Zeit */
+  /** Verknüpfte Aufgaben: ziehen zusammen, Zeit geteilt */
   gruppe?: Kennung;
   serie?: Kennung;
   felder: Record<Kennung, string>;
@@ -165,6 +190,9 @@ export interface Gruppe {
   zeitTeilen: boolean;
 }
 
+export type Herkunft = "timer" | "hand" | "korrektur" | "serie";
+
+/** Gebuchte Zeit einer Person auf einer Karte an einem Tag; die Zeit einer Karte ist die Summe ihrer Einträge */
 export interface Zeiteintrag {
   id: Kennung;
   karte: Kennung;
@@ -173,25 +201,69 @@ export interface Zeiteintrag {
   von?: string;
   bis?: string;
   sekunden: number;
-  herkunft: "timer" | "hand" | "korrektur" | "serie";
+  herkunft: Herkunft;
+  notiz?: string;
+  /** Timer-Sitzungen, die je Karte und Tag zu diesem einen Eintrag zusammengefasst sind */
+  sitzungen?: { von: string; bis: string }[];
+  /** an Mitternacht zerlegt: der andere Teil derselben Sitzung liegt an diesem Tag */
+  zerlegt?: string;
+  /** der Timer lief länger als 12 Stunden (Spanne, Sekunden); gebucht sind die ersten 12, die Rückfrage ist offen */
+  gedeckelt?: { spanne: string; sekunden: number };
+}
+
+/** Der eine Timer einer Person: läuft (seit) oder ist angehalten und lässt sich fortsetzen */
+export interface Timer {
+  konto: Kennung;
+  karte: Kennung;
+  /** läuft seit (ISO); leer: angehalten, die bisherigen Sitzungen sind gebucht */
+  seit?: string;
 }
 
 export type Rhythmus = "taeglich" | "werktags" | "woechentlich" | "monatlich";
 
+/** Welcher Tag im Monat bei monatlichem Rhythmus */
+export type Monatsregel = "tag" | "erster-werktag" | "letzter-werktag";
+
+/** Wiederkehrende Karte: legt im Vorlauf Karten in die Zielspalte, fällig am Termintag, Schätzung ist die Dauer */
 export interface Serie {
   id: Kennung;
   board: Kennung;
   titel: string;
+  beschreibung?: string;
+  labels: Kennung[];
   rhythmus: Rhythmus;
+  /** Wochentage bei wöchentlichem Rhythmus (0 Sonntag bis 6 Samstag) */
   tage?: number[];
+  monatsregel?: Monatsregel;
+  /** Tag im Monat bei Monatsregel "tag" (größer als der Monat: dessen letzter Tag) */
+  monatstag?: number;
   uhrzeit?: string;
   dauerMin: number;
   zielspalte: Kennung;
   teilnehmer: Kennung[];
-  pausiert?: boolean;
-  naechste: string;
+  /** Anker des Rhythmus: erster möglicher Tag */
+  ab: string;
+  /** letzter möglicher Tag, leer: ohne Ende */
+  bis?: string;
+  /** so viele Tage im Voraus legt die Serie ihre Karten an (0: nur heute) */
+  vorlaufTage: number;
+  /** nur bei täglichem Rhythmus: Samstag und Sonntag auslassen */
+  wochenendenUeberspringen: boolean;
+  /** Feiertage im Bundesland eines Teilnehmers: er fehlt an dem Tag, fehlen alle, entfällt der Tag */
+  feiertageUeberspringen: boolean;
+  /** pausiert ab diesem Tag: keine neuen Vorbuchungen, unberührte Zukunftskarten sind entfernt */
+  pausiertSeit?: string;
+  /** fortgesetzt an diesem Tag: die Tage der Pause davor bleiben ohne Karte, vorgebucht wird ab hier */
+  fortgesetzt?: string;
+  /** bewusst gelöschte Tage (Auslass): kommen nie wieder, auch nicht nach Ändern oder Fortsetzen */
+  auslass: { tag: string; von: Kennung; am: string }[];
+  /** Vorbuchungen, die jemand angefasst hat (Zeit, Spalte, Inhalt): Ändern, Pause und Urlaub lassen sie stehen */
+  beruehrt: { tag: string; grund: string }[];
+  /** vergangene Tage, die im Nachtrag verworfen wurden (fand nicht statt) */
+  verworfen: string[];
 }
 
+/** Einmaliger Termin ohne Karte: vorher sagen Teilnehmer zu, danach bestätigt jeder seine Zeit (zählt erst dann) */
 export interface Termin {
   id: Kennung;
   board: Kennung;
@@ -201,11 +273,16 @@ export interface Termin {
   bis: string;
   teilnehmer: Kennung[];
   ort?: string;
+  /** vorab zugesagt */
+  zugesagt: Kennung[];
+  /** nach dem Termin die Zeit bestätigt */
   bestaetigt: Kennung[];
 }
 
 export type HinweisArt = "zugewiesen" | "faellig" | "erwaehnt" | "termin" | "kommentar" | "verschoben";
+export type HinweisWeg = "pinnwand" | "push" | "assistent";
 
+/** Ein Hinweis an die angemeldete Person; gelesen gilt am Konto, auf allen Geräten */
 export interface Hinweis {
   id: Kennung;
   art: HinweisArt;
@@ -217,34 +294,103 @@ export interface Hinweis {
   gelesen: boolean;
 }
 
+/** Persönliche Einstellungen am Konto: auf welchem Weg welche Hinweise kommen */
+export interface PersonEinstellungen {
+  hinweise: Record<HinweisArt, Record<HinweisWeg, boolean>>;
+}
+
+export interface VorlageSpalte {
+  name: string;
+  farbe: Farbe;
+  erledigt: boolean;
+  grenze?: number;
+}
+
+/** Vorlage eines neuen Boards: Spalten, eigene Felder, Labels und Module; eigene Vorlagen entstehen aus einem Board */
 export interface Vorlage {
   id: Kennung;
   name: string;
   beschreibung: string;
   symbol: string;
-  spalten: string[];
+  spalten: VorlageSpalte[];
+  felder: Omit<Feld, "id">[];
+  labels: Omit<Label, "id">[];
   module: ModulKennung[];
   eigen?: boolean;
 }
 
-/** Zeitkonto einer Person (Arbeitszeit und Urlaub, je Person) */
+/** Halber Arbeitstag an einem festen Tag im Jahr (etwa Heiligabend) */
+export interface Halbtagsregel {
+  monat: number;
+  tag: number;
+  name: string;
+}
+
+/** Zeitkonto einer Person (Arbeitszeit und Urlaub, je Person); eine neue Fassung gilt ab einem Tag, frühere Tage
+ *  behalten ihr Soll. Genommene und geplante Urlaubstage ergeben sich aus den Abwesenheiten. */
 export interface Zeitkonto {
   konto: Kennung;
+  /** gilt ab diesem Tag (bis zur nächsten Fassung) */
+  ab: string;
   wochenstunden: number;
+  /** Arbeitstage (0 Sonntag bis 6 Samstag); das Soll eines Arbeitstags ist Wochenstunden durch ihre Zahl */
   tage: number[];
   bundesland: string;
   urlaubsanspruch: number;
   resturlaubVorjahr: number;
-  genommen: number;
-  geplant: number;
+  halbtage: Halbtagsregel[];
 }
 
-export type AbwesenheitArt = "urlaub" | "krank" | "frei" | "halbtag" | "feiertag" | "fortbildung";
+export type AbwesenheitArt = "urlaub" | "krank" | "frei" | "feiertag" | "fortbildung";
 
 export interface Abwesenheit {
+  id: Kennung;
   konto: Kennung;
   von: string;
   bis: string;
   art: AbwesenheitArt;
+  /** halber Tag: 0,5; leer: ganze Tage */
+  anteil?: number;
   notiz?: string;
 }
+
+/** Was eine Löschung im Papierkorb festhält, damit Wiederherstellen alles an seine alte Stelle bringt */
+export interface Geloescht {
+  id: Kennung;
+  board: Kennung;
+  art: "karte" | "spalte";
+  /** die gelöschte Spalte (nur bei art "spalte") */
+  spalte?: Spalte;
+  /** die Karten des Eintrags: eine bei einer Karte, alle der Spalte bei einer Spalte; ihre Zeiteinträge bleiben gebucht */
+  karten: Karte[];
+  /** alte Stelle: bei einer Karte Spalte und Platz darin, bei einer Spalte ihr Platz in der Spaltenfolge (ab 0) */
+  stelle: { spalte?: Kennung; platz: number };
+  von: Kennung;
+  am: string;
+}
+
+/** Eine endgültig entfernte Karte: ihr Name bleibt für die Zeiteinträge, die weiter gebucht sind */
+export interface Entfernt {
+  karte: Kennung;
+  board: Kennung;
+  schluessel: string;
+  titel: string;
+  am: string;
+}
+
+export type BerichtArt = "stundennachweis" | "board" | "erledigt";
+export type BerichtFormat = "pdf" | "tabelle" | "markdown";
+
+/** Ein erstellter Bericht, abgelegt in der Kellerwolke im Ordner der Pinnwand */
+export interface Bericht {
+  id: Kennung;
+  art: BerichtArt;
+  titel: string;
+  zeitraum: string;
+  format: BerichtFormat;
+  datei: string;
+  erstellt: string;
+  groesse: string;
+}
+
+export type Verbindung = "verbunden" | "getrennt";

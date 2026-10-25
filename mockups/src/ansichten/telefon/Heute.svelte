@@ -3,7 +3,8 @@
   // nächsten Termine; jede Gruppe erscheint nur, wenn sie etwas enthält. Erledigen per Halten des Rings, ein Tippen auf
   // die Karte öffnet sie. Serienkarten stehen mit ihrer Uhrzeit dabei.
   import { HEUTE, ICH, TERMINE } from "../../beispiel/daten";
-  import { alterTage, datum, tageZwischen } from "../../beispiel/format";
+  import { alterTage, datum } from "../../beispiel/format";
+  import { tageZwischen } from "../../regeln/tage";
   import { board, stand } from "../../beispiel/stand.svelte";
   import type { Karte } from "../../modell";
   import TelefonSchale from "./TelefonSchale.svelte";

@@ -33,13 +33,46 @@ Schnittstelle statt der Beispieldaten. Ein Entwurf darf deshalb nichts zeigen, w
 - Ansichten eines Boards (Liste, Kalender, Zeitachse) zeichnen unter Kopf und Werkzeugleiste des Boards in einem Raum mit
   `flex: 1; min-height: 0` und bringen ihr eigenes Rollfeld mit.
 
+## Gemeinsame Schicht: eine Wahrheit, ein Weg
+
+Jede Sache hat genau einen Ort. Ein Bereich hält keine eigene Kopie von Daten, keinen eigenen Zustand für geteilte
+Dinge und keine eigene Fassung einer Regel; was fehlt, kommt in die gemeinsame Schicht (siehe "Bedarf").
+
+- `src/modell.ts`: alle Typen. Was sich ergibt, steht nicht darin, sondern wird gerechnet: die Zeit einer Karte ist die
+  Summe ihrer Zeiteinträge (kein `erfasstSek`), der Timer gehört der Person (`Timer`, kein `karte.laeuft`), Urlaubstage
+  und der nächste Tag einer Serie ergeben sich aus den Regeln (kein gespeicherter Urlaubsstand, kein gespeicherter nächster Tag).
+- `src/regeln/`: reine Regeln ohne Zustand. `tage.ts` (Kalendertage, Kalenderwoche, Monate), `feiertage.ts` (je
+  Bundesland), `arbeitszeit.ts` (Wirkung der Abwesenheiten, Soll, Urlaubstage, Brückentage, Fassung des Zeitkontos),
+  `eingabe.ts` (Dauer und Datum lesen), `board.ts` (Rechte, Alterung, Zeitfenster, Archiv). Regeln eines Moduls ohne
+  Zustand (etwa die Tage einer Serie) gehören als eigene Datei hierher.
+- `src/beispiel/` steht für die Schnittstelle. `daten.ts` und `daten-<bereich>.ts`: eine Welt von Beispieldaten, jede
+  Karte, jeder Schlüssel, jeder Eintrag genau einmal. `stand.svelte.ts`: der eine Zustand mit einfachen Lesehilfen
+  (`board`, `karte`, `karteAusNummer`, `boardAusKuerzel`, `konto`, `kartenDerSpalte`, `ordnerVon`). `abfragen.ts`:
+  alles Gerechnete (`zeitDerKarte`, `timerVon`, `istAm`, `sollTag`, `saldo`, `urlaub`, `sichtbareKarten`, `archivVon`,
+  `papierkorbVon`, `darf`, `ungelesen`, `kartenName`).
+- `src/beispiel/anwendung/`: die Anwendungsfälle, der einzige Weg zu ändern. `karten` (verschieben, ablegen, erledigen,
+  anlegen, bearbeiten, artSetzen, kommentieren, Sammelaktionen, Gruppen), `timer` (starten, anhalten, fortsetzen,
+  stoppen), `zeiten` (buchen, Tageszeit und Ticketzeit setzen, Dauer und Notiz ändern, löschen, Deckel), `abwesenheiten`
+  (eintragen, entfernen, zeitkontoSpeichern), `papierkorb` (inPapierkorb, spalteInPapierkorb, wiederherstellen,
+  entfernen), `hinweise` (gelesen, alleGelesen). Jede Änderung läuft über die eine Hilfe in `meldung.svelte.ts`: die
+  Meldung kommt mit Rückgängig, bei getrennter Verbindung ist Schreibendes gesperrt. Ansichten ändern `stand` nie direkt.
+- `src/anzeige.ts`: Namen für Menschen (Farben, Zeitfenster, Prioritäten, Herkunft, Hinweisarten und -wege, Module).
+- `src/teile/`: gemeinsame Bausteine. `Meldung.svelte` (die eine Meldung; die Schale zeigt sie, am Telefon die Schale des
+  Telefons mit `ort="telefon"`), `DatumFeld`, `DauerFeld`, `Farbwahl`, `Personenwahl` (Kandidaten gibt der Aufrufer).
+- `src/darstellung.svelte.ts`: Thema und Schriftstufe, eine Wahrheit für die Einstellung Darstellung und die Leiste.
+- Ansichten eines Boards bekommen `board`, `entwurf`, `suche` und `ziehenGesperrt` (`board/ansichten.ts`).
+- Vorgeführte Zustände (`?entwurf=...`), die Daten brauchen, die es sonst nicht gibt, setzen sie beim Öffnen über einen
+  Anwendungsfall oder eine Lesehilfe der Ansicht, nie über eigene Kopien der Daten.
+
 ## Gestaltung
 
 - Farben, Schriften und Schriftgrößen nur aus Marken (`var(--...)`), Mischungen mit `color-mix` aus Marken. Abstände mit
   `--a1` bis `--a7`, Ecken mit `--r1` bis `--r3`.
 - Bausteine des Leitstands nutzen (`knopf`, `chip`, `karte`, `bereich`, `reiter`, `untergruppen`, `einstellung`,
   `tabelle`, `eingabe`, `wahl`, `schalter`, `zaehler`, `pille`, `zustand`, `hinweis`, `etikett`, `kennzahl`), nie eine
-  ihrer Klassen umdefinieren; Eigenes mit `pw-` und dem Bereichswort (`pw-heute-...`, `pw-zeiten-...`).
+  ihrer Klassen umdefinieren; Eigenes mit `pw-` und dem Bereichswort (`pw-heute-...`, `pw-zeiten-...`). Auch `kopf`,
+  `fuss`, `leer`, `karte`, `seite`, `haupt`, `marke` und `wahl` sind Bausteine des Leitstands (`.kopf` setzt etwa
+  `grid-area`); als eigene Klassennamen zerlegen sie das Layout. Keine `style`-Angaben im Markup außer berechneten Werten.
 - Keine einseitigen Ränder oder Streifen, kein `!important`. Wort und Farbe, nie Farbe allein. Bernstein (Akzent) nur
   für die eine Hauptsache einer Ansicht und für das, was läuft. Zahlen und Zeiten in `var(--schrift-zahl)`.
 - Schriftstufe Klein ist die Vorgabe; nichts kleiner als `--marke`.

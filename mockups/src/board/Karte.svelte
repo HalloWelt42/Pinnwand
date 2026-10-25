@@ -1,10 +1,14 @@
 <script lang="ts">
-  // Karte im Board: alles, was man ohne Öffnen wissen muss. Alter im Status ab 4 Tagen als Warnung, ab 8 als Gefahr
-  // (Einstellung des Boards, wie bisher); in Erledigt-Spalten statt des Alters das Abschlussdatum.
+  // Karte im Board: alles, was man ohne Öffnen wissen muss. Die Sanduhr zeigt das Alter im Status nach den Schwellen des
+  // Boards (Warnung, Gefahr); in Erledigt-Spalten statt des Alters das Abschlussdatum. Der Timer-Knopf ist der eine Timer
+  // der Person: starten, anhalten, fortsetzen; fremde Timer nur zur Ansicht.
+  import { laufendAuf, timerErlaubt, timerVon, zeitDerKarte } from "../beispiel/abfragen";
+  import { anhalten, fortsetzen, starten } from "../beispiel/anwendung/timer.svelte";
   import { ICH } from "../beispiel/daten";
-  import { alterTage, datum, dauer, faelligText, laufendSek } from "../beispiel/format";
+  import { alterTage, datum, dauer, faelligText } from "../beispiel/format";
   import { konto } from "../beispiel/stand.svelte";
   import type { Board, Karte } from "../modell";
+  import { alterung } from "../regeln/board";
   import Person from "./Person.svelte";
 
   let { karte, board, erledigt = false, art = "", oeffnen }: {
@@ -18,10 +22,19 @@
   const felder = $derived(board.felder.filter((f) => f.aufKarte && karte.felder[f.id]));
   const erledigtePunkte = $derived(karte.checkliste.filter((p) => p.erledigt).length);
   const alter = $derived(alterTage(karte.bewegtAm));
-  const alterKlasse = $derived(alter >= 8 ? "gefahr" : alter >= 4 ? "warnung" : "flaeche");
+  const alterKlasse = $derived(alterung(alter, board.einstellungen));
   const faellig = $derived(karte.faellig && !erledigt ? faelligText(karte.faellig) : null);
-  const zeit = $derived(karte.erfasstSek + (karte.laeuft ? laufendSek(karte.laeuft.seit) : 0));
+  const zeit = $derived(zeitDerKarte(karte.id));
   const mitZeit = $derived(board.module.zeiterfassung && karte.art === "arbeit");
+  const meiner = $derived(timerVon(ICH)?.karte === karte.id ? timerVon(ICH) : undefined);
+  const fremd = $derived(laufendAuf(karte.id).find((t) => t.konto !== ICH));
+
+  function timer(e: MouseEvent): void {
+    e.stopPropagation();
+    if (meiner?.seit) anhalten();
+    else if (meiner) fortsetzen();
+    else starten(karte.id);
+  }
 </script>
 
 <div class="pw-karte {art}" class:idee={karte.art === "idee"} role="button" tabindex="0" aria-label="{karte.schluessel} {karte.titel}"
@@ -42,15 +55,19 @@
   {/if}
   <div class="unten">
     {#if mitZeit}
-      {#if karte.laeuft?.konto === ICH}
-        <button class="pw-timer laeuft" title="Dein Timer läuft: anhalten" onclick={(e) => e.stopPropagation()}><i class="fa-solid fa-pause"></i>{dauer(zeit, true)}</button>
-      {:else if karte.laeuft}
-        <span class="pw-timer fremd" title="Timer von {konto(karte.laeuft.konto).name} läuft"><i class="fa-solid fa-circle-play"></i>{dauer(zeit)}</span>
-      {:else}
-        <button class="pw-timer" title="Timer starten (ein laufender Timer hält dabei an und bucht)" onclick={(e) => e.stopPropagation()}><i class="fa-solid fa-play"></i>{zeit ? dauer(zeit) : ""}</button>
+      {#if meiner?.seit}
+        <button class="pw-timer laeuft" title="Dein Timer läuft: anhalten (die Sitzung wird gebucht)" onclick={timer}><i class="fa-solid fa-pause"></i>{dauer(zeit, true)}</button>
+      {:else if meiner}
+        <button class="pw-timer" title="Dein Timer ist angehalten: fortsetzen" onclick={timer}><i class="fa-solid fa-play"></i>{dauer(zeit)}</button>
+      {:else if fremd}
+        <span class="pw-timer fremd" title="Timer von {konto(fremd.konto).name} läuft"><i class="fa-solid fa-circle-play"></i>{dauer(zeit)}</span>
+      {:else if timerErlaubt(karte)}
+        <button class="pw-timer" title="Timer starten (dein laufender Timer endet dabei und bucht)" onclick={timer}><i class="fa-solid fa-play"></i>{zeit ? dauer(zeit) : ""}</button>
+      {:else if zeit}
+        <span class="pw-angabe" title="Gebuchte Zeit"><i class="fa-regular fa-clock"></i>{dauer(zeit)}</span>
       {/if}
     {/if}
-    {#if karte.art === "idee"}<span class="pw-angabe" style="color: var(--flieder)"><i class="fa-solid fa-lightbulb" style="color: var(--flieder)"></i>Idee</span>{/if}
+    {#if karte.art === "idee"}<span class="pw-angabe pw-idee"><i class="fa-solid fa-lightbulb"></i>Idee</span>{/if}
     <span class="pw-schluessel">{karte.schluessel}</span>
     {#if faellig}<span class="pw-angabe {faellig.klasse}" title="Fällig {datum(karte.faellig!, true)}"><i class="fa-regular fa-calendar"></i>{faellig.text}</span>{/if}
     {#if erledigt && karte.abgeschlossen}
@@ -61,7 +78,7 @@
     {#if karte.checkliste.length}<span class="pw-angabe"><i class="fa-regular fa-square-check"></i>{erledigtePunkte}/{karte.checkliste.length}</span>{/if}
     {#if karte.kommentare.length}<span class="pw-angabe"><i class="fa-regular fa-comment"></i>{karte.kommentare.length}</span>{/if}
     {#if karte.anhaenge.length}<span class="pw-angabe"><i class="fa-solid fa-paperclip"></i>{karte.anhaenge.length}</span>{/if}
-    {#if karte.gruppe}<span class="pw-angabe" title="Verknüpft: zieht mit, Zeit geteilt"><i class="fa-solid fa-link" style="color: var(--akzent)"></i></span>{/if}
+    {#if karte.gruppe}<span class="pw-angabe" title="Verknüpft: zieht mit, Zeit geteilt"><i class="fa-solid fa-link pw-akzent"></i></span>{/if}
     {#if karte.serie}<span class="pw-angabe" title="Aus einer Serie"><i class="fa-solid fa-repeat"></i></span>{/if}
     <span class="rechts">
       {#if karte.zustaendig.length}

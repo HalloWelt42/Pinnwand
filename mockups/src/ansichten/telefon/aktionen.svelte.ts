@@ -6,7 +6,8 @@
 
 import { HEUTE, ICH, JETZT, ZEITKONTEN } from "../../beispiel/daten";
 import { datum, dauer, laufendSek } from "../../beispiel/format";
-import { ablegen, board, gruppenmitglieder, karte, kartenDerSpalte, stand } from "../../beispiel/stand.svelte";
+import { board, gruppenmitglieder, karte, kartenDerSpalte, stand } from "../../beispiel/stand.svelte";
+import { ablegen } from "../../beispiel/anwendung/karten.svelte";
 import type { Karte, Spalte } from "../../modell";
 import { SPALTE_GEMERKT, TAGESSTAND } from "./daten";
 import { wochenanfang } from "./eingabe";

@@ -1,69 +1,97 @@
-// Beispieldaten als veränderlicher Zustand: Ziehen, Abhaken und Umschalten wirken in den Entwürfen wie in der App,
-// bis zum Neuladen der Seite. In der App tritt an diese Stelle der Zustand aus der Schnittstelle und dem Ereignisstrom.
+// Der eine veränderliche Zustand der Entwürfe: alle Beispieldaten in einem Ort, Änderungen wirken in jeder Ansicht bis
+// zum Neuladen der Seite. Ändern nur über die Anwendungsfälle in beispiel/anwendung/, lesen über die Hilfen hier und in
+// beispiel/abfragen.ts. In der App tritt an diese Stelle der Zustand aus der Schnittstelle und dem Ereignisstrom; die
+// Ansichten merken davon nichts.
 
-import type { Board, Karte, Konto } from "../modell";
-import { BOARDS, GRUPPEN, HEUTE, JETZT, KARTEN, KONTEN } from "./daten";
+import type {
+  Abwesenheit, Board, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Konto, Ordner, PersonEinstellungen, Serie, Termin, Timer,
+  Verbindung, Zeiteintrag, Zeitkonto,
+} from "../modell";
+import {
+  ABWESENHEITEN, BOARDS, EINSTELLUNGEN_PERSON, GRUPPEN, HINWEISE, KARTEN, KONTEN, ORDNER, SERIEN, TERMINE, TIMER, ZEITEINTRAEGE,
+  ZEITKONTEN,
+} from "./daten";
+import { KARTEN_PLANUNG, ZEITEINTRAEGE_PLANUNG } from "./daten-planung";
+import { KARTEN_ARCHIV, PAPIERKORB, ZEITEINTRAEGE_UEBERSICHT } from "./daten-uebersicht";
+import { ABWESENHEITEN_ZEIT, KARTEN_ZEIT, ZEITEINTRAEGE_ZEIT } from "./daten-zeit";
+
+/** Meldung unten: was eben geschah, mit Rückgängig, solange sie steht */
+export interface Meldung {
+  text: string;
+  rueckgaengig?: () => void;
+}
+
+const ALLE_KARTEN: Karte[] = [...KARTEN, ...KARTEN_ZEIT, ...KARTEN_PLANUNG, ...KARTEN_ARCHIV];
 
 function anfangsreihen(): Record<string, string[]> {
   const r: Record<string, string[]> = {};
-  for (const k of KARTEN) (r[k.spalte] ??= []).push(k.id);
+  for (const k of ALLE_KARTEN) (r[k.spalte] ??= []).push(k.id);
   return r;
 }
 
 export const stand = $state({
+  /** Personen mit Konto in der Pinnwand (aus der Kellerwolke; neue kommen mit der ersten Einladung dazu) */
+  konten: structuredClone(KONTEN) as Konto[],
   boards: structuredClone(BOARDS) as Board[],
-  karten: structuredClone(KARTEN) as Karte[],
-  gruppen: structuredClone(GRUPPEN),
-  /** Reihenfolge der Karten je Spalte */
+  karten: structuredClone(ALLE_KARTEN) as Karte[],
+  gruppen: structuredClone(GRUPPEN) as Gruppe[],
+  /** Reihenfolge der Karten je Spalte (alle Karten der Spalte; Erledigt-Spalten zeigen davon ihr Zeitfenster) */
   reihen: anfangsreihen(),
-  /** letzte Meldung unten rechts (Rückgängig, gebuchte Zeit) */
-  meldung: "" as string,
+  ordner: structuredClone(ORDNER) as Ordner[],
+  timer: structuredClone(TIMER) as Timer[],
+  zeiteintraege: structuredClone([...ZEITEINTRAEGE, ...ZEITEINTRAEGE_ZEIT, ...ZEITEINTRAEGE_PLANUNG, ...ZEITEINTRAEGE_UEBERSICHT]) as Zeiteintrag[],
+  zeitkonten: structuredClone(ZEITKONTEN) as Zeitkonto[],
+  abwesenheiten: structuredClone([...ABWESENHEITEN, ...ABWESENHEITEN_ZEIT]) as Abwesenheit[],
+  serien: structuredClone(SERIEN) as Serie[],
+  termine: structuredClone(TERMINE) as Termin[],
+  hinweise: structuredClone(HINWEISE) as Hinweis[],
+  einstellungen: structuredClone(EINSTELLUNGEN_PERSON) as PersonEinstellungen,
+  papierkorb: structuredClone(PAPIERKORB) as Geloescht[],
+  /** endgültig entfernte Karten: ihr Name für die Zeiteinträge, die weiter gebucht sind */
+  entfernt: [] as Entfernt[],
+  /** Verbindung zum Ereignisstrom; getrennt: letzter Stand sichtbar, Schreibendes gesperrt */
+  verbindung: "verbunden" as Verbindung,
+  meldung: null as Meldung | null,
 });
+
+/** Die Teile des Zustands, die Rückgängig wiederherstellt (alles außer Meldung und Verbindung) */
+export const DATEN = ["konten", "boards", "karten", "gruppen", "reihen", "ordner", "timer", "zeiteintraege", "zeitkonten", "abwesenheiten",
+  "serien", "termine", "hinweise", "einstellungen", "papierkorb", "entfernt"] as const;
 
 export function board(id: string): Board {
   return stand.boards.find((b) => b.id === id) ?? stand.boards[0];
+}
+
+/** Board aus dem Kürzel im Pfad (klein oder groß geschrieben) */
+export function boardAusKuerzel(kuerzel: string): Board | undefined {
+  return stand.boards.find((b) => b.kuerzel.toLowerCase() === kuerzel.toLowerCase());
 }
 
 export function karte(id: string): Karte | undefined {
   return stand.karten.find((k) => k.id === id);
 }
 
+/** Karte aus ihrem Schlüssel im Pfad (/board/prod/131) */
+export function karteAusNummer(b: Board, nr: string): Karte | undefined {
+  return stand.karten.find((k) => k.board === b.id && k.schluessel === `${b.kuerzel}-${nr}`);
+}
+
+/** Alle Karten einer Spalte in ihrer Reihenfolge (ohne Zeitfenster) */
 export function kartenDerSpalte(spalte: string): Karte[] {
   return (stand.reihen[spalte] ?? []).map((id) => karte(id)).filter((k): k is Karte => k !== undefined);
 }
 
+/** Konto einer Person; eine unbekannte Kennung ergibt einen Platzhalter statt einer fremden Person */
 export function konto(id: string): Konto {
-  return KONTEN.find((k) => k.id === id) ?? KONTEN[0];
+  return stand.konten.find((k) => k.id === id) ?? { id, name: "Unbekannte Person", kuerzel: "?", farbe: "stahl", kellerwolke: "" };
 }
 
-/** Gruppenmitglieder einer Karte (ohne sie selbst) */
+/** Verknüpfte Karten (ohne sie selbst) */
 export function gruppenmitglieder(k: Karte): Karte[] {
   return k.gruppe ? stand.karten.filter((x) => x.gruppe === k.gruppe && x.id !== k.id) : [];
 }
 
-/** Neue Reihenfolge einer Spalte nach dem Ablegen. Karten, die neu hineinkamen, wechseln die Spalte: Alter beginnt
- *  neu, ihre Gruppe zieht mit (ans Ende); in einer Erledigt-Spalte bekommen sie ihr Abschlussdatum, ein laufender Timer
- *  hält an und bucht (wie verschiebe_karte der alten App, jetzt der einzige Weg). */
-export function ablegen(spalte: string, ids: string[], erledigt: boolean): void {
-  const neu = ids.filter((id) => karte(id)?.spalte !== spalte);
-  stand.reihen[spalte] = ids;
-  for (const id of neu) {
-    const k = karte(id)!;
-    const mit = [k, ...gruppenmitglieder(k).filter((m) => m.spalte !== spalte)];
-    for (const x of mit) {
-      if (x.id !== k.id) {
-        stand.reihen[x.spalte] = (stand.reihen[x.spalte] ?? []).filter((i) => i !== x.id);
-        stand.reihen[spalte].push(x.id);
-      }
-      x.spalte = spalte;
-      x.bewegtAm = JETZT;
-      x.abgeschlossen = erledigt ? HEUTE : undefined;
-      if (erledigt && x.laeuft) {
-        x.erfasstSek += 44 * 60;
-        x.laeuft = undefined;
-        stand.meldung = `${x.schluessel} erledigt: Timer angehalten, 0:44 gebucht`;
-      }
-    }
-    if (mit.length > 1 && !stand.meldung) stand.meldung = `${k.schluessel} verschoben, ${mit.length - 1} verknüpfte Karte zieht mit`;
-  }
+/** Der persönliche Ordner, in dem ein Board liegt */
+export function ordnerVon(boardId: string): Ordner | undefined {
+  return stand.ordner.find((o) => o.boards.includes(boardId));
 }

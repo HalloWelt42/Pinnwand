@@ -5,7 +5,8 @@
 
 import { HEUTE, HINWEISE, ICH, JETZT, ZEITEINTRAEGE } from "../../beispiel/daten";
 import { dauer, laufendSek } from "../../beispiel/format";
-import { ablegen, board, karte, stand } from "../../beispiel/stand.svelte";
+import { board, karte, stand } from "../../beispiel/stand.svelte";
+import { ablegen } from "../../beispiel/anwendung/karten.svelte";
 import type { Hinweis, Karte, Prioritaet } from "../../modell";
 import { PAPIERKORB } from "./daten";
 import type { Geloescht } from "./modell";

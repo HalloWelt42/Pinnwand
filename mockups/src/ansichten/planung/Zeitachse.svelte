@@ -7,7 +7,8 @@
   // rollt in beide Richtungen; Kopf und Namen bleiben stehen.
   import { onMount } from "svelte";
   import { ABWESENHEITEN, HEUTE } from "../../beispiel/daten";
-  import { datum, tageZwischen } from "../../beispiel/format";
+  import { datum } from "../../beispiel/format";
+  import { tageZwischen } from "../../regeln/tage";
   import { konto } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
   import type { Board, Karte, Kennung } from "../../modell";

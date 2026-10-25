@@ -1,7 +1,8 @@
 <script lang="ts">
-  // Schale der Pinnwand aus den Bausteinen des Leitstands: Kopf, Seitenleiste, Hauptbereich, Fußleiste. Die Seite rollt
-  // nie; jede Ansicht bringt ihren festen Kopf und ihr eigenes Rollfeld mit.
+  // Schale der Pinnwand aus den Bausteinen des Leitstands: Kopf, Seitenleiste, Hauptbereich, Fußleiste und die eine
+  // Meldung. Die Seite rollt nie; jede Ansicht bringt ihren festen Kopf und ihr eigenes Rollfeld mit.
   import type { Snippet } from "svelte";
+  import Meldung from "../teile/Meldung.svelte";
   import Fuss from "./Fuss.svelte";
   import Kopf from "./Kopf.svelte";
   import Seite from "./Seite.svelte";
@@ -15,3 +16,4 @@
   <main class="haupt rahmen">{@render children()}</main>
   <footer class="fuss"><Fuss /></footer>
 </div>
+<Meldung />

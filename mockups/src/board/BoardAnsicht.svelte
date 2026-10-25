@@ -2,7 +2,9 @@
   // Ein Board: fester Kopf (Name, Ansichten, Mitglieder, Einstellungen), Werkzeugleiste (Suche, Filter, Sortierung) und
   // der Spaltenstreifen oder eine andere Ansicht (Liste, Kalender, Zeitachse). Das Kartendetail fährt rechts über das
   // Board und hat seinen eigenen Pfad (/board/prod/131); Schließen führt zurück auf /board/prod.
-  import { board, karte, stand } from "../beispiel/stand.svelte";
+  import { darf, kartenNummer, papierkorbVon } from "../beispiel/abfragen";
+  import { ICH } from "../beispiel/daten";
+  import { board, karte, ordnerVon, stand } from "../beispiel/stand.svelte";
   import Kartendetail from "../detail/Kartendetail.svelte";
   import { boardPfad, gehe } from "../weg.svelte";
   import { BOARDANSICHTEN } from "./ansichten";
@@ -27,11 +29,11 @@
   const zustand = $derived(ENTWUERFE[entwurf] ?? {});
   const b = $derived(board(boardId));
   const Andere = $derived(BOARDANSICHTEN[ansicht]);
-  $effect(() => { if (zustand.meldung) stand.meldung = zustand.meldung; });
+  $effect(() => { if (zustand.meldung) stand.meldung = { text: zustand.meldung }; });
 
   function oeffnen(id: string): void {
     const k = karte(id);
-    if (k) gehe(boardPfad(b.kuerzel, k.schluessel.split("-")[1]));
+    if (k) gehe(boardPfad(b.kuerzel, kartenNummer(k)));
   }
 
   const darstellung = $derived.by(() => {
@@ -47,7 +49,9 @@
   });
   const ANSICHTEN = [["board", "Board", "fa-table-columns"], ["liste", "Liste", "fa-table-list"], ["kalender", "Kalender", "fa-calendar-days"],
     ["zeitachse", "Zeitachse", "fa-bars-progress"]] as const;
-  const eigeneRolle = $derived(b.rollen.find((r) => r.id === b.mitglieder.find((m) => m.konto === "k-max")?.rolle)?.name ?? "");
+  const eigeneRolle = $derived(b.rollen.find((r) => r.id === b.mitglieder.find((m) => m.konto === ICH)?.rolle)?.name ?? "");
+  const ordner = $derived(ordnerVon(b.id)?.name ?? "Ohne Ordner");
+  const imPapierkorb = $derived(papierkorbVon(b.id).length);
 </script>
 
 <div class="rahmen-kopf">
@@ -55,15 +59,15 @@
     <h1><span class="pw-farbpunkt" data-farbe={b.farbe}></span>{b.name}</h1>
     <nav class="reiter" style="margin: 0" aria-label="Ansichten des Boards">
       {#each ANSICHTEN as [id, name, symbol] (id)}
-        <a class="knopf ohne" class:aktiv={ansicht === id} href={boardPfad(b.kuerzel, id === "board" ? "" : id)}><i class="fa-solid {symbol}"></i>{name}</a>
+        <a class:aktiv={ansicht === id} href={boardPfad(b.kuerzel, id === "board" ? "" : id)}><i class="fa-solid {symbol}"></i>{name}</a>
       {/each}
     </nav>
     <div class="rechts">
       <span class="pw-personen" title="Mitglieder">{#each b.mitglieder as m (m.konto)}<Person id={m.konto} />{/each}</span>
-      <a class="knopf klein" href={boardPfad(b.kuerzel, "einstellungen/mitglieder")}><i class="fa-solid fa-user-plus"></i>Einladen</a>
+      {#if darf(b, "mitglieder.verwalten")}<a class="knopf klein" href={boardPfad(b.kuerzel, "einstellungen/mitglieder")}><i class="fa-solid fa-user-plus"></i>Einladen</a>{/if}
       <a class="knopf symbol klein" href={boardPfad(b.kuerzel, "einstellungen")} title="Board-Einstellungen: Spalten, Felder, Labels, Rollen, Module"><i class="fa-solid fa-sliders"></i></a>
     </div>
-    <div class="pfad"><i class="fa-solid fa-folder"></i>{b.ordner === "o-privat" ? "Privat" : "Firma"}<span class="pw-schluessel">Kürzel {b.kuerzel}</span>
+    <div class="pfad"><i class="fa-solid fa-folder"></i>{ordner}<span class="pw-schluessel">Kürzel {b.kuerzel}</span>
       <span>· {b.mitglieder.length} {b.mitglieder.length === 1 ? "Mitglied" : "Mitglieder"} · du bist {eigeneRolle}</span></div>
   </div>
 </div>
@@ -77,12 +81,12 @@
   {/if}
   <div class="rechts">
     <a class="chip" href={boardPfad(b.kuerzel, "archiv")}><i class="fa-solid fa-box-archive"></i>Archiv</a>
-    <a class="chip" href={boardPfad(b.kuerzel, "papierkorb")}><i class="fa-solid fa-trash-can"></i>Papierkorb<span class="zaehler">2</span></a>
+    <a class="chip" href={boardPfad(b.kuerzel, "papierkorb")}><i class="fa-solid fa-trash-can"></i>Papierkorb{#if imPapierkorb}<span class="zaehler">{imPapierkorb}</span>{/if}</a>
   </div>
 </div>
 <div class="pw-detail-raum">
   {#if Andere}
-    <Andere board={b} {entwurf} />
+    <Andere board={b} {entwurf} suche={zustand.filter ?? ""} ziehenGesperrt={!!zustand.filter} />
   {:else}
     <div class="pw-streifen">
       {#each b.spalten as s (s.id)}
@@ -97,12 +101,5 @@
   {#if detail}
     <Kartendetail kartenId={detail} board={b} bearbeiten={zustand.bearbeiten} konflikt={zustand.konflikt}
                   schliessen={() => gehe(boardPfad(b.kuerzel, ansicht === "board" ? "" : ansicht))} />
-  {/if}
-  {#if stand.meldung}
-    <div class="pw-meldungen">
-      <div class="pw-meldung"><i class="fa-solid fa-circle-info zeichen"></i><span>{stand.meldung}</span>
-        <button class="knopf klein">Rückgängig</button>
-        <button class="knopf ohne symbol klein" title="Schließen" onclick={() => (stand.meldung = "")}><i class="fa-solid fa-xmark"></i></button></div>
-    </div>
   {/if}
 </div>

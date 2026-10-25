@@ -4,7 +4,8 @@
   // gelesen. Der Gelesen-Stand gehört dem Konto, nicht dem Browser. Welche Arten zusätzlich per Push aufs Telefon und an
   // den Assistenten gehen, steht in den Einstellungen.
   import { HEUTE } from "../../beispiel/daten";
-  import { datum, tageZwischen, wann } from "../../beispiel/format";
+  import { datum, wann } from "../../beispiel/format";
+  import { tageZwischen } from "../../regeln/tage";
   import { board, karte, konto } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
   import type { Farbe, Hinweis, HinweisArt } from "../../modell";

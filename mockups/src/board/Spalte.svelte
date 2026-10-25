@@ -1,9 +1,13 @@
 <script lang="ts">
-  // Eine Spalte: Kopf mit Farbe, Name, Zahl und Grenze, Einklappen und Menü; Erledigt-Spalten mit Zeitfenster,
-  // Nachladen und Archiv; Karten ziehen und ablegen (die Gruppe zieht mit); unten Karte anlegen mit Schnelleingabe.
+  // Eine Spalte: Kopf mit Farbe, Name, Zahl und Grenze, Einklappen und Menü; Erledigt-Spalten zeigen ihr Zeitfenster
+  // (ältere Karten liegen im Archiv); Karten ziehen und ablegen über den einen Weg ablegen() (die Gruppe zieht mit,
+  // Erledigt hält Timer an); unten Karte anlegen mit Schnelleingabe.
   import { dndzone, type DndEvent } from "svelte-dnd-action";
-  import { ablegen, gruppenmitglieder, karte, kartenDerSpalte } from "../beispiel/stand.svelte";
-  import type { Board, Karte as KarteT, Spalte } from "../modell";
+  import { erledigteOhneArchiv, sichtbareKarten } from "../beispiel/abfragen";
+  import { ablegen } from "../beispiel/anwendung/karten.svelte";
+  import { gruppenmitglieder, karte, kartenDerSpalte } from "../beispiel/stand.svelte";
+  import { ZEITFENSTER, ZEITFENSTER_VORGABE } from "../anzeige";
+  import type { Board, Karte as KarteT, Spalte, Zeitfenster } from "../modell";
   import Karte from "./Karte.svelte";
   import Schnelleingabe from "./Schnelleingabe.svelte";
   import { boardPfad } from "../weg.svelte";
@@ -18,22 +22,26 @@
   } = $props();
   const gezogen = $derived(ziel ? karte(ziel) : undefined);
 
-  const FENSTER = { heute: "Heute", gestern: "Gestern", woche: "Diese Woche", monat: "Dieser Monat", jahr: "Dieses Jahr", alle: "Alle" } as const;
   let eingeklappt = $state(false);
-  let fenster = $state("woche");
+  let fenster = $state<Zeitfenster>(ZEITFENSTER_VORGABE);
   let neuOffen = $state(false);
-  $effect(() => { eingeklappt = spalte.eingeklappt ?? false; fenster = spalte.zeitfenster ?? "woche"; });
+  $effect(() => { eingeklappt = spalte.eingeklappt ?? false; fenster = spalte.zeitfenster ?? ZEITFENSTER_VORGABE; });
   $effect(() => { neuOffen = schnell; });
   let items = $state<KarteT[]>([]);
-  $effect(() => { items = kartenDerSpalte(spalte.id); });
+  $effect(() => { items = sichtbareKarten(board, spalte, fenster); });
 
   const offene = $derived(spalte.erledigt ? 0 : items.length);
   const ueber = $derived(spalte.grenze !== undefined && offene > spalte.grenze);
+  const geladen = $derived(spalte.erledigt ? erledigteOhneArchiv(board, spalte).length : items.length);
 
   function erwaegen(e: CustomEvent<DndEvent<KarteT>>): void { items = e.detail.items; }
   function abgelegt(e: CustomEvent<DndEvent<KarteT>>): void {
     items = e.detail.items;
-    ablegen(spalte.id, items.map((k) => k.id), spalte.erledigt);
+    // die Spalte, aus der eine Karte weggezogen wurde, meldet nichts: die Zielspalte legt ab (ein Weg, eine Meldung)
+    if (e.detail.info.trigger === "droppedIntoAnother") return;
+    const sichtbar = items.map((k) => k.id);
+    const ausserhalb = kartenDerSpalte(spalte.id).map((k) => k.id).filter((id) => !sichtbar.includes(id));
+    ablegen(spalte.id, [...sichtbar, ...ausserhalb]);
   }
 </script>
 
@@ -59,15 +67,15 @@
       {/if}
       <span class="rechts">
         <button class="knopf ohne symbol klein" title="Einklappen" onclick={() => (eingeklappt = true)}><i class="fa-solid fa-angles-left"></i></button>
-        <button class="knopf ohne symbol klein" title="Spalte: umbenennen, Farbe, Grenze, Erledigt-Spalte, löschen"><i class="fa-solid fa-ellipsis"></i></button>
+        <a class="knopf ohne symbol klein" href={boardPfad(board.kuerzel, "einstellungen/spalten")} title="Spalte bearbeiten: umbenennen, Farbe, Grenze, Erledigt-Spalte, löschen"><i class="fa-solid fa-ellipsis"></i></a>
       </span>
     </div>
     {#if spalte.erledigt}
       <div class="pw-spalte-leiste">
-        <select class="eingabe" bind:value={fenster} title="Zeitfenster: welche erledigten Karten das Board lädt">
-          {#each Object.entries(FENSTER) as [w, n] (w)}<option value={w}>{n}</option>{/each}
+        <select class="eingabe" bind:value={fenster} title="Zeitfenster: welche erledigten Karten das Board zeigt">
+          {#each Object.entries(ZEITFENSTER) as [w, n] (w)}<option value={w}>{n}</option>{/each}
         </select>
-        <span>{items.length} von {items.length}</span>
+        <span title="Im Zeitfenster von allen erledigten außerhalb des Archivs">{items.length} von {geladen}</span>
       </div>
     {/if}
     <div class="pw-spalte-karten" use:dndzone={{ items, flipDurationMs: 160, type: "karte", dragDisabled: ziehenGesperrt, dropTargetStyle: {} }}
@@ -84,7 +92,7 @@
     </div>
     <div class="pw-spalte-fuss">
       {#if spalte.erledigt}
-        <div class="pw-mehr"><span>Ältere über 365 Tage im Archiv</span><a href={boardPfad(board.kuerzel, "archiv")}>Archiv</a></div>
+        <div class="pw-mehr"><span>Älter als {board.einstellungen.archivTage} Tage im Archiv</span><a href={boardPfad(board.kuerzel, "archiv")}>Archiv</a></div>
       {:else if neuOffen}
         <Schnelleingabe {board} {spalte} schliessen={() => (neuOffen = false)} />
       {:else}

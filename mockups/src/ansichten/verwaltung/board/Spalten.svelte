@@ -7,7 +7,8 @@
   import { dragHandle, dragHandleZone, type DndEvent } from "svelte-dnd-action";
   import { SERIEN } from "../../../beispiel/daten";
   import { dauer } from "../../../beispiel/format";
-  import { ablegen, stand } from "../../../beispiel/stand.svelte";
+  import { stand } from "../../../beispiel/stand.svelte";
+  import { ablegen } from "../../../beispiel/anwendung/karten.svelte";
   import type { Board, Farbe, Spalte, Zeitfenster } from "../../../modell";
   import { ZEITFENSTER } from "../daten";
   import Farbwahl from "../Farbwahl.svelte";

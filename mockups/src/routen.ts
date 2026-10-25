@@ -9,7 +9,7 @@ import { ROUTEN as TELEFON } from "./ansichten/telefon/routen";
 import { ROUTEN as UEBERSICHT } from "./ansichten/uebersicht/routen";
 import { ROUTEN as VERWALTUNG } from "./ansichten/verwaltung/routen";
 import { ROUTEN as ZEIT } from "./ansichten/zeit/routen";
-import { stand } from "./beispiel/stand.svelte";
+import { boardAusKuerzel, karteAusNummer } from "./beispiel/stand.svelte";
 
 export interface Treffer {
   /** Eintrag der Seitenleiste, der aktiv ist */
@@ -25,10 +25,8 @@ export interface Route {
   ansicht: (m: RegExpMatchArray, entwurf: string) => Treffer | null;
 }
 
-/** Board aus dem Kürzel im Pfad */
-export function boardAusKuerzel(k: string) {
-  return stand.boards.find((b) => b.kuerzel.toLowerCase() === k.toLowerCase());
-}
+/** Board aus dem Kürzel im Pfad: steht im gemeinsamen Zustand, hier nur weitergereicht, bis alle Bereiche dort lesen */
+export { boardAusKuerzel };
 
 const BOARD: Route[] = [
   {
@@ -39,7 +37,8 @@ const BOARD: Route[] = [
       if (!b) return null;
       const teil = m[2] ?? "";
       const nr = /^\d+$/.test(teil) ? teil : "";
-      const detail = nr ? stand.karten.find((k) => k.board === b.id && k.schluessel === `${b.kuerzel}-${nr}`)?.id : undefined;
+      // ein direkter Pfad öffnet jede Karte des Boards, auch eine archivierte außerhalb des Zeitfensters (einzeln geladen)
+      const detail = nr ? karteAusNummer(b, nr)?.id : undefined;
       return { navi: b.id, komponente: BoardAnsicht,
                werte: { boardId: b.id, ansicht: nr || !teil ? "board" : teil, detail, entwurf } };
     },

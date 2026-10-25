@@ -3,7 +3,7 @@
 // liefert das eine Abfrage der Schnittstelle; die Regeln sind dieselben.
 
 import { HEUTE, ICH, TERMINE } from "../../beispiel/daten";
-import { tageZwischen } from "../../beispiel/format";
+import { tageZwischen } from "../../regeln/tage";
 import { stand } from "../../beispiel/stand.svelte";
 import type { Prioritaet, Termin } from "../../modell";
 import type { HeuteEintrag } from "./modell";

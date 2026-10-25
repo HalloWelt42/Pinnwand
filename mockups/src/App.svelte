@@ -7,6 +7,7 @@
   import { finden } from "./routen";
   import Schale from "./schale/Schale.svelte";
   import { weg, wegStarten, wert } from "./weg.svelte";
+  import { darstellung, darstellungAnwenden, darstellungSetzen, type Schrift } from "./darstellung.svelte";
   import { adresse, ZUSTAENDE } from "./zustaende";
 
   onMount(wegStarten);
@@ -20,16 +21,13 @@
   const vorher = $derived(adresse(ZUSTAENDE[((nr < 0 ? 0 : nr) - 1 + ZUSTAENDE.length) % ZUSTAENDE.length]));
   const nachher = $derived(adresse(ZUSTAENDE[((nr < 0 ? -1 : nr) + 1) % ZUSTAENDE.length]));
 
-  // Thema wie in den Apps aus appkern_anzeige (setzt auch die Ansichtsprüfung), sonst aus der Startseite
-  function gemerktesThema(): string {
-    try { return JSON.parse(localStorage.getItem("appkern_anzeige") ?? "{}").thema ?? ""; } catch { return ""; }
-  }
-  let thema = $state(gemerktesThema() || (document.documentElement.dataset.theme ?? "dunkel"));
-  let schrift = $state(document.documentElement.dataset.schrift ?? "klein");
-  $effect(() => { document.documentElement.dataset.theme = thema; });
-  $effect(() => { document.documentElement.dataset.schrift = schrift; });
-  const STUFEN_SCHRIFT = ["klein", "mittel", "gross"];
-  const NAME_SCHRIFT: Record<string, string> = { klein: "Klein", mittel: "Mittel", gross: "Groß" };
+  // Thema und Schriftstufe: eine Wahrheit mit der Einstellung Darstellung (darstellung.svelte.ts)
+  onMount(darstellungAnwenden);
+  const STUFEN_SCHRIFT: Schrift[] = ["klein", "mittel", "gross"];
+  const NAME_SCHRIFT: Record<Schrift, string> = { klein: "Klein", mittel: "Mittel", gross: "Groß" };
+  const dunkel = $derived(darstellung.thema === "dunkel" || (darstellung.thema === "system" && document.documentElement.dataset.theme === "dunkel"));
+  // Am Telefon klappt die Leiste zu einem Griff am Rand ein, damit sie die Fußleiste der Ansicht nicht verdeckt
+  let offen = $state(!matchMedia("(max-width: 600px)").matches);
 </script>
 
 {#if galerie}
@@ -46,15 +44,20 @@
     <div>Diesen Weg gibt es nicht: {weg.pfad}. <a href="/entwuerfe">Zu den Entwürfen</a></div></div></div></Schale>
 {/if}
 
-<div class="pw-entwurfsleiste" aria-label="Leiste der Entwürfe">
-  <a class="knopf symbol" href="/entwuerfe" title="Alle Entwürfe"><i class="fa-solid fa-grip"></i></a>
-  {#if !galerie}
-    <a class="knopf symbol" href={vorher} title="Vorheriger Entwurf"><i class="fa-solid fa-chevron-left"></i></a>
-    <span class="titel">{z ? `${nr + 1}/${ZUSTAENDE.length} ${z.titel}` : hier}</span>
-    <a class="knopf symbol" href={nachher} title="Nächster Entwurf"><i class="fa-solid fa-chevron-right"></i></a>
+<div class="pw-entwurfsleiste" class:zu={!offen} aria-label="Leiste der Entwürfe">
+  {#if offen}
+    <a class="knopf symbol" href="/entwuerfe" title="Alle Entwürfe"><i class="fa-solid fa-grip"></i></a>
+    {#if !galerie}
+      <a class="knopf symbol" href={vorher} title="Vorheriger Entwurf"><i class="fa-solid fa-chevron-left"></i></a>
+      <span class="titel">{z ? `${nr + 1}/${ZUSTAENDE.length} ${z.titel}` : hier}</span>
+      <a class="knopf symbol" href={nachher} title="Nächster Entwurf"><i class="fa-solid fa-chevron-right"></i></a>
+    {/if}
+    <button class="knopf symbol" title="Hell oder dunkel" onclick={() => darstellungSetzen({ thema: dunkel ? "hell" : "dunkel" })}>
+      <i class="fa-solid {dunkel ? 'fa-sun' : 'fa-moon'}"></i></button>
+    <button class="knopf" title="Schriftstufe" onclick={() => darstellungSetzen({ schrift: STUFEN_SCHRIFT[(STUFEN_SCHRIFT.indexOf(darstellung.schrift) + 1) % 3] })}>
+      <i class="fa-solid fa-text-height"></i>{NAME_SCHRIFT[darstellung.schrift]}</button>
+    <button class="knopf symbol einklappen" title="Leiste einklappen" onclick={() => (offen = false)}><i class="fa-solid fa-chevron-down"></i></button>
+  {:else}
+    <button class="knopf symbol" title="Leiste der Entwürfe zeigen" onclick={() => (offen = true)}><i class="fa-solid fa-grip"></i></button>
   {/if}
-  <button class="knopf symbol" title="Hell oder dunkel" onclick={() => (thema = thema === "dunkel" ? "hell" : "dunkel")}>
-    <i class="fa-solid {thema === 'dunkel' ? 'fa-sun' : 'fa-moon'}"></i></button>
-  <button class="knopf" title="Schriftstufe" onclick={() => (schrift = STUFEN_SCHRIFT[(STUFEN_SCHRIFT.indexOf(schrift) + 1) % 3])}>
-    <i class="fa-solid fa-text-height"></i>{NAME_SCHRIFT[schrift]}</button>
 </div>

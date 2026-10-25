@@ -1,0 +1,84 @@
+/* Stil des Boards: Kopf und Werkzeugleiste, Spaltenstreifen, Spalten, Karten, Schnelleingabe, Ziehen. Farben, Schriften
+   und Größen nur aus den Marken des Appkerns. */
+
+/* ═══ Board ═══════════════════════════════════════════════════════════════════════════════════════════════ */
+
+.pw-boardkopf { display: flex; align-items: center; gap: var(--a3); flex-wrap: wrap; }
+.pw-boardkopf h1 { display: flex; align-items: center; gap: var(--a3); min-width: 0; }
+.pw-boardkopf .pfad { font-size: var(--klein); color: var(--text-3); width: 100%; margin-top: calc(-1 * var(--a2)); display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; }
+.pw-boardkopf .rechts { margin-left: auto; display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; }
+.pw-werkzeuge { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; padding: 0 var(--a6) var(--a3); }
+.pw-werkzeuge .suche { max-width: 360px; height: 40px; }
+.pw-werkzeuge .rechts { margin-left: auto; display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; }
+.pw-werkzeuge .pausiert { display: inline-flex; align-items: center; gap: var(--a2); height: 36px; padding: 0 var(--a3); border-radius: var(--r2);
+                          background: color-mix(in srgb, var(--info) var(--toenung), transparent); color: var(--info); font-size: var(--klein); font-weight: 600; }
+
+/* Spaltenstreifen: eigenes Rollfeld (seitlich nur hier, nie die Seite); jede Spalte rollt in sich */
+.pw-streifen {
+  flex: 1; min-height: 0; display: flex; gap: var(--a3); align-items: stretch;
+  overflow-x: auto; overflow-y: hidden; padding: 0 var(--a6) var(--a4);
+  overscroll-behavior-x: contain;
+}
+.pw-spalte {
+  width: 320px; flex: none; display: flex; flex-direction: column; min-height: 0;
+  background: var(--bereich); border-radius: var(--r3, var(--r2));
+}
+.pw-spalte.eingeklappt { width: 52px; }
+.pw-spalte.ziel { background: color-mix(in srgb, var(--akzent-flaeche) 8%, var(--bereich)); outline: 1px dashed color-mix(in srgb, var(--akzent-flaeche) 55%, transparent); }
+.pw-spalte-kopf { display: flex; align-items: center; gap: var(--a2); padding: var(--a3) var(--a3) var(--a2); }
+.pw-spalte-kopf .name { font-weight: 700; font-size: var(--gross); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-spalte-kopf .rechts { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+.pw-spalte-kopf .griff { color: var(--text-3); cursor: grab; }
+.pw-spalte-kopf .knopf.symbol.klein { width: 32px; height: 32px; }
+.pw-grenze.ueber { background: color-mix(in srgb, var(--warn) var(--toenung), transparent); color: var(--warn); }
+.pw-spalte-leiste { display: flex; align-items: center; gap: var(--a2); padding: 0 var(--a3) var(--a2); font-size: var(--klein); color: var(--text-3); }
+.pw-spalte-leiste select.eingabe { height: 34px; font-size: var(--klein); }
+.pw-spalte-karten { flex: 1; min-height: 60px; overflow-y: auto; overflow-x: clip; padding: 2px var(--a2) var(--a2); display: flex; flex-direction: column; gap: var(--a2); }
+.pw-spalte-fuss { padding: var(--a2); display: flex; flex-direction: column; gap: var(--a2); }
+.pw-spalte-fuss .knopf { justify-content: flex-start; width: 100%; }
+.pw-spalte.eingeklappt .pw-spalte-kopf { flex-direction: column; padding: var(--a3) 0; }
+.pw-spalte.eingeklappt .senkrecht { writing-mode: vertical-rl; font-weight: 700; color: var(--text-2); padding: var(--a2) 0; }
+.pw-neue-spalte { width: 280px; flex: none; display: flex; flex-direction: column; gap: var(--a2); }
+.pw-mehr { display: flex; align-items: center; justify-content: space-between; gap: var(--a2); font-size: var(--klein); color: var(--text-3); padding: 0 var(--a1); }
+
+/* Karte im Board */
+.pw-karte {
+  position: relative; background: var(--karte); border-radius: var(--r2); padding: var(--a3);
+  display: flex; flex-direction: column; gap: var(--a2); cursor: pointer;
+  box-shadow: 0 1px 0 var(--rand); border: 1px solid transparent;
+  transition: background var(--schnell), border-color var(--schnell);
+}
+.pw-karte:hover { background: var(--karte-2); }
+.pw-karte.offen { border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); }
+.pw-karte.idee { background: color-mix(in srgb, var(--flieder) 7%, var(--karte)); }
+.pw-karte.gezogen { box-shadow: var(--schatten-schwebend); transform: rotate(1.5deg); border-color: color-mix(in srgb, var(--akzent-flaeche) 55%, transparent); }
+.pw-karte.mitgezogen { outline: 1px dashed color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); outline-offset: 2px; }
+.pw-karte.platzhalter { background: transparent; border: 1px dashed var(--rand-stark); box-shadow: none; min-height: 78px; }
+.pw-karte.geaendert { border-color: color-mix(in srgb, var(--info) 55%, transparent); }
+.pw-karte .cover { height: 6px; border-radius: var(--r1); background: var(--f, var(--stahl)); margin-bottom: 2px; }
+.pw-karte .titel { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.pw-karte .labels { display: flex; flex-wrap: wrap; gap: 4px; }
+.pw-karte .felder { display: flex; flex-wrap: wrap; gap: 2px var(--a3); font-size: var(--klein); color: var(--text-2); }
+.pw-karte .felder span b { color: var(--text-3); font-weight: 500; }
+.pw-karte .unten { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.pw-karte .unten .rechts { margin-left: auto; display: flex; align-items: center; gap: var(--a1); }
+.pw-karte .blockiert { display: flex; gap: var(--a2); align-items: flex-start; padding: 6px 8px; border-radius: var(--r1); font-size: var(--klein);
+                       background: color-mix(in srgb, var(--gefahr) 10%, transparent); color: var(--gefahr); }
+.pw-karte .blockiert i { margin-top: 3px; font-size: 12px; }
+.pw-karte .wer-sonst { position: absolute; top: -9px; right: 10px; }
+.pw-fortschritt { height: 5px; border-radius: 3px; background: var(--karte-3); overflow: hidden; }
+.pw-fortschritt > span { display: block; height: 100%; background: var(--gut); border-radius: 3px; }
+.pw-fortschritt.zeit > span { background: var(--akzent-flaeche); }
+.pw-fortschritt.ueber > span { background: var(--warn); }
+
+/* Schnelleingabe in einer Spalte */
+.pw-schnell { background: var(--karte); border-radius: var(--r2); padding: var(--a2); display: flex; flex-direction: column; gap: var(--a2);
+              border: 1px solid color-mix(in srgb, var(--akzent-flaeche) 55%, transparent); }
+.pw-schnell textarea.eingabe { min-height: 64px; }
+.pw-schnell .zeile-knoepfe { display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; }
+.pw-schnell .hinweistext { font-size: var(--marke); color: var(--text-3); }
+
+
+/* Platzhalter beim Ziehen: hier landet die Karte, verknüpfte ziehen mit */
+.pw-karte.platzhalter.pw-ablage { align-items: flex-start; justify-content: center; gap: var(--a1); color: var(--akzent); font-size: var(--klein); cursor: default;
+                                  background: color-mix(in srgb, var(--akzent-flaeche) 6%, transparent); border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); }

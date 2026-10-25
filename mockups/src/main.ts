@@ -1,6 +1,8 @@
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "appkern-oberflaeche/leitstand.css";
 import "./stil/pinnwand.css";
+import "./stil/board.css";
+import "./stil/detail.css";
 import "./stil/uebersicht.css";
 import "./stil/verwaltung.css";
 import "./stil/zeit.css";

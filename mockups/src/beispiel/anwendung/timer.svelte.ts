@@ -7,6 +7,7 @@ import { HEUTE, ICH, JETZT } from "../daten";
 import { dauer } from "../format";
 import { karte, stand } from "../stand.svelte";
 import { aendern } from "./meldung.svelte";
+import { vermerken } from "./verlauf";
 import { sitzungBuchen } from "./zeiten.svelte";
 
 function schluessel(karteId: string): string {
@@ -31,6 +32,7 @@ export function starten(karteId: string): void {
     }
     stand.timer.push({ konto: ICH, karte: karteId, seit: JETZT });
     k.start ??= HEUTE;
+    vermerken(k, "hat den Timer gestartet");
     return text;
   });
 }

@@ -116,83 +116,6 @@
 }
 .pw-seite-fuss { margin-top: auto; padding-top: var(--a3); display: flex; flex-direction: column; gap: 2px; }
 
-/* ═══ Board ═══════════════════════════════════════════════════════════════════════════════════════════════ */
-
-.pw-boardkopf { display: flex; align-items: center; gap: var(--a3); flex-wrap: wrap; }
-.pw-boardkopf h1 { display: flex; align-items: center; gap: var(--a3); min-width: 0; }
-.pw-boardkopf .pfad { font-size: var(--klein); color: var(--text-3); width: 100%; margin-top: calc(-1 * var(--a2)); display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; }
-.pw-boardkopf .rechts { margin-left: auto; display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; }
-.pw-werkzeuge { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; padding: 0 var(--a6) var(--a3); }
-.pw-werkzeuge .suche { max-width: 360px; height: 40px; }
-.pw-werkzeuge .rechts { margin-left: auto; display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; }
-.pw-werkzeuge .pausiert { display: inline-flex; align-items: center; gap: var(--a2); height: 36px; padding: 0 var(--a3); border-radius: var(--r2);
-                          background: color-mix(in srgb, var(--info) var(--toenung), transparent); color: var(--info); font-size: var(--klein); font-weight: 600; }
-
-/* Spaltenstreifen: eigenes Rollfeld (seitlich nur hier, nie die Seite); jede Spalte rollt in sich */
-.pw-streifen {
-  flex: 1; min-height: 0; display: flex; gap: var(--a3); align-items: stretch;
-  overflow-x: auto; overflow-y: hidden; padding: 0 var(--a6) var(--a4);
-  overscroll-behavior-x: contain;
-}
-.pw-spalte {
-  width: 320px; flex: none; display: flex; flex-direction: column; min-height: 0;
-  background: var(--bereich); border-radius: var(--r3, var(--r2));
-}
-.pw-spalte.eingeklappt { width: 52px; }
-.pw-spalte.ziel { background: color-mix(in srgb, var(--akzent-flaeche) 8%, var(--bereich)); outline: 1px dashed color-mix(in srgb, var(--akzent-flaeche) 55%, transparent); }
-.pw-spalte-kopf { display: flex; align-items: center; gap: var(--a2); padding: var(--a3) var(--a3) var(--a2); }
-.pw-spalte-kopf .name { font-weight: 700; font-size: var(--gross); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pw-spalte-kopf .rechts { margin-left: auto; display: flex; align-items: center; gap: 2px; }
-.pw-spalte-kopf .griff { color: var(--text-3); cursor: grab; }
-.pw-spalte-kopf .knopf.symbol.klein { width: 32px; height: 32px; }
-.pw-grenze.ueber { background: color-mix(in srgb, var(--warn) var(--toenung), transparent); color: var(--warn); }
-.pw-spalte-leiste { display: flex; align-items: center; gap: var(--a2); padding: 0 var(--a3) var(--a2); font-size: var(--klein); color: var(--text-3); }
-.pw-spalte-leiste select.eingabe { height: 34px; font-size: var(--klein); }
-.pw-spalte-karten { flex: 1; min-height: 60px; overflow-y: auto; overflow-x: clip; padding: 2px var(--a2) var(--a2); display: flex; flex-direction: column; gap: var(--a2); }
-.pw-spalte-fuss { padding: var(--a2); display: flex; flex-direction: column; gap: var(--a2); }
-.pw-spalte-fuss .knopf { justify-content: flex-start; width: 100%; }
-.pw-spalte.eingeklappt .pw-spalte-kopf { flex-direction: column; padding: var(--a3) 0; }
-.pw-spalte.eingeklappt .senkrecht { writing-mode: vertical-rl; font-weight: 700; color: var(--text-2); padding: var(--a2) 0; }
-.pw-neue-spalte { width: 280px; flex: none; display: flex; flex-direction: column; gap: var(--a2); }
-.pw-mehr { display: flex; align-items: center; justify-content: space-between; gap: var(--a2); font-size: var(--klein); color: var(--text-3); padding: 0 var(--a1); }
-
-/* Karte im Board */
-.pw-karte {
-  position: relative; background: var(--karte); border-radius: var(--r2); padding: var(--a3);
-  display: flex; flex-direction: column; gap: var(--a2); cursor: pointer;
-  box-shadow: 0 1px 0 var(--rand); border: 1px solid transparent;
-  transition: background var(--schnell), border-color var(--schnell);
-}
-.pw-karte:hover { background: var(--karte-2); }
-.pw-karte.offen { border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); }
-.pw-karte.idee { background: color-mix(in srgb, var(--flieder) 7%, var(--karte)); }
-.pw-karte.gezogen { box-shadow: var(--schatten-schwebend); transform: rotate(1.5deg); border-color: color-mix(in srgb, var(--akzent-flaeche) 55%, transparent); }
-.pw-karte.mitgezogen { outline: 1px dashed color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); outline-offset: 2px; }
-.pw-karte.platzhalter { background: transparent; border: 1px dashed var(--rand-stark); box-shadow: none; min-height: 78px; }
-.pw-karte.geaendert { border-color: color-mix(in srgb, var(--info) 55%, transparent); }
-.pw-karte .cover { height: 6px; border-radius: var(--r1); background: var(--f, var(--stahl)); margin-bottom: 2px; }
-.pw-karte .titel { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
-.pw-karte .labels { display: flex; flex-wrap: wrap; gap: 4px; }
-.pw-karte .felder { display: flex; flex-wrap: wrap; gap: 2px var(--a3); font-size: var(--klein); color: var(--text-2); }
-.pw-karte .felder span b { color: var(--text-3); font-weight: 500; }
-.pw-karte .unten { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.pw-karte .unten .rechts { margin-left: auto; display: flex; align-items: center; gap: var(--a1); }
-.pw-karte .blockiert { display: flex; gap: var(--a2); align-items: flex-start; padding: 6px 8px; border-radius: var(--r1); font-size: var(--klein);
-                       background: color-mix(in srgb, var(--gefahr) 10%, transparent); color: var(--gefahr); }
-.pw-karte .blockiert i { margin-top: 3px; font-size: 12px; }
-.pw-karte .wer-sonst { position: absolute; top: -9px; right: 10px; }
-.pw-fortschritt { height: 5px; border-radius: 3px; background: var(--karte-3); overflow: hidden; }
-.pw-fortschritt > span { display: block; height: 100%; background: var(--gut); border-radius: 3px; }
-.pw-fortschritt.zeit > span { background: var(--akzent-flaeche); }
-.pw-fortschritt.ueber > span { background: var(--warn); }
-
-/* Schnelleingabe in einer Spalte */
-.pw-schnell { background: var(--karte); border-radius: var(--r2); padding: var(--a2); display: flex; flex-direction: column; gap: var(--a2);
-              border: 1px solid color-mix(in srgb, var(--akzent-flaeche) 55%, transparent); }
-.pw-schnell textarea.eingabe { min-height: 64px; }
-.pw-schnell .zeile-knoepfe { display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; }
-.pw-schnell .hinweistext { font-size: var(--marke); color: var(--text-3); }
-
 /* Die eine Meldung nach jeder Änderung: am Rechner unten rechts über dem Fuß (am Telefon: telefon.css) */
 .pw-meldungen { position: fixed; right: var(--a5); bottom: calc(var(--fuss-hoehe) + var(--a3)); display: flex; flex-direction: column; gap: var(--a2); z-index: 30; max-width: min(460px, calc(100% - 2 * var(--a5))); }
 .pw-meldung { display: flex; align-items: center; gap: var(--a3); padding: var(--a3) var(--a3) var(--a3) var(--a4); border-radius: var(--r2);
@@ -200,99 +123,6 @@
 .pw-meldung > span { flex: 1; min-width: 0; }
 .pw-meldung i.zeichen { color: var(--info); }
 .pw-meldung.gefahr i.zeichen { color: var(--gefahr); }
-
-/* ═══ Kartendetail: Leiste rechts über dem Board, rollt in sich ═══════════════════════════════════════════ */
-
-.pw-detail-raum { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.pw-detail {
-  position: absolute; top: 0; right: 0; bottom: 0; width: min(640px, 100%); z-index: 20;
-  display: flex; flex-direction: column; background: var(--hg); box-shadow: 0 0 0 1px var(--rand-stark), var(--schatten-schwebend);
-}
-.pw-detail.voll { width: 100%; }
-.pw-detail-kopf { flex: none; display: flex; align-items: center; gap: var(--a2); padding: var(--a3) var(--a4); border-bottom: 1px solid var(--rand); flex-wrap: wrap; }
-.pw-detail-kopf .rechts { margin-left: auto; display: flex; gap: var(--a1); align-items: center; }
-.pw-detail-inhalt { flex: 1; min-height: 0; overflow-y: auto; overflow-x: clip; padding: var(--a4) var(--a5) var(--a6); display: flex; flex-direction: column; gap: var(--a5); }
-.pw-detail-titel { font: inherit; font-size: var(--seitentitel); font-weight: 700; line-height: 1.2; color: var(--text); width: 100%; min-width: 0;
-                   padding: 2px var(--a2); margin: 0 calc(-1 * var(--a2)); background: transparent; border: 1px solid transparent; border-radius: var(--r1); outline: 0; }
-.pw-detail-titel:hover:not(:disabled) { border-color: var(--rand); }
-.pw-detail-titel:focus { border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); background: var(--karte); }
-.pw-detail-schluessel { font-size: var(--klein); }
-.pw-detail-personen { align-items: flex-start; }
-.pw-detail-personen .pw-personenwahl { flex: 1 1 240px; }
-.pw-detail-personen .chip .knopf { margin-right: -6px; }
-.pw-detail-labels .pw-label { cursor: pointer; border: 0; font: inherit; font-size: var(--marke); font-weight: 600; }
-.pw-detail-labels .pw-label.aus { background: var(--karte-2); color: var(--text-3); }
-.pw-detail-suche { max-width: none; height: 40px; }
-.pw-detail-leer, .pw-zeit-leer, .pw-zeit-fremd, .pw-zeit-gruppe { font-size: var(--klein); }
-.pw-detail-reiter { margin: 0; }
-.pw-detail-hinweis { font-size: var(--marke); }
-.pw-kommentar-neu { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--a2); }
-.pw-verlauf-zeile { display: flex; gap: var(--a3); }
-.pw-vorschlag-text { font-size: var(--klein); }
-.pw-vorschlag-knoepfe { display: flex; gap: var(--a2); flex-wrap: wrap; }
-.pw-nachtragen-dauer { width: 170px; }
-.pw-abschnitt { display: flex; flex-direction: column; gap: var(--a2); }
-.pw-abschnitt > .etikett { display: flex; align-items: center; gap: var(--a2); }
-.pw-abschnitt > .etikett .rechts { margin-left: auto; display: flex; gap: var(--a1); }
-.pw-text { background: var(--karte); border-radius: var(--r2); padding: var(--a3) var(--a4); line-height: 1.55; cursor: text; border: 1px solid transparent; }
-.pw-text:hover { border-color: var(--rand-stark); }
-.pw-text p { margin: 0 0 var(--a2); }
-.pw-text p:last-child { margin-bottom: 0; }
-.pw-text ul { margin: 0 0 var(--a2); padding-left: 1.2em; }
-.pw-text.noch-leer { color: var(--text-3); }
-.pw-text.bearbeiten { cursor: auto; border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); padding: 0; }
-.pw-text.bearbeiten textarea { width: 100%; border: 0; background: transparent; color: var(--text); padding: var(--a3) var(--a4); min-height: 180px; resize: vertical; outline: 0; font-family: var(--schrift-code); font-size: var(--klein); line-height: 1.6; }
-.pw-felder { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr); gap: var(--a2) var(--a3); align-items: center; }
-.pw-felder > .name { display: flex; align-items: center; gap: var(--a2); color: var(--text-2); font-size: var(--klein); }
-.pw-felder > .name i { width: 16px; text-align: center; color: var(--text-3); font-size: 13px; }
-.pw-felder .eingabe { width: 100%; height: 38px; }
-.pw-felder .wert { display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; min-width: 0; }
-
-.pw-alterung { display: flex; flex-wrap: wrap; gap: var(--a2); }
-.pw-zeitblock { background: var(--karte); border-radius: var(--r2); padding: var(--a4); display: flex; flex-direction: column; gap: var(--a3); }
-.pw-zeitblock .oben { display: flex; align-items: center; gap: var(--a3); flex-wrap: wrap; }
-.pw-zeitblock .gross { font-family: var(--schrift-zahl); font-size: var(--kennzahl); font-weight: 700; letter-spacing: 0.01em; }
-.pw-zeitblock .gross.laeuft { color: var(--akzent); }
-.pw-zeitblock .schaetzung { margin-left: auto; display: flex; align-items: center; gap: var(--a2); font-size: var(--klein); color: var(--text-2); }
-.pw-zeitblock .schaetzung .pw-dauerfeld { width: 90px; }
-.pw-zeitblock .gross .pw-dauerfeld { width: 170px; font-size: var(--kennzahl); font-weight: 700; text-align: left; height: 44px; color: inherit; }
-.pw-tageszeilen { display: flex; flex-direction: column; gap: 2px; }
-.pw-tageszeile { display: grid; grid-template-columns: 110px minmax(0, 1fr) 90px auto; gap: var(--a2); align-items: center; padding: 4px var(--a2); border-radius: var(--r1); font-size: var(--klein); }
-.pw-tageszeile:hover { background: var(--karte-2); }
-.pw-tageszeile .wer { display: flex; align-items: center; gap: var(--a2); min-width: 0; color: var(--text-2); }
-.pw-tageszeile .dauer { font-family: var(--schrift-zahl); font-weight: 600; text-align: right; }
-.pw-nachtragen { display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; }
-.pw-nachtragen .eingabe { height: 36px; }
-.pw-liste-klein { display: flex; flex-direction: column; gap: 2px; }
-.pw-liste-klein .zeile { padding: 6px var(--a2); }
-.pw-punkt { display: flex; align-items: center; gap: var(--a3); padding: 6px var(--a2); border-radius: var(--r1); }
-.pw-punkt:hover { background: var(--karte); }
-.pw-punkt input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--gut); flex: none; }
-.pw-punkt.erledigt span { color: var(--text-3); text-decoration: line-through; }
-.pw-punkt .weg { margin-left: auto; opacity: 0; }
-.pw-punkt:hover .weg { opacity: 1; }
-.pw-anhang { display: flex; align-items: center; gap: var(--a3); padding: var(--a2) var(--a3); background: var(--karte); border-radius: var(--r2); }
-.pw-anhang > i { width: 22px; text-align: center; font-size: 18px; color: var(--text-3); }
-.pw-anhang .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pw-anhang .meta { font-size: var(--marke); color: var(--text-3); }
-.pw-kommentar { display: flex; gap: var(--a3); }
-.pw-kommentar .blase { flex: 1; min-width: 0; background: var(--karte); border-radius: var(--r2); padding: var(--a2) var(--a3); }
-.pw-kommentar .blase .kopf-zeile { display: flex; gap: var(--a2); align-items: baseline; font-size: var(--klein); }
-.pw-kommentar .blase .kopf-zeile b { font-weight: 600; }
-.pw-kommentar .blase .kopf-zeile span { color: var(--text-3); font-size: var(--marke); }
-.pw-kommentar .erwaehnt { color: var(--akzent); font-weight: 600; }
-.pw-verlauf { display: flex; flex-direction: column; gap: 4px; font-size: var(--klein); color: var(--text-2); }
-.pw-verlauf .zeit { min-width: 92px; font-family: var(--schrift-zahl); font-size: var(--marke); }
-.pw-detail-fuss { flex: none; display: flex; align-items: center; gap: var(--a2); padding: var(--a3) var(--a4); border-top: 1px solid var(--rand); flex-wrap: wrap; }
-.pw-detail-fuss .rechts { margin-left: auto; display: flex; gap: var(--a2); }
-.pw-vorschlag { display: flex; flex-direction: column; gap: var(--a2); padding: var(--a3); border-radius: var(--r2);
-                background: color-mix(in srgb, var(--violett) 8%, transparent); border: 1px solid color-mix(in srgb, var(--violett) 30%, transparent); }
-.pw-vorschlag .kopf-zeile { display: flex; align-items: center; gap: var(--a2); font-size: var(--klein); color: var(--violett); font-weight: 600; }
-.pw-umschalter { display: inline-flex; gap: 2px; padding: 2px; background: var(--karte-2); border-radius: var(--r2); }
-.pw-umschalter button { height: 34px; padding: 0 var(--a3); border: 0; border-radius: var(--r1); background: transparent; color: var(--text-2);
-                        font-size: var(--klein); font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-.pw-umschalter button.an { background: var(--karte); color: var(--text); box-shadow: 0 1px 2px var(--schattenfarbe); }
-.pw-umschalter button.an.idee { color: var(--flieder); }
 
 /* ═══ Galerie und Entwurfsleiste (nur in den Entwürfen) ═══════════════════════════════════════════════════ */
 
@@ -320,10 +150,6 @@
               box-shadow: 0 0 0 10px var(--karte-3), var(--schatten-schwebend); display: flex; flex-direction: column; }
 .pw-buehne .erklaerung { max-width: 360px; color: var(--text-2); font-size: var(--klein); display: flex; flex-direction: column; gap: var(--a2); }
 .pw-buehne .erklaerung h2 { color: var(--text); }
-
-/* Platzhalter beim Ziehen: hier landet die Karte, verknüpfte ziehen mit */
-.pw-karte.platzhalter.pw-ablage { align-items: flex-start; justify-content: center; gap: var(--a1); color: var(--akzent); font-size: var(--klein); cursor: default;
-                                  background: color-mix(in srgb, var(--akzent-flaeche) 6%, transparent); border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); }
 
 /* Auf einem echten Telefon (und in der Prüfung bei 390 px) füllt die Telefonansicht den Schirm, ohne Rahmen */
 @media (max-width: 600px) {

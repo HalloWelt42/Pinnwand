@@ -9,6 +9,7 @@ import { HEUTE, ICH, JETZT } from "../daten";
 import { datum, dauer, uhrzeit } from "../format";
 import { stand } from "../stand.svelte";
 import { aendern } from "./meldung.svelte";
+import { vermerken } from "./verlauf";
 
 /** Kennung ohne Zähler und ohne randomUUID (das fehlt außerhalb sicherer Kontexte) */
 export function neueKennung(vorsatz: string): string {
@@ -72,6 +73,7 @@ export function sitzungBuchen(t: Timer, bis = JETZT): number {
     });
   }
   t.seit = undefined;
+  if (gebucht) vermerken(t.karte, `Timer: ${dauer(gebucht)} gebucht` + (deckel ? " (nach 12 Stunden gedeckelt)" : ""));
   return gebucht;
 }
 
@@ -95,6 +97,7 @@ export function buchen(karteId: string, tag: string, sek: number, notiz = ""): v
   if (sek <= 0) return;
   aendern(() => {
     stand.zeiteintraege.push({ id: neueKennung("z"), karte: karteId, konto: ICH, datum: tag, sekunden: sek, herkunft: "hand", notiz: notiz || undefined });
+    vermerken(karteId, `hat ${dauer(sek)} nachgetragen (${datum(tag, true)})`);
     return `${dauer(sek)} auf ${schluessel(karteId)} gebucht (${datum(tag, true)})`;
   });
 }
@@ -122,6 +125,7 @@ export function setzeTageszeit(karteId: string, tag: string, sek: number): void 
         }
       }
     }
+    vermerken(karteId, `hat die Zeit am ${datum(tag, true)} von ${dauer(bisher)} auf ${dauer(sek)} gesetzt`);
     return `${schluessel(karteId)} ${datum(tag, true)}: ${dauer(bisher)} auf ${dauer(sek)} gesetzt`;
   });
 }
@@ -160,6 +164,7 @@ export function loeschen(id: string): void {
   if (!e) return;
   aendern(() => {
     stand.zeiteintraege = stand.zeiteintraege.filter((x) => x.id !== id);
+    vermerken(e.karte, `hat einen Zeiteintrag gelöscht (${dauer(e.sekunden)}, ${datum(e.datum, true)})`);
     return `Zeiteintrag (${dauer(e.sekunden)}, ${datum(e.datum, true)}) gelöscht`;
   });
 }

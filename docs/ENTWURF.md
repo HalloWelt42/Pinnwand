@@ -174,6 +174,11 @@ Wo der Entwurf eine Frage offen ließ, gilt bis zu einer anderen Entscheidung:
 
 Entschieden vom Nutzer (25.10.2026):
 
+- Karten ziehen zwischen Boards um (Nutzer: "vom ideenboard muss ich auch sachen auf das arbeitsboard schieben
+  können"): im Kartendetail und am Telefon unter Verschieben; die Karte bekommt im Ziel die nächste Nummer und die
+  Kartenart des Boards, Labels und eigene Felder mit gleichem Namen bleiben, Zuständige, wenn sie dort Mitglied sind;
+  die Verknüpfung endet, laufende Timer buchen, die Zeit zieht mit, der alte Schlüssel führt weiter zur Karte. Rechte:
+  Karten löschen im alten Board, Karten anlegen im neuen.
 - Anhänge aus der eigenen Kellerwolke bleiben verknüpft, ohne Kopie: alle Mitglieder sehen Name und Größe, öffnen kann sie,
   wer verknüpft hat. Was alle öffnen sollen, lädt man an der Karte hoch (es liegt dann im Ordner des Boards).
 

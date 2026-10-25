@@ -23,6 +23,8 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
   Meldung zu Heute; abgelehnte Änderungen nennen den Grund des Servers.
 - M-26: Das Archiv lädt seitenweise vom Server, mit Nachladen beim Rollen und der Gesamtzahl im Kopf.
 - M-55: Ein Konflikt entsteht nur, wenn dasselbe Feld inzwischen anders ist; das Detail fragt dann nach.
+- Neu, ohne Vorbild in der alten App: Karten ziehen in ein anderes Board (Kartendetail und Telefon), siehe ENTWURF,
+  Abschnitt 11.
 
 ## Zählung
 

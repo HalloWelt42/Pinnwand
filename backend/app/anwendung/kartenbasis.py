@@ -26,3 +26,15 @@ def vermerken(k: Kontext, karte: Karte, text: str) -> None:
 
 def speichern(k: Kontext, karte: Karte) -> Karte:
     return Karte.model_validate(k.s.schreib("karten", karte.json_daten()))
+
+
+def gruppen_aufraeumen(k: Kontext, board_id: Kennung, gruppen: set[Kennung]) -> None:
+    """Gruppen, aus denen Karten gingen (Papierkorb, anderes Board): bleibt nur eine Karte übrig, endet die Gruppe (wie
+    beim Lösen)."""
+    for g in gruppen:
+        rest = [Karte.model_validate(d) for d in k.s.alle("karten", "board=?", (board_id,)) if d.get("gruppe") == g]
+        if len(rest) < 2:
+            for x in rest:
+                x.gruppe = None
+                speichern(k, x)
+            k.s.loesch("gruppen", g)

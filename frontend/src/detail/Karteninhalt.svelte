@@ -3,7 +3,7 @@
   // der Module nur, wenn das Modul im Board an ist. Jede Änderung läuft über einen Anwendungsfall mit Rückgängig; der
   // Status über denselben Weg wie das Ziehen (Gruppe zieht mit, Abschluss, Timer). Felder, die beim Verlassen speichern,
   // verwerfen mit Escape (M-125). Im Kopf: Arbeit oder Idee, Duplizieren, Verweis kopieren, Vollbild, Schließen.
-  import { darf, kartenNummer, zeitDerGruppe, zeitDerKarte } from "../daten/abfragen";
+  import { darf, kartenNummer, umzugsziele, zeitDerGruppe, zeitDerKarte } from "../daten/abfragen";
   import { artSetzen, bearbeiten, duplizieren, verschieben, type Kartenaenderung } from "../daten/anwendung/karten.svelte";
   import { melden } from "../daten/anwendung/meldung.svelte";
   import { inPapierkorb } from "../daten/anwendung/papierkorb.svelte";
@@ -26,6 +26,7 @@
   import Anhaenge from "./Anhaenge.svelte";
   import Checkliste from "./Checkliste.svelte";
   import Textfeld from "./Textfeld.svelte";
+  import Umziehen from "./Umziehen.svelte";
   import Verknuepfte from "./Verknuepfte.svelte";
   import Zeiterfassung from "./Zeiterfassung.svelte";
 
@@ -91,6 +92,8 @@
 
   // (das Detail baut sich je Karte neu auf: ein Konflikt gilt nur für die Karte, an der er entstand)
   let konflikt = $state<{ aenderung: Kartenaenderung; text: string } | null>(null);
+  /** offen: die Wahl, in welches Board die Karte zieht */
+  let umzug = $state(false);
 
   function jetzigeBehalten(): void {
     konflikt = null;
@@ -116,6 +119,10 @@
     {#if darf(board, "karten.anlegen")}
       <button class="knopf ohne symbol klein" title="Duplizieren: Kopie in derselben Spalte, ohne Zeiten, Kommentare und Anhänge" onclick={kopieAnlegen}><i class="fa-regular fa-copy"></i></button>
     {/if}
+    {#if umzugsziele(k).length}
+      <button class="knopf ohne symbol klein" aria-pressed={umzug} title="In ein anderes Board, etwa vom Ideenboard aufs Arbeitsboard"
+              onclick={() => (umzug = !umzug)}><i class="fa-solid fa-arrow-right-arrow-left"></i></button>
+    {/if}
     <button class="knopf ohne symbol klein" title="Verweis kopieren ({k.schluessel})" onclick={verweisKopieren}><i class="fa-solid fa-link"></i></button>
     <button class="knopf ohne symbol klein" title={vollbild ? "Als Leiste" : "Vollbild"} onclick={() => (vollbild = !vollbild)}><i class="fa-solid {vollbild ? 'fa-compress' : 'fa-expand'}"></i></button>
     <button class="knopf ohne symbol klein" title="Schließen (Escape)" onclick={schliessen}><i class="fa-solid fa-xmark"></i></button>
@@ -123,6 +130,7 @@
 </div>
 
 <div class="pw-detail-inhalt">
+  {#if umzug}<Umziehen karte={k} schliessen={() => (umzug = false)} />{/if}
   {#if konflikt}
     <div class="hinweis warnung"><i class="fa-solid fa-code-merge"></i>
       <div><b>{k.schluessel} wurde inzwischen geändert.</b> Deine Änderung ({konflikt.text}) ist nicht gespeichert, damit

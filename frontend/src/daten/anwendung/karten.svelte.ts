@@ -1,5 +1,5 @@
 // Anwendungsfälle an Karten über den Server: verschieben (Ziehen, Status im Detail, Telefon, Liste: ein Weg), erledigen,
-// anlegen, duplizieren, bearbeiten, kommentieren, verknüpfen, Sammelaktionen. Die Regeln (Alter, Abschluss, Mitziehen,
+// in ein anderes Board ziehen, anlegen, duplizieren, bearbeiten, kommentieren, verknüpfen, Sammelaktionen. Die Regeln (Alter, Abschluss, Mitziehen,
 // Grenze, Verlauf) rechnet der Server; die Oberfläche zeigt beim Ziehen vorab, wohin die Karte kommt.
 
 import type { Karte, Kennung, Prioritaet, Spalte } from "../../modell";
@@ -32,7 +32,7 @@ function vorab(id: Kennung, ziel: Spalte, platz?: number): () => void {
   };
 }
 
-/** Die erste neue Karte aus einer Antwort (anlegen, duplizieren) */
+/** Die erste neue oder geänderte Karte aus einer Antwort (anlegen, duplizieren, umziehen) */
 function neueKarte(a: Antwort | null): Karte | undefined {
   const g = a?.geaendert.find((x) => x.tabelle === "karten" && x.daten);
   return g ? karte(g.id) : undefined;
@@ -114,6 +114,12 @@ export async function duplizieren(id: Kennung): Promise<Karte | undefined> {
 }
 
 /** Arbeit oder Idee: eine Idee hat keine Zeiterfassung */
+/** Karte in ein anderes Board (ans Ende der Spalte, ohne: der ersten offenen); Ergebnis: die Karte mit ihrem neuen
+ *  Schlüssel. Nummer, Kartenart, Labels und Felder gleicht der Server an. */
+export async function umziehen(id: Kennung, boardId: Kennung, spalteId?: Kennung): Promise<Karte | undefined> {
+  return neueKarte(await aendern(() => senden(`/karten/${id}/umziehen`, { board: boardId, spalte: spalteId })));
+}
+
 export function artSetzen(id: Kennung, art: "arbeit" | "idee"): void {
   if (karte(id)?.art !== art) void aendern(() => senden(`/karten/${id}/art`, { art }));
 }

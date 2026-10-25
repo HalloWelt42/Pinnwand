@@ -27,6 +27,12 @@ class Verschieben(Modell):
     platz: int | None = None
 
 
+class Umzug(Modell):
+    board: Kennung
+    #: Spalte im neuen Board; ohne: die erste offene
+    spalte: Kennung | None = None
+
+
 class Sammel(Modell):
     ids: list[Kennung]
 
@@ -102,6 +108,10 @@ def router(z: Zugriff) -> APIRouter:
     @r.post("/karten/{karte_id}/erledigen", response_model=Antwort)
     async def erledigen(karte_id: Kennung, konto: Konto = Depends(ich)) -> Antwort:
         return await tun(d.karten.erledigen(konto, karte_id))
+
+    @r.post("/karten/{karte_id}/umziehen", response_model=Antwort)
+    async def umziehen(karte_id: Kennung, e: Umzug, konto: Konto = Depends(ich)) -> Antwort:
+        return await tun(d.karten.umziehen(konto, karte_id, e.board, e.spalte))
 
     @r.post("/karten/{karte_id}/verknuepfen", response_model=Antwort)
     async def verknuepfen(karte_id: Kennung, e: Verknuepfen, konto: Konto = Depends(ich)) -> Antwort:

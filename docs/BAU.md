@@ -13,10 +13,15 @@ backend/app/
   regeln/           reine Regeln ohne Ein- und Ausgabe, dieselben wie mockups/src/regeln/ (Rechte, Alterung,
                     Zeitfenster, Archiv, Kürzel, Verschieben samt Mitziehen, Abschlussdatum, Suche und Filter)
   verzeichnis/      SQLite über appkern.datenbank: Schema in Stufen, Zugriff je Aggregat, Journal
-  anwendung/        Anwendungsfälle, der einzige Weg zu schreiben (Rechte, Regeln, Fassung, Journal, Ereignis)
-  schnittstelle/    REST unter /api/v1 und der Ereignisstrom; beide nur über die Anwendung
-  kellerwolke.py    Anhänge in der Kellerwolke (Ablage Pinnwand, ein Ordner je Board), Dateiwahl
+  anwendung/        Anwendungsfälle, der einzige Weg zu schreiben (Rechte, Regeln, Fassung, Journal, Ereignis); je
+                    Bereich ein Modul: karten, inhalt, boards, aufbau, mitglieder, ordner, papierkorb, hinweise,
+                    anhaenge; rahmen.py ist der Rahmen jeder Änderung, stand.py die Abfragen
+  schnittstelle/    REST unter /api/v1 und der Ereignisstrom; je Bereich ein Router, beide nur über die Anwendung;
+                    Adapter auf Dienste des Gerüsts hinter Schnittstellen der Anwendung (zugang.py: Weitere Konten,
+                    ablage.py: Ablage der Kellerwolke für Anhänge)
 frontend/src/       die Entwürfe (mockups/src) ohne Galerie und Entwurfsleiste; beispiel/ ist ersetzt durch daten/
+tools/probebetrieb.py  das Backend mit der nachgestellten Kellerwolke der Tests, zum Prüfen der Oberfläche ohne echte
+                    Zugangsdaten (Startkonfiguration "pinnwand-probe")
 ```
 
 ## 2. Daten

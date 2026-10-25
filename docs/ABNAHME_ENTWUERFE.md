@@ -11,6 +11,19 @@ wo die Entwürfe des Neubaus (`mockups/`) sie abbilden. Maß sind die Mechanik u
 http://localhost:5398. "(Gegenprobe)" heißt: im Browser der Entwürfe nachgestellt. "(aus dem Code)" heißt: aus dem Code
 abgeleitet, nicht nachgestellt.
 
+## In der App gebaut (Stufe 1, 25.10.2026)
+
+Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
+
+- M-01: Die Seitenleiste zeigt Boards ohne Ordner in einer eigenen Gruppe (Abfrage `boardGruppen`, auch am Telefon).
+- M-06: Der Ereignisstrom nennt, wer änderte; die Karte zeigt die Person kurz, die Meldung sagt es, eine eigene
+  Meldung mit Rückgängig bleibt stehen.
+- M-09: Ein Pfad öffnet jede Karte, eine archivierte holt das Board einzeln vom Server.
+- M-11: Ein Board, das es für dich nicht mehr gibt (gelöscht, Mitgliedschaft entzogen), verlässt die Ansicht mit
+  Meldung zu Heute; abgelehnte Änderungen nennen den Grund des Servers.
+- M-26: Das Archiv lädt seitenweise vom Server, mit Nachladen beim Rollen und der Gesamtzahl im Kopf.
+- M-55: Ein Konflikt entsteht nur, wenn dasselbe Feld inzwischen anders ist; das Detail fragt dann nach.
+
 ## Zählung
 
 | Stand | Zahl |

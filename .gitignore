@@ -4,8 +4,8 @@ __pycache__/
 *.pyc
 .pytest_cache/
 /daten/
-zertifikate/
-sicherungen/
+/zertifikate/
+/sicherungen/
 frontend/node_modules
 frontend/dist/
 mockups/node_modules

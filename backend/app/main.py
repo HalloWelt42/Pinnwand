@@ -19,6 +19,7 @@ from .fassung import FASSUNG, WURZEL
 from .schnittstelle import anhaenge
 from .schnittstelle.ablage import KellerwolkeAblage
 from .schnittstelle.rest import router
+from .schnittstelle.sprachmodell import LeitstellenModell
 from .schnittstelle.zugang import GeruestZugang
 from .sicherung import Nachtsicherung
 from .uhr import Uhr
@@ -32,7 +33,9 @@ def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None, uh
                       daten=daten, einstellungen=AppEinstellungen, oberflaeche=WURZEL / "frontend" / "dist",
                       push=True, transport=transport)
     ablage = KellerwolkeAblage(geruest)
-    dienste = Dienste.bauen(geruest.db, GeruestZugang(geruest), ablage, uhr, push=geruest.push)
+    dienste = Dienste.bauen(geruest.db, GeruestZugang(geruest), ablage, uhr, push=geruest.push,
+                            sprachmodell=LeitstellenModell(geruest))
+    geruest.einstellungen.anbieten("ki_modell", geruest.leitstelle_angebot("text", leer="Kette der App"))
     geruest.begleiter_anmelden(Start(geruest.db), Vorbuchung(dienste.serien), Faelligkeit(dienste.hinweise), dienste.mitteilungen,
                                Nachtsicherung(Path(geruest.db.pfad), sicherungen or daten.parent / "sicherungen", "pinnwand",
                                               dienste.anwendung.uhr))

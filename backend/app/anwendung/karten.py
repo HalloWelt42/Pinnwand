@@ -6,20 +6,22 @@ ihres Boards (Schlüssel HAUS-12)."""
 
 from __future__ import annotations
 
-from typing import Literal
+from pydantic import Field
 
-from ..modell import Board, Ereignis, Gruppe, Karte, Kennung, Konto, Spalte
+from ..modell import Board, Ereignis, Gruppe, Karte, Kartenart, Kennung, Konto, Modell, Punkt, Spalte
 from ..regeln.board import abschluss, spalte_von, uebertragen
 from ..regeln.tage import ist_tag
 from . import hinweise, zeiterfassung
-from .kartenbasis import gruppen_aufraeumen, karte_lesen, karten_der_spalte, serientag_auslassen, speichern, vermerken
+from .kartenbasis import (
+    KURZ_LAENGE, PUNKTE_HOECHSTENS, TEXT_LAENGE, TITEL_LAENGE, gruppen_aufraeumen, karte_lesen, karten_der_spalte, serientag_auslassen, speichern, vermerken,
+)
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
 
+#: so viele Karten legt `mehrere_anlegen` höchstens auf einmal an
+MEHRERE_HOECHSTENS = 50
 #: Abstand der Reihe zwischen zwei Karten; wird er zu eng, nummeriert die Spalte neu
 ABSTAND = 1024.0
 ENG = 1e-6
-#: Längster Titel einer Karte (Zeichen)
-TITEL_LAENGE = 300
 
 
 def gruppe_lesen(k: Kontext, gruppe_id: Kennung) -> Gruppe:
@@ -116,12 +118,71 @@ def hinein(k: Kontext, b: Board, ids: list[Kennung], ziel: Spalte, platz: int | 
     return "; ".join(teile) + zeiterfassung.gestoppt(gebucht)
 
 
+class Kartenentwurf(Modell):
+    """Inhalt einer neuen Karte: Titel, Beschreibung (Markdown) und offene Punkte der Checkliste."""
+
+    titel: str
+    beschreibung: str | None = None
+    checkliste: list[str] = Field(default_factory=list)
+
+
+def entwurf_pruefen(e: Kartenentwurf) -> None:
+    """Titel, Texte und Punkte gegen die Grenzen; säubert Leerraum am Rand."""
+    e.titel = e.titel.strip()
+    if not e.titel:
+        raise Abgelehnt("Eine Karte braucht einen Titel")
+    if len(e.titel) > TITEL_LAENGE:
+        raise Abgelehnt(f"Der Titel ist länger als {TITEL_LAENGE} Zeichen")
+    e.beschreibung = (e.beschreibung or "").strip() or None
+    if e.beschreibung and len(e.beschreibung) > TEXT_LAENGE:
+        raise Abgelehnt(f"Der Text ist länger als {TEXT_LAENGE} Zeichen")
+    e.checkliste = [t.strip() for t in e.checkliste]
+    if len(e.checkliste) > PUNKTE_HOECHSTENS:
+        raise Abgelehnt(f"Eine Checkliste hat höchstens {PUNKTE_HOECHSTENS} Punkte")
+    if any(not t or len(t) > KURZ_LAENGE for t in e.checkliste):
+        raise Abgelehnt(f"Ein Punkt der Checkliste braucht Text (höchstens {KURZ_LAENGE} Zeichen)")
+
+
+def zielspalte(b: Board, spalte: Kennung | None) -> Spalte:
+    """Die genannte Spalte des Boards, ohne Angabe die erste offene."""
+    ziel = spalte_von(b, spalte) if spalte else next((s for s in b.spalten if not s.erledigt), None)
+    if ziel is None:
+        raise Abgelehnt("Diese Spalte gibt es in diesem Board nicht", 400)
+    return ziel
+
+
+def neue_karte(k: Kontext, b: Board, ziel: Spalte, e: Kartenentwurf, art: Kartenart, faellig: str | None = None) -> Karte:
+    """Eine neue Karte für die Zielspalte mit der nächsten Nummer des Boards; zuständig ist, wer sie anlegt. Der Entwurf
+    ist geprüft; eingereiht und gespeichert wird mit `in_spalte_legen`."""
+    nummer = k.naechste_nummer(b.id)
+    c = Karte(id=neue_kennung("c"), board=b.id, schluessel=f"{b.kuerzel}-{nummer}", spalte=ziel.id, titel=e.titel, art=art,
+              beschreibung=e.beschreibung, checkliste=[Punkt(text=t) for t in e.checkliste], zustaendig=[k.konto.id],
+              faellig=faellig or None, bewegt_am=k.jetzt, erstellt_am=k.jetzt,
+              verlauf=[Ereignis(zeit=k.jetzt, von=k.konto.id, text="hat die Karte angelegt")])
+    if ziel.erledigt:
+        c.abgeschlossen = abschluss(c, k.heute)
+    return c
+
+
+def in_spalte_legen(k: Kontext, b: Board, ziel: Spalte, karten: list[Karte]) -> None:
+    """Neue Karten in dieser Reihenfolge ans Ende der Spalte, gespeichert; wer in einer Beschreibung erwähnt ist, bekommt
+    einen Hinweis."""
+    einreihen(k, ziel, karten, None)
+    for c in karten:
+        speichern(k, c)
+        hinweise.erwaehnt(k, b, c, sorted(hinweise.erwaehnte(k, b, c.beschreibung)))
+
+
+def anzahl(n: int) -> str:
+    return f"{n} {'Karte' if n == 1 else 'Karten'}"
+
+
 class Karten:
     def __init__(self, anwendung: Anwendung) -> None:
         self.a = anwendung
 
     async def anlegen(self, konto: Konto, board_id: Kennung, titel: str, spalte: Kennung | None = None,
-                      art: Literal["arbeit", "idee"] | None = None, faellig: str | None = None,
+                      art: Kartenart | None = None, faellig: str | None = None,
                       beschreibung: str | None = None) -> Antwort:
         """Neue Karte am Ende der Spalte (ohne: die erste offene), zuständig ist, wer sie anlegt. Ohne Art: die Kartenart
         des Boards."""
@@ -129,28 +190,36 @@ class Karten:
 
         def arbeit(k: Kontext) -> str:
             b = k.board_mit_recht(board_id, "karten.anlegen")
-            if not titel:
-                raise Abgelehnt("Eine Karte braucht einen Titel")
-            if len(titel) > TITEL_LAENGE:
-                raise Abgelehnt(f"Der Titel ist länger als {TITEL_LAENGE} Zeichen")
+            entwurf_pruefen(Kartenentwurf(titel=titel, beschreibung=beschreibung))
             if faellig and not ist_tag(faellig):
                 raise Abgelehnt(f"{faellig} ist kein Tag (JJJJ-MM-TT)")
-            ziel = spalte_von(b, spalte) if spalte else next((s for s in b.spalten if not s.erledigt), None)
-            if ziel is None:
-                raise Abgelehnt("Diese Spalte gibt es in diesem Board nicht", 400)
-            nummer = k.naechste_nummer(b.id)
-            c = Karte(id=neue_kennung("c"), board=b.id, schluessel=f"{b.kuerzel}-{nummer}", spalte=ziel.id, titel=titel,
-                      art=art or b.kartenart,
-                      beschreibung=(beschreibung or "").strip() or None, zustaendig=[konto.id], faellig=faellig or None,
-                      bewegt_am=k.jetzt, erstellt_am=k.jetzt,
-                      verlauf=[Ereignis(zeit=k.jetzt, von=konto.id, text="hat die Karte angelegt")])
-            if ziel.erledigt:
-                c.abgeschlossen = abschluss(c, k.heute)
-            einreihen(k, ziel, [c], None)
-            speichern(k, c)
-            hinweise.erwaehnt(k, b, c, sorted(hinweise.erwaehnte(k, b, c.beschreibung)))
+            ziel = zielspalte(b, spalte)
+            c = neue_karte(k, b, ziel, Kartenentwurf(titel=titel, beschreibung=beschreibung), art or b.kartenart, faellig)
+            in_spalte_legen(k, b, ziel, [c])
             grenze = ueber_grenze(k, ziel)
             return f"{c.schluessel} in {ziel.name} angelegt" + (f"; {grenze}" if grenze else "")
+
+        return await self.a.aendern(konto, arbeit)
+
+    async def mehrere_anlegen(self, konto: Konto, board_id: Kennung, entwuerfe: list[Kartenentwurf],
+                              spalte: Kennung | None = None, art: Kartenart | None = None) -> Antwort:
+        """Mehrere Karten mit Inhalt in einer Änderung am Ende der Spalte (ein Rückgängig für alle), etwa aus einem
+        Vorschlag der KI; sonst wie `anlegen`."""
+
+        def arbeit(k: Kontext) -> str:
+            b = k.board_mit_recht(board_id, "karten.anlegen")
+            if not entwuerfe:
+                raise Abgelehnt("Keine Karte zum Anlegen")
+            if len(entwuerfe) > MEHRERE_HOECHSTENS:
+                raise Abgelehnt(f"Höchstens {MEHRERE_HOECHSTENS} Karten auf einmal")
+            for e in entwuerfe:
+                entwurf_pruefen(e)
+            ziel = zielspalte(b, spalte)
+            karten = [neue_karte(k, b, ziel, e, art or b.kartenart) for e in entwuerfe]
+            in_spalte_legen(k, b, ziel, karten)
+            grenze = ueber_grenze(k, ziel)
+            spanne = karten[0].schluessel if len(karten) == 1 else f"{karten[0].schluessel} bis {karten[-1].schluessel}"
+            return f"{anzahl(len(karten))} in {ziel.name} angelegt ({spanne})" + (f"; {grenze}" if grenze else "")
 
         return await self.a.aendern(konto, arbeit)
 

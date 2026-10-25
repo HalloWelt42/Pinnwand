@@ -22,6 +22,7 @@ from .ereignisse import Ereignisse
 from .hinweise import Hinweise
 from .inhalt import Inhalte
 from .karten import Karten
+from .ki import KeinModell, Ki, Sprachmodell
 from .konten import Konten
 from .mitglieder import Mitglieder
 from .mitteilungen import Mitteilungen
@@ -55,17 +56,20 @@ class Dienste:
     termine: Termine
     berichte: Berichte
     mitteilungen: Mitteilungen
+    ki: Ki
 
     @classmethod
-    def bauen(cls, db: Datenbank, zugang: Zugang, ablage: Ablage, uhr: Uhr | None = None, push: Push | None = None) -> Dienste:
+    def bauen(cls, db: Datenbank, zugang: Zugang, ablage: Ablage, uhr: Uhr | None = None, push: Push | None = None,
+              sprachmodell: Sprachmodell | None = None) -> Dienste:
         ereignisse = Ereignisse()
         a = Anwendung(Verzeichnis(db), ereignisse, uhr)
         konten = Konten(a)
-        return cls(anwendung=a, ereignisse=ereignisse, konten=konten, abfragen=Abfragen(a), boards=Boards(a, zugang),
+        ki = Ki(a, sprachmodell or KeinModell())
+        return cls(anwendung=a, ereignisse=ereignisse, konten=konten, abfragen=Abfragen(a, ki.bereit), boards=Boards(a, zugang),
                    karten=Karten(a), inhalte=Inhalte(a), hinweise=Hinweise(a), papierkorb=Papierkorb(a), aufbau=Aufbau(a),
                    mitglieder=Mitglieder(a), persoenlich=Persoenliches(a), anhaenge=Anhaenge(a, ablage),
                    zeiterfassung=Zeiterfassung(a), arbeitszeit=Arbeitszeit(a), serien=Serien(a), termine=Termine(a),
-                   berichte=Berichte(a, ablage), mitteilungen=Mitteilungen(a, push))
+                   berichte=Berichte(a, ablage), mitteilungen=Mitteilungen(a, push), ki=ki)
 
 
 class Start(Begleiter):

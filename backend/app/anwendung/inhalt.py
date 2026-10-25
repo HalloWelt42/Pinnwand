@@ -14,17 +14,12 @@ from ..modell import Board, Farbe, Karte, Kennung, Kommentar, Konto, Modell, Pri
 from ..regeln.tage import datum_text, ist_tag
 from . import hinweise
 from . import zeiterfassung
-from .karten import TITEL_LAENGE
-from .kartenbasis import karte_lesen, speichern, vermerken
+from .kartenbasis import (
+    FELD_LAENGE, KOMMENTAR_LAENGE, KURZ_LAENGE, PUNKTE_HOECHSTENS, TEXT_LAENGE, TITEL_LAENGE, karte_lesen, speichern, vermerken,
+)
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext
 
 PRIORITAETEN = {"keine": "Keine", "niedrig": "Niedrig", "mittel": "Mittel", "hoch": "Hoch", "dringend": "Dringend"}
-#: Grenzen der Eingaben (Zeichen, Anzahl)
-TEXT_LAENGE = 50_000
-KURZ_LAENGE = 500
-FELD_LAENGE = 2_000
-KOMMENTAR_LAENGE = 5_000
-PUNKTE_HOECHSTENS = 200
 SCHAETZUNG_HOECHSTENS = 100_000
 
 

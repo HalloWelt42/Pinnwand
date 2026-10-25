@@ -7,6 +7,14 @@ from __future__ import annotations
 from ..modell import Auslass, Ereignis, Karte, Kennung, Serie
 from .rahmen import Abgelehnt, Kontext
 
+#: Grenzen der Eingaben an einer Karte (Zeichen, Anzahl), für alle Wege, die Karten schreiben
+TITEL_LAENGE = 300
+TEXT_LAENGE = 50_000
+KURZ_LAENGE = 500
+FELD_LAENGE = 2_000
+KOMMENTAR_LAENGE = 5_000
+PUNKTE_HOECHSTENS = 200
+
 
 def karte_lesen(k: Kontext, karte_id: Kennung) -> Karte:
     d = k.s.lies("karten", karte_id)

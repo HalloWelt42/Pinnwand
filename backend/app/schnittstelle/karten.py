@@ -1,4 +1,4 @@
-"""Wege an Karten: anlegen, verschieben (einzeln, gesammelt, erledigen), verknüpfen, duplizieren, Inhalte bearbeiten,
+"""Wege an Karten: anlegen (auch mehrere in einer Änderung), verschieben (einzeln, gesammelt, erledigen), verknüpfen, duplizieren, Inhalte bearbeiten,
 kommentieren, Sammelaktionen. Feste Pfade stehen vor denen mit Kennung (sonst nimmt /karten/{id}/... auch "sammel")."""
 
 from __future__ import annotations
@@ -8,6 +8,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends
 
 from ..anwendung.inhalt import Kartenfelder
+from ..anwendung.karten import Kartenentwurf
 from ..anwendung.rahmen import Antwort
 from ..modell import Kennung, Konto, Modell, Prioritaet
 from .zugriff import Zugriff
@@ -19,6 +20,12 @@ class NeueKarte(Modell):
     art: Literal["arbeit", "idee"] | None = None
     faellig: str | None = None
     beschreibung: str | None = None
+
+
+class MehrereKarten(Modell):
+    karten: list[Kartenentwurf]
+    spalte: Kennung | None = None
+    art: Literal["arbeit", "idee"] | None = None
 
 
 class Verschieben(Modell):
@@ -84,6 +91,10 @@ def router(z: Zugriff) -> APIRouter:
     @r.post("/boards/{board_id}/karten", response_model=Antwort)
     async def anlegen(board_id: Kennung, e: NeueKarte, konto: Konto = Depends(ich)) -> Antwort:
         return await tun(d.karten.anlegen(konto, board_id, e.titel, e.spalte, e.art, e.faellig, e.beschreibung))
+
+    @r.post("/boards/{board_id}/karten/mehrere", response_model=Antwort)
+    async def mehrere_anlegen(board_id: Kennung, e: MehrereKarten, konto: Konto = Depends(ich)) -> Antwort:
+        return await tun(d.karten.mehrere_anlegen(konto, board_id, e.karten, e.spalte, e.art))
 
     @r.post("/karten/sammel/verschieben", response_model=Antwort)
     async def sammel_verschieben(e: SammelVerschieben, konto: Konto = Depends(ich)) -> Antwort:

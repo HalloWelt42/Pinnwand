@@ -6,6 +6,7 @@ Karten und einzelne Karten kommen über eigene Abfragen (seitenweise, einzeln), 
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Callable
 
 from ..modell import MODULE_DA, Board, Karte, Kartenname, Kennung, Konto, Modell, Terminname
 from ..regeln.board import hat_recht, im_archiv
@@ -44,6 +45,8 @@ class Stand(Modell):
     terminnamen: list[Terminname]
     berichte: list[dict]
     hinweiswege: Hinweiswege
+    #: ob die Vorschläge der KI gehen (Leitstelle eingerichtet); sonst zeigt die Oberfläche keine
+    ki_bereit: bool
 
 
 class Hinweiswege(Modell):
@@ -61,8 +64,9 @@ class Team(Modell):
 
 
 class Abfragen:
-    def __init__(self, anwendung: Anwendung) -> None:
+    def __init__(self, anwendung: Anwendung, ki_bereit: Callable[[], bool] = lambda: False) -> None:
         self.a = anwendung
+        self.ki_bereit = ki_bereit
 
     async def alle_boards(self) -> list[Board]:
         return [Board.model_validate(d) for d in await self.a.v.alle("boards")]
@@ -117,6 +121,7 @@ class Abfragen:
             termine=termine,
             berichte=await self.a.v.alle("berichte", "konto=?", (konto.id,), "erstellt DESC"),
             hinweiswege=Hinweiswege(da=list(WEGE_DA), vorgabe={a: {w: vorgabe(a, w) for w in WEGE_DA} for a in ARTEN_DA}),
+            ki_bereit=self.ki_bereit(),
             terminnamen=await self._terminnamen({d["termin"] for d in zeiteintraege if d.get("termin")}
                                                 - {d["id"] for d in termine}),
         )

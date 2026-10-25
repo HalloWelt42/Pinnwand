@@ -248,7 +248,8 @@ Stundenzettel führt Termine als eigene Zeilen.
 ## 9. Stufe 4: Verbund, zuerst Berichte
 
 Berichte brauchen keine andere App außer der Kellerwolke; sie kommen zuerst (Modul `berichte` in `MODULE_DA`). Die
-Anbindungen an Assistent, Transkription, Vertonung, KI und Push folgen je mit eigenem Vertrag.
+Anbindungen an Assistent, Transkription, Vertonung, KI und Push folgen je mit eigenem Vertrag; Push ist ein Baustein des
+Appkerns (ENTWURF §11).
 
 ### Berichte
 
@@ -268,6 +269,34 @@ Anbindungen an Assistent, Transkription, Vertonung, KI und Push folgen je mit ei
 | `POST /berichte/vorschau` | Auswahl `{art, von, bis, boards, personen, format}`; Antwort `BerichtInhalt` |
 | `POST /berichte` | dieselbe Auswahl; erstellt die Datei und den Eintrag |
 | `GET /inhalt/berichte/{id}` | die Datei (über das Inhalts-Cookie wie bei Anhängen) |
+
+### KI an der Karte
+
+Modul `ki` in `MODULE_DA`, ohne eigene Rechte: Vorschläge holt, wer das Passende darf. Die KI schlägt nur vor; übernommen
+wird nur, was die Person in der Vorschau bestätigt, und zwar über die gewohnten Anwendungsfälle (mit Rückgängig).
+
+- Vier Vorschläge: **Zusammenfassung** der Karte aus Titel, Beschreibung, Notizen, Checkliste und Kommentaren (jedes
+  Mitglied; übernehmen in die Notizen mit "Karten bearbeiten"); **Checkliste** mit neuen Punkten, ohne die vorhandenen
+  ("Karten bearbeiten"); **Labels** aus denen des Boards, die die Karte noch nicht hat ("Karten bearbeiten"); **Karten aus
+  Text** mit Titel, Beschreibung und Checkliste je Karte ("Karten anlegen").
+- Gerechnet wird über die Leitstelle (Anschluss `Sprachmodell` in der Anwendung, umgesetzt in
+  `schnittstelle/sprachmodell.py` mit `geruest.leitstelle`). Das Modell wählt die Einstellung `ki_modell` aus den
+  Textmodellen der Leitstelle; leer gilt die Kette der App. Ohne eingerichtete Leitstelle zeigt die Oberfläche keine
+  Vorschläge (`ki_bereit` im Stand), die Seite der Module sagt warum.
+- Jede Anfrage hat eine feste Antwortform (JSON-Schema); Begründung vor Listen. Labels wählt das Modell über Kennungen
+  der Anfrage (L1, L2, ...), der Server bildet sie auf die echten ab und verwirft Unbekanntes. Alles vom Modell
+  Geschriebene geht durch die Säuberung des Appkerns (nur gerade Zeichen); Punkte und Titel werden gekürzt,
+  Doppeltes und Vorhandenes fällt weg.
+- Fehler der Leitstelle kommen als Ablehnung mit Grund (503 nicht eingerichtet oder kann gerade nicht, 502 Antwort nicht
+  lesbar); nichts wartet still. Priorität "hoch", weil eine Person wartet.
+
+| Weg | Inhalt |
+|---|---|
+| `POST /karten/{id}/ki/zusammenfassung` | Antwort `{text}` |
+| `POST /karten/{id}/ki/checkliste` | Antwort `{punkte}` (Texte) |
+| `POST /karten/{id}/ki/labels` | Antwort `{labels}` (Kennungen des Boards) |
+| `POST /boards/{id}/ki/karten` | `{text}`; Antwort `{karten: [{titel, beschreibung, checkliste}]}` |
+| `POST /boards/{id}/karten/mehrere` | `{spalte, art, karten}`; legt alle in einer Änderung an (ein Rückgängig) |
 
 ## 10. Prüfen
 

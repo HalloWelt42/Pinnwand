@@ -1,7 +1,8 @@
 """Eine nachgestellte Kellerwolke für Tests und den Probebetrieb (tools/probebetrieb.py): drei Personen mit dem
 Passwort "geheim", anna besitzt den App-Schlüssel, bert und cora dürfen erst nach einer Einladung. Dazu die Ablage im
 Speicher (`ABLAGE`), so weit der Zugang des Appkerns sie für Anhänge ruft: Ordner, Dateien schreiben, lesen und in den
-Papierkorb legen im Zweig der App, und die Dateiwahl mit der Anmeldung einer Person in ihren eigenen Dateien."""
+Papierkorb legen im Zweig der App, und die Dateiwahl mit der Anmeldung einer Person in ihren eigenen Dateien. Dazu die
+Leitstelle (`LEITSTELLE`) mit Antworten des Modells der Reihe nach."""
 
 from __future__ import annotations
 
@@ -198,6 +199,46 @@ ABLAGE = Ablage()
 
 #: was beim nachgestellten Push-Dienst ankommt (Host push.test): je Mitteilung die Anfrage
 PUSH_EINGANG: list[httpx.Request] = []
+#: Leitstelle für die Einstellungen der App (Adresse und Schlüssel nur zum Schein)
+LEITSTELLE_EINRICHTUNG = {"leitstelle_adresse": "http://ls.test", "leitstelle_schluessel": "ls_x"}
+
+
+@dataclass
+class Leitstelle:
+    """Die Fassade der Leitstelle (Host ls.test), so weit KI an der Karte sie ruft: Modelle und Chat. Die Antworten des
+    Modells kommen der Reihe nach aus `antworten` (Text, wie das Modell ihn schreibt); jede Anfrage steht mit ihren
+    Köpfen in `anfragen`. `fehler` antwortet stattdessen mit diesem Status und Grundwort."""
+
+    antworten: list[str] = field(default_factory=list)
+    anfragen: list[httpx.Request] = field(default_factory=list)
+    fehler: tuple[int, str] | None = None
+    ende: str = "stop"
+
+    def leeren(self) -> None:
+        self.antworten.clear()
+        self.anfragen.clear()
+        self.fehler = None
+        self.ende = "stop"
+
+    def koerper(self, i: int = -1) -> dict:
+        return json.loads(self.anfragen[i].content)
+
+    def antwort(self, request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/v1/models":
+            return httpx.Response(200, json={"data": [
+                {"id": "gross", "x-leitstelle": {"name": "Groß", "faehigkeiten": ["text"], "geladen": True}}]})
+        if request.url.path != "/v1/chat/completions":
+            return _fehlt()
+        self.anfragen.append(request)
+        if self.fehler:
+            status, grund = self.fehler
+            return httpx.Response(status, json={"error": {"code": grund, "message": "Die Leitstelle hält gerade an"}})
+        text = self.antworten.pop(0)
+        return httpx.Response(200, json={"choices": [{"message": {"content": text}, "finish_reason": self.ende}],
+                                         "model": "gross"}, headers={"x-leitstelle-modell": "gross"})
+
+
+LEITSTELLE = Leitstelle()
 
 
 def kellerwolke(request: httpx.Request) -> httpx.Response:
@@ -205,6 +246,8 @@ def kellerwolke(request: httpx.Request) -> httpx.Response:
     if request.url.host == "push.test":
         PUSH_EINGANG.append(request)
         return httpx.Response(201)
+    if request.url.host == "ls.test":
+        return LEITSTELLE.antwort(request)
     if pfad == "/api/v1/ablage/ich":
         return httpx.Response(200, json={"app": "Pinnwand", "konto": "anna", "rechte": []})
     if pfad.startswith("/api/v1/ablage/"):

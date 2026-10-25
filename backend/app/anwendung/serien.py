@@ -26,8 +26,8 @@ from ..regeln.tage import datum_kurz, ist_tag, plus_tage
 from ..regeln.zeit import dauer_text, minuten, uhrzeit
 from . import termine, zeiterfassung
 from .hinweise import PINNWAND
-from .karten import TITEL_LAENGE, einreihen, hinein
-from .kartenbasis import karten_der_spalte, speichern, vermerken
+from .karten import einreihen, hinein
+from .kartenbasis import TITEL_LAENGE, karten_der_spalte, speichern, vermerken
 from .papierkorb import ablegen
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
 

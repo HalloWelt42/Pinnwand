@@ -6,9 +6,8 @@
   import { untrack } from "svelte";
   import { dragHandle, dragHandleZone, type DndEvent } from "svelte-dnd-action";
   import { laufendAuf, zeitDerKarte } from "../../../daten/abfragen";
-  import {
-    spalteAendern, spalteAnlegen, spalteLoeschen, spaltenOrdnen, zurErledigtSpalte,
-  } from "../../../daten/anwendung/boards.svelte";
+  import { spalteAendern, spalteAnlegen, spaltenOrdnen, zurErledigtSpalte } from "../../../daten/anwendung/boards.svelte";
+  import { spalteLoeschen } from "../../../daten/anwendung/papierkorb.svelte";
   import { dauer } from "../../../daten/format";
   import { kartenDerSpalte, stand } from "../../../daten/stand.svelte";
   import { ZEITFENSTER, ZEITFENSTER_VORGABE } from "../../../anzeige";

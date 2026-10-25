@@ -8,7 +8,8 @@
   import { ZEITFENSTER, ZEITFENSTER_VORGABE } from "../anzeige";
   import { EINSTELLUNG_GRENZEN as GRENZEN } from "../regeln/board";
   import Zahlfeld from "../teile/Zahlfeld.svelte";
-  import { spalteAendern, spalteLoeschen, spaltenOrdnen, zurErledigtSpalte } from "../daten/anwendung/boards.svelte";
+  import { spalteAendern, spaltenOrdnen, zurErledigtSpalte } from "../daten/anwendung/boards.svelte";
+  import { spalteLoeschen } from "../daten/anwendung/papierkorb.svelte";
   import { kartenDerSpalte } from "../daten/stand.svelte";
   import type { Board, Spalte, Zeitfenster } from "../modell";
   import Farbwahl from "../teile/Farbwahl.svelte";

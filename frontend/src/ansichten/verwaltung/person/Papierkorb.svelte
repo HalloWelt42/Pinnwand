@@ -4,7 +4,7 @@
   // Zeit seiner Karten bleibt. Karten und Spalten liegen im Papierkorb ihres Boards.
   import { untrack } from "svelte";
   import { boardsImPapierkorb } from "../../../daten/abfragen";
-  import { boardInPapierkorb } from "../../../daten/anwendung/boards.svelte";
+  import { boardInPapierkorb } from "../../../daten/anwendung/papierkorb.svelte";
   import { meldungSchliessen } from "../../../daten/anwendung/meldung.svelte";
   import { entfernen, wiederherstellen } from "../../../daten/anwendung/papierkorb.svelte";
   import { ICH } from "../../../daten/ich";

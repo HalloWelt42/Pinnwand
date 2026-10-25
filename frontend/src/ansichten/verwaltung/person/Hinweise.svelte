@@ -3,7 +3,7 @@
   // Telefon, über den Assistenten) ein Schalter. Push braucht das Telefon: das Einrichten steht als Schritte darüber.
   // Gilt am Konto, auf allen Geräten; jeder Schalter über den Anwendungsfall.
   import { HINWEIS_ARTEN, HINWEIS_WEGE } from "../../../anzeige";
-  import { hinweisWegSetzen } from "../../../daten/anwendung/boards.svelte";
+  import { hinweisWegSetzen } from "../../../daten/anwendung/hinweise.svelte";
   import { stand } from "../../../daten/stand.svelte";
 </script>
 

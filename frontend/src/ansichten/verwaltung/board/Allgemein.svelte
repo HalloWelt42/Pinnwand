@@ -2,9 +2,8 @@
   // Allgemein: Name, festes Kürzel, Ordner (persönlich), Farbe; Alterung und Erledigt-Grenzen (bisher global, jetzt je
   // Board); als Vorlage speichern; das Board in den Papierkorb (Rückfrage in der Fläche). Alles über die Anwendungsfälle.
   import { laufendAuf } from "../../../daten/abfragen";
-  import {
-    alsVorlageSpeichern, boardFarbeSetzen, boardInPapierkorb, boardUmbenennen, einstellungenSetzen, ordnerSetzen,
-  } from "../../../daten/anwendung/boards.svelte";
+  import { alsVorlageSpeichern, boardFarbeSetzen, boardUmbenennen, einstellungenSetzen, ordnerSetzen } from "../../../daten/anwendung/boards.svelte";
+  import { boardInPapierkorb } from "../../../daten/anwendung/papierkorb.svelte";
   import { laufnummer, ordnerVon, stand } from "../../../daten/stand.svelte";
   import type { Board, BoardEinstellungen } from "../../../modell";
   import { alterung } from "../../../regeln/board";

@@ -94,12 +94,12 @@ dahinter übernommen wird.
 ## 5. Stufen
 
 1. **Board**: Boards, Spalten, Karten mit der ganzen alten Mechanik, eigene Felder, Rollen und Rechte, Mitglieder,
-   Vorlagen, Papierkorb, Ereignisstrom, Heute, Liste und Tabelle, Anhänge über die Kellerwolke, Telefon (Heute,
-   schnell erfassen, Board ansehen und verschieben).
+   Vorlagen, Papierkorb, Ereignisstrom, Heute, Liste und Tabelle, Kalender und Zeitachse der Karten, Hinweise in der
+   Pinnwand, Anhänge über die Kellerwolke, Telefon (Heute, schnell erfassen, Board ansehen und verschieben).
 2. **Zeit**: Timer je Person, Zeiteinträge, Stundenzettel, Arbeitszeit und Urlaub mit Soll und Ist, Feiertage je
    Bundesland, Jahreskalender und Auslastung; Telefon: Timer und Zeit buchen.
-3. **Planung**: Serien und Termine, Kalender, Zeitachse.
-4. **Verbund**: Berichte, Assistent, Transkripte, Vorlesen, KI an der Karte, Hinweise (Pinnwand, Push, Assistent),
+3. **Planung**: Serien und Termine (auch in Heute, Kalender und Zeitachse).
+4. **Verbund**: Berichte, Assistent, Transkripte, Vorlesen, KI an der Karte, Hinweise über Push und den Assistenten,
    Spracheingabe beim Erfassen.
 
 Jede Stufe geht nach ihrer Prüfung (Tests, Ansichtsprüfung in allen Breiten, Vergleich mit den Mockups, Abnahme der
@@ -157,3 +157,18 @@ Datenbank zum Vergleich. Nach der Freigabe sind die Entwürfe der Leitfaden; Än
 - Lesefreigabe eines Boards per Link ohne Konto
 - Urlaub mit Freigabe durch eine verantwortliche Person
 - Pinnwand als Quelle im Fundus
+
+## 11. Annahmen zu offenen Fragen (änderbar)
+
+Wo der Entwurf eine Frage offen ließ, gilt bis zu einer anderen Entscheidung:
+
+- Kartennummern werden nie wieder vergeben, auch nicht nach Rückgängig oder Löschen.
+- Neue Karten bekommen die Kartenart ihres Boards (aus der Vorlage: Ideen legt Ideen an, die übrigen Arbeit), nicht
+  eine aus der Zeiterfassung abgeleitete; mit Zeiterfassung wählt man beim Anlegen.
+- Module bietet der Server erst mit ihrer Stufe an; vorher lassen sie sich nicht einschalten, und keine Ansicht zeigt sie.
+- Eine Einladung schaltet die Person in der App frei (Einstellung Weitere Konten); entzogen wird der Zugang nur von Hand.
+- Ein Konflikt entsteht nur, wenn dasselbe Feld inzwischen anders ist; andere Felder speichern weiter.
+- Der Papierkorb leert sich nicht von selbst. Das Kürzel eines Boards im Papierkorb bleibt vergeben.
+- Gebuchte Zeit bleibt bei endgültigem Entfernen einer Karte stehen und trägt deren gemerkten Namen (Stufe 2).
+- Ein Termin ohne Karte zählt nicht ins Ist (Stufe 3).
+

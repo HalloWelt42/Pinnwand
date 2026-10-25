@@ -12,6 +12,7 @@ from typing import Protocol
 from ..modell import MODULE, MODULE_DA, Board, BoardEinstellungen, Farbe, Feld, Kennung, Konto, Label, Mitglied, Modell, Ordner, Spalte, Vorlage
 from ..regeln.kuerzel import kuerzel_fehler
 from ..vorlagen import start_rollen
+from .papierkorb import geloeschtes_board
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
 
 #: Farben neuer Boards: die erste, die noch kein Board trägt (unterscheidbar in der Seitenleiste)
@@ -34,13 +35,17 @@ class Einladung(Modell):
 
 
 def kuerzel_inhaber(k: Kontext):
-    """Wem ein Kürzel gehört: Name des Boards, wenn ich es sehe, sonst "" (fremdes Board), None: frei."""
+    """Wem ein Kürzel gehört: Name des Boards, wenn ich es sehe, sonst "" (fremdes Board), None: frei. Ein Board im
+    Papierkorb behält sein Kürzel, damit es sich wiederherstellen lässt."""
     def inhaber(kuerzel: str) -> str | None:
         d = k.s.alle("boards", "kuerzel=?", (kuerzel,))
-        if not d:
+        if d:
+            b = Board.model_validate(d[0])
+            return b.name if any(m.konto == k.konto.id for m in b.mitglieder) else ""
+        g = geloeschtes_board(k, kuerzel)
+        if g is None:
             return None
-        b = Board.model_validate(d[0])
-        return b.name if any(m.konto == k.konto.id for m in b.mitglieder) else ""
+        return f"{g.name} im Papierkorb" if any(m.konto == k.konto.id for m in g.mitglieder) else ""
     return inhaber
 
 

@@ -1,10 +1,11 @@
 <script lang="ts">
   // Papierkorb eines Boards: gelöschte Karten und Spalten mit allem, was dranhängt (Zeiten, Kommentare, Anhänge,
   // Verknüpfungen), wer sie wann gelöscht hat und wo sie lagen. Wiederherstellen bringt alles an die alte Stelle zurück,
-  // mit demselben Schlüssel; das darf, wer den Papierkorb sieht. Endgültig entfernen gibt es nur mit dem Recht
-  // "Papierkorb leeren" und nach einer Rückfrage in der Fläche, die nennt, was verloren geht; die gebuchte Zeit bleibt.
+  // mit demselben Schlüssel; das darf, wer das Recht hat, mit dem der Eintrag hineinkam (Karten löschen, für Spalten Board
+  // verwalten). Endgültig entfernen gibt es nur mit dem Recht "Papierkorb leeren" und nach einer Rückfrage in der Fläche,
+  // die nennt, was verloren geht; die gebuchte Zeit bleibt.
   import { darf, papierkorbVon } from "../../daten/abfragen";
-  import { eintragName, entfernen, wiederherstellen } from "../../daten/anwendung/papierkorb.svelte";
+  import { eintragName, entfernen, leeren, rechtZumWiederherstellen, wiederherstellen } from "../../daten/anwendung/papierkorb.svelte";
   import { ICH } from "../../daten/ich";
   import { datum, dauer, wann } from "../../daten/format";
   import { board as holeBoard, konto, stand } from "../../daten/stand.svelte";
@@ -12,7 +13,7 @@
   import type { Geloescht, Karte } from "../../modell";
   import NebenKopf from "./NebenKopf.svelte";
 
-  let { boardId, entwurf = "" }: { boardId: string; entwurf?: string } = $props();
+  let { boardId }: { boardId: string } = $props();
   const b = $derived(holeBoard(boardId));
   const eintraege = $derived(papierkorbVon(b.id));
   const rolle = $derived(b.rollen.find((r) => r.id === b.mitglieder.find((m) => m.konto === ICH)?.rolle));
@@ -20,8 +21,21 @@
 
   /** offene Rückfrage in der Fläche: Kennung eines Eintrags oder "alle" (Zustand der Ansicht) */
   let rueckfrage = $state("");
-  const rueckfrageVorgefuehrt = $derived(entwurf === "rueckfrage" ? "p-123" : "");
-  $effect(() => { rueckfrage = rueckfrageVorgefuehrt; });
+
+  function darfZurueck(e: Geloescht): boolean {
+    return darf(b, rechtZumWiederherstellen(e));
+  }
+  /** was die Rolle hier nicht darf, in Worten über der Liste; leer, wenn sie alles darf */
+  const rechteHinweis = $derived.by(() => {
+    const fehlt = new Set(eintraege.filter((e) => !darfZurueck(e)).map((e) => e.art));
+    const teile = [
+      ...(fehlt.has("karte") ? ["Karten wiederherstellen darf, wer das Recht Karten löschen hat"] : []),
+      ...(fehlt.has("spalte") ? ["Spalten wiederherstellen darf, wer das Recht Board verwalten hat"] : []),
+    ];
+    if (darfLeeren) return teile.join("; ");
+    if (!teile.length) teile.push("Wiederherstellen kannst du");
+    return [...teile, "endgültig entfernen darf nur, wer das Recht Papierkorb leeren hat"].join("; ");
+  });
 
   /** gebuchte Zeit einer Karte je Person (bleibt in den Zeiteinträgen, auch im Papierkorb) */
   function zeitenVon(k: Karte): { konto: string; sek: number }[] {
@@ -32,8 +46,10 @@
   function sekunden(k: Karte): number {
     return zeitenVon(k).reduce((s, z) => s + z.sek, 0);
   }
-  function verknuepft(k: Karte): string[] {
-    return k.gruppe ? stand.karten.filter((x) => x.gruppe === k.gruppe && x.id !== k.id).map((x) => x.schluessel) : [];
+  /** verknüpfte Karten im Board und im selben Eintrag (Wiederherstellen fügt die Karte wieder in die Gruppe) */
+  function verknuepft(k: Karte, e: Geloescht): string[] {
+    if (!k.gruppe) return [];
+    return [...stand.karten, ...e.karten].filter((x) => x.gruppe === k.gruppe && x.id !== k.id).map((x) => x.schluessel);
   }
   /** Serie einer Serienkarte und was die Serie über ihren Tag weiß */
   function serie(k: Karte): string {
@@ -62,11 +78,12 @@
     const sek = karten.reduce((s, k) => s + sekunden(k), 0);
     const kommentare = karten.reduce((s, k) => s + k.kommentare.length, 0);
     const anhaenge = karten.reduce((s, k) => s + k.anhaenge.length, 0);
-    const gruppe = [...new Set(karten.flatMap(verknuepft))];
+    const gruppe = [...new Set(liste.flatMap((e) => e.karten.flatMap((k) => verknuepft(k, e))))];
     const teile = [
-      ...(liste.some((e) => e.art === "spalte") || karten.length > 1 ? [`${karten.length} Karten`] : []),
+      ...(karten.length && (liste.some((e) => e.art === "spalte") || karten.length > 1)
+        ? [`${karten.length} ${karten.length === 1 ? "Karte" : "Karten"}`] : []),
       ...(kommentare ? [`${kommentare} ${kommentare === 1 ? "Kommentar" : "Kommentare"}`] : []),
-      ...(anhaenge ? [`${anhaenge} ${anhaenge === 1 ? "Anhang" : "Anhänge"} in der Kellerwolke`] : []),
+      ...(anhaenge ? [`${anhaenge} ${anhaenge === 1 ? "Anhang" : "Anhänge"}`] : []),
       ...(gruppe.length ? [`die Verknüpfung mit ${aufzaehlen(gruppe)}`] : []),
     ];
     return (teile.length ? `Verloren gehen ${aufzaehlen(teile)}.` : "")
@@ -74,9 +91,9 @@
   }
 </script>
 
-{#snippet dran(k: Karte)}
+{#snippet dran(k: Karte, e: Geloescht)}
   {@const punkte = k.checkliste.filter((p) => p.erledigt).length}
-  {@const gruppe = verknuepft(k)}
+  {@const gruppe = verknuepft(k, e)}
   <div class="dran">
     {#each k.labels as l (l)}{@const lab = b.labels.find((x) => x.id === l)}{#if lab}<span class="pw-label" data-farbe={lab.farbe}>{lab.name}</span>{/if}{/each}
     {#if k.zustaendig.length}<span class="pw-personen" title={k.zustaendig.map((p) => konto(p).name).join(", ")}>{#each k.zustaendig as p (p)}<Person id={p} />{/each}</span>{/if}
@@ -94,13 +111,13 @@
   </div>
 {/snippet}
 
-{#snippet rueckfrageFlaeche(liste: Geloescht[], name: string)}
+{#snippet rueckfrageFlaeche(liste: Geloescht[], name: string, tun: () => void)}
   <div class="bestaetigen" role="alert">
     <i class="fa-solid fa-triangle-exclamation"></i>
     <div class="frage"><b>{name} endgültig entfernen?</b> {verlust(liste)} Das lässt sich nicht rückgängig machen.</div>
     <span class="rechts">
       <button class="knopf klein" onclick={() => (rueckfrage = "")}>Abbrechen</button>
-      <button class="knopf gefahr-voll klein" onclick={() => { entfernen(liste.map((e) => e.id)); rueckfrage = ""; }}>
+      <button class="knopf gefahr-voll klein" onclick={() => { tun(); rueckfrage = ""; }}>
         <i class="fa-solid fa-xmark"></i>Endgültig entfernen</button>
     </span>
   </div>
@@ -120,11 +137,10 @@
 
   <div class="rollfeld">
     {#if rueckfrage === "alle" && eintraege.length}
-      <div class="pw-uebersicht-geloescht-alle">{@render rueckfrageFlaeche(eintraege, `Alle ${eintraege.length} Einträge`)}</div>
+      <div class="pw-uebersicht-geloescht-alle">{@render rueckfrageFlaeche(eintraege, `Alle ${eintraege.length} Einträge`, () => leeren(b.id))}</div>
     {/if}
-    {#if !darfLeeren && eintraege.length}
-      <div class="hinweis pw-uebersicht-geloescht-alle"><i class="fa-solid fa-lock"></i>
-        <div>Wiederherstellen kannst du; endgültig entfernen darf nur, wer das Recht Papierkorb leeren hat.</div></div>
+    {#if rechteHinweis && eintraege.length}
+      <div class="hinweis pw-uebersicht-geloescht-alle"><i class="fa-solid fa-lock"></i><div>{rechteHinweis}.</div></div>
     {/if}
     {#each eintraege as e (e.id)}
       {@const k = e.karten[0]}
@@ -133,14 +149,16 @@
           {#if e.art === "spalte" && e.spalte}
             <span class="zustand"><i class="fa-solid fa-table-columns"></i>Spalte</span>
             <span class="name"><span class="pw-farbpunkt" data-farbe={e.spalte.farbe}></span>{e.spalte.name}</span>
-            <span class="zaehler">{e.karten.length} Karten</span>
+            <span class="zaehler">{e.karten.length} {e.karten.length === 1 ? "Karte" : "Karten"}</span>
           {:else}
             <span class="zustand"><i class="fa-solid fa-note-sticky"></i>Karte</span>
             <span class="name"><span class="pw-schluessel">{k.schluessel}</span> {k.titel}</span>
           {/if}
           <span class="rechts">
-            <button class="knopf klein" title="An die alte Stelle zurück, mit Schlüssel, Zeiten, Kommentaren, Anhängen und Verknüpfungen"
-                    onclick={() => wiederherstellen(e.id)}><i class="fa-solid fa-trash-arrow-up"></i>Wiederherstellen</button>
+            {#if darfZurueck(e)}
+              <button class="knopf klein" title="An die alte Stelle zurück, mit Schlüssel, Kommentaren, Anhängen und Verknüpfungen"
+                      onclick={() => wiederherstellen(e.id)}><i class="fa-solid fa-trash-arrow-up"></i>Wiederherstellen</button>
+            {/if}
             {#if darfLeeren}
               <button class="knopf ohne gefahr klein" onclick={() => (rueckfrage = e.id)}><i class="fa-solid fa-xmark"></i>Endgültig entfernen</button>
             {/if}
@@ -149,12 +167,12 @@
         <div class="wer"><Person id={e.von} /><span>Gelöscht von {konto(e.von).name} · {wann(e.am)} · {stelle(e)}</span></div>
         {#if e.art === "spalte"}
           {#each e.karten as x (x.id)}
-            <div class="unterkarte"><span class="name"><span class="pw-schluessel">{x.schluessel}</span> {x.titel}</span>{@render dran(x)}</div>
+            <div class="unterkarte"><span class="name"><span class="pw-schluessel">{x.schluessel}</span> {x.titel}</span>{@render dran(x, e)}</div>
           {/each}
         {:else}
-          {@render dran(k)}
+          {@render dran(k, e)}
         {/if}
-        {#if rueckfrage === e.id}{@render rueckfrageFlaeche([e], eintragName(e))}{/if}
+        {#if rueckfrage === e.id}{@render rueckfrageFlaeche([e], eintragName(e), () => entfernen([e.id]))}{/if}
       </article>
     {:else}
       <div class="leer"><i class="fa-solid fa-trash-can"></i><h2>Der Papierkorb ist leer</h2>

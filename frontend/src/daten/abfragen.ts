@@ -375,8 +375,23 @@ export function karteDesTags(serieId: Kennung, tag: string): Karte | undefined {
   return stand.karten.find((k) => k.serie === serieId && k.faellig === tag);
 }
 
+/** Warum die Karte eines Serientags als angefasst gilt, in Worten; nichts: unberührt. Unberührt ist sie, solange sie in
+ *  der Zielspalte liegt, nicht erledigt ist, keine Zeit hat und ihr Verlauf nur die Zeile ihres Anlegens hat (dieselbe
+ *  Regel, nach der der Server Vorbuchungen anpasst oder zurücknimmt) */
+export function angefasstWeil(k: Karte, s: Serie): string | undefined {
+  const spalte = stand.boards.find((b) => b.id === k.board)?.spalten.find((x) => x.id === k.spalte);
+  if (spalte?.erledigt || k.abgeschlossen) return "erledigt";
+  if (k.spalte !== s.zielspalte) return `liegt in ${spalte?.name ?? "einer anderen Spalte"}`;
+  if (stand.zeiteintraege.some((e) => e.karte === k.id)) return "mit erfasster Zeit";
+  const zuletzt = k.verlauf.length > 1 ? k.verlauf[k.verlauf.length - 1] : undefined;
+  return zuletzt ? `${konto(zuletzt.von).name} ${zuletzt.text}` : undefined;
+}
+
+/** Bis so viele Tage zurück fragt der Nachtrag nach (M-111); ältere Serientage gelten als bestätigt */
+const NACHTRAG_TAGE = 31;
+
 /** Was die Regeln der Serien aus dem Zustand brauchen: Abwesenheiten (ganze Tage), Feiertage im Bundesland des
- *  Zeitkontos, die Karte jedes Tags mit den Personen, die darauf Zeit gebucht haben */
+ *  Zeitkontos, die Karte jedes Tags mit den Personen, die darauf Zeit gebucht haben, und ob jemand sie angefasst hat */
 export function serienUmfeld(): SerienUmfeld {
   return {
     heute: uhr.heute,
@@ -391,22 +406,29 @@ export function serienUmfeld(): SerienUmfeld {
     },
     tagKarte: (serieId, tag) => {
       const k = karteDesTags(serieId, tag);
-      if (!k) return undefined;
+      const s = serie(serieId);
+      if (!k || !s) return undefined;
       const gebucht = [...new Set(stand.zeiteintraege.filter((e) => e.karte === k.id && e.datum === tag).map((e) => e.konto))];
-      return { id: k.id, zustaendig: k.zustaendig, gebucht };
+      return { id: k.id, zustaendig: k.zustaendig, gebucht, angefasst: angefasstWeil(k, s) !== undefined };
     },
-    bestaetigtBis: "",
+    bestaetigtBis: plusTage(uhr.heute, -NACHTRAG_TAGE - 1),
   };
 }
 
+/** Kann die Person in diesem Board ihre Zeit bestätigen? Nur mit Zeiterfassung und dem Recht "Eigene Zeit buchen" */
+function zeitBestaetigbar(boardId: Kennung, kontoId: Kennung): boolean {
+  const b = stand.boards.find((x) => x.id === boardId);
+  return !!b && hatRecht(b, "zeit.buchen", kontoId, stand.moduleDa);
+}
+
 /** Deine vorgebuchten Zeiten vergangener Tage (höchstens 31 Tage zurück), die auf deine Bestätigung warten: Serientage
- *  und Termine, nur deine (in der alten App fehlte die Grenze, M-111) */
+ *  und Termine, nur deine (in der alten App fehlte die Grenze, M-111), nur in Boards, in denen du Zeit buchst */
 export function nachtrag(kontoId: Kennung = ICH): Nachtragposten[] {
   const u = serienUmfeld();
-  const ab = plusTage(uhr.heute, -31);
+  const ab = plusTage(uhr.heute, -NACHTRAG_TAGE);
   const gestern = plusTage(uhr.heute, -1);
   const posten: Nachtragposten[] = [];
-  for (const s of stand.serien.filter((x) => x.teilnehmer.includes(kontoId))) {
+  for (const s of stand.serien.filter((x) => x.teilnehmer.includes(kontoId) && zeitBestaetigbar(x.board, kontoId))) {
     for (const v of vorkommen(s, ab, gestern, u)) {
       if (v.stand !== "wartet" || !v.offen.includes(kontoId)) continue;
       const k = karteDesTags(s.id, v.tag);
@@ -414,7 +436,8 @@ export function nachtrag(kontoId: Kennung = ICH): Nachtragposten[] {
                     bestaetigt: (k?.zustaendig ?? []).filter((x) => !v.offen.includes(x) && !v.ohne.some((o) => o.konto === x)) });
     }
   }
-  for (const t of stand.termine.filter((x) => x.datum >= ab && x.datum < uhr.heute && x.teilnehmer.includes(kontoId) && !x.bestaetigt.includes(kontoId))) {
+  for (const t of stand.termine.filter((x) => x.datum >= ab && x.datum < uhr.heute && x.teilnehmer.includes(kontoId) && !x.bestaetigt.includes(kontoId)
+                                         && zeitBestaetigbar(x.board, kontoId))) {
     if (u.abwesend(kontoId, t.datum)) continue;
     posten.push({ art: "termin", bezug: t.id, board: t.board, titel: t.titel, tag: t.datum, von: t.von,
                   geplantMin: minutenAus(t.bis) - minutenAus(t.von), bestaetigt: t.bestaetigt });

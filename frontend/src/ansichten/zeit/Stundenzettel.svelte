@@ -34,7 +34,7 @@
 
   interface Zeile { id: string; sek: Record<string, number>; woche: number }
   const zeilen = $derived.by(() => {
-    const ids = new Set(eintraege.map((e) => e.karte));
+    const ids = new Set(eintraege.flatMap((e) => (e.karte ? [e.karte] : [])));
     if (timer && tage.some((t) => sitzungAm(timer, t) > 0)) ids.add(timer.karte);
     if (vorschau && tage.includes(vorschau.tag)) ids.add(vorschau.karte);
     const out: Zeile[] = [...ids].map((id) => {

@@ -25,6 +25,7 @@
     hand: { symbol: "fa-pen", titel: "Von Hand auf diesen Tag gebucht" },
     korrektur: { symbol: "fa-sliders", titel: "Differenz aus dem Setzen der Zeit (Zelle oder Ticketzeit)" },
     serie: { symbol: "fa-repeat", titel: "Aus einer Serie nachgetragen, mit der geplanten Dauer als Vorschlag" },
+    termin: { symbol: "fa-handshake", titel: "Bestätigte Zeit eines Termins, von Beginn bis Ende" },
   };
 
   const heute = $derived(uhr.heute);
@@ -91,7 +92,7 @@
     {#if sitzung && gedeckelt.length}
       <div class="hinweis warnung pw-zeiten-rueckfrage">
         <i class="fa-solid fa-hourglass-end"></i>
-        <div><b>Timer lief {dauer(sitzung.sekunden)} Stunden.</b> Dein Timer auf {kartenName(gedeckelt[0].karte).schluessel} lief
+        <div><b>Timer lief {dauer(sitzung.sekunden)} Stunden.</b> Dein Timer auf {kartenName(gedeckelt[0].karte ?? "").schluessel} lief
           von {datum(sitzung.seit, true)} {uhrzeit(sitzung.seit)} bis {datum(sitzung.bis, true)} {uhrzeit(sitzung.bis)}.
           Gebucht sind die ersten 12 Stunden{gedeckelt.length > 1 ? ", an Mitternacht zerlegt" : ""}:
           {gedeckelt.map((e) => `${datum(e.datum, true)} ${dauer(e.sekunden)}`).join(" und ")}. Wann hast du aufgehört?</div>
@@ -109,7 +110,7 @@
     <div class="pw-zeiten-eintraege">
       {#each liste as e (e.id)}
         <div class="pw-zeiten-eintrag" class:gedeckelt={istGedeckelt(e)}>
-          <span class="was"><KartenName id={e.karte} /></span>
+          <span class="was">{#if e.karte}<KartenName id={e.karte} />{/if}</span>
           <button class="knopf ohne symbol klein" title="Eintrag löschen (Rückgängig möglich)" onclick={() => loeschen(e.id)}><i class="fa-solid fa-xmark"></i></button>
           <div class="mitte">
             <span class="uhr zahl">{e.von ? `${e.von} bis ${e.bis}` : "ohne Uhrzeit"}</span>

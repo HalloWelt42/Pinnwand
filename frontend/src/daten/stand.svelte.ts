@@ -7,6 +7,7 @@ import type {
   Abwesenheit, Bericht, Board, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Kartenname, Konto, Laufnummer, Mitglied, ModulKennung, Ordner, PersonEinstellungen,
   Serie, Termin, Timer, Verbindung, Vorlage, Zeiteintrag, Zeitkonto,
 } from "../modell";
+import { PINNWAND_KONTO } from "./konstanten";
 import { ICH, ichSetzen } from "./ich";
 
 /** Meldung unten: was eben geschah, mit Rückgängig, solange sie steht */
@@ -256,8 +257,10 @@ export function kartenDerSpalte(spalte: string): Karte[] {
   return stand.karten.filter((k) => k.spalte === spalte).sort((a, b) => a.reihe - b.reihe);
 }
 
-/** Konto einer Person; eine unbekannte Kennung ergibt einen Platzhalter statt einer fremden Person */
+/** Konto einer Person, auch der Pinnwand selbst (Vorbuchung der Serien); eine unbekannte Kennung ergibt einen Platzhalter
+ *  statt einer fremden Person */
 export function konto(id: string): Konto {
+  if (id === PINNWAND_KONTO.id) return PINNWAND_KONTO;
   return stand.konten.find((k) => k.id === id) ?? { id, name: "Unbekannte Person", kuerzel: "?", farbe: "stahl", kellerwolke: "" };
 }
 

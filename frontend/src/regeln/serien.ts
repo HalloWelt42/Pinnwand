@@ -15,8 +15,9 @@ export interface SerienUmfeld {
   abwesend: (konto: Kennung, tag: string) => string | undefined;
   /** Feiertag im Bundesland der Person an diesem Tag, als Name; sonst nichts */
   feiertag: (konto: Kennung, tag: string) => string | undefined;
-  /** die Karte eines Serientags: wer zuständig ist und wer seine Zeit dafür gebucht hat */
-  tagKarte: (serie: Kennung, tag: string) => { id: Kennung; zustaendig: Kennung[]; gebucht: Kennung[] } | undefined;
+  /** die Karte eines Serientags: wer zuständig ist, wer seine Zeit dafür gebucht hat und ob jemand sie angefasst hat
+   *  (nicht mehr in der Zielspalte, erledigt, mit Zeit oder mehr im Verlauf als ihr Anlegen) */
+  tagKarte: (serie: Kennung, tag: string) => { id: Kennung; zustaendig: Kennung[]; gebucht: Kennung[]; angefasst: boolean } | undefined;
   /** bis zu diesem Tag gelten Serientage als bestätigt (ältere führt niemand einzeln nach) */
   bestaetigtBis: string;
 }
@@ -127,8 +128,7 @@ export function vorkommenAm(s: Serie, tag: string, u: SerienUmfeld): Vorkommen {
 
   const geloescht = s.auslass.find((a) => a.tag === tag);
   if (geloescht) return v("geloescht");
-  const beruehrt = tag > u.heute ? s.beruehrt.find((b) => b.tag === tag) : undefined;
-  if (beruehrt) return v("beruehrt", { notiz: beruehrt.grund });
+  if (tag > u.heute && karte?.angefasst) return v("beruehrt");
   if (da.length === 0) return v("ausgelassen", { notiz: [...new Set(ohne.map((o) => o.grund))].join(", ") });
   if (tag < u.heute) {
     if (pausiert) return v("pausiert");

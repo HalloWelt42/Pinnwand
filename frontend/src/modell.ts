@@ -236,7 +236,9 @@ export interface Laufnummer {
   zahl: number;
 }
 
-export type Herkunft = "timer" | "hand" | "korrektur" | "serie";
+/** Woher ein Zeiteintrag kommt: Timer, von Hand, Korrektur beim Setzen der Zeit, Nachtrag einer Serie oder die
+ *  bestätigte Zeit eines Termins */
+export type Herkunft = "timer" | "hand" | "korrektur" | "serie" | "termin";
 
 /** Vermerk an den Einträgen einer Timer-Sitzung, die länger als 12 Stunden lief: die echte Sitzung als Zeitpunkte
  *  (Ortszeit wie die Uhr) und ihre ganze Dauer; gebucht sind die ersten 12 Stunden, bis die Person das echte Ende nennt
@@ -247,11 +249,15 @@ export interface Deckel {
   sekunden: number;
 }
 
-/** Gebuchte Zeit einer Person auf einer Karte an einem Tag; die Zeit einer Karte ist die Summe ihrer Einträge */
+/** Gebuchte Zeit einer Person an einem Tag, auf einer Karte oder für einen Termin (genau eins von beiden); die Zeit einer
+ *  Karte ist die Summe ihrer Einträge, die bestätigte Zeit eines Termins ein Eintrag mit Herkunft "termin" */
 export interface Zeiteintrag {
   id: Kennung;
-  karte: Kennung;
-  /** Board der Karte; danach richtet sich, wer den Eintrag sieht */
+  /** Karte, auf der die Zeit gebucht ist; leer bei einem Termin */
+  karte?: Kennung;
+  /** Termin, dessen bestätigte Zeit das ist; leer bei einer Karte */
+  termin?: Kennung;
+  /** Board der Karte oder des Termins; danach richtet sich, wer den Eintrag sieht */
   board: Kennung;
   konto: Kennung;
   datum: string;
@@ -285,7 +291,9 @@ export type Rhythmus = "taeglich" | "werktags" | "woechentlich" | "monatlich";
 /** Welcher Tag im Monat bei monatlichem Rhythmus */
 export type Monatsregel = "tag" | "erster-werktag" | "letzter-werktag";
 
-/** Wiederkehrende Karte: legt im Vorlauf Karten in die Zielspalte, fällig am Termintag, Schätzung ist die Dauer */
+/** Wiederkehrende Karte: legt im Vorlauf Karten in die Zielspalte, fällig am Termintag, Schätzung ist die Dauer. Ob ein
+ *  Tag angefasst ist (Ändern, Pause und Urlaub lassen ihn dann stehen), steht nicht hier, sondern an der Karte des Tags
+ *  (daten/abfragen.ts, angefasstWeil) */
 export interface Serie {
   id: Kennung;
   board: Kennung;
@@ -318,8 +326,6 @@ export interface Serie {
   fortgesetzt?: string;
   /** bewusst gelöschte Tage (Auslass): kommen nie wieder, auch nicht nach Ändern oder Fortsetzen */
   auslass: { tag: string; von: Kennung; am: string }[];
-  /** Vorbuchungen, die jemand angefasst hat (Zeit, Spalte, Inhalt): Ändern, Pause und Urlaub lassen sie stehen */
-  beruehrt: { tag: string; grund: string }[];
   /** vergangene Tage, die im Nachtrag verworfen wurden (fand nicht statt) */
   verworfen: string[];
 }

@@ -408,7 +408,10 @@ export function serienUmfeld(): SerienUmfeld {
       const k = karteDesTags(serieId, tag);
       const s = serie(serieId);
       if (!k || !s) return undefined;
-      const gebucht = [...new Set(stand.zeiteintraege.filter((e) => e.karte === k.id && e.datum === tag).map((e) => e.konto))];
+      // ohne Zeiterfassung im Board wartet nichts auf Bestätigung: der Tag gilt allen als gezählt
+      const zeit = modulAn(board(k.board), "zeiterfassung", stand.moduleDa);
+      const gebucht = zeit ? [...new Set(stand.zeiteintraege.filter((e) => e.karte === k.id && e.datum === tag).map((e) => e.konto))]
+        : k.zustaendig;
       return { id: k.id, zustaendig: k.zustaendig, gebucht, angefasst: angefasstWeil(k, s) !== undefined };
     },
     bestaetigtBis: plusTage(uhr.heute, -NACHTRAG_TAGE - 1),

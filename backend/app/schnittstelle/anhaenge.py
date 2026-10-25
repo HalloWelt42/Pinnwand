@@ -145,8 +145,8 @@ def router(z: Zugriff) -> APIRouter:
 
 
 def inhalt(geruest: Geruest, d: Dienste, ablage: KellerwolkeAblage) -> APIRouter:
-    """Inhaltsadresse eines Anhangs zum Öffnen in einem neuen Reiter. Ein Link sendet keinen Kopf; hier gilt darum auch
-    das Inhalts-Cookie der Anmeldung, das der Appkern nur unter /api/v1/inhalt setzt."""
+    """Inhaltsadresse eines Anhangs oder eines eigenen Berichts zum Öffnen in einem neuen Reiter. Ein Link sendet keinen
+    Kopf; hier gilt darum auch das Inhalts-Cookie der Anmeldung, das der Appkern nur unter /api/v1/inhalt setzt."""
     r = APIRouter(prefix="/api/v1/inhalt", tags=["pinnwand"])
 
     @r.get("/anhaenge/{karte_id}/{datei}")
@@ -155,5 +155,11 @@ def inhalt(geruest: Geruest, d: Dienste, ablage: KellerwolkeAblage) -> APIRouter
         konto = await d.konten.ich(angemeldet)
         a = await Zugriff.tun(d.anhaenge.oeffnen(konto, karte_id, datei))
         return await Zugriff.tun(ablage.ausliefern(datei, a.name, request))
+
+    @r.get("/berichte/{bericht_id}")
+    async def bericht(bericht_id: Kennung, request: Request, angemeldet: Anmeldekonto = geruest.lesen) -> Response:
+        konto = await d.konten.ich(angemeldet)
+        b = await Zugriff.tun(d.berichte.eigener(konto, bericht_id))
+        return await Zugriff.tun(ablage.ausliefern(b.datei_id, b.datei, request))
 
     return r

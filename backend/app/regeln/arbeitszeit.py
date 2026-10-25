@@ -1,11 +1,14 @@
 """Regeln des Moduls Arbeitszeit, soweit der Server sie braucht: Namen der Abwesenheiten für Meldungen, die
-Bundesländer und die Prüfung eines Zeitkontos. Soll, Feiertage und Urlaubstage rechnet die Oberfläche mit denselben
-Regeln (frontend/src/regeln/arbeitszeit.ts, feiertage.ts); Berichte bringen sie mit Stufe 4 auch hierher."""
+Bundesländer, die Prüfung eines Zeitkontos und das Soll eines Tags (für Berichte), gleich frontend/src/regeln/
+arbeitszeit.ts. Urlaubstage und Brückentage rechnet nur die Oberfläche."""
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from ..modell import Abwesenheit, Halbtagsregel, Kennung, Zeitkonto
-from .tage import ist_tag
+from .feiertage import feiertag
+from .tage import ist_tag, wochentag
 
 #: Namen der Arten wie ARTEN in frontend/src/regeln/arbeitszeit.ts (name und knapp)
 ARTEN: dict[str, tuple[str, str]] = {
@@ -15,6 +18,9 @@ ARTEN: dict[str, tuple[str, str]] = {
     "fortbildung": ("Fortbildung", "Fortbildung"),
     "feiertag": ("Betrieblich frei", "Betrieb frei"),
 }
+
+#: Faktor auf das Soll des Tags je Art: 0 Soll entfällt, 1 bleibt (Ausgleich baut Überstunden ab), wie ARTEN.soll
+SOLL_FAKTOR: dict[str, float] = {"urlaub": 0, "krank": 0, "frei": 1, "fortbildung": 0, "feiertag": 0}
 
 BUNDESLAENDER = (
     "Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hessen", "Mecklenburg-Vorpommern",
@@ -72,5 +78,47 @@ def fassung_am(fassungen: list[Zeitkonto], konto: Kennung, tag: str) -> Zeitkont
 
 def ganztags_abwesend(liste: list[Abwesenheit], konto: Kennung, tag: str) -> str | None:
     """Name einer ganztägigen Abwesenheit der Person an diesem Tag, sonst None."""
-    a = next((x for x in liste if x.konto == konto and x.von <= tag <= x.bis), None)
+    a = abwesenheit_am(liste, konto, tag)
     return art_name(a) if a and (a.anteil or 1) >= 1 else None
+
+
+def abwesenheit_am(liste: list[Abwesenheit], konto: Kennung, tag: str) -> Abwesenheit | None:
+    return next((a for a in liste if a.konto == konto and a.von <= tag <= a.bis), None)
+
+
+@dataclass(frozen=True)
+class TagSoll:
+    tag: str
+    #: Soll ohne Abwesenheit (nach Arbeitstag, Feiertag, Halbtagsregel)
+    basis_sek: float
+    soll_sek: float
+    grund: str
+    feiertag: str | None = None
+    regel: str | None = None
+    abwesenheit: Abwesenheit | None = None
+
+
+def soll_am(k: Zeitkonto, abwesenheiten: list[Abwesenheit], tag: str) -> TagSoll:
+    """Soll eines Tags in klarer Reihenfolge: Arbeitstag des Kontos, Feiertag des Bundeslands, Halbtagsregel,
+    Abwesenheit (wie sollAm der Oberfläche)."""
+    wt = wochentag(tag)
+    tages_sek = round(k.wochenstunden * 3600 / len(k.tage)) if k.tage else 0
+    ft = feiertag(tag, k.bundesland)
+    if wt not in k.tage:
+        return TagSoll(tag, 0, 0, "wochenende" if wt in (0, 6) else "arbeitsfrei", feiertag=ft)
+    if ft:
+        return TagSoll(tag, 0, 0, "feiertag", feiertag=ft)
+    regel = next((r for r in k.halbtage if int(tag[5:7]) == r.monat and int(tag[8:10]) == r.tag), None)
+    basis = tages_sek / 2 if regel else tages_sek
+    abw = abwesenheit_am(abwesenheiten, k.konto, tag)
+    if abw:
+        anteil = abw.anteil or 1
+        return TagSoll(tag, basis, basis * (1 - anteil * (1 - SOLL_FAKTOR[abw.art])), abw.art,
+                       regel=regel.name if regel else None, abwesenheit=abw)
+    return TagSoll(tag, basis, basis, "halbtagsregel" if regel else "arbeitstag", regel=regel.name if regel else None)
+
+
+def soll_tag(fassungen: list[Zeitkonto], abwesenheiten: list[Abwesenheit], konto: Kennung, tag: str) -> TagSoll | None:
+    """Soll eines Tags aus der dann gültigen Fassung des Zeitkontos; ohne Zeitkonto und vor seiner ersten Fassung nichts."""
+    k = fassung_am(fassungen, konto, tag)
+    return soll_am(k, abwesenheiten, tag) if k and k.ab <= tag else None

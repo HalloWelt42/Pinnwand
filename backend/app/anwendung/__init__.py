@@ -15,6 +15,7 @@ from ..vorlagen import MITGELIEFERT
 from .anhaenge import Ablage, Anhaenge
 from .arbeitszeit import Arbeitszeit
 from .aufbau import Aufbau
+from .berichte import Berichte
 from .boards import Boards, Zugang
 from .ereignisse import Ereignisse
 from .hinweise import Hinweise
@@ -50,6 +51,7 @@ class Dienste:
     arbeitszeit: Arbeitszeit
     serien: Serien
     termine: Termine
+    berichte: Berichte
 
     @classmethod
     def bauen(cls, db: Datenbank, zugang: Zugang, ablage: Ablage, uhr: Uhr | None = None) -> Dienste:
@@ -59,7 +61,8 @@ class Dienste:
         return cls(anwendung=a, ereignisse=ereignisse, konten=konten, abfragen=Abfragen(a), boards=Boards(a, zugang),
                    karten=Karten(a), inhalte=Inhalte(a), hinweise=Hinweise(a), papierkorb=Papierkorb(a), aufbau=Aufbau(a),
                    mitglieder=Mitglieder(a), persoenlich=Persoenliches(a), anhaenge=Anhaenge(a, ablage),
-                   zeiterfassung=Zeiterfassung(a), arbeitszeit=Arbeitszeit(a), serien=Serien(a), termine=Termine(a))
+                   zeiterfassung=Zeiterfassung(a), arbeitszeit=Arbeitszeit(a), serien=Serien(a), termine=Termine(a),
+                   berichte=Berichte(a, ablage))
 
 
 class Start(Begleiter):

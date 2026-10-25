@@ -41,6 +41,7 @@ class Stand(Modell):
     serien: list[dict]
     termine: list[dict]
     terminnamen: list[Terminname]
+    berichte: list[dict]
 
 
 class Team(Modell):
@@ -105,6 +106,7 @@ class Abfragen:
                                                 - {d["id"] for d in karten}),
             serien=serien,
             termine=termine,
+            berichte=await self.a.v.alle("berichte", "konto=?", (konto.id,), "erstellt DESC"),
             terminnamen=await self._terminnamen({d["termin"] for d in zeiteintraege if d.get("termin")}
                                                 - {d["id"] for d in termine}),
         )

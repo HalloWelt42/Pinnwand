@@ -178,7 +178,74 @@ Einträge.
 Reihenfolge: (1) Backend mit Tests gegen diesen Vertrag, (2) Oberfläche gleichzeitig dagegen, (3) zusammenführen,
 Ansichtsprüfung, Rauchtest, Ausrollen.
 
-## 8. Prüfen
+## 8. Stufe 3: Planung
+
+Serien und Termine je Board (Modul `serien`, dazu in `MODULE_DA`), in Heute, Kalender und Zeitachse; der Nachtrag am
+Folgetag bucht die Zeit. Die Regeln der Tage sind dieselben wie `mockups/src/regeln/serien.ts`, im Server als
+`regeln/serien.py`.
+
+### Daten
+
+- `serien` (Spalte board): Serie wie `frontend/src/modell.ts`, ohne `beruehrt`. Ob ein Serientag angefasst ist, steht
+  an seiner Karte: unberührt ist sie, solange sie in der Zielspalte liegt, nicht erledigt ist, keine Zeit hat und ihr
+  Verlauf nur die Zeile ihres Anlegens hat. Die Regel bekommt das über `tagKarte` (`angefasst`).
+- `termine` (Spalten board, datum): Termin wie im Modell.
+- Zeiteintrag: `karte` oder `termin` (genau eins), Herkunft dazu `termin`. Bestätigte Terminzeit zählt damit ins Ist
+  und steht im Stundenzettel unter dem Termin (Nutzer: "Ja, nach Bestätigung").
+- Serien und Termine sieht, wer Mitglied des Boards ist; ihre Zeiteinträge folgen der Regel der Stufe 2.
+
+### Vorbuchung
+
+Der Server legt die Karten der Serientage an, für jeden Tag von heute bis zum Ende des Vorlaufs mit dem Stand "heute"
+oder "vorgebucht", der noch keine Karte hat (je Serie und Tag eine): in der Zielspalte, Titel mit Uhrzeit,
+Beschreibung, Labels, die anwesenden Teilnehmer als Zuständige, fällig am Tag, Schätzung aus der Dauer, `serie`. Das
+geschieht beim Anlegen, Ändern und Fortsetzen in derselben Änderung und einmal je Tag durch den Begleiter
+`Vorbuchung` (als die Pinnwand selbst, Konto `pinnwand`; die Oberfläche zeigt dieses Konto als "Pinnwand").
+Serienkarten bekommen keinen Hinweis "fällig"; sie stehen in Heute unter Serien.
+
+- Ändern und Pause nehmen unberührte Vorbuchungen ab morgen zurück (sie entfallen ohne Papierkorb, die Vorbuchung legt
+  sie bei Bedarf neu an); angefasste, vergangene und ausgelassene Tage bleiben.
+- Löschen der Serie: unberührte Vorbuchungen in den Papierkorb, die übrigen Karten werden gelöst (`serie` leer).
+- Eine Serienkarte in den Papierkorb legen lässt ihren Tag aus (`auslass`); Wiederherstellen nimmt den Auslass zurück.
+- Eine ganztägige Abwesenheit nimmt die Person aus unberührten Vorbuchungen; bleibt niemand, entfällt die Karte (M-109).
+
+### Nachtrag
+
+Posten rechnet die Oberfläche wie `nachtrag` der Entwürfe (vergangene 31 Tage, nur eigene, nur in Boards mit
+Zeiterfassung). Bestätigen bucht einen Zeiteintrag (Herkunft `serie` auf der Karte des Tags, die nach Erledigt geht und
+den Tag als Abschluss behält; Herkunft `termin` mit `von` und `bis` des Termins); Verwerfen nimmt die Person heraus, ist
+sie allein, geht die Karte in den Papierkorb und der Tag gilt als verworfen (beim Termin: sie ist nicht mehr
+Teilnehmer). Recht dafür: "Eigene Zeit buchen".
+
+### Rechte
+
+"Serien verwalten": Serien und Termine anlegen, ändern, pausieren, fortsetzen, löschen, einen Tag auslassen. Zusagen,
+Bestätigen und Verwerfen: die teilnehmende Person selbst. Ein neuer Termin bringt den übrigen Teilnehmern einen
+Hinweis der Art `termin`.
+
+### Wege
+
+| Weg | Inhalt | Anwendungsfall der Entwürfe |
+|---|---|---|
+| `POST /serien` | Serie ohne `id`, `auslass`, `verworfen`, Pause | `serieAnlegen` |
+| `PATCH /serien/{id}` | Teile der Serie (wie beim Anlegen) | `serieAendern` |
+| `POST /serien/{id}/pausieren`, `/serien/{id}/fortsetzen` | leer | `pausieren`, `fortsetzen` |
+| `DELETE /serien/{id}` | leer | `serieLoeschen` |
+| `POST /serien/{id}/auslassen` | `{tag}` | `tagAuslassen` |
+| `POST /serien/{id}/bestaetigen` | `{tag, sekunden}` | `nachtragBestaetigen` (Serie) |
+| `POST /serien/{id}/verwerfen` | `{tag}` | `nachtragVerwerfen` (Serie) |
+| `POST /termine` | `{board, titel, datum, von, bis, ort?, teilnehmer}` | `terminAnlegen` |
+| `POST /termine/{id}/zusagen` | `{ja}` | `zusagen` |
+| `POST /termine/{id}/bestaetigen`, `/termine/{id}/verwerfen` | leer | `zeitBestaetigen`, `zeitVerwerfen` |
+| `POST /nachtrag` | `{posten: [{art, bezug, tag, sekunden?}]}` | `alleBestaetigen` (eine Änderung) |
+
+### Oberfläche
+
+Ansichten `mockups/src/ansichten/planung/` Serien, SerieBearbeiten, Teilnehmer, Nachtrag; Wege `/serien`,
+`/serien/neu`, `/serien/<kennung>`; Heute, Kalender und Zeitachse lesen Serien und Termine schon aus dem Zustand. Der
+Stundenzettel führt Termine als eigene Zeilen.
+
+## 9. Prüfen
 
 - Tests je Anwendungsfall (Recht, Regel, Fassung, Journal, Rückgängig, Ereignis) gegen eine Datenbank im Speicher; der
   Verbundtest des Gerüsts gegen die Entwicklungs-Kellerwolke.

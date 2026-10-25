@@ -34,6 +34,7 @@ ZUSAMMENFASSUNG_HOECHSTENS = 4_000
 #: Aufzählungszeichen, Nummern und Kästchen vor einem Punkt, wie Modelle sie gern mitliefern
 _VORSATZ = re.compile(r"^\s*(?:[-*•]+|\d+[.)]|\[[ xX]?\])\s*")
 _LEERRAUM = re.compile(r"\s+")
+_WORT = re.compile(r"\w+")
 
 GERADE = "Schreibe auf Deutsch mit echten Umlauten (ä, ö, ü, ß) und nur geraden Anführungszeichen und einfachen Bindestrichen."
 
@@ -127,14 +128,30 @@ def zeile(text: Any, hoechstens: int) -> str:
     return t[:hoechstens].rstrip()
 
 
+def woerter(text: str) -> set[str]:
+    """Die tragenden Wörter eines Punkts (ab drei Buchstaben, Groß- und Kleinschreibung egal)."""
+    return {w for w in _WORT.findall(text.casefold()) if len(w) >= 3}
+
+
+def gleich(a: str, b: str) -> bool:
+    """Sagen zwei Punkte dasselbe? Gleich geschrieben, oder einer enthält alle tragenden Wörter des anderen (mindestens
+    zwei), etwa "Beton beim Baustoffhandel bestellen" und "Beton bestellen". Modelle wiederholen Vorhandenes gern mit
+    mehr Worten, auch wenn die Anweisung es verbietet."""
+    if a.casefold() == b.casefold():
+        return True
+    wa, wb = woerter(a), woerter(b)
+    kurz, lang = (wa, wb) if len(wa) <= len(wb) else (wb, wa)
+    return len(kurz) >= 2 and kurz <= lang
+
+
 def neue_punkte(roh: Any, vorhanden: list[str], hoechstens: int) -> list[str]:
-    """Punkte vom Modell ohne Leeres, Doppeltes und schon Vorhandenes (Groß- und Kleinschreibung egal)."""
-    gesehen = {v.casefold() for v in vorhanden}
+    """Punkte vom Modell ohne Leeres und ohne, was dasselbe sagt wie ein vorhandener oder ein früherer Punkt."""
+    gesehen = list(vorhanden)
     punkte: list[str] = []
     for r in roh if isinstance(roh, list) else []:
         t = zeile(r, KURZ_LAENGE)
-        if t and t.casefold() not in gesehen:
-            gesehen.add(t.casefold())
+        if t and not any(gleich(t, g) for g in gesehen):
+            gesehen.append(t)
             punkte.append(t)
     return punkte[:hoechstens]
 
@@ -197,8 +214,9 @@ class Ki:
             name="checkliste", titel=f"Checkliste {c.schluessel}", laenge=2_000, text=text,
             anweisung="Du schlägst für eine Karte eines Boards die nächsten Schritte als Checkliste vor. Erst eine kurze "
                       "Begründung (ein Satz), dann die Punkte: drei bis acht kurze, konkrete Schritte in sinnvoller "
-                      "Reihenfolge, je höchstens 80 Zeichen, etwa \"Angebot an Brandt schicken\". Punkte, die die "
-                      "Checkliste schon hat, nicht wiederholen. Nur Schritte, die sich aus der Karte ergeben. " + GERADE,
+                      "Reihenfolge, je höchstens 80 Zeichen, etwa \"Angebot an Brandt schicken\". Was die Checkliste "
+                      "schon hat, erledigt oder offen, auch nicht mit anderen Worten wiederholen. Nur Schritte, die sich "
+                      "aus der Karte ergeben, ohne Werkzeug, Material oder Personen, die sie nicht nennt. " + GERADE,
             schema=_objekt({"begruendung": {"type": "string"}, "punkte": {**TEXTE, "minItems": 1, "maxItems": PUNKTE_VORSCHLAG}})))
         return Punktvorschlag(punkte=neue_punkte(antwort.get("punkte"), [p.text for p in c.checkliste], PUNKTE_VORSCHLAG))
 

@@ -99,7 +99,7 @@ async def test_checkliste_ohne_vorhandenes(pw: Pinnwand):
     await ok(pw, "anna", f"/karten/{k['id']}/bearbeiten", {"felder": {"checkliste": [{"text": "Leiter holen"}]}})
     LEITSTELLE.antworten.append(antwort(begruendung="Erst die Leiter, dann putzen.",
                                         punkte=["1. leiter holen", "- Fenster putzen", "fenster putzen", "", "[ ] Rahmen  wischen",
-                                                f"Glas {HALB} innen"]))
+                                                f"Glas {HALB} innen", "Die Leiter beim Nachbarn holen", "Rahmen innen wischen"]))
     r = await ok(pw, "bert", f"/karten/{k['id']}/ki/checkliste")
     assert r == {"punkte": ["Fenster putzen", "Rahmen wischen", "Glas - innen"]}
     schema = LEITSTELLE.koerper()["response_format"]["json_schema"]["schema"]

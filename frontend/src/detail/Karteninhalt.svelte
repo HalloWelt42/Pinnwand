@@ -9,7 +9,7 @@
   import { inPapierkorb } from "../daten/anwendung/papierkorb.svelte";
   import { uhr } from "../daten/uhr.svelte";
   import { alterTage, datumJahr } from "../daten/format";
-  import { konto, stand } from "../daten/stand.svelte";
+  import { konto, mitKonto, stand } from "../daten/stand.svelte";
   import { PRIORITAETEN } from "../anzeige";
   import type { Board, Karte, Prioritaet } from "../modell";
   import { alterung } from "../regeln/board";
@@ -41,11 +41,11 @@
   let zuweisen = $state("");
 
   /** Mitglieder des Boards als Kandidaten fürs Zuweisen */
-  const mitglieder = $derived(board.mitglieder.map((m) => ({ kennung: konto(m.konto).kellerwolke, name: konto(m.konto).name, konto: m.konto })));
+  const mitglieder = $derived(mitKonto(board).map((m) => ({ kennung: konto(m.konto).kellerwolke, name: konto(m.konto).name, konto: m.konto })));
 
   /** Erwähnungen in Texten: @Anna, @anna.berger oder @AB findet das Mitglied, der volle Name steht im Hinweis */
   const optionen: MarkdownOptionen = $derived({
-    erwaehnung: (wort: string) => board.mitglieder.map((m) => konto(m.konto))
+    erwaehnung: (wort: string) => mitKonto(board).map((m) => konto(m.konto))
       .find((p) => [p.name.split(" ")[0], p.kellerwolke, p.kuerzel].some((x) => x.toLowerCase() === wort.toLowerCase()))?.name,
   });
 

@@ -58,7 +58,7 @@
       {#if unter}<span class="unter">{unter}</span>{/if}
     </div>
     {#if glocke}
-      <a class="pw-tel-knopf pw-tel-glocke" href={telPfad("/hinweise")} title="Hinweise: zugewiesen, fällig, erwähnt, Termine"
+      <a class="pw-tel-knopf pw-tel-glocke" href={telPfad("/hinweise")} title="Hinweise: zugewiesen, fällig, erwähnt, kommentiert, verschoben"
          aria-label="Hinweise, {neu} neu"><i class="fa-solid fa-bell"></i>
         {#if neu}<span class="zaehler pille gefahr">{neu}</span>{/if}</a>
     {/if}

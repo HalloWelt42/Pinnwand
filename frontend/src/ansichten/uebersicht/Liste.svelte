@@ -10,7 +10,7 @@
   import { sammelLabel, sammelPrioritaet, sammelVerschieben, sammelZuweisen } from "../../daten/anwendung/karten.svelte";
   import { inPapierkorb } from "../../daten/anwendung/papierkorb.svelte";
   import { dauer, datum, faelligText } from "../../daten/format";
-  import { konto } from "../../daten/stand.svelte";
+  import { konto, mitKonto } from "../../daten/stand.svelte";
   import Person from "../../board/Person.svelte";
   import { PRIORITAETEN, ZEITFENSTER } from "../../anzeige";
   import type { Board, Karte, Prioritaet, Spalte } from "../../modell";
@@ -84,7 +84,7 @@
 
   // Zuweisen: Textfeld mit Vorschlägen aus den Mitgliedern des Boards
   let person = $state("");
-  const mitglieder = $derived(board.mitglieder.map((m) => ({ kennung: konto(m.konto).kellerwolke, name: konto(m.konto).name, konto: m.konto })));
+  const mitglieder = $derived(mitKonto(board).map((m) => ({ kennung: konto(m.konto).kellerwolke, name: konto(m.konto).name, konto: m.konto })));
 
   function pfad(k: Karte): string {
     return boardPfad(board.kuerzel, kartenNummer(k));

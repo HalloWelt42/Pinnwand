@@ -115,6 +115,18 @@ def entfernt_text(eintraege: list[Geloescht]) -> str:
 
 # --- Wiederherstellen je Art -------------------------------------------------------------------------------------
 
+def angleichen(b: Board, c: Karte) -> None:
+    """Eine Karte, die im Papierkorb lag, an das Board von heute angleichen: Labels, eigene Felder und Optionen, die es
+    nicht mehr gibt, und Zuständige, die nicht mehr Mitglied sind, fallen weg."""
+    labels = {l.id for l in b.labels}
+    felder = {f.id: f for f in b.felder}
+    mitglieder = {m.konto for m in b.mitglieder if m.konto}
+    c.labels = [l for l in c.labels if l in labels]
+    c.felder = {fid: w for fid, w in c.felder.items()
+                if fid in felder and (felder[fid].art != "auswahl" or w in (felder[fid].optionen or []))}
+    c.zustaendig = [x for x in c.zustaendig if x in mitglieder]
+
+
 def karte_zurueck(k: Kontext, e: Geloescht) -> str:
     """In ihre Spalte am alten Platz; gibt es die Spalte nicht mehr, in die erste des Boards."""
     b = k.board_mit_recht(e.board, "karten.loeschen")
@@ -126,6 +138,7 @@ def karte_zurueck(k: Kontext, e: Geloescht) -> str:
         c.bewegt_am = k.jetzt
     if ziel.erledigt != bool(c.abgeschlossen):
         c.abgeschlossen = abschluss(c, k.heute) if ziel.erledigt else None
+    angleichen(b, c)
     gruppen_zurueck(k, b.id, [c])
     vermerken(k, c, "hat sie wiederhergestellt")
     einreihen(k, ziel, [c], e.stelle.platz)
@@ -145,6 +158,7 @@ def spalte_zurueck(k: Kontext, e: Geloescht) -> str:
     k.s.schreib("boards", b.json_daten())
     gruppen_zurueck(k, b.id, e.karten)
     for c in e.karten:
+        angleichen(b, c)
         vermerken(k, c, f"hat sie mit der Spalte {s.name} wiederhergestellt")
         speichern(k, c)
     return f"Spalte {s.name} wiederhergestellt, an der alten Stelle in {b.name}"

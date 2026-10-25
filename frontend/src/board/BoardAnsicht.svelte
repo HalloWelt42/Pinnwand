@@ -11,7 +11,7 @@
   import { darf, filterAktiv, kartenNummer, papierkorbVon, type Sortierung } from "../daten/abfragen";
   import { spalteAnlegen, spaltenOrdnen } from "../daten/anwendung/boards.svelte";
   import { ICH } from "../daten/ich";
-  import { board, karte, karteAusNummer, karteHolen, konto, ordnerVon } from "../daten/stand.svelte";
+  import { board, karte, karteAusNummer, karteHolen, konto, mitKonto, ordnerVon } from "../daten/stand.svelte";
   import { melden } from "../daten/anwendung/meldung.svelte";
   import Kartendetail from "../detail/Kartendetail.svelte";
   import type { Farbe, Spalte as SpalteT } from "../modell";
@@ -118,7 +118,7 @@
       {/each}
     </nav>
     <div class="rechts">
-      <span class="pw-personen" title="Mitglieder">{#each b.mitglieder as m (m.konto)}<Person id={m.konto} />{/each}</span>
+      <span class="pw-personen" title="Mitglieder">{#each mitKonto(b) as m (m.konto)}<Person id={m.konto} />{/each}</span>
       {#if darf(b, "mitglieder.verwalten")}<a class="knopf klein" href={boardPfad(b.kuerzel, "einstellungen/mitglieder")}><i class="fa-solid fa-user-plus"></i>Einladen</a>{/if}
       <a class="knopf symbol klein" href={boardPfad(b.kuerzel, "einstellungen")} title="Board-Einstellungen: Spalten, Felder, Labels, Rollen, Module"><i class="fa-solid fa-sliders"></i></a>
     </div>

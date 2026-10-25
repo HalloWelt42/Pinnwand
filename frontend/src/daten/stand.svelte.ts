@@ -4,7 +4,7 @@
 
 import { ereignisse, hole } from "appkern-oberflaeche";
 import type {
-  Abwesenheit, Bericht, Board, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Konto, Laufnummer, ModulKennung, Ordner, PersonEinstellungen, Serie, Termin,
+  Abwesenheit, Bericht, Board, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Konto, Laufnummer, Mitglied, ModulKennung, Ordner, PersonEinstellungen, Serie, Termin,
   Timer, Verbindung, Vorlage, Zeiteintrag, Zeitkonto,
 } from "../modell";
 import { ICH, ichSetzen } from "./ich";
@@ -130,7 +130,13 @@ function einspielen(g: Geaendert): boolean {
   } else if (fassung(g.daten) > fassung(liste[i])) {
     liste[i] = g.daten;
   }
+  // Ordner stehen in ihrer Reihenfolge, auch wenn sie auf einem anderen Gerät umgeordnet wurden
+  if (teil === "ordner") liste.sort((a, b) => reihe(a) - reihe(b));
   return false;
+}
+
+function reihe(z: unknown): number {
+  return (z as { reihe?: number }).reihe ?? 0;
 }
 
 /** Eine Änderung einer anderen Person: die Karten zeigen es kurz, die Meldung sagt es, ohne eine eigene Meldung mit
@@ -225,6 +231,12 @@ export function kartenDerSpalte(spalte: string): Karte[] {
 /** Konto einer Person; eine unbekannte Kennung ergibt einen Platzhalter statt einer fremden Person */
 export function konto(id: string): Konto {
   return stand.konten.find((k) => k.id === id) ?? { id, name: "Unbekannte Person", kuerzel: "?", farbe: "stahl", kellerwolke: "" };
+}
+
+/** Mitglieder mit Konto: wer sich schon einmal angemeldet hat. Wer auf die erste Anmeldung wartet, steht nur in der
+ *  Mitgliederverwaltung, nicht in Personenauswahl, Filter oder Zeitachse */
+export function mitKonto(b: Board): Mitglied[] {
+  return b.mitglieder.filter((m) => m.konto);
 }
 
 /** Verknüpfte Karten (ohne sie selbst) */

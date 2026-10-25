@@ -9,7 +9,7 @@
   let { aktiv }: { aktiv: string } = $props();
   const NAVI: [string, string, string, string, ModulKennung | null][] = [
     ["heute", "Heute", "fa-sun", "Deine Karten aus allen Boards", null],
-    ["hinweise", "Hinweise", "fa-bell", "Zugewiesen, fällig, erwähnt, Kommentare", null],
+    ["hinweise", "Hinweise", "fa-bell", "Zugewiesen, fällig, erwähnt, kommentiert, verschoben", null],
     ["zeiten", "Zeiten", "fa-clock", "Dein Stundenzettel der Woche", "zeiterfassung"],
     ["arbeitszeit", "Arbeitszeit", "fa-calendar-check", "Zeitkonto, Urlaub und Jahreskalender", "arbeitszeit"],
     ["serien", "Serien und Termine", "fa-repeat", "Wiederkehrende Karten und Termine aller Boards", "serien"],

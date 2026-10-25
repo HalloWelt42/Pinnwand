@@ -7,7 +7,7 @@ import { darf, kartenNummer, kartePasst, leererFilter, type Kartenfilter } from 
 import { serienUmfeld } from "../../daten/abfragen";
 import { uhr } from "../../daten/uhr.svelte";
 import { ICH } from "../../daten/ich";
-import { konto, stand } from "../../daten/stand.svelte";
+import { konto, mitKonto, stand } from "../../daten/stand.svelte";
 import type { Abwesenheit, Board, Karte, Kennung, Serie, Termin } from "../../modell";
 import { abwesenheitAm, ARTEN, artName, fassungAm } from "../../regeln/arbeitszeit";
 import { feiertag } from "../../regeln/feiertage";
@@ -124,7 +124,7 @@ const SICHTBAR: Vorkommen["stand"][] = ["gezaehlt", "wartet", "heute", "vorgebuc
 /** Inhalte aller Tage eines Zeitraums: Karten nach Fälligkeit, Termine, Serientage (ein Tag mit Karte erscheint nur als
  *  Karte), Abwesenheiten der Mitglieder (mit Recht) und Feiertage ihrer Bundesländer */
 export function tageInhalt(b: Board, tage: string[], karten: Karte[], zeigen: Zeigen): Map<string, TagInhalt> {
-  const mitglieder = b.mitglieder.map((m) => m.konto);
+  const mitglieder = mitKonto(b).map((m) => m.konto);
   const u = serienUmfeld();
   const serientage = b.module.serien && zeigen.serien
     ? stand.serien.filter((s) => s.board === b.id).flatMap((s) => vorkommen(s, tage[0], tage[tage.length - 1], u)

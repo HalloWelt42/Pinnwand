@@ -10,7 +10,7 @@
   import { bearbeiten } from "../../daten/anwendung/karten.svelte";
   import { uhr } from "../../daten/uhr.svelte";
   import { datum, monatText } from "../../daten/format";
-  import { konto, stand } from "../../daten/stand.svelte";
+  import { konto, mitKonto, stand } from "../../daten/stand.svelte";
   import Person from "../../board/Person.svelte";
   import type { BoardAnsichtWerte } from "../../board/ansichten";
   import type { Karte, Kennung } from "../../modell";
@@ -46,7 +46,7 @@
   const karten = $derived(kartenDesBoards(board, filter));
   const mitDatum = $derived(karten.filter((k) => k.start || k.faellig));
   const ohneDatum = $derived(karten.filter((k) => !k.start && !k.faellig && !istErledigt(board, k)));
-  const mitglieder = $derived(board.mitglieder.map((m) => m.konto));
+  const mitglieder = $derived(mitKonto(board).map((m) => m.konto));
   const abwSichtbar = $derived(abwesenheitenSichtbar(board));
   const darf = $derived(darfIm(board, "karten.bearbeiten") && !ziehenGesperrt);
 

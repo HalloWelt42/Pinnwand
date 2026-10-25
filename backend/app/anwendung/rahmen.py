@@ -168,7 +168,8 @@ class Anwendung:
                     konten |= {m["konto"] for m in d.get("mitglieder", []) if m.get("konto")}
             elif b.tabelle in JE_BOARD:
                 for d in stande:
-                    board = s.lies("boards", d[JE_BOARD[b.tabelle]])
+                    # liegt das Board selbst im Papierkorb, trägt sein Eintrag es mit seinen Mitgliedern
+                    board = s.lies("boards", d[JE_BOARD[b.tabelle]]) or (d.get("inhalt") or {}).get("board")
                     if board:
                         konten |= {m["konto"] for m in board.get("mitglieder", []) if m.get("konto")}
             elif b.tabelle in JE_KONTO:

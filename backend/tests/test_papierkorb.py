@@ -312,12 +312,18 @@ async def test_endgueltig_entfernen(pw: Pinnwand):
 
 
 async def test_board_endgueltig_entfernen(pw: Pinnwand):
-    b = await pw.board("anna")
+    b = await pw.board("anna", einladungen=[{"kellerwolke": "bert", "rolle": "besitzer"}])
+    await pw.anmelden("bert")
+    await pw.stand("bert")
     await pw.karte("anna", b, "Fenster")
     await wegwerfen(pw, "anna", await pw.karte("anna", b, "Alt"))
     await pw.post("anna", f"/boards/{b['id']}/in-papierkorb")
     [e] = (await pw.stand("anna"))["papierkorb"]
-    r = await pw.post("anna", "/papierkorb/entfernen", {"ids": [e["id"]]})
+    # auch ohne die Zeile des Boards erfahren seine früheren Mitglieder, dass der Eintrag weg ist
+    with pw.app.state.dienste.ereignisse.abo("2") as bert:
+        r = await pw.post("anna", "/papierkorb/entfernen", {"ids": [e["id"]]})
+        teil = await asyncio.wait_for(anext(bert), 1)
+    assert any(g.tabelle == "papierkorb" and g.id == e["id"] and g.daten is None for g in teil.geaendert)
     assert r.json()["meldung"] == "Board Haushalt endgültig entfernt"
     # mit dem Board gehen der Eintrag seiner Karte und seine Laufnummer; jede Karte behält ihren Namen
     assert await zeilen(pw, "papierkorb") == [] and await zeilen(pw, "laufnummern") == []
@@ -344,3 +350,21 @@ async def test_archiv_seitenweise(pw: Pinnwand):
     await pw.board("anna", "Werkstatt", "WERK", einladungen=[{"kellerwolke": "bert"}])
     await pw.anmelden("bert")
     assert (await pw.get("bert", f"/boards/{b['id']}/archiv")).status_code == 403
+
+
+async def test_wiederhergestellt_passt_zum_board_von_heute(pw: Pinnwand):
+    """Was es im Board inzwischen nicht mehr gibt (Label, Mitglied), trägt die wiederhergestellte Karte nicht mehr."""
+    b = await pw.board("anna", einladungen=[{"kellerwolke": "bert"}])
+    await pw.anmelden("bert")
+    await pw.stand("bert")
+    await pw.post("anna", f"/boards/{b['id']}/labels", {"name": "Garten", "farbe": "minze"})
+    label = next(x for x in (await pw.stand("anna"))["boards"] if x["id"] == b["id"])["labels"][0]["id"]
+    k = await pw.karte("anna", b, "Hecke")
+    await pw.post("anna", f"/karten/{k['id']}/bearbeiten", {"felder": {"labels": [label], "zustaendig": ["1", "2"]}})
+    await wegwerfen(pw, "anna", k)
+    await pw.post("anna", f"/boards/{b['id']}/labels/{label}/loeschen")
+    await pw.post("anna", f"/boards/{b['id']}/mitglieder/entfernen", {"kellerwolke": "bert"})
+    r = await pw.post("anna", f"/papierkorb/{(await eintrag(pw, 'anna', 'HAUS-1'))['id']}/wiederherstellen")
+    assert r.status_code == 200, r.text
+    c = await karte(pw, "anna", "HAUS-1")
+    assert c["labels"] == [] and c["zustaendig"] == ["1"]

@@ -5,7 +5,7 @@
   // erledigten Karten hingen). Gilt in Board, Liste, Kalender und Zeitachse und wird je Board an diesem Gerät gemerkt.
   import { PRIORITAETEN } from "../anzeige";
   import type { Kartenfilter, Sortierung } from "../daten/abfragen";
-  import { konto } from "../daten/stand.svelte";
+  import { konto, mitKonto } from "../daten/stand.svelte";
   import type { Board } from "../modell";
   import { feldUmschalten, filterUmschalten, filterZuruecksetzen, sortierungSetzen } from "./ansicht.svelte";
   import Person from "./Person.svelte";
@@ -29,7 +29,7 @@
 <section class="pw-filtertafel" aria-label="Filter des Boards" onkeydown={(e) => { if (e.key === "Escape") schliessen(); }}>
   <div class="pw-filtertafel-zeile" role="group" aria-label="Personen">
     <span class="etikett" title="Karten, für die eine der gewählten Personen zuständig ist">Zuständig</span>
-    {#each board.mitglieder as m (m.konto)}
+    {#each mitKonto(board) as m (m.konto)}
       <button class="chip" class:aktiv={filter.personen.includes(m.konto)} aria-pressed={filter.personen.includes(m.konto)}
               onclick={() => filterUmschalten(schluessel, "personen", m.konto)}><Person id={m.konto} />{konto(m.konto).name}</button>
     {/each}

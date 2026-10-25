@@ -157,6 +157,32 @@ class Karten:
 
         return await self.a.aendern(konto, arbeit)
 
+    async def duplizieren(self, konto: Konto, karte_id: Kennung) -> Antwort:
+        """Kopie in derselben Spalte am Ende: Titel mit "(Kopie)", Inhalt und Angaben gleich, Checkliste unerledigt; ohne
+        Kommentare, Blockade, Transkripte, Gruppe, Serie und Anhänge (M-36)."""
+
+        def arbeit(k: Kontext) -> str:
+            q = karte_lesen(k, karte_id)
+            b = k.board_mit_recht(q.board, "karten.anlegen")
+            ziel = spalte_von(b, q.spalte)
+            if ziel is None:
+                raise Abgelehnt("Diese Spalte gibt es in diesem Board nicht", 400)
+            nummer = k.naechste_nummer(b.id)
+            titel = f"{q.titel} (Kopie)"[:TITEL_LAENGE]
+            c = q.model_copy(deep=True, update={
+                "id": neue_kennung("c"), "schluessel": f"{b.kuerzel}-{nummer}", "titel": titel,
+                "checkliste": [p.model_copy(update={"erledigt": False}) for p in q.checkliste], "kommentare": [],
+                "blockiert": None, "transkripte": [], "gruppe": None, "serie": None, "anhaenge": [],
+                "abgeschlossen": abschluss(q, k.heute) if ziel.erledigt else None, "bewegt_am": k.jetzt, "erstellt_am": k.jetzt,
+                "verlauf": [Ereignis(zeit=k.jetzt, von=konto.id, text=f"hat die Karte aus {q.schluessel} dupliziert")],
+                "fassung": 0,
+            })
+            einreihen(k, ziel, [c], None)
+            speichern(k, c)
+            return f"{q.schluessel} als {c.schluessel} dupliziert"
+
+        return await self.a.aendern(konto, arbeit)
+
     async def verknuepfen(self, konto: Konto, a_id: Kennung, b_id: Kennung) -> Antwort:
         """Zwei Arbeitskarten desselben Boards verknüpfen: ohne Gruppe entsteht eine mit geteilter Zeit, hat eine eine
         Gruppe, tritt die andere bei, haben beide verschiedene, geht die zweite in der ersten auf."""

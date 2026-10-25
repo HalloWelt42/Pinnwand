@@ -6,6 +6,8 @@ import re
 from datetime import date, timedelta
 
 TAG_MUSTER = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+#: Wochentage kurz, Montag zuerst (wie date.weekday())
+TAGE_KURZ = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
 
 
 def tag(text: str) -> date:
@@ -35,3 +37,9 @@ def plus_tage(t: str, n: int) -> str:
 def montag_von(t: str) -> str:
     d = tag(t)
     return (d - timedelta(days=d.weekday())).isoformat()
+
+
+def datum_text(t: str) -> str:
+    """Tag lesbar mit Wochentag: "Di 27.10.2026" (wie datumJahr der Oberfläche)."""
+    d = tag(t)
+    return f"{TAGE_KURZ[d.weekday()]} {d.day:02d}.{d.month:02d}.{d.year}"

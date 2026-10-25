@@ -5,7 +5,8 @@ den Stand neu (die Oberfläche tut das von selbst)."""
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
+from contextlib import contextmanager
 
 from ..modell import Kennung, Modell
 
@@ -42,19 +43,30 @@ class Ereignisse:
                     q.put_nowait(None)
                     schlangen.discard(q)
 
-    async def strom(self, konto: Kennung) -> AsyncIterator[list[Geaendert] | None]:
-        """Ereignisse für ein Konto; None ist ein Herzschlag. Endet, wenn die Verbindung zu langsam war."""
+    @contextmanager
+    def abo(self, konto: Kennung) -> Iterator[AsyncIterator[list[Geaendert] | None]]:
+        """Ereignisse für ein Konto, eingetragen schon beim Betreten (nichts geht verloren, bevor gelesen wird) und beim
+        Verlassen sicher ausgetragen. Gelesen wird über den gelieferten Strom; None ist ein Herzschlag. Er endet, wenn
+        die Verbindung zu langsam war."""
         q: asyncio.Queue[list[Geaendert] | None] = asyncio.Queue(PUFFER)
         self._hoerer.setdefault(konto, set()).add(q)
         try:
-            while True:
-                try:
-                    teil = await asyncio.wait_for(q.get(), HERZSCHLAG_S)
-                except TimeoutError:
-                    yield None
-                    continue
-                if teil is None:
-                    return
-                yield teil
+            yield self._lesen(q)
         finally:
-            self._hoerer.get(konto, set()).discard(q)
+            schlangen = self._hoerer.get(konto)
+            if schlangen is not None:
+                schlangen.discard(q)
+                if not schlangen:
+                    del self._hoerer[konto]
+
+    @staticmethod
+    async def _lesen(q: asyncio.Queue[list[Geaendert] | None]) -> AsyncIterator[list[Geaendert] | None]:
+        while True:
+            try:
+                teil = await asyncio.wait_for(q.get(), HERZSCHLAG_S)
+            except TimeoutError:
+                yield None
+                continue
+            if teil is None:
+                return
+            yield teil

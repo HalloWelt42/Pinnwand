@@ -269,16 +269,13 @@ async def test_ereignisse_nur_an_mitglieder(pw: Pinnwand):
         await pw.anmelden(name)
         await pw.stand(name)
     hub = pw.app.state.dienste.ereignisse
-    stroeme = {name: hub.strom(konto) for name, konto in (("bert", "2"), ("cora", "3"))}
-    naechstes = {name: asyncio.ensure_future(anext(s)) for name, s in stroeme.items()}
-    await asyncio.sleep(0)                                                       # beide hören jetzt zu
-    try:
+    with hub.abo("2") as bert, hub.abo("3") as cora:                             # eingetragen, bevor gelesen wird
         await pw.karte("anna", haus, "Fenster")
-        teil = await asyncio.wait_for(naechstes["bert"], 1)
+        teil = await asyncio.wait_for(anext(bert), 1)
         assert sorted(g.tabelle for g in teil) == ["karten", "laufnummern"]
+        naechstes = asyncio.ensure_future(anext(cora))
         await asyncio.sleep(0.05)
-        assert not naechstes["cora"].done()
-    finally:
-        for f in naechstes.values():
-            f.cancel()
-        await asyncio.gather(*naechstes.values(), return_exceptions=True)
+        assert not naechstes.done()
+        naechstes.cancel()
+        await asyncio.gather(naechstes, return_exceptions=True)
+    assert hub._hoerer == {}                                                     # beim Verlassen ausgetragen

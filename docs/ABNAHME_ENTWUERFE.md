@@ -64,6 +64,14 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
   Einstellungen am Rechner zeigen die Schritte, die Geräte und senden eine Testmitteilung; ein Tippen auf eine
   Mitteilung führt zur Karte. Welche Wege es gibt und was gilt, kommt jetzt vom Server.
 
+## In der App gebaut (Stufe 4, KI an der Karte, 25.10.2026)
+
+- Vorschläge über die Leitstelle: Zusammenfassung (Zauberstab im Kopf des Kartendetails, Kasten wie im Entwurf mit "In
+  die Notizen übernehmen"), "Vorschlagen" an der Checkliste mit Haken je Punkt, Labels (Zauberstab hinter den Labels,
+  M-115) und Karten aus Text in der Schnelleingabe der Spalte ("Aus Text"; alle angehakten in einer Änderung, ein
+  Rückgängig). Übernommen wird nur, was man bestätigt. Ohne eingerichtete Leitstelle zeigt die Oberfläche keine
+  Vorschläge, die Seite Module sagt warum. Am Telefon bleibt Bearbeiten am Rechner, also auch die Vorschläge.
+
 ## Nachbesserungen in der App (25.10.2026)
 
 - M-74: Beim Zusammenführen zweier Verknüpfungen nennt die Meldung, ob die Zeit geteilt wird und welche Einstellung
@@ -71,15 +79,19 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
 - M-09: Ein Hinweis trägt den Schlüssel seiner Karte und führt so auch zu einer archivierten oder umgezogenen Karte;
   am Telefon öffnet ein Pfad jetzt auch eine Karte, die nicht im Stand liegt.
 - Rückgängig geht auch, wenn jemand den Hinweis, den die Änderung erzeugte, schon gelesen hat (der Hinweis geht mit).
+- Eine überfällige Karte, deren Timer den Start auf heute setzt, bleibt in allen Feldern bearbeitbar; abgelehnt wird
+  "Start nach Fällig" nur, wenn jemand Start oder Fällig selbst so setzt.
+- Die Knöpfe der Schnelleingabe stehen in einer Zeile (eine Regel für den Knopf "Karte" im Fuß der Spalte zog sie auf
+  volle Breite); "Erstellt ... von" hat wieder sein Leerzeichen.
 
 ## Zählung
 
 | Stand | Zahl |
 |---|---|
-| abgebildet | 105 |
+| abgebildet | 106 |
 | teilweise | 1 |
 | fehlt | 3 |
-| später | 10 |
+| später | 9 |
 | bewusst anders | 3 |
 | Fehler behoben | 4 |
 | **Summe** | **126** |
@@ -219,7 +231,7 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
 | M-112 | Ein verknüpftes Transkript | später (Stufe 4) | `detail/Karteninhalt.svelte` (Modul Transkripte) | Transkripte sind eine Anbindung der Stufe Verbund (E-06); bis dahin zeigt der Abschnitt die verknüpften Stellen, Suchfeld und "Abspielen ab der Stelle" sind noch ohne Wirkung. |
 | M-113 | Transkript-Verweise (Marken) | später (Stufe 4) | `detail/Karteninhalt.svelte`, `modell.ts` (TranskriptMarke) | Gehört zur Anbindung Transkription der Stufe Verbund (E-06); Marken mit Aufnahme, Stelle und Text werden schon gezeigt, Zusammenfassung, Anhängen, Entfernen und Sprung kommen mit ihr. |
 | M-114 | Vorlesen | später (Stufe 4) | `detail/Karteninhalt.svelte`, `detail/Textfeld.svelte`, `ansichten/uebersicht/Heute.svelte`, `ansichten/zeit/Berichte.svelte` | Vorlesen ist die Anbindung Vertonung der Stufe Verbund (E-06); die Knöpfe an Karte, Beschreibung, Heute und Berichten stehen schon und lesen noch nicht vor, am Kommentar fehlt der Lautsprecher noch. |
-| M-115 | Labelvorschläge | später (Stufe 4) | nirgends | Vorschläge macht die Leitstelle (KI an der Karte, E-06) in der Stufe Verbund; ihre Knöpfe an Checkliste und Zusammenfassung sind vorgeführt, ein Vorschlag für Labels noch nicht. |
+| M-115 | Labelvorschläge | abgebildet | `detail/Karteninhalt.svelte`, `detail/Vorschlag.svelte`, `backend/app/anwendung/ki.py` | In der App (Stufe 4, KI an der Karte): Zauberstab hinter den Labels, das Modell wählt aus den Labels des Boards, die die Karte noch nicht hat; gesetzt wird nur, was angehakt bleibt. Ebenso Checkliste, Zusammenfassung und Karten aus Text. |
 | M-116 | Projekt-Prüfung | bewusst anders | `hatRecht` in `regeln/board.ts`, `darf` in `beispiel/abfragen.ts`, `mitRecht` in `beispiel/anwendung/boards.svelte.ts`, `ansichten/verwaltung/board/Rollen.svelte` | E-02, E-03, E-04: Rechte je Board und Rolle statt Mitgliedschaft in einer Mappe. Die Oberfläche blendet jetzt überall nach dem Recht aus, und Verschieben prüft es im Anwendungsfall; Anlegen, Bearbeiten, Duplizieren, Kommentieren und Papierkorb prüfen es dort noch nicht (siehe Befunde). |
 | M-117 | Zeit- und Timer-Rechte | bewusst anders | `RECHTE` in `beispiel/daten.ts`, `timerErlaubt` in `beispiel/abfragen.ts`, `detail/Zeiterfassung.svelte` | E-04, E-07: Rechte "Eigene Zeit buchen", "Zeiten anderer sehen" und "Zeiten anderer bearbeiten" je Rolle. Fehler behoben: die Oberfläche bietet Start, Ticketzeit, Ändern und Löschen nur an, wo das Recht besteht. |
 | M-118 | Identitätsquelle | Fehler behoben | `modell.ts` (Konto), `ansichten/verwaltung/person/Konto.svelte` | Identität ist das Konto der Kellerwolke mit fester Kennung (E-13); Zuständig, Zeiteintrag, Kommentar, Verlauf und Timer hängen an der Kennung, das Kürzel ist nur Anzeige. |

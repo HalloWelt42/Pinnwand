@@ -65,7 +65,7 @@
 .pw-spalte-geladen { margin-left: auto; font-family: var(--schrift-zahl); white-space: nowrap; }
 .pw-spalte-karten { flex: 1; min-height: 60px; overflow-y: auto; overflow-x: clip; padding: 2px var(--a2) var(--a2); display: flex; flex-direction: column; gap: var(--a2); }
 .pw-spalte-fuss { padding: var(--a2); display: flex; flex-direction: column; gap: var(--a2); }
-.pw-spalte-fuss .knopf { justify-content: flex-start; width: 100%; }
+.pw-spalte-fuss > .knopf { justify-content: flex-start; width: 100%; }
 .pw-mehr { display: flex; align-items: center; justify-content: space-between; gap: var(--a2); font-size: var(--klein); color: var(--text-3); padding: 0 var(--a1); }
 
 /* Eingeklappt: schmal, senkrechter Name, Zahl; bleibt Ablagezone mit einem Strich je Karte */
@@ -186,6 +186,12 @@
 .pw-schnell textarea.eingabe { min-height: 64px; }
 .pw-schnell .zeile-knoepfe { display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; }
 .pw-schnell .hinweistext { font-size: var(--marke); color: var(--text-3); }
+.pw-schnell textarea.pw-schnell-text { min-height: 9em; }
+.pw-entwurf { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px var(--a2); align-items: center; }
+.pw-entwurf input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--violett); }
+.pw-entwurf .inhalt { display: contents; }
+.pw-entwurf .hinweistext { grid-column: 2; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pw-entwurf.aus .hinweistext { opacity: 0.6; }
 
 
 /* Platzhalter beim Ziehen: hier landet die Karte, verknüpfte ziehen mit */

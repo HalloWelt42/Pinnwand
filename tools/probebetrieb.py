@@ -1,5 +1,6 @@
-"""Probebetrieb: das Backend mit der nachgestellten Kellerwolke der Tests (backend/tests/nachgestellt.py), eingerichtet
-und bereit zum Anmelden als anna, bert oder cora (Passwort "geheim"). Für die Prüfung der echten Oberfläche ohne echte
+"""Probebetrieb: das Backend mit der nachgestellten Kellerwolke und Leitstelle der Tests (backend/tests/nachgestellt.py),
+eingerichtet und bereit zum Anmelden als anna, bert oder cora (Passwort "geheim"); die Leitstelle antwortet mit
+Beispielen in der verlangten Form. Für die Prüfung der echten Oberfläche ohne echte
 Zugangsdaten; die Daten liegen in einem eigenen Ordner.
 
     backend/.venv/bin/python tools/probebetrieb.py --daten <ordner> [--port 8420]
@@ -20,7 +21,7 @@ BACKEND = Path(__file__).resolve().parents[1] / "backend"
 sys.path[:0] = [str(BACKEND), str(BACKEND / "tests")]
 
 from app.main import app_bauen  # noqa: E402
-from nachgestellt import EINRICHTUNG, kellerwolke  # noqa: E402
+from nachgestellt import EINRICHTUNG, LEITSTELLE_EINRICHTUNG, PASSWORT, kellerwolke  # noqa: E402
 
 
 def main() -> None:
@@ -37,6 +38,9 @@ def main() -> None:
         try:
             if httpx.get(f"{basis}/app").json().get("einrichtung_noetig"):
                 httpx.post(f"{basis}/einrichtung", json=EINRICHTUNG).raise_for_status()
+            token = httpx.post(f"{basis}/anmeldung", json={"kennung": "anna", "passwort": PASSWORT}).json()["token"]
+            httpx.patch(f"{basis}/einstellungen", headers={"X-Kellerwolke-Sitzung": token},
+                        json={"werte": LEITSTELLE_EINRICHTUNG}).raise_for_status()
             break
         except httpx.HTTPError:
             time.sleep(0.1)

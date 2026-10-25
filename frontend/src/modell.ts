@@ -151,6 +151,13 @@ export interface Punkt {
   erledigt: boolean;
 }
 
+/** Inhalt einer neuen Karte, etwa aus einem Vorschlag der KI: Titel, Beschreibung (Markdown), offene Punkte */
+export interface Kartenentwurf {
+  titel: string;
+  beschreibung?: string | null;
+  checkliste: string[];
+}
+
 export interface Kommentar {
   von: Kennung;
   zeit: string;

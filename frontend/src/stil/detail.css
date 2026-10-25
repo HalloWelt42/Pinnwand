@@ -163,6 +163,9 @@ button.pw-punkt-text { cursor: text; }
 .pw-vorschlag { display: flex; flex-direction: column; gap: var(--a2); padding: var(--a3); border-radius: var(--r2);
                 background: color-mix(in srgb, var(--violett) 8%, transparent); border: 1px solid color-mix(in srgb, var(--violett) 30%, transparent); }
 .pw-vorschlag .kopf-zeile { display: flex; align-items: center; gap: var(--a2); font-size: var(--klein); color: var(--violett); font-weight: 600; }
+.pw-vorschlag-warten { display: flex; align-items: center; gap: var(--a2); color: var(--text-2); }
+.pw-vorschlag .pw-labelwahl { display: flex; gap: var(--a2); flex-wrap: wrap; }
+.pw-felder > .pw-felder-ganz { grid-column: 1 / -1; }
 .pw-umschalter { display: inline-flex; gap: 2px; padding: 2px; background: var(--karte-2); border-radius: var(--r2); }
 .pw-umschalter button { height: 34px; padding: 0 var(--a3); border: 0; border-radius: var(--r1); background: transparent; color: var(--text-2);
                         font-size: var(--klein); font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }

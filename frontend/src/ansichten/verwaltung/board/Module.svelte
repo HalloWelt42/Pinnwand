@@ -44,6 +44,10 @@
                   {:else}keine eigenen{/each}</dd>
               </dl>
               {#if !an}<p class="pw-verwaltung-satz"><i class="fa-solid fa-eye-slash"></i>Ausgeblendet; die Daten bleiben.</p>{/if}
+              {#if m.id === "ki" && !stand.kiBereit}
+                <p class="pw-verwaltung-satz"><i class="fa-solid fa-plug-circle-xmark"></i>Die Leitstelle ist in den Einstellungen der App noch
+                  nicht eingerichtet; bis dahin erscheinen keine Vorschläge.</p>
+              {/if}
             </article>
           </div>
         {/each}

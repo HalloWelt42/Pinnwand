@@ -69,7 +69,7 @@ export const MODULE: ModulBeschreibung[] = [
     ansichten: ["Vorlesen an Beschreibung, Kommentaren und in Heute"], felder: [] },
   { id: "ki", name: "KI an der Karte", symbol: "fa-wand-magic-sparkles", art: "anbindung",
     text: "Zusammenfassen, Checkliste und Labels vorschlagen, aus Text Karten machen; übernommen wird nur, was du bestätigst.",
-    ansichten: ["Vorschläge im Kartendetail"], felder: [] },
+    ansichten: ["Vorschläge im Kartendetail", "Karten aus Text beim Anlegen"], felder: [] },
 ];
 
 export const MODUL_NAME: Record<"kern" | ModulKennung, string> = {

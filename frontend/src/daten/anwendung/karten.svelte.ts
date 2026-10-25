@@ -1,8 +1,8 @@
 // Anwendungsfälle an Karten über den Server: verschieben (Ziehen, Status im Detail, Telefon, Liste: ein Weg), erledigen,
-// in ein anderes Board ziehen, anlegen, duplizieren, bearbeiten, kommentieren, verknüpfen, Sammelaktionen. Die Regeln (Alter, Abschluss, Mitziehen,
+// in ein anderes Board ziehen, anlegen (auch mehrere auf einmal), duplizieren, bearbeiten, kommentieren, verknüpfen, Sammelaktionen. Die Regeln (Alter, Abschluss, Mitziehen,
 // Grenze, Verlauf) rechnet der Server; die Oberfläche zeigt beim Ziehen vorab, wohin die Karte kommt.
 
-import type { Karte, Kennung, Prioritaet, Spalte } from "../../modell";
+import type { Karte, Kartenentwurf, Kennung, Prioritaet, Spalte } from "../../modell";
 import { bewegteKarte, reihenFuer } from "../../regeln/reihe";
 import { darf } from "../abfragen";
 import { board, karte, kartenDerSpalte } from "../stand.svelte";
@@ -81,6 +81,11 @@ export async function anlegen(boardId: Kennung, spalteId: Kennung,
                               felder: { titel: string; art?: "arbeit" | "idee"; faellig?: string; beschreibung?: string }): Promise<Karte | undefined> {
   if (!felder.titel.trim()) return undefined;
   return neueKarte(await aendern(() => senden(`/boards/${boardId}/karten`, { ...felder, spalte: spalteId })));
+}
+
+/** Mehrere Karten mit Inhalt in einer Änderung am Ende der Spalte (ein Rückgängig für alle); Ergebnis: ob es wirkte */
+export async function mehrereAnlegen(boardId: Kennung, spalteId: Kennung, art: "arbeit" | "idee", karten: Kartenentwurf[]): Promise<boolean> {
+  return !!(await aendern(() => senden(`/boards/${boardId}/karten/mehrere`, { karten, spalte: spalteId, art })));
 }
 
 /** undefined heißt im Formular "entfernen"; über die Leitung als null */

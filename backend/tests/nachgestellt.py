@@ -206,8 +206,9 @@ LEITSTELLE_EINRICHTUNG = {"leitstelle_adresse": "http://ls.test", "leitstelle_sc
 @dataclass
 class Leitstelle:
     """Die Fassade der Leitstelle (Host ls.test), so weit KI an der Karte sie ruft: Modelle und Chat. Die Antworten des
-    Modells kommen der Reihe nach aus `antworten` (Text, wie das Modell ihn schreibt); jede Anfrage steht mit ihren
-    Köpfen in `anfragen`. `fehler` antwortet stattdessen mit diesem Status und Grundwort."""
+    Modells kommen der Reihe nach aus `antworten` (Text, wie das Modell ihn schreibt), ohne vorbereitete ein Beispiel in
+    der verlangten Form (Probebetrieb); jede Anfrage steht mit ihren Köpfen in `anfragen`. `fehler` antwortet
+    stattdessen mit diesem Status und Grundwort."""
 
     antworten: list[str] = field(default_factory=list)
     anfragen: list[httpx.Request] = field(default_factory=list)
@@ -233,9 +234,28 @@ class Leitstelle:
         if self.fehler:
             status, grund = self.fehler
             return httpx.Response(status, json={"error": {"code": grund, "message": "Die Leitstelle hält gerade an"}})
-        text = self.antworten.pop(0)
+        text = self.antworten.pop(0) if self.antworten else self.beispiel(json.loads(request.content))
         return httpx.Response(200, json={"choices": [{"message": {"content": text}, "finish_reason": self.ende}],
                                          "model": "gross"}, headers={"x-leitstelle-modell": "gross"})
+
+    @staticmethod
+    def beispiel(koerper: dict) -> str:
+        """Eine Antwort in der verlangten Form aus dem Text der Anfrage, ohne Modell."""
+        form = koerper["response_format"]["json_schema"]
+        text = koerper["messages"][-1]["content"]
+        if form["name"] == "zusammenfassung":
+            titel = text.splitlines()[2].split(": ", 1)[-1]
+            daten: dict = {"text": f"Probe: {titel} ist offen; das Modell fasst hier Beschreibung, Notizen und Kommentare zusammen."}
+        elif form["name"] == "checkliste":
+            daten = {"begruendung": "Probe.", "punkte": ["Klären, was gebraucht wird", "Termin festlegen", "Ergebnis prüfen"]}
+        elif form["name"] == "labels":
+            daten = {"begruendung": "Probe.", "labels": form["schema"]["properties"]["labels"]["items"]["enum"][:1]}
+        elif form["name"] == "karten":
+            zeilen = [z.strip(" -*\t") for z in text.split("Text:\n", 1)[-1].splitlines()]
+            daten = {"karten": [{"titel": z[:80], "beschreibung": "", "checkliste": []} for z in zeilen if z][:20]}
+        else:
+            daten = {}
+        return json.dumps(daten, ensure_ascii=False)
 
 
 LEITSTELLE = Leitstelle()

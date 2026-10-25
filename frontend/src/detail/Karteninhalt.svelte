@@ -6,12 +6,13 @@
   import { darf, kartenNummer, umzugsziele, zeitDerGruppe, zeitDerKarte } from "../daten/abfragen";
   import { artSetzen, bearbeiten, duplizieren, verschieben, type Kartenaenderung } from "../daten/anwendung/karten.svelte";
   import { melden } from "../daten/anwendung/meldung.svelte";
+  import { kiDa, labelsHolen, Vorschlagslauf, zusammenfassungHolen } from "../daten/anwendung/ki.svelte";
   import { inPapierkorb } from "../daten/anwendung/papierkorb.svelte";
   import { uhr } from "../daten/uhr.svelte";
   import { alterTage, datumJahr } from "../daten/format";
   import { konto, mitKonto, stand } from "../daten/stand.svelte";
   import { PRIORITAETEN } from "../anzeige";
-  import type { Board, Karte, Prioritaet } from "../modell";
+  import type { Board, Karte, Kennung, Prioritaet } from "../modell";
   import { alterung } from "../regeln/board";
   import { tageZwischen } from "../regeln/tage";
   import Person from "../board/Person.svelte";
@@ -28,6 +29,7 @@
   import Textfeld from "./Textfeld.svelte";
   import Umziehen from "./Umziehen.svelte";
   import Verknuepfte from "./Verknuepfte.svelte";
+  import Vorschlag from "./Vorschlag.svelte";
   import Zeiterfassung from "./Zeiterfassung.svelte";
 
   let { karte: k, board, vollbild = $bindable(false), schliessen }: {
@@ -95,6 +97,43 @@
   /** offen: die Wahl, in welches Board die Karte zieht */
   let umzug = $state(false);
 
+  // ═══ Vorschläge der KI (Modul KI an der Karte): nur Vorschau, übernommen über bearbeiten mit Rückgängig ═════════════
+
+  const ki = $derived(kiDa(board));
+  const zusammenfassung = new Vorschlagslauf<{ text: string }>();
+  const labelvorschlag = new Vorschlagslauf<{ labels: Kennung[] }>();
+  /** die vorgeschlagenen Labels, die gesetzt werden sollen (anfangs alle) */
+  let labelsGewaehlt = $state<Kennung[]>([]);
+  const freieLabels = $derived(board.labels.filter((l) => !k.labels.includes(l.id)));
+  // schließt das Detail, wartet niemand mehr auf einen Vorschlag
+  $effect(() => () => {
+    zusammenfassung.schliessen();
+    labelvorschlag.schliessen();
+  });
+
+  function zusammenfassen(): void {
+    void zusammenfassung.holen(zusammenfassungHolen(k.id));
+  }
+
+  async function zusammenfassungUebernehmen(text: string): Promise<void> {
+    const notizen = [k.notizen?.trim(), `**Zusammenfassung:** ${text}`].filter(Boolean).join("\n\n");
+    if (await setzen({ notizen }, "Zusammenfassung in die Notizen übernommen")) zusammenfassung.schliessen();
+  }
+
+  async function labelsVorschlagen(): Promise<void> {
+    if (await labelvorschlag.holen(labelsHolen(k.id))) labelsGewaehlt = [...(labelvorschlag.wert?.labels ?? [])];
+  }
+
+  function labelWaehlen(id: Kennung): void {
+    labelsGewaehlt = labelsGewaehlt.includes(id) ? labelsGewaehlt.filter((x) => x !== id) : [...labelsGewaehlt, id];
+  }
+
+  async function labelsUebernehmen(): Promise<void> {
+    const neu = labelsGewaehlt.filter((l) => !k.labels.includes(l));
+    const namen = neu.map((l) => board.labels.find((x) => x.id === l)?.name).join(", ");
+    if (await setzen({ labels: [...k.labels, ...neu] }, `${neu.length === 1 ? "Label" : "Labels"} ${namen} gesetzt`)) labelvorschlag.schliessen();
+  }
+
   function jetzigeBehalten(): void {
     konflikt = null;
     melden(`Der jetzige Stand von ${k.schluessel} bleibt; deine Änderung ist verworfen`);
@@ -115,6 +154,10 @@
     <button class="idee" class:an={k.art === "idee"} disabled={!schreiben} onclick={() => artSetzen(k.id, "idee")}><i class="fa-solid fa-lightbulb"></i>Idee</button>
   </span>
   <span class="rechts">
+    {#if ki}
+      <button class="knopf ohne symbol klein" title="Zusammenfassen: Vorschlag aus Beschreibung, Notizen, Checkliste und Kommentaren"
+              aria-pressed={zusammenfassung.offen} onclick={() => (zusammenfassung.offen ? zusammenfassung.schliessen() : zusammenfassen())}><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+    {/if}
     {#if board.module.vorlesen}<button class="knopf ohne symbol klein" title="Karte vorlesen"><i class="fa-solid fa-volume-high"></i></button>{/if}
     {#if darf(board, "karten.anlegen")}
       <button class="knopf ohne symbol klein" title="Duplizieren: Kopie in derselben Spalte, ohne Zeiten, Kommentare und Anhänge" onclick={kopieAnlegen}><i class="fa-regular fa-copy"></i></button>
@@ -131,6 +174,14 @@
 
 <div class="pw-detail-inhalt">
   {#if umzug}<Umziehen karte={k} schliessen={() => (umzug = false)} />{/if}
+  {#if zusammenfassung.offen}
+    <Vorschlag titel="Vorschlag: Zusammenfassung aus Beschreibung, Notizen und Kommentaren" lauf={zusammenfassung} nochmal={zusammenfassen}>
+      {#snippet children(v)}<div class="pw-vorschlag-text">{v.text}</div>{/snippet}
+      {#snippet knoepfe(v)}
+        {#if schreiben}<button class="knopf klein" onclick={() => zusammenfassungUebernehmen(v.text)}>In die Notizen übernehmen</button>{/if}
+      {/snippet}
+    </Vorschlag>
+  {/if}
   {#if konflikt}
     <div class="hinweis warnung"><i class="fa-solid fa-code-merge"></i>
       <div><b>{k.schluessel} wurde inzwischen geändert.</b> Deine Änderung ({konflikt.text}) ist nicht gespeichert, damit
@@ -183,7 +234,35 @@
                   onclick={() => setzen({ labels: k.labels.includes(lab.id) ? k.labels.filter((x) => x !== lab.id) : [...k.labels, lab.id] },
                                         k.labels.includes(lab.id) ? `Label ${lab.name} entfernt` : `Label ${lab.name} gesetzt`)}>{lab.name}</button>
         {/each}
+        {#if ki && schreiben && freieLabels.length}
+          <button class="knopf ohne symbol klein" title="Labels vorschlagen (über die Leitstelle)" aria-pressed={labelvorschlag.offen}
+                  onclick={() => (labelvorschlag.offen ? labelvorschlag.schliessen() : labelsVorschlagen())}><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+        {/if}
       </span>
+      {#if labelvorschlag.offen}
+        <div class="pw-felder-ganz">
+          <Vorschlag titel="Vorschlag: Labels aus dem Inhalt der Karte" lauf={labelvorschlag} nochmal={labelsVorschlagen}>
+            {#snippet children(v)}
+              {#if v.labels.length}
+                <div class="pw-labelwahl">
+                  {#each v.labels as id (id)}
+                    {@const lab = board.labels.find((l) => l.id === id)}
+                    {#if lab}
+                      <button class="pw-label" class:aus={!labelsGewaehlt.includes(id)} data-farbe={lab.farbe} aria-pressed={labelsGewaehlt.includes(id)}
+                              title={labelsGewaehlt.includes(id) ? "Nicht setzen" : "Doch setzen"} onclick={() => labelWaehlen(id)}>{lab.name}</button>
+                    {/if}
+                  {/each}
+                </div>
+              {:else}
+                <div class="pw-vorschlag-text">Kein weiteres Label passt klar zu dieser Karte.</div>
+              {/if}
+            {/snippet}
+            {#snippet knoepfe(v)}
+              {#if v.labels.length}<button class="knopf klein" disabled={!labelsGewaehlt.length} onclick={labelsUebernehmen}>Setzen</button>{/if}
+            {/snippet}
+          </Vorschlag>
+        </div>
+      {/if}
       <span class="name"><i class="fa-solid fa-ban"></i>Blockiert</span>
       <span class="wert"><input class="eingabe" value={k.blockiert ?? ""} placeholder="Grund, wenn die Karte wartet" disabled={!schreiben} aria-label="Blockiert"
                                 use:verwerfbar onkeydown={enterVerlaesst}
@@ -210,7 +289,7 @@
     <div class="pw-alterung">
       <span class="pw-angabe {alterung(imStatus, board.einstellungen)}" title="Sanduhr nach den Schwellen des Boards"><i class="fa-solid fa-hourglass-half"></i>Im Status {imStatus} {imStatus === 1 ? "Tag" : "Tage"}</span>
       <span class="pw-angabe flaeche"><i class="fa-solid fa-route"></i>Durchlaufzeit {tageZwischen(k.erstelltAm.slice(0, 10), k.abgeschlossen ?? uhr.heute)} Tage</span>
-      <span class="pw-angabe flaeche"><i class="fa-solid fa-seedling"></i>Erstellt {datumJahr(k.erstelltAm, true)}{#if erstellt} von {konto(erstellt).kuerzel}{/if}</span>
+      <span class="pw-angabe flaeche"><i class="fa-solid fa-seedling"></i>Erstellt {datumJahr(k.erstelltAm, true)}{erstellt ? ` von ${konto(erstellt).kuerzel}` : ""}</span>
     </div>
   </section>
 
@@ -222,7 +301,7 @@
     <Verknuepfte karte={k} {board} {schreiben} />
   {/if}
 
-  <Checkliste karte={k} {schreiben} ki={board.module.ki} />
+  <Checkliste karte={k} {schreiben} {ki} />
 
   <Anhaenge karte={k} {schreiben} />
 

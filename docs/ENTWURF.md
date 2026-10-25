@@ -178,6 +178,10 @@ Entschieden vom Nutzer (25.10.2026):
 
 - Push aufs Telefon ist ein Baustein des Appkerns für alle Apps (Nutzer: "Als Baustein im Appkern"), die Pinnwand nutzt
   ihn als Erste; Push gilt je Art, ohne eigene Wahl für Zugewiesen, Fällig, Erwähnt und Termin.
+- KI an der Karte kommt nach Push (Nutzer: "KI an der Karte"): Zusammenfassung, Checkliste, Labels und Karten aus Text
+  über die Leitstelle, immer mit Vorschau vor dem Übernehmen; ohne eigene Rechte (Vorschläge holt, wer das Übernehmen
+  darf, die Zusammenfassung jedes Mitglied), nur am Rechner. Die Säuberung der Modelltexte ist ein Baustein des
+  Appkerns (`appkern.leitstelle.text`).
 - Die Zeit eines Termins ohne Karte zählt nach der Bestätigung ins Ist und in den Stundenzettel (Nutzer: "Ja, nach
   Bestätigung"); vorher steht der Termin nur in Heute, Kalender und Zeitachse.
 - Karten ziehen zwischen Boards um (Nutzer: "vom ideenboard muss ich auch sachen auf das arbeitsboard schieben

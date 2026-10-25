@@ -38,17 +38,14 @@
     return z.konto === ICH || andereBearbeiten;
   }
 
-  /** nachtragen; die Dauer leert sich erst, wenn gebucht ist (getrennt bleibt sie stehen) */
-  function nachtragen(): void {
-    if (!nachtrag) return;
-    const vorher = stand.zeiteintraege.length;
-    buchen(karte.id, tag, nachtrag);
-    if (stand.zeiteintraege.length > vorher) nachtrag = 0;
+  /** nachtragen; die Dauer leert sich erst, wenn gebucht ist (getrennt oder abgelehnt bleibt sie stehen) */
+  async function nachtragen(): Promise<void> {
+    if (nachtrag && (await buchen(karte.id, tag, nachtrag))) nachtrag = 0;
   }
 
   /** Enter in Tag oder Dauer bucht (die Felder übernehmen ihren Wert schon beim Enter) */
   function taste(e: KeyboardEvent): void {
-    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") nachtragen();
+    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") void nachtragen();
   }
 
   async function tagOeffnen(id: string, zelle: HTMLElement): Promise<void> {

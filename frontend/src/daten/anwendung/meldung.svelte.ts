@@ -39,6 +39,11 @@ export function senden(pfad: string, daten: unknown = {}): Promise<Antwort> {
   return hole<Antwort>(pfad, { method: "POST", ...json(daten) });
 }
 
+/** DELETE an einen Weg der Pinnwand (unter /api/v1), ohne Inhalt */
+export function loeschenAn(pfad: string): Promise<Antwort> {
+  return hole<Antwort>(pfad, { method: "DELETE" });
+}
+
 function grund(f: unknown): string {
   return f instanceof ApiFehler || f instanceof Error ? f.message : "Das ging nicht";
 }

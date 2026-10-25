@@ -6,9 +6,11 @@ Leitstelle (`LEITSTELLE`) mit Antworten des Modells der Reihe nach und die Trans
 
 from __future__ import annotations
 
+import io
 import json
 import re
 import uuid
+import wave
 from dataclasses import dataclass, field
 
 import httpx
@@ -250,6 +252,9 @@ class Leitstelle:
             daten = {"begruendung": "Probe.", "punkte": ["Klären, was gebraucht wird", "Termin festlegen", "Ergebnis prüfen"]}
         elif form["name"] == "labels":
             daten = {"begruendung": "Probe.", "labels": form["schema"]["properties"]["labels"]["items"]["enum"][:1]}
+        elif form["name"] == "notiz":
+            stelle = next((z for z in text.splitlines() if z.startswith("[")), "")
+            daten = {"text": f"Probe: an dieser Stelle heißt es {stelle.split(': ', 1)[-1]}"}
         elif form["name"] == "karten":
             zeilen = [z.strip(" -*\t") for z in text.split("Text:\n", 1)[-1].splitlines()]
             daten = {"karten": [{"titel": z[:80], "beschreibung": "", "checkliste": []} for z in zeilen if z][:20]}
@@ -265,6 +270,17 @@ TRANSKRIPTION_EINRICHTUNG = {"transkription_adresse": "https://tr.test/"}
 TELEFONAT = "6f1e2d3c-0000-4000-8000-000000000001"
 
 
+def stille(sekunden: int, rate: int = 8000) -> bytes:
+    """Eine gültige WAV-Datei ohne Ton (8 Bit, mono), damit ein Spieler sie wirklich lädt und springt."""
+    puffer = io.BytesIO()
+    with wave.open(puffer, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(1)
+        w.setframerate(rate)
+        w.writeframes(bytes([128]) * sekunden * rate)
+    return puffer.getvalue()
+
+
 @dataclass
 class Transkription:
     """Die Transkription (Host tr.test), so weit die Pinnwand sie ruft: Suche, Transkript, Ton mit Bereichen und Hören.
@@ -273,7 +289,7 @@ class Transkription:
 
     anfragen: list[httpx.Request] = field(default_factory=list)
     gehoert: str = "Dachrinne an der Nordseite reparieren. Vorher Leiter holen und Halterungen kaufen."
-    ton: bytes = bytes(range(256)) * 64
+    ton: bytes = field(default_factory=lambda: stille(300))
 
     def leeren(self) -> None:
         self.anfragen.clear()

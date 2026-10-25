@@ -1,7 +1,7 @@
 ---
 zweck: "Plant Arbeit auf Boards: Karten in Spalten mit der Mechanik der alten Pinnwand, mehrere Boards mit eigenen Mitgliedern, Rollen und Rechten, angemeldet mit dem Konto der Kellerwolke, live für alle Beteiligten."
 geraet: [pi]
-abhaengigkeiten: [kellerwolke, leitstelle, appkern]
+abhaengigkeiten: [kellerwolke, leitstelle, transkription, appkern]
 daten:
   - "Pi: {{wurzel}}/daten/pinnwand.sqlite, alle Boards, Karten, Ordner, Hinweise, Vorlagen, Zeiteinträge, Timer, Zeitkonten, Abwesenheiten, Serien und Termine, das Journal für Rückgängig und die Einstellungen"
   - "Kellerwolke: Anhänge der Karten in der Ablage der Pinnwand, ein Ordner je Board; erstellte Berichte im Ordner Berichte"
@@ -34,9 +34,12 @@ Zeiterfassung (Timer je Person, Stundenzettel), Arbeitszeit (Zeitkonto, Urlaub, 
 unter Module einschaltet; die Karten der Serien legt die Pinnwand jeden Tag selbst an. KI an der Karte schlägt über die
 [[Leitstelle]] vor: eine Zusammenfassung (Knopf mit dem Zauberstab im Kopf des Kartendetails), neue Punkte der
 Checkliste, Labels und, in der Schnelleingabe einer Spalte unter "Aus Text", mehrere Karten aus einem Text. Übernommen
-wird nur, was man in der Vorschau bestätigt, mit Rückgängig. Die Pinnwand entsteht in Stufen: Boards, Zeit und Planung
-sind da, vom Verbund die Berichte, Mitteilungen aufs Telefon und KI an der Karte; die übrigen Anbindungen an andere Apps
-folgen. Was eine Stufe noch nicht hat, zeigt die Oberfläche nicht.
+wird nur, was man in der Vorschau bestätigt, mit Rückgängig. Das Modul Transkripte hängt Stellen aus der
+[[Transkription]] an eine Karte (suchen, abspielen ab der Stelle, Notiz) und bringt am Telefon unter Erfassen
+"Sprechen": nach dem Stopp stehen Titel und Beschreibung zum Prüfen da. Suchen, hören und sprechen kann nur, wer die
+Transkription selbst nutzen darf. Die Pinnwand entsteht in Stufen: Boards, Zeit und Planung sind da, vom Verbund die
+Berichte, Mitteilungen aufs Telefon, KI an der Karte und Transkripte; die übrigen Anbindungen an andere Apps folgen.
+Was eine Stufe noch nicht hat, zeigt die Oberfläche nicht.
 
 ## Was sie braucht
 
@@ -49,6 +52,10 @@ folgen. Was eine Stufe noch nicht hat, zeigt die Oberfläche nicht.
 - [[Leitstelle]] für KI an der Karte: dort unter Anwendungen einen Schlüssel für die Pinnwand erzeugen, in der Pinnwand
   unter Einstellungen, Verbindungen Adresse und Schlüssel eintragen; das Modell steht unter Einstellungen, KI an der
   Karte (leer: die Leitstelle wählt). Ohne Leitstelle läuft alles andere wie gewohnt, nur ohne Vorschläge.
+- [[Transkription]] für das Modul Transkripte: in der Pinnwand unter Einstellungen, Verbindungen ihre Adresse eintragen
+  (die Auswahl bietet gefundene an). Angemeldet wird mit dem App-Schlüssel der Pinnwand im Auftrag der Person; die
+  Transkription muss die Konten zulassen, die sie über die Pinnwand nutzen sollen. Ohne Adresse läuft alles andere wie
+  gewohnt.
 - [[Appkern]]: Gerüst, Anmeldung und Oberfläche; Oberfläche und Backend sind auf denselben Commit festgelegt.
 
 ## Neu einrichten
@@ -131,4 +138,8 @@ Karte hängt.
 - Keine Vorschläge der KI an der Karte: das Modul ist im Board aus, oder die Leitstelle ist nicht eingerichtet (die Seite
   Module des Boards sagt es). "Die Leitstelle kann gerade nicht" nennt den Grund aus der Leitstelle (etwa ein schlafender
   Rechner); später "Noch einmal". Gewartet wird nicht still, die Karte bleibt unverändert.
+- Transkripte: "Die Transkription lässt dich nicht zu" heißt, das Konto darf die Transkription nicht nutzen (dort unter
+  Einstellungen, Weitere Konten eintragen). Steht die Transkription in der Fußleiste als nicht verbunden, stimmt die
+  Adresse nicht oder sie läuft nicht. Spracheingabe braucht die Pinnwand vom Home-Bildschirm über HTTPS und die
+  Erlaubnis fürs Mikrofon; eine Aufnahme hat höchstens zwei Minuten.
 - Docker legt `daten/` oder `sicherungen/` für root an: die Ordner vor dem ersten Start als `pi` anlegen (Schritt 2).

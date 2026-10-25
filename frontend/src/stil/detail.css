@@ -166,6 +166,22 @@ button.pw-punkt-text { cursor: text; }
 .pw-vorschlag-warten { display: flex; align-items: center; gap: var(--a2); color: var(--text-2); }
 .pw-vorschlag .pw-labelwahl { display: flex; gap: var(--a2); flex-wrap: wrap; }
 .pw-felder > .pw-felder-ganz { grid-column: 1 / -1; }
+.pw-transkript { display: flex; flex-direction: column; gap: var(--a1); }
+.pw-transkript.spielt > .pw-anhang { background: color-mix(in srgb, var(--akzent-flaeche) 22%, var(--karte)); }
+.pw-transkript-text { padding: 0 var(--a3) 0 calc(22px + 2 * var(--a3)); font-size: var(--klein); color: var(--text-2); overflow-wrap: anywhere; }
+.pw-transkript-text .sprecher { font-weight: 600; color: var(--text); }
+.pw-transkript-notiz { display: flex; gap: var(--a2); align-items: center; padding-left: calc(22px + 2 * var(--a3)); }
+.pw-transkript-notiz .eingabe { flex: 1; min-width: 0; height: 36px; }
+.pw-transkript-treffer { display: flex; flex-direction: column; gap: 2px; padding: var(--a2); background: var(--karte); border-radius: var(--r2);
+                         max-height: 22em; overflow-y: auto; }
+.pw-transkript-treffer .kopf { display: flex; align-items: center; gap: var(--a2); padding: var(--a1); }
+.pw-transkript-treffer .kopf .name { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-transkript-treffer .meta { font-size: var(--marke); color: var(--text-3); }
+.pw-transkript-treffer .fundstelle { display: flex; gap: var(--a3); align-items: baseline; padding: var(--a2); border: 0; border-radius: var(--r1);
+                                     background: none; color: var(--text); font: inherit; font-size: var(--klein); text-align: left; cursor: pointer; }
+.pw-transkript-treffer .fundstelle:hover { background: var(--karte-2); }
+.pw-transkript-treffer .zeit { flex: none; font-family: var(--schrift-zahl); color: var(--akzent); }
+.pw-transkript-treffer .ausschnitt { min-width: 0; overflow-wrap: anywhere; }
 .pw-umschalter { display: inline-flex; gap: 2px; padding: 2px; background: var(--karte-2); border-radius: var(--r2); }
 .pw-umschalter button { height: 34px; padding: 0 var(--a3); border: 0; border-radius: var(--r1); background: transparent; color: var(--text-2);
                         font-size: var(--klein); font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }

@@ -47,6 +47,8 @@ export interface Zustand {
   berichte: Bericht[];
   /** Vorschläge der KI gehen (Leitstelle eingerichtet); sonst zeigt die Oberfläche keine */
   kiBereit: boolean;
+  /** wo die Transkription liegt (leer: nicht eingerichtet, keine Transkripte und keine Spracheingabe) */
+  transkriptionAdresse: string;
   /** Verbindung zum Ereignisstrom; getrennt: letzter Stand sichtbar, Schreibendes gesperrt */
   verbindung: Verbindung;
   meldung: Meldung | null;
@@ -55,7 +57,7 @@ export interface Zustand {
 export const stand = $state<Zustand>({
   geladen: false, moduleDa: [], konten: [], boards: [], karten: [], gruppen: [], laufnummern: [], ordner: [], timer: [], zeiteintraege: [],
   zeitkonten: [], abwesenheiten: [], serien: [], termine: [], hinweise: [], hinweiswege: { da: ["pinnwand"], vorgabe: {} }, einstellungen: { hinweise: {} } as PersonEinstellungen, papierkorb: [],
-  entfernt: [], kartennamen: [], terminnamen: [], vorlagen: [], berichte: [], kiBereit: false, verbindung: "getrennt", meldung: null,
+  entfernt: [], kartennamen: [], terminnamen: [], vorlagen: [], berichte: [], kiBereit: false, transkriptionAdresse: "", verbindung: "getrennt", meldung: null,
 });
 
 /** Antwort von /stand: die Teile, die der Server schon kennt (die übrigen kommen mit ihren Stufen) */
@@ -84,6 +86,7 @@ interface Serverstand {
   berichte: Bericht[];
   hinweiswege: Hinweiswege;
   kiBereit: boolean;
+  transkriptionAdresse: string;
   einstellungen: PersonEinstellungen;
 }
 
@@ -124,7 +127,7 @@ export async function laden(): Promise<void> {
     moduleDa: s.moduleDa, konten: s.konten, boards: s.boards, karten: s.karten, gruppen: s.gruppen, laufnummern: s.laufnummern, ordner: s.ordner,
     timer: s.timer, zeiteintraege: s.zeiteintraege, zeitkonten: s.zeitkonten, abwesenheiten: s.abwesenheiten,
     serien: s.serien, termine: s.termine, hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, kartennamen: s.kartennamen, terminnamen: s.terminnamen, berichte: s.berichte, hinweiswege: s.hinweiswege,
-    kiBereit: s.kiBereit, einstellungen: s.einstellungen, geladen: true,
+    kiBereit: s.kiBereit, transkriptionAdresse: s.transkriptionAdresse, einstellungen: s.einstellungen, geladen: true,
   });
 }
 

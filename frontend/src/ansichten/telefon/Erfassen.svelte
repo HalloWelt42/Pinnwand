@@ -2,9 +2,11 @@
   // Schnell erfassen am Telefon: Board wählen (das zuletzt genutzte ist vorbelegt, gemerkt auf diesem Gerät), Titel,
   // Arbeit oder Idee (nur mit Zeiterfassung, sonst die Kartenart des Boards), Fällig; Anlegen legt die Karte ans Ende der
   // ersten offenen Spalte (oder der Spalte, aus der man kam), du bist zuständig, und das Formular bleibt für die nächste
-  // Karte offen (M-32, M-33).
+  // Karte offen (M-32, M-33). Mit dem Modul Transkripte nimmt "Sprechen" auf; der Text kommt nach dem Stopp in Titel
+  // und Beschreibung und wird vor dem Anlegen geprüft.
   import { boardGruppen, darf, kartenNummer } from "../../daten/abfragen";
   import { anlegen } from "../../daten/anwendung/karten.svelte";
+  import { transkripteDa } from "../../daten/anwendung/transkripte.svelte";
   import { uhr } from "../../daten/uhr.svelte";
   import { datum } from "../../daten/format";
   import { board, karte, stand } from "../../daten/stand.svelte";
@@ -12,6 +14,7 @@
   import DatumFeld from "../../teile/DatumFeld.svelte";
   import { boardPfad, wert } from "../../weg.svelte";
   import { geraet, geraetMerken } from "./geraet.svelte";
+  import Spracheingabe from "./Spracheingabe.svelte";
   import TelefonSchale from "./TelefonSchale.svelte";
   import { telPfad } from "./weg";
 
@@ -27,6 +30,9 @@
   let beschreibung = $state("");
   let datumGueltig = $state(true);
   let gewaehlt = $state<"arbeit" | "idee" | null>(null);
+  /** die Aufnahme läuft; Titel und Beschreibung kamen aus der Sprache (Hinweis zum Prüfen) */
+  let sprache = $state(false);
+  let ausSprache = $state(false);
   /** Fälligkeit als ISO-Tag, leer: ohne */
   let faellig = $state("");
   /** die zuletzt hier angelegte Karte (verschwindet, wenn Rückgängig sie wieder entfernt) */
@@ -53,19 +59,32 @@
     titel = "";
     beschreibung = "";
     faellig = "";
+    ausSprache = false;
     geraet.board = boardId;
     geraetMerken();
+  }
+
+  function uebernehmen(text: string): void {
+    titel = (text.match(/^[^.!?]+/)?.[0] ?? text).trim().slice(0, 300);
+    beschreibung = text;
+    ausSprache = true;
+    sprache = false;
   }
 </script>
 
 {#snippet knoepfe()}
   <div class="pw-tel-aktionen">
+    {#if transkripteDa(b)}
+      <button class="knopf" onclick={() => (sprache = true)} title="Per Sprache erfassen (Transkription)"><i class="fa-solid fa-microphone"></i>Sprechen</button>
+    {/if}
     <button class="knopf haupt" disabled={!titel.trim() || !datumGueltig} title={datumGueltig ? "" : "Das Datum ist nicht lesbar"} onclick={anlegenKlick}><i class="fa-solid fa-plus"></i>Anlegen</button>
   </div>
 {/snippet}
 
-<TelefonSchale titel="Erfassen" unter="Neue Karte" reiter="erfassen" unten={boards.length ? knoepfe : undefined}>
-  {#if !boards.length}
+<TelefonSchale titel="Erfassen" unter={sprache ? "Per Sprache" : "Neue Karte"} reiter="erfassen" unten={boards.length && !sprache ? knoepfe : undefined}>
+  {#if sprache}
+    <Spracheingabe {boardId} {uebernehmen} verwerfen={() => (sprache = false)} />
+  {:else if !boards.length}
     <div class="leer"><i class="fa-solid fa-circle-plus"></i><h2>Kein Board zum Erfassen</h2>
       <p>Du brauchst ein Board, in dem du Karten anlegen darfst. Boards legst du am Rechner an.</p></div>
   {:else}
@@ -87,11 +106,14 @@
       <span class="pw-tel-notiz">Landet in {spalte.name} · zuständig du{boardId === geraet.board ? " · zuletzt genutzt" : ""}</span>
     </section>
 
+    {#if ausSprache}
+      <div class="hinweis"><i class="fa-solid fa-wave-square"></i><div>Aus der Sprache übernommen; Titel und Beschreibung bitte prüfen.</div></div>
+    {/if}
     <label class="pw-tel-abschnitt">
       <span class="etikett">Titel</span>
       <textarea class="eingabe" rows="2" bind:value={titel} placeholder="Was ist zu tun?"></textarea>
     </label>
-    {#if beschreibung}
+    {#if beschreibung || ausSprache}
       <label class="pw-tel-abschnitt">
         <span class="etikett">Beschreibung</span>
         <textarea class="eingabe" rows="4" bind:value={beschreibung}></textarea>

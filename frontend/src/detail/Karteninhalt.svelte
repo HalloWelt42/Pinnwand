@@ -8,6 +8,7 @@
   import { melden } from "../daten/anwendung/meldung.svelte";
   import { kiDa, labelsHolen, Vorschlagslauf, zusammenfassungHolen } from "../daten/anwendung/ki.svelte";
   import { inPapierkorb } from "../daten/anwendung/papierkorb.svelte";
+  import { transkripteDa } from "../daten/anwendung/transkripte.svelte";
   import { uhr } from "../daten/uhr.svelte";
   import { alterTage, datumJahr } from "../daten/format";
   import { konto, mitKonto, stand } from "../daten/stand.svelte";
@@ -27,6 +28,7 @@
   import Anhaenge from "./Anhaenge.svelte";
   import Checkliste from "./Checkliste.svelte";
   import Textfeld from "./Textfeld.svelte";
+  import Transkripte from "./Transkripte.svelte";
   import Umziehen from "./Umziehen.svelte";
   import Verknuepfte from "./Verknuepfte.svelte";
   import Vorschlag from "./Vorschlag.svelte";
@@ -305,15 +307,8 @@
 
   <Anhaenge karte={k} {schreiben} />
 
-  {#if board.module.transkripte}
-    <section class="pw-abschnitt">
-      <div class="etikett">Transkripte</div>
-      {#each k.transkripte as t (t.stelle)}
-        <div class="pw-anhang"><i class="fa-solid fa-wave-square"></i><span class="name">{t.aufnahme} <span class="schwach">bei {t.stelle}: "{t.text}"</span></span>
-          <button class="knopf ohne symbol klein" title="Abspielen ab der Stelle"><i class="fa-solid fa-play"></i></button></div>
-      {/each}
-      <label class="suche pw-detail-suche"><i class="fa-solid fa-wave-square"></i><input placeholder="In Transkripten suchen und eine Stelle verknüpfen" /></label>
-    </section>
+  {#if transkripteDa(board)}
+    <Transkripte karte={k} {schreiben} {ki} />
   {/if}
 
   <Aktivitaet karte={k} {board} {optionen} />

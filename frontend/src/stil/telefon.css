@@ -53,6 +53,7 @@
 .pw-tel-unten { flex: none; padding: var(--a2) var(--a4); background: var(--hg); border-top: 1px solid var(--rand); }
 .pw-tel-aktionen { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: var(--a2); }
 .pw-tel-aktionen .knopf { height: 52px; font-size: var(--gross); }
+.pw-tel-aktionen > :only-child { grid-column: 1 / -1; }
 
 /* Die eine Meldung (teile/Meldung) steht am Telefon im Fluss über Laufleiste und Fußleiste, nicht fest unten rechts */
 .pw-meldungen.telefon { position: static; flex: none; max-width: none; margin: 0 var(--a2) var(--a2); }
@@ -317,19 +318,16 @@ button.pw-tel-ziel:active { background: var(--karte-2); }
 .pw-tel-sprache .kopfzeile .zustand { height: 32px; font-size: var(--klein); }
 .pw-tel-sprache .dauer { margin-left: auto; font-size: var(--titel); font-weight: 700; color: var(--akzent); }
 .pw-tel-sprache .pegel { height: 64px; display: flex; align-items: center; gap: 3px; padding: 0 var(--a1); border-radius: var(--r2); background: var(--mulde); }
-.pw-tel-sprache .pegel span {
-  flex: 1 1 0; min-width: 0; height: calc(var(--h) * 80%); border-radius: 2px; background: var(--akzent-flaeche);
-  animation: pw-tel-pegel 0.9s ease-in-out infinite alternate; animation-delay: calc(var(--v) * -110ms);
-}
-@keyframes pw-tel-pegel { from { transform: scaleY(1); } to { transform: scaleY(0.35); } }
+.pw-tel-sprache .pegel span { flex: 1 1 0; min-width: 0; height: calc(var(--h) * 90%); border-radius: 2px; background: var(--akzent-flaeche);
+                             transition: height 90ms linear; }
 .pw-tel-sprache .mitschrift { min-height: 132px; padding: var(--a3); border-radius: var(--r2); background: var(--bereich); font-size: var(--gross); line-height: 1.55; overflow-wrap: anywhere; }
 .pw-tel-sprache .vorlaeufig { color: var(--text-3); font-style: italic; }
 .pw-tel-sprache .quelle { display: flex; align-items: flex-start; gap: var(--a2); font-size: var(--klein); color: var(--text-3); }
 .pw-tel-sprache .quelle i { margin-top: 4px; }
 .pw-tel-sprache .knoepfe { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: var(--a2); }
 .pw-tel-sprache .knoepfe .knopf { height: 52px; }
-@media (prefers-reduced-motion: reduce) { .pw-tel-sprache .pegel span { animation: none; } }
-:root[data-bewegung="reduziert"] .pw-tel-sprache .pegel span { animation: none; }
+@media (prefers-reduced-motion: reduce) { .pw-tel-sprache .pegel span { transition: none; } }
+:root[data-bewegung="reduziert"] .pw-tel-sprache .pegel span { transition: none; }
 
 /* ═══ Hinweise ══════════════════════════════════════════════════════════════════════════════════════════════ */
 

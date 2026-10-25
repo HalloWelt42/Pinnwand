@@ -13,8 +13,10 @@ export function kiDa(b: Board): boolean {
   return stand.kiBereit && modulAn(b, "ki", stand.moduleDa);
 }
 
+/** Ein Modell rechnet oft länger als die übliche Zeitgrenze einer Anfrage (beim ersten Laden Minuten): ohne Grenze;
+ *  abbrechen kann die Person im Kasten des Vorschlags */
 function fragen<T>(pfad: string, signal: AbortSignal, daten: unknown = {}): Promise<T> {
-  return hole<T>(pfad, { method: "POST", ...json(daten), signal });
+  return hole<T>(pfad, { method: "POST", ...json(daten), signal, zeitgrenzeMs: 0 });
 }
 
 export const zusammenfassungHolen = (karteId: Kennung) => (signal: AbortSignal) =>
@@ -28,6 +30,9 @@ export const labelsHolen = (karteId: Kennung) => (signal: AbortSignal) =>
 
 export const kartenAusTextHolen = (boardId: Kennung, text: string) => (signal: AbortSignal) =>
   fragen<{ karten: Kartenentwurf[] }>(`/boards/${boardId}/ki/karten`, signal, { text });
+
+export const notizHolen = (karteId: Kennung, markeId: Kennung) => (signal: AbortSignal) =>
+  fragen<{ text: string }>(`/karten/${karteId}/transkripte/${markeId}/ki/notiz`, signal);
 
 export class Vorschlagslauf<T> {
   laeuft = $state(false);

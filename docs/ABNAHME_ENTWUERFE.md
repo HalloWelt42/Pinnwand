@@ -72,6 +72,16 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
   Rückgängig). Übernommen wird nur, was man bestätigt. Ohne eingerichtete Leitstelle zeigt die Oberfläche keine
   Vorschläge, die Seite Module sagt warum. Am Telefon bleibt Bearbeiten am Rechner, also auch die Vorschläge.
 
+## In der App gebaut (Stufe 4, Transkripte, 26.10.2026)
+
+- Stellen aus der Transkription an der Karte (M-112 und M-113 in einem): suchen wie in der Transkription, eine Fundstelle
+  oder das ganze Transkript verknüpfen; je Stelle Name, Zeit, Sprecher und Text aus dem Transkript, Abspielen ab der
+  Stelle in der Pinnwand, "In der Transkription öffnen", eine Notiz und mit KI an der Karte ein Vorschlag dafür; lösen
+  mit Rückgängig. Gefragt wird im Auftrag der Person: wer die Transkription nicht nutzen darf, sieht die Stellen, hört
+  sie aber nicht.
+- Spracheingabe beim Erfassen am Telefon: der Text kommt nach dem Stopp (Nutzer: "Nach dem Stopp"), nicht mitlaufend wie
+  im Entwurf; erster Satz Titel, alles Beschreibung, mit Hinweis zum Prüfen.
+
 ## Nachbesserungen in der App (25.10.2026)
 
 - M-74: Beim Zusammenführen zweier Verknüpfungen nennt die Meldung, ob die Zeit geteilt wird und welche Einstellung
@@ -81,6 +91,10 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
 - Rückgängig geht auch, wenn jemand den Hinweis, den die Änderung erzeugte, schon gelesen hat (der Hinweis geht mit).
 - Eine überfällige Karte, deren Timer den Start auf heute setzt, bleibt in allen Feldern bearbeitbar; abgelehnt wird
   "Start nach Fällig" nur, wenn jemand Start oder Fällig selbst so setzt.
+- Vorschläge der KI und das Umsetzen der Sprache warten ohne die Zeitgrenze von 20 Sekunden der Oberfläche (ein Modell
+  braucht oft länger); abbrechen kann man selbst.
+- Der Auszug der Beschreibung auf der Karte zeigt keine Zeichen des Markdowns mehr; steht am Telefon nur ein Knopf in
+  der Leiste unten, nimmt er die ganze Breite.
 - Die Knöpfe der Schnelleingabe stehen in einer Zeile (eine Regel für den Knopf "Karte" im Fuß der Spalte zog sie auf
   volle Breite); "Erstellt ... von" hat wieder sein Leerzeichen.
 
@@ -88,10 +102,10 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
 
 | Stand | Zahl |
 |---|---|
-| abgebildet | 106 |
+| abgebildet | 108 |
 | teilweise | 1 |
 | fehlt | 3 |
-| später | 9 |
+| später | 7 |
 | bewusst anders | 3 |
 | Fehler behoben | 4 |
 | **Summe** | **126** |
@@ -228,8 +242,8 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
 | M-109 | Pause, Ändern, Urlaub | abgebildet | `pausieren` in `beispiel/anwendung/serien.svelte.ts`, `eintragen` in `beispiel/anwendung/abwesenheiten.svelte.ts` | Pause und Ändern fassen nur unberührte Vorbuchungen an. Ein eingetragener ganzer Abwesenheitstag nimmt unberührte Serienkarten der Person zurück: sie fällt aus den Zuständigen, bleibt niemand, geht die Karte; die Meldung nennt die Zahl; angefasste Karten bleiben. |
 | M-110 | Serie löschen | abgebildet | Serie löschen in `beispiel/anwendung/serien.svelte.ts`, vorgeführt unter `/serien/se-runde` (Zustand Löschen) | Rückfrage in der Fläche; unberührte Vorbuchungen gehen, Karten mit Zeit oder erledigte bleiben gelöst als Verlauf. |
 | M-111 | Nachtrag ignorierter Serienkarten | abgebildet | `ansichten/planung/Nachtrag.svelte`, Anwendungsfälle des Nachtrags in `beispiel/anwendung/serien.svelte.ts`, `/serien?entwurf=nachtrag` | Bestätigen mit anpassbarer Dauer auf den Termintag, Karte nach Erledigt mit dem Termintag, Verwerfen, alle bestätigen, später; Termine dazu. Fehler behoben: nur eigene Posten; Verwerfen nimmt bei mehreren Teilnehmern nur dich heraus. |
-| M-112 | Ein verknüpftes Transkript | später (Stufe 4) | `detail/Karteninhalt.svelte` (Modul Transkripte) | Transkripte sind eine Anbindung der Stufe Verbund (E-06); bis dahin zeigt der Abschnitt die verknüpften Stellen, Suchfeld und "Abspielen ab der Stelle" sind noch ohne Wirkung. |
-| M-113 | Transkript-Verweise (Marken) | später (Stufe 4) | `detail/Karteninhalt.svelte`, `modell.ts` (TranskriptMarke) | Gehört zur Anbindung Transkription der Stufe Verbund (E-06); Marken mit Aufnahme, Stelle und Text werden schon gezeigt, Zusammenfassung, Anhängen, Entfernen und Sprung kommen mit ihr. |
+| M-112 | Ein verknüpftes Transkript | abgebildet | `detail/Transkripte.svelte`, `backend/app/anwendung/transkripte.py` | In der App (Stufe 4, Transkripte): das ganze Transkript als Stelle ohne Zeit; Suche nach der letzten Taste, Öffnen in der Transkription, Lösen mit Rückgängig. |
+| M-113 | Transkript-Verweise (Marken) | abgebildet | `detail/Transkripte.svelte`, `detail/Vorschlag.svelte`, `backend/app/anwendung/transkripte.py` | In der App: bis zu 100 Stellen je Karte mit Name, Zeit, Sprecher und Text (vom Server aus dem Transkript), Notiz speichert beim Verlassen, Vorschlag der Notiz mit Vorschau, Abspielen ab der Stelle, Lösen mit Rückgängig. Fehler behoben: Speicher- und Ladefehler kommen als Meldung, nichts wird verschluckt. |
 | M-114 | Vorlesen | später (Stufe 4) | `detail/Karteninhalt.svelte`, `detail/Textfeld.svelte`, `ansichten/uebersicht/Heute.svelte`, `ansichten/zeit/Berichte.svelte` | Vorlesen ist die Anbindung Vertonung der Stufe Verbund (E-06); die Knöpfe an Karte, Beschreibung, Heute und Berichten stehen schon und lesen noch nicht vor, am Kommentar fehlt der Lautsprecher noch. |
 | M-115 | Labelvorschläge | abgebildet | `detail/Karteninhalt.svelte`, `detail/Vorschlag.svelte`, `backend/app/anwendung/ki.py` | In der App (Stufe 4, KI an der Karte): Zauberstab hinter den Labels, das Modell wählt aus den Labels des Boards, die die Karte noch nicht hat; gesetzt wird nur, was angehakt bleibt. Ebenso Checkliste, Zusammenfassung und Karten aus Text. |
 | M-116 | Projekt-Prüfung | bewusst anders | `hatRecht` in `regeln/board.ts`, `darf` in `beispiel/abfragen.ts`, `mitRecht` in `beispiel/anwendung/boards.svelte.ts`, `ansichten/verwaltung/board/Rollen.svelte` | E-02, E-03, E-04: Rechte je Board und Rolle statt Mitgliedschaft in einer Mappe. Die Oberfläche blendet jetzt überall nach dem Recht aus, und Verschieben prüft es im Anwendungsfall; Anlegen, Bearbeiten, Duplizieren, Kommentieren und Papierkorb prüfen es dort noch nicht (siehe Befunde). |

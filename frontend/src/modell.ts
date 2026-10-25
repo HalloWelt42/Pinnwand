@@ -180,10 +180,18 @@ export interface Anhang {
   von?: Kennung;
 }
 
+/** Eine Stelle der Transkription an einer Karte (ohne Sekunde: das ganze Transkript); Name, Sprecher und Text kommen
+ *  beim Verknüpfen aus dem Transkript */
 export interface TranskriptMarke {
-  aufnahme: string;
-  stelle: string;
-  text: string;
+  id: string;
+  transkript: string;
+  name: string;
+  sekunde?: number | null;
+  sprecher?: string | null;
+  text?: string | null;
+  notiz?: string | null;
+  von: string;
+  am: string;
 }
 
 export interface Ereignis {

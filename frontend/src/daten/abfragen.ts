@@ -23,7 +23,7 @@ export function timerVon(konto = ICH): Timer | undefined {
   return stand.timer.find((t) => t.konto === konto);
 }
 
-/** Laufende Timer auf einer Karte (jede Person hat höchstens einen) */
+/** Laufende Timer auf einer Karte (jede Person hat höchstens einen; die anderer nur mit dem Recht "Zeiten anderer sehen") */
 export function laufendAuf(karteId: string): Timer[] {
   return stand.timer.filter((t) => t.karte === karteId && t.seit);
 }
@@ -42,7 +42,8 @@ export function timerErlaubt(k: Karte, konto = ICH): boolean {
 
 // ═══ Zeit einer Karte ════════════════════════════════════════════════════════════════════════════════════
 
-/** Gebuchte Zeit einer Karte: Summe ihrer Einträge, mit den laufenden Sitzungen */
+/** Gebuchte Zeit einer Karte: Summe ihrer Einträge, mit den laufenden Sitzungen. Der Stand hat nur, was du siehst: ohne
+ *  das Recht "Zeiten anderer sehen" im Board der Karte ist das deine Zeit auf ihr */
 export function zeitDerKarte(karteId: string, mitLaufend = true): number {
   const gebucht = stand.zeiteintraege.filter((e) => e.karte === karteId).reduce((s, e) => s + e.sekunden, 0);
   return gebucht + (mitLaufend ? laufendAuf(karteId).reduce((s, t) => s + sitzungSek(t), 0) : 0);
@@ -54,14 +55,18 @@ export function zeitDerGruppe(k: Karte): number {
   return ids.reduce((s, id) => s + zeitDerKarte(id), 0);
 }
 
-/** Name und Board einer Karte für Zeiteinträge, auch wenn sie im Papierkorb liegt oder entfernt ist */
+/** Name und Board einer Karte für Zeiteinträge, auch wenn sie im Papierkorb liegt, entfernt ist oder nicht im Stand
+ *  steht (archiviert, Board verlassen: dann kommt der Name aus den Kartennamen des Stands, die Karte gibt es noch) */
 export function kartenName(karteId: string): { schluessel: string; titel: string; board: string; zustand: "da" | "papierkorb" | "entfernt" } {
   const k = karte(karteId);
   if (k) return { schluessel: k.schluessel, titel: k.titel, board: k.board, zustand: "da" };
   const p = stand.papierkorb.flatMap((e) => e.karten).find((x) => x.id === karteId);
   if (p) return { schluessel: p.schluessel, titel: p.titel, board: p.board, zustand: "papierkorb" };
   const e = stand.entfernt.find((x) => x.karte === karteId);
-  return { schluessel: e?.schluessel ?? "", titel: e?.titel ?? "Entfernte Karte", board: e?.board ?? "", zustand: "entfernt" };
+  if (e) return { schluessel: e.schluessel, titel: e.titel, board: e.board, zustand: "entfernt" };
+  const n = stand.kartennamen.find((x) => x.karte === karteId);
+  if (n) return { schluessel: n.schluessel, titel: n.titel, board: n.board, zustand: "da" };
+  return { schluessel: "", titel: "Entfernte Karte", board: "", zustand: "entfernt" };
 }
 
 /** Zeiteinträge einer Person von bis (einschließlich) */

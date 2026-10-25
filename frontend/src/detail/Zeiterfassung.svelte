@@ -1,9 +1,10 @@
 <script lang="ts">
-  // Zeiterfassung an der Karte (Modul Zeiterfassung): dein Timer, die Ticketzeit (Summe aller Einträge; setzen bucht die
-  // Differenz heute bei dir), die Schätzung, Zeit nachtragen (Enter in Tag oder Dauer bucht) und die Einträge je Tag und
-  // Person (M-86 bis M-88). In einer Zeile ändert ein Klick auf den Tag das Datum, die Dauer ist direkt änderbar, X
-  // löscht; das gilt für eigene Einträge, für fremde nur mit dem Recht "Zeiten anderer bearbeiten". Gebucht und geändert
-  // wird nur über die Anwendungsfälle, jede Änderung mit Rückgängig.
+  // Zeiterfassung an der Karte (Modul Zeiterfassung): dein Timer, die Ticketzeit (Summe aller Einträge, die du siehst:
+  // ohne das Recht "Zeiten anderer sehen" nur deine, und so heißt sie dann; setzen bucht die Differenz heute bei dir), die
+  // Schätzung, Zeit nachtragen (Enter in Tag oder Dauer bucht) und die Einträge je Tag und Person (M-86 bis M-88). In
+  // einer Zeile ändert ein Klick auf den Tag das Datum, die Dauer ist direkt änderbar, X löscht; das gilt für eigene
+  // Einträge, für fremde nur mit dem Recht "Zeiten anderer bearbeiten". Gebucht und geändert wird nur über die
+  // Anwendungsfälle, jede Änderung mit Rückgängig.
   import { tick } from "svelte";
   import { darf, laufendAuf, timerErlaubt, timerVon, zeitDerKarte } from "../daten/abfragen";
   import { bearbeiten } from "../daten/anwendung/karten.svelte";
@@ -72,7 +73,7 @@
         <button class="knopf haupt" onclick={() => starten(karte.id)}><i class="fa-solid fa-play"></i>Start</button>
       {/if}
       <span class="gross" class:laeuft={!!meiner?.seit}>
-        <DauerFeld sek={Math.round(gesamt)} mitSekunden klasse="gross" titel="Ticketzeit: Summe aller Einträge; ändern bucht die Differenz heute bei dir"
+        <DauerFeld sek={Math.round(gesamt)} mitSekunden klasse="gross" titel="Ticketzeit: {andereSehen ? 'Summe aller Einträge' : 'Deine Zeit auf dieser Karte'}; ändern bucht die Differenz heute bei dir"
                    gesperrt={!!meiner?.seit || !darf(board, "zeit.buchen")} onwert={(s) => ticketzeitSetzen(karte.id, s)} />
       </span>
       <span class="schaetzung">Schätzung

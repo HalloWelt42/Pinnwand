@@ -387,11 +387,11 @@ export interface Geloescht {
   spalte?: Spalte;
   /** die Karten des Eintrags: eine bei einer Karte, alle der Spalte bei einer Spalte; ihre Zeiteinträge bleiben gebucht */
   karten: Karte[];
-  /** alte Stelle: bei einer Karte Spalte und Platz darin, bei einer Spalte ihr Platz in der Spaltenfolge, bei einem Board
-   *  sein Platz in der Liste der Boards (ab 0) */
+  /** alte Stelle (ab 0): bei einer Karte Spalte und Platz darin, bei einer Spalte ihr Platz in der Spaltenfolge */
   stelle: { spalte?: Kennung; platz: number };
-  /** bei einem Board: alles, was daran hängt (ohne die Karten, die stehen in karten) */
-  inhalt?: { board: Board; serien: Serie[]; termine: Termin[]; reihen: Record<Kennung, Kennung[]>; ordner?: Kennung };
+  /** bei einem Board: alles, was daran hängt (ohne die Karten, die stehen in karten): seine Gruppen und die Ordner, in
+   *  denen es lag */
+  inhalt?: { board: Board; gruppen: Gruppe[]; ordner: Kennung[] };
   von: Kennung;
   am: string;
 }

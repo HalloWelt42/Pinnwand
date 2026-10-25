@@ -18,6 +18,7 @@ from .hinweise import Hinweise
 from .inhalt import Inhalte
 from .karten import Karten
 from .konten import Konten
+from .papierkorb import Papierkorb
 from .rahmen import Anwendung
 from .stand import Abfragen
 
@@ -32,13 +33,14 @@ class Dienste:
     karten: Karten
     inhalte: Inhalte
     hinweise: Hinweise
+    papierkorb: Papierkorb
 
     @classmethod
     def bauen(cls, db: Datenbank, zugang: Zugang, uhr: Uhr | None = None) -> Dienste:
         ereignisse = Ereignisse()
         a = Anwendung(Verzeichnis(db), ereignisse, uhr)
         return cls(anwendung=a, ereignisse=ereignisse, konten=Konten(a), abfragen=Abfragen(a), boards=Boards(a, zugang),
-                   karten=Karten(a), inhalte=Inhalte(a), hinweise=Hinweise(a))
+                   karten=Karten(a), inhalte=Inhalte(a), hinweise=Hinweise(a), papierkorb=Papierkorb(a))
 
 
 class Start(Begleiter):

@@ -236,10 +236,21 @@ export interface Laufnummer {
 
 export type Herkunft = "timer" | "hand" | "korrektur" | "serie";
 
+/** Vermerk an den Einträgen einer Timer-Sitzung, die länger als 12 Stunden lief: die echte Sitzung als Zeitpunkte
+ *  (Ortszeit wie die Uhr) und ihre ganze Dauer; gebucht sind die ersten 12 Stunden, bis die Person das echte Ende nennt
+ *  oder die 12 bestätigt. Die Spanne für Menschen rechnet die Ansicht aus seit und bis. */
+export interface Deckel {
+  seit: string;
+  bis: string;
+  sekunden: number;
+}
+
 /** Gebuchte Zeit einer Person auf einer Karte an einem Tag; die Zeit einer Karte ist die Summe ihrer Einträge */
 export interface Zeiteintrag {
   id: Kennung;
   karte: Kennung;
+  /** Board der Karte; danach richtet sich, wer den Eintrag sieht */
+  board: Kennung;
   konto: Kennung;
   datum: string;
   von?: string;
@@ -251,14 +262,18 @@ export interface Zeiteintrag {
   sitzungen?: { von: string; bis: string }[];
   /** an Mitternacht zerlegt: der andere Teil derselben Sitzung liegt an diesem Tag */
   zerlegt?: string;
-  /** der Timer lief länger als 12 Stunden (Spanne, Sekunden); gebucht sind die ersten 12, die Rückfrage ist offen */
-  gedeckelt?: { spanne: string; sekunden: number };
+  /** der Timer lief länger als 12 Stunden; gebucht sind die ersten 12, die Rückfrage ist offen */
+  gedeckelt?: Deckel;
 }
 
 /** Der eine Timer einer Person: läuft (seit) oder ist angehalten und lässt sich fortsetzen */
 export interface Timer {
+  /** gleich dem Konto: je Person einer */
+  id: Kennung;
   konto: Kennung;
   karte: Kennung;
+  /** Board der Karte; danach richtet sich, wer den Timer sieht */
+  board: Kennung;
   /** läuft seit (ISO); leer: angehalten, die bisherigen Sitzungen sind gebucht */
   seit?: string;
 }
@@ -374,6 +389,7 @@ export interface Halbtagsregel {
 /** Zeitkonto einer Person (Arbeitszeit und Urlaub, je Person); eine neue Fassung gilt ab einem Tag, frühere Tage
  *  behalten ihr Soll. Genommene und geplante Urlaubstage ergeben sich aus den Abwesenheiten. */
 export interface Zeitkonto {
+  id: Kennung;
   konto: Kennung;
   /** gilt ab diesem Tag (bis zur nächsten Fassung) */
   ab: string;
@@ -416,6 +432,14 @@ export interface Geloescht {
   inhalt?: { board: Board; gruppen: Gruppe[]; ordner: Kennung[] };
   von: Kennung;
   am: string;
+}
+
+/** Name einer Karte, auf die sichtbare Zeiteinträge zeigen, die selbst nicht im Stand ist (archiviert, Board verlassen) */
+export interface Kartenname {
+  karte: Kennung;
+  board: Kennung;
+  schluessel: string;
+  titel: string;
 }
 
 /** Eine endgültig entfernte Karte: ihr Name bleibt für die Zeiteinträge, die weiter gebucht sind */

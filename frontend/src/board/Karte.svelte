@@ -11,7 +11,7 @@
   import { anhalten, fortsetzen, starten } from "../daten/anwendung/timer.svelte";
   import { ICH } from "../daten/ich";
   import { alterTage, datum, dauer, faelligText } from "../daten/format";
-  import { gruppenmitglieder, konto, stand } from "../daten/stand.svelte";
+  import { frisch, gruppenmitglieder, konto, stand } from "../daten/stand.svelte";
   import type { Board, Karte } from "../modell";
   import { alterung } from "../regeln/board";
   import { kette, ketteBeenden, ketteBewegen, ketteStarten } from "./kette.svelte";
@@ -19,8 +19,8 @@
 
   let { karte, board, erledigt = false, art = "", oeffnen, aktionen = false }: {
     karte: Karte; board: Board; erledigt?: boolean;
-    /** Darstellung im Entwurf: gezogen, mitgezogen, offen (Detail offen), geaendert (gerade von jemand anderem) */
-    art?: "" | "gezogen" | "mitgezogen" | "offen" | "geaendert";
+    /** Darstellung: offen (im Detail geöffnet) */
+    art?: "" | "offen";
     oeffnen?: (id: string) => void;
     /** Kette und Papierkorb beim Überfahren (im Board, nicht in Vorschauen) */
     aktionen?: boolean;
@@ -45,6 +45,8 @@
   const zeitHinweis = $derived((geteilt ? "; Zeit der Gruppe" : "")
     + (schaetzung ? `; ${dauer(zeit)} von ${dauer(schaetzung)} geschätzt${ueber ? ", über der Schätzung" : ""}` : ""));
 
+  /** wer die Karte gerade geändert hat, wenn es jemand anders war (M-06) */
+  const geaendertVon = $derived(frisch[karte.id]);
   const mitZeit = $derived(board.module.zeiterfassung && karte.art === "arbeit");
   const meiner = $derived(timerVon(ICH)?.karte === karte.id ? timerVon(ICH) : undefined);
   const fremd = $derived(laufendAuf(karte.id).find((t) => t.konto !== ICH));
@@ -84,10 +86,10 @@
   }
 </script>
 
-<div class="pw-karte {art}" class:idee={karte.art === "idee"} class:kettenquelle={kette.quelle === karte.id} class:kettenziel={kette.ziel === karte.id}
+<div class="pw-karte {art}" class:geaendert={!!geaendertVon} class:idee={karte.art === "idee"} class:kettenquelle={kette.quelle === karte.id} class:kettenziel={kette.ziel === karte.id}
      data-karte={karte.id} role="button" tabindex="0" aria-label="{karte.schluessel} {karte.titel}"
      onclick={() => oeffnen?.(karte.id)} onkeydown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) oeffnen?.(karte.id); }}>
-  {#if art === "geaendert"}<span class="wer-sonst" title="Gerade von Anna Berger geändert"><Person id="k-anna" /></span>{/if}
+  {#if geaendertVon}<span class="wer-sonst" title="Gerade von {konto(geaendertVon).name} geändert"><Person id={geaendertVon} /></span>{/if}
   {#if kettbar || loeschbar}
     <span class="pw-karte-aktionen">
       {#if kettbar}

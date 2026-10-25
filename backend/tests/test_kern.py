@@ -279,7 +279,8 @@ async def test_ereignisse_nur_an_mitglieder(pw: Pinnwand):
     with hub.abo("2") as bert, hub.abo("3") as cora:                             # eingetragen, bevor gelesen wird
         await pw.karte("anna", haus, "Fenster")
         teil = await asyncio.wait_for(anext(bert), 1)
-        assert sorted(g.tabelle for g in teil) == ["karten", "laufnummern"]
+        assert sorted(g.tabelle for g in teil.geaendert) == ["karten", "laufnummern"]
+        assert (teil.von, teil.text) == ("1", "HAUS-1 in Offen angelegt")
         naechstes = asyncio.ensure_future(anext(cora))
         await asyncio.sleep(0.05)
         assert not naechstes.done()

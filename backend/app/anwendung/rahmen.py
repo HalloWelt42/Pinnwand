@@ -12,7 +12,7 @@ from ..modell import Board, Kennung, Konto, Modell
 from ..regeln.board import hat_recht
 from ..uhr import Uhr
 from ..verzeichnis import Bild, Schreiber, Verzeichnis
-from .ereignisse import Ereignisse, Geaendert
+from .ereignisse import Ereignisse, Geaendert, Neuigkeit
 
 #: Tabellen, deren Zeilen einem Board gehören (Ereignis an seine Mitglieder)
 JE_BOARD = {"karten": "board", "gruppen": "board", "laufnummern": "board", "papierkorb": "board", "entfernt": "board"}
@@ -113,7 +113,7 @@ class Anwendung:
 
         (text, journal, empfaenger), bilder = await self.v.transaktion(transaktion)
         geaendert = [Geaendert(tabelle=b.tabelle, id=b.id, daten=b.nachher) for b in bilder]
-        self.ereignisse.senden(geaendert, empfaenger)
+        self.ereignisse.senden(Neuigkeit(von=konto.id, text=text if melden else None, geaendert=geaendert), empfaenger)
         return Antwort(meldung=text if melden else None, rueckgaengig=journal if (rueckgaengig and journal) else None,
                        geaendert=geaendert)
 

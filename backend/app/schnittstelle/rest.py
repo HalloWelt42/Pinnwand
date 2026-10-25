@@ -41,8 +41,8 @@ def router(geruest: Geruest, d: Dienste) -> APIRouter:
 
     @r.get("/ereignisse")
     async def ereignisse(konto: Konto = Depends(ich)) -> StreamingResponse:
-        """Server-Sent Events: `event: geaendert` mit den neuen Ständen als JSON; Kommentarzeilen halten die Verbindung.
-        Endet der Strom, verbindet die Oberfläche neu und holt den ganzen Stand."""
+        """Server-Sent Events: `event: geaendert` mit einer Neuigkeit als JSON (wer, Meldung, neue Stände); Kommentarzeilen
+        halten die Verbindung. Endet der Strom, verbindet die Oberfläche neu und holt den ganzen Stand."""
 
         async def strom():
             with d.ereignisse.abo(konto.id) as teile:
@@ -51,8 +51,7 @@ def router(geruest: Geruest, d: Dienste) -> APIRouter:
                     if teil is None:
                         yield b": lebt\n\n"
                     else:
-                        daten = "[" + ",".join(g.model_dump_json(by_alias=True, exclude_none=True) for g in teil) + "]"
-                        yield f"event: geaendert\ndata: {daten}\n\n".encode()
+                        yield f"event: geaendert\ndata: {teil.model_dump_json(by_alias=True, exclude_none=True)}\n\n".encode()
 
         return StreamingResponse(strom(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
 

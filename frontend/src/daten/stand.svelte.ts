@@ -74,6 +74,19 @@ export interface Geaendert {
   daten?: { id: string; fassung?: number } & Record<string, unknown>;
 }
 
+/** Ein Ereignis des Stroms: wer änderte, die Meldung (ohne: still) und die neuen Stände */
+interface Neuigkeit {
+  von: string;
+  text?: string;
+  geaendert: Geaendert[];
+}
+
+/** So lange zeigt eine Karte, dass jemand anders sie gerade geändert hat (M-06) */
+const FRISCH_MS = 5000;
+
+/** Karten, die gerade jemand anders geändert hat, mit der Kennung der Person */
+export const frisch = $state<Record<string, string>>({});
+
 /** Tabelle des Servers und Teil des Zustands (je Zeile ein Eintrag mit Kennung) */
 const TEILE = {
   konten: "konten", boards: "boards", karten: "karten", gruppen: "gruppen", laufnummern: "laufnummern", ordner: "ordner",
@@ -120,6 +133,17 @@ function einspielen(g: Geaendert): boolean {
   return false;
 }
 
+/** Eine Änderung einer anderen Person: die Karten zeigen es kurz, die Meldung sagt es, ohne eine eigene Meldung mit
+ *  Rückgängig zu verdrängen */
+function fremdGeaendert(n: Neuigkeit): void {
+  for (const g of n.geaendert) {
+    if (g.tabelle !== "karten" || !g.daten) continue;
+    frisch[g.id] = n.von;
+    setTimeout(() => { if (frisch[g.id] === n.von) delete frisch[g.id]; }, FRISCH_MS);
+  }
+  if (n.text && !stand.meldung?.rueckgaengig) stand.meldung = { text: `${konto(n.von).name}: ${n.text}` };
+}
+
 export function uebernehmen(geaendert: Geaendert[]): void {
   let neu = false;
   for (const g of geaendert) neu = einspielen(g) || neu;
@@ -140,7 +164,9 @@ export function verbinden(): () => void {
             stand.verbindung = "verbunden";
             warten = 1000;
           } else if (e.art === "geaendert") {
-            uebernehmen(JSON.parse(e.daten) as Geaendert[]);
+            const n = JSON.parse(e.daten) as Neuigkeit;
+            uebernehmen(n.geaendert);
+            if (n.von !== ICH) fremdGeaendert(n);
           }
         }
       } catch {

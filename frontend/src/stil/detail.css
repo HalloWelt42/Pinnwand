@@ -24,8 +24,6 @@
 .pw-detail-personen { align-items: flex-start; }
 .pw-detail-personen .pw-personenwahl { flex: 1 1 240px; }
 .pw-detail-personen .chip .knopf { margin-right: -6px; }
-.pw-detail-labels .pw-label { cursor: pointer; border: 0; font: inherit; font-size: var(--marke); font-weight: 600; }
-.pw-detail-labels .pw-label.aus { background: var(--karte-2); color: var(--text-3); }
 .pw-detail-suche { max-width: none; height: 40px; }
 .pw-detail-leer, .pw-zeit-leer, .pw-zeit-fremd, .pw-zeit-gruppe { font-size: var(--klein); }
 .pw-detail-reiter { margin: 0; }

@@ -35,6 +35,10 @@
   background: color-mix(in srgb, var(--f, var(--stahl)) var(--toenung), transparent); color: var(--f, var(--stahl));
 }
 
+/* Labels zum Setzen (Kartendetail, Serie): jedes ein Knopf, gesetzte in ihrer Farbe, die übrigen blass */
+.pw-labelwahl .pw-label { cursor: pointer; border: 0; font: inherit; font-size: var(--marke); font-weight: 600; }
+.pw-labelwahl .pw-label.aus { background: var(--karte-2); color: var(--text-3); }
+
 /* Kleine Angaben auf Karte und in Listen (Schlüssel, Fälligkeit, Alter, Zähler) */
 .pw-angabe {
   display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 7px; border-radius: var(--r1);

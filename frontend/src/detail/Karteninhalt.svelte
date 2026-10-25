@@ -176,7 +176,7 @@
         {/if}
       </span>
       <span class="name"><i class="fa-solid fa-tag"></i>Labels</span>
-      <span class="wert pw-detail-labels">
+      <span class="wert pw-labelwahl">
         {#each board.labels as lab (lab.id)}
           <button class="pw-label" class:aus={!k.labels.includes(lab.id)} data-farbe={lab.farbe} disabled={!schreiben}
                   title={k.labels.includes(lab.id) ? "Label entfernen" : "Label setzen"} aria-pressed={k.labels.includes(lab.id)}

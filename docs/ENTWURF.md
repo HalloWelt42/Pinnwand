@@ -172,3 +172,8 @@ Wo der Entwurf eine Frage offen ließ, gilt bis zu einer anderen Entscheidung:
 - Gebuchte Zeit bleibt bei endgültigem Entfernen einer Karte stehen und trägt deren gemerkten Namen (Stufe 2).
 - Ein Termin ohne Karte zählt nicht ins Ist (Stufe 3).
 
+Entschieden vom Nutzer (25.10.2026):
+
+- Anhänge aus der eigenen Kellerwolke bleiben verknüpft, ohne Kopie: alle Mitglieder sehen Name und Größe, öffnen kann sie,
+  wer verknüpft hat. Was alle öffnen sollen, lädt man an der Karte hoch (es liegt dann im Ordner des Boards).
+

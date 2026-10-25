@@ -176,6 +176,8 @@ Wo der Entwurf eine Frage offen ließ, gilt bis zu einer anderen Entscheidung:
 
 Entschieden vom Nutzer (25.10.2026):
 
+- Push aufs Telefon ist ein Baustein des Appkerns für alle Apps (Nutzer: "Als Baustein im Appkern"), die Pinnwand nutzt
+  ihn als Erste; Push gilt je Art, ohne eigene Wahl für Zugewiesen, Fällig, Erwähnt und Termin.
 - Die Zeit eines Termins ohne Karte zählt nach der Bestätigung ins Ist und in den Stundenzettel (Nutzer: "Ja, nach
   Bestätigung"); vorher steht der Termin nur in Heute, Kalender und Zeitachse.
 - Karten ziehen zwischen Boards um (Nutzer: "vom ideenboard muss ich auch sachen auf das arbeitsboard schieben

@@ -2,6 +2,7 @@
   // Hinweise am Telefon: kurz, neueste zuerst, neue mit Wort und Rahmen markiert; ein Tippen springt zur Karte (ohne
   // geladene Karte zu ihrem Board, ein Termin nach Heute, wo die Termine stehen) und gilt als gelesen, am Konto und damit
   // auf allen Geräten. Ein Hinweis aus einem Board, das du nicht mehr siehst, hat kein Ziel; "Alle gelesen" erfasst auch ihn.
+  // Oben, solange dieses Telefon keine Mitteilungen bekommt: sie hier erlauben (Push aufs Telefon).
   import { HINWEIS_ARTEN } from "../../anzeige";
   import { kartenNummer, ungelesen } from "../../daten/abfragen";
   import { alleGelesen, gelesen } from "../../daten/anwendung/hinweise.svelte";
@@ -9,6 +10,8 @@
   import { karte, stand } from "../../daten/stand.svelte";
   import type { Hinweis } from "../../modell";
   import { boardPfad } from "../../weg.svelte";
+  import { push } from "appkern-oberflaeche";
+  import PushGeraet from "../../teile/PushGeraet.svelte";
   import TelefonSchale from "./TelefonSchale.svelte";
   import { telPfad } from "./weg";
 
@@ -36,6 +39,7 @@
 {/snippet}
 
 <TelefonSchale titel="Hinweise" unter={neu ? `${neu} neu` : "Alles gelesen"} zurueck={telPfad("/heute")} glocke={false}>
+  {#if stand.hinweiswege.da.includes("push") && push.an === false}<PushGeraet />{/if}
   {#if neu}
     <button class="knopf ohne pw-tel-alle" onclick={alleGelesen}><i class="fa-solid fa-check-double"></i>Alle gelesen</button>
   {/if}

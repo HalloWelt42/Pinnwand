@@ -57,6 +57,12 @@
 /* Farbpunkt einer Spalte oder eines Boards */
 .pw-farbpunkt { width: 10px; height: 10px; border-radius: 50%; background: var(--f, var(--stahl)); flex: none; display: inline-block; }
 
+/* Mitteilungen auf diesem Gerät (teile/PushGeraet.svelte): Einstellungen und Telefon */
+.pw-push-geraet { display: flex; align-items: center; gap: var(--a2) var(--a3); flex-wrap: wrap; padding: var(--a3) var(--a4);
+                  background: var(--karte-2); border-radius: var(--r3); font-size: var(--klein); color: var(--text-2); }
+.pw-push-geraet > i { color: var(--text-3); }
+.pw-push-geraet > span { flex: 1 1 220px; min-width: 0; }
+
 /* Timer-Knopf: Abspielen; läuft er, Bernstein mit Zeit */
 .pw-timer {
   display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 9px; border-radius: var(--r1);

@@ -141,7 +141,6 @@ async def test_wege_je_art(pw: Pinnwand):
     assert [h["art"] for h in await hinweise(pw, "bert")] == ["zugewiesen"]
 
     for daten, meldung in [
-        ({"art": "verschoben", "weg": "push", "an": True}, "Den Weg Push aufs Telefon bietet diese Pinnwand nicht an"),
         ({"art": "faellig", "weg": "assistent", "an": True}, "Den Weg Über den Assistenten bietet diese Pinnwand nicht an"),
     ]:
         r = await pw.post("bert", "/hinweise/weg", daten)

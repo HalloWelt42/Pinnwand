@@ -4,7 +4,7 @@
 
 import { ereignisse, hole } from "appkern-oberflaeche";
 import type {
-  Abwesenheit, Bericht, Board, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Kartenname, Konto, Laufnummer, Mitglied, ModulKennung, Ordner, PersonEinstellungen, Terminname,
+  Abwesenheit, Bericht, Board, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Kartenname, Konto, Laufnummer, Hinweiswege, Mitglied, ModulKennung, Ordner, PersonEinstellungen, Terminname,
   Serie, Termin, Timer, Verbindung, Vorlage, Zeiteintrag, Zeitkonto,
 } from "../modell";
 import { PINNWAND_KONTO } from "./konstanten";
@@ -34,6 +34,8 @@ export interface Zustand {
   serien: Serie[];
   termine: Termin[];
   hinweise: Hinweis[];
+  /** Wege der Hinweise, die diese Fassung anbietet, mit ihrer Vorgabe je Art */
+  hinweiswege: Hinweiswege;
   einstellungen: PersonEinstellungen;
   papierkorb: Geloescht[];
   entfernt: Entfernt[];
@@ -50,7 +52,7 @@ export interface Zustand {
 
 export const stand = $state<Zustand>({
   geladen: false, moduleDa: [], konten: [], boards: [], karten: [], gruppen: [], laufnummern: [], ordner: [], timer: [], zeiteintraege: [],
-  zeitkonten: [], abwesenheiten: [], serien: [], termine: [], hinweise: [], einstellungen: { hinweise: {} } as PersonEinstellungen, papierkorb: [],
+  zeitkonten: [], abwesenheiten: [], serien: [], termine: [], hinweise: [], hinweiswege: { da: ["pinnwand"], vorgabe: {} }, einstellungen: { hinweise: {} } as PersonEinstellungen, papierkorb: [],
   entfernt: [], kartennamen: [], terminnamen: [], vorlagen: [], berichte: [], verbindung: "getrennt", meldung: null,
 });
 
@@ -78,6 +80,7 @@ interface Serverstand {
   kartennamen: Kartenname[];
   terminnamen: Terminname[];
   berichte: Bericht[];
+  hinweiswege: Hinweiswege;
   einstellungen: PersonEinstellungen;
 }
 
@@ -117,7 +120,7 @@ export async function laden(): Promise<void> {
   Object.assign(stand, {
     moduleDa: s.moduleDa, konten: s.konten, boards: s.boards, karten: s.karten, gruppen: s.gruppen, laufnummern: s.laufnummern, ordner: s.ordner,
     timer: s.timer, zeiteintraege: s.zeiteintraege, zeitkonten: s.zeitkonten, abwesenheiten: s.abwesenheiten,
-    serien: s.serien, termine: s.termine, hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, kartennamen: s.kartennamen, terminnamen: s.terminnamen, berichte: s.berichte,
+    serien: s.serien, termine: s.termine, hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, kartennamen: s.kartennamen, terminnamen: s.terminnamen, berichte: s.berichte, hinweiswege: s.hinweiswege,
     einstellungen: s.einstellungen, geladen: true,
   });
 }

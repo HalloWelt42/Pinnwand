@@ -10,6 +10,7 @@ from collections import defaultdict
 from ..modell import MODULE_DA, Board, Karte, Kartenname, Kennung, Konto, Modell, Terminname
 from ..regeln.board import hat_recht, im_archiv
 from ..regeln.tage import ist_tag, tage_zwischen
+from .hinweise import ARTEN_DA, WEGE_DA, vorgabe
 from .rahmen import Abgelehnt, Anwendung
 from .sicht import mitglieder, sichtbare_personen, sieht_abwesenheit, sieht_zeit
 
@@ -42,6 +43,14 @@ class Stand(Modell):
     termine: list[dict]
     terminnamen: list[Terminname]
     berichte: list[dict]
+    hinweiswege: Hinweiswege
+
+
+class Hinweiswege(Modell):
+    """Welche Wege diese Fassung für Hinweise anbietet und was je Art gilt, solange die Person nichts schaltet."""
+
+    da: list[str]
+    vorgabe: dict[str, dict[str, bool]]
 
 
 class Team(Modell):
@@ -107,6 +116,7 @@ class Abfragen:
             serien=serien,
             termine=termine,
             berichte=await self.a.v.alle("berichte", "konto=?", (konto.id,), "erstellt DESC"),
+            hinweiswege=Hinweiswege(da=list(WEGE_DA), vorgabe={a: {w: vorgabe(a, w) for w in WEGE_DA} for a in ARTEN_DA}),
             terminnamen=await self._terminnamen({d["termin"] for d in zeiteintraege if d.get("termin")}
                                                 - {d["id"] for d in termine}),
         )

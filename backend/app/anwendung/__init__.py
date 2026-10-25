@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 from appkern.app import Begleiter
 from appkern.datenbank import Datenbank
+from appkern.push import Push
 
 from ..uhr import Uhr
 from ..verzeichnis import Verzeichnis, einrichten
@@ -23,6 +24,7 @@ from .inhalt import Inhalte
 from .karten import Karten
 from .konten import Konten
 from .mitglieder import Mitglieder
+from .mitteilungen import Mitteilungen
 from .ordner import Persoenliches
 from .papierkorb import Papierkorb
 from .rahmen import Anwendung
@@ -52,9 +54,10 @@ class Dienste:
     serien: Serien
     termine: Termine
     berichte: Berichte
+    mitteilungen: Mitteilungen
 
     @classmethod
-    def bauen(cls, db: Datenbank, zugang: Zugang, ablage: Ablage, uhr: Uhr | None = None) -> Dienste:
+    def bauen(cls, db: Datenbank, zugang: Zugang, ablage: Ablage, uhr: Uhr | None = None, push: Push | None = None) -> Dienste:
         ereignisse = Ereignisse()
         a = Anwendung(Verzeichnis(db), ereignisse, uhr)
         konten = Konten(a)
@@ -62,7 +65,7 @@ class Dienste:
                    karten=Karten(a), inhalte=Inhalte(a), hinweise=Hinweise(a), papierkorb=Papierkorb(a), aufbau=Aufbau(a),
                    mitglieder=Mitglieder(a), persoenlich=Persoenliches(a), anhaenge=Anhaenge(a, ablage),
                    zeiterfassung=Zeiterfassung(a), arbeitszeit=Arbeitszeit(a), serien=Serien(a), termine=Termine(a),
-                   berichte=Berichte(a, ablage))
+                   berichte=Berichte(a, ablage), mitteilungen=Mitteilungen(a, push))
 
 
 class Start(Begleiter):

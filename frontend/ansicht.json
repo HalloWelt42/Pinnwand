@@ -12,6 +12,8 @@
     { "name": "board-einstellungen", "abfrage": "/api/v1/stand", "pfad": "/board/{boards.0.kuerzel}/einstellungen", "nur": [1920, 1440, 1280, 1100, 900] },
     { "name": "board-neu", "pfad": "/boards/neu", "nur": [1920, 1440, 1280, 1100, 900] },
     { "name": "einstellungen", "pfad": "/einstellungen", "nur": [1920, 1440, 1280, 1100, 900] },
+    { "name": "einstellungen-hinweise", "pfad": "/einstellungen/hinweise", "nur": [1920, 1440, 1280, 1100, 900] },
+    { "name": "telefon-hinweise", "pfad": "/hinweise", "nur": [390] },
     { "name": "zeiten", "pfad": "/zeiten", "nur": [1920, 1440, 1280, 1100, 900] },
     { "name": "arbeitszeit", "pfad": "/arbeitszeit", "nur": [1920, 1440, 1280, 1100, 900] },
     { "name": "arbeitszeit-kalender", "pfad": "/arbeitszeit/kalender", "nur": [1920, 1440, 1280, 1100, 900] },

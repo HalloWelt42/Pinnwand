@@ -58,6 +58,12 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
   Recht "Zeiten anderer sehen". In Board-Berichten zählt die Zeit anderer nur mit diesem Recht.
 - Vorlesen eines Berichts kommt mit der Anbindung der Vertonung; bis dahin steht dort nur Herunterladen.
 
+## In der App gebaut (Stufe 4, Push, 25.10.2026)
+
+- Push aufs Telefon über den Baustein des Appkerns: ein Telefon erlaubt Mitteilungen unter Hinweise (am Telefon), die
+  Einstellungen am Rechner zeigen die Schritte, die Geräte und senden eine Testmitteilung; ein Tippen auf eine
+  Mitteilung führt zur Karte. Welche Wege es gibt und was gilt, kommt jetzt vom Server.
+
 ## Nachbesserungen in der App (25.10.2026)
 
 - M-74: Beim Zusammenführen zweier Verknüpfungen nennt die Meldung, ob die Zeit geteilt wird und welche Einstellung

@@ -10,6 +10,7 @@ sicherung:
   - "Anhänge: liegen in der Kellerwolke und sind mit ihr gesichert"
 schluessel_orte:
   - "Pi: Einstellungen in {{wurzel}}/daten/pinnwand.sqlite: App-Schlüssel der Kellerwolke (in der Oberfläche unter Einstellungen, verdeckt)"
+  - "Pi: {{wurzel}}/daten/pinnwand.sqlite, Tabelle appkern_push_schluessel: privater Schlüssel für Mitteilungen aufs Telefon (entsteht von selbst; geht er verloren, richtet jedes Telefon Mitteilungen neu ein)"
   - "Pi: {{wurzel}}/zertifikate/, Blattzertifikat mit Schlüssel aus der Hausstelle"
   - "Mac: backend/.env.test im Klon, Modus 0600, Testzugang zur Kellerwolke der Entwicklung (nur für den Verbundtest)"
 einrichten: einrichten.sh
@@ -118,4 +119,7 @@ Karte hängt.
   von selbst neu und holt den ganzen Stand; Änderungen sind solange gesperrt, damit nichts scheinbar gespeichert wird.
 - Eine Änderung wird mit "inzwischen geändert" abgelehnt: jemand anders hat dasselbe Feld kurz vorher geändert. Das
   Kartendetail fragt, ob der jetzige Stand bleiben oder die eigene Änderung gelten soll.
+- Mitteilungen kommen nicht aufs Telefon: die Pinnwand vom Home-Bildschirm öffnen, unter Hinweise "Mitteilungen
+  erlauben", dann am Rechner unter Einstellungen, Hinweise eine Testmitteilung senden. Steht das Telefon dort nicht, hat
+  es keine Erlaubnis; ist Push für eine Art aus, kommt diese Art nur in der Pinnwand.
 - Docker legt `daten/` oder `sicherungen/` für root an: die Ordner vor dem ersten Start als `pi` anlegen (Schritt 2).

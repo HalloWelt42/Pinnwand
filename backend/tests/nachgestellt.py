@@ -196,8 +196,15 @@ def _inhalt(e: Eintrag, request: httpx.Request) -> httpx.Response:
 ABLAGE = Ablage()
 
 
+#: was beim nachgestellten Push-Dienst ankommt (Host push.test): je Mitteilung die Anfrage
+PUSH_EINGANG: list[httpx.Request] = []
+
+
 def kellerwolke(request: httpx.Request) -> httpx.Response:
     pfad = request.url.path
+    if request.url.host == "push.test":
+        PUSH_EINGANG.append(request)
+        return httpx.Response(201)
     if pfad == "/api/v1/ablage/ich":
         return httpx.Response(200, json={"app": "Pinnwand", "konto": "anna", "rechte": []})
     if pfad.startswith("/api/v1/ablage/"):

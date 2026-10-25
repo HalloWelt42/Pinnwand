@@ -16,7 +16,7 @@ class Konten:
     def __init__(self, anwendung: Anwendung) -> None:
         self.a = anwendung
         self._bekannt: dict[str, Konto] = {}
-        anwendung.beobachten("konten", self.vergessen)
+        anwendung.beobachten("konten", lambda b: self.vergessen(b.id))
 
     async def ich(self, angemeldet: Anmeldekonto) -> Konto:
         """Das Konto der Pinnwand zur Anmeldung; legt es beim ersten Mal an und löst wartende Einladungen auf."""

@@ -114,11 +114,12 @@ class Anwendung:
         self.v = verzeichnis
         self.ereignisse = ereignisse
         self.uhr = uhr or Uhr()
-        self._beobachter: dict[str, list[Callable[[Kennung], None]]] = {}
+        self._beobachter: dict[str, list[Callable[[Bild], None]]] = {}
 
-    def beobachten(self, tabelle: str, nach_aenderung: Callable[[Kennung], None]) -> None:
-        """Nach jeder Änderung einer Zeile dieser Tabelle Bescheid geben (mit ihrer Kennung), auch nach Rückgängig; für
-        Zwischenspeicher außerhalb der Datenbank."""
+    def beobachten(self, tabelle: str, nach_aenderung: Callable[[Bild], None]) -> None:
+        """Nach jeder Änderung einer Zeile dieser Tabelle Bescheid geben (mit Vorher und Nachher), auch nach Rückgängig;
+        für Zwischenspeicher außerhalb der Datenbank und für Folgen nach außen (Mitteilungen). Läuft nach der
+        Transaktion, darf nicht warten und nicht scheitern."""
         self._beobachter.setdefault(tabelle, []).append(nach_aenderung)
 
     async def aendern(self, konto: Konto, arbeit: Callable[[Kontext], str | None], *, rueckgaengig: bool = True,
@@ -144,7 +145,7 @@ class Anwendung:
         (text, journal, sichten), bilder = await self.v.transaktion(transaktion)
         for b in bilder:
             for melden_an in self._beobachter.get(b.tabelle, []):
-                melden_an(b.id)
+                melden_an(b)
         anteile = [Anteil(Geaendert(tabelle=b.tabelle, id=b.id, daten=b.nachher), *sichten[(b.tabelle, b.id)]) for b in bilder]
         self._verteilen(anteile, konto.id, text if melden else None)
         return Antwort(meldung=text if melden else None, rueckgaengig=journal if (rueckgaengig and journal) else None,

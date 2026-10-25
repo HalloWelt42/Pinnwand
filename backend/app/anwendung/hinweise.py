@@ -22,10 +22,16 @@ logger = logging.getLogger("pinnwand.hinweise")
 #: Arten, die diese Fassung gibt; Termine gehören zum Modul Serien
 ARTEN_DA: tuple[str, ...] = ("zugewiesen", "faellig", "erwaehnt", "kommentar", "verschoben") + (
     ("termin",) if "serien" in MODULE_DA else ())
-#: Wege, die diese Fassung anbietet (gleich in der Oberfläche); Push und Assistent gehören zum Verbund
-WEGE_DA: tuple[str, ...] = ("pinnwand",)
-#: Vorgabe je Weg, solange die Person ihn für eine Art nicht selbst geschaltet hat (gleich in der Oberfläche)
-VORGABE: dict[str, bool] = {"pinnwand": True}
+#: Wege, die diese Fassung anbietet (die Oberfläche bekommt sie im Stand); der Assistent gehört zum Verbund
+WEGE_DA: tuple[str, ...] = ("pinnwand", "push")
+#: Push gilt, solange die Person nichts anderes schaltet, für das, was sie selbst betrifft; die übrigen kommen nur in
+#: der Pinnwand (und Push erst, wenn ein Gerät eingerichtet ist)
+PUSH_VORGABE = {"zugewiesen", "faellig", "erwaehnt", "termin"}
+
+
+def vorgabe(art: str, weg: str) -> bool:
+    """Was gilt, solange die Person einen Weg für eine Art nicht selbst geschaltet hat."""
+    return weg == "pinnwand" or (weg == "push" and art in PUSH_VORGABE)
 NAMEN_DER_ARTEN = {"zugewiesen": "Zugewiesen", "faellig": "Fällig", "erwaehnt": "Erwähnt", "termin": "Termin",
                    "kommentar": "Kommentar", "verschoben": "Verschoben"}
 NAMEN_DER_WEGE = {"pinnwand": "In der Pinnwand", "push": "Push aufs Telefon", "assistent": "Über den Assistenten"}
@@ -44,9 +50,9 @@ CODE_ODER_ADRESSE = re.compile(r"(`+).+?\1|https?://[^\s<>\"]*")
 # --- Wege ----------------------------------------------------------------------------------------------------------
 
 def weg_an(einstellungen: dict | None, art: str, weg: str = "pinnwand") -> bool:
-    """Ob eine Person Hinweise dieser Art auf diesem Weg bekommt: ihre Einstellung, sonst die Vorgabe des Wegs."""
+    """Ob eine Person Hinweise dieser Art auf diesem Weg bekommt: ihre Einstellung, sonst die Vorgabe."""
     je_art = ((einstellungen or {}).get("hinweise") or {}).get(art) or {}
-    return bool(je_art.get(weg, VORGABE.get(weg, False)))
+    return bool(je_art.get(weg, vorgabe(art, weg)))
 
 
 def will(k: Kontext, konto: Kennung, art: str) -> bool:

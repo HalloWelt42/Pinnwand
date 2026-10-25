@@ -371,6 +371,12 @@ export interface Terminname {
   datum: string;
 }
 
+/** Welche Wege diese Fassung für Hinweise anbietet und was je Art gilt, solange die Person nichts schaltet (vom Server) */
+export interface Hinweiswege {
+  da: HinweisWeg[];
+  vorgabe: Partial<Record<HinweisArt, Partial<Record<HinweisWeg, boolean>>>>;
+}
+
 /** Persönliche Einstellungen am Konto: auf welchem Weg welche Hinweise kommen */
 export interface PersonEinstellungen {
   hinweise: Record<HinweisArt, Record<HinweisWeg, boolean>>;

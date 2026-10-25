@@ -30,10 +30,10 @@ def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None, uh
     schreibt nach `sicherungen` (ohne Angabe neben den Daten: im Container /app/sicherungen)."""
     geruest = Geruest(name="Pinnwand", kennung="pinnwand", rolle="plant Arbeit auf Boards", symbol="fa-thumbtack", farbe="#2f8f86", fassung=FASSUNG,
                       daten=daten, einstellungen=AppEinstellungen, oberflaeche=WURZEL / "frontend" / "dist",
-                      transport=transport)
+                      push=True, transport=transport)
     ablage = KellerwolkeAblage(geruest)
-    dienste = Dienste.bauen(geruest.db, GeruestZugang(geruest), ablage, uhr)
-    geruest.begleiter_anmelden(Start(geruest.db), Vorbuchung(dienste.serien), Faelligkeit(dienste.hinweise),
+    dienste = Dienste.bauen(geruest.db, GeruestZugang(geruest), ablage, uhr, push=geruest.push)
+    geruest.begleiter_anmelden(Start(geruest.db), Vorbuchung(dienste.serien), Faelligkeit(dienste.hinweise), dienste.mitteilungen,
                                Nachtsicherung(Path(geruest.db.pfad), sicherungen or daten.parent / "sicherungen", "pinnwand",
                                               dienste.anwendung.uhr))
     app = geruest.fastapi()

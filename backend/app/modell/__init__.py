@@ -226,6 +226,8 @@ class Hinweis(Modell):
     von: Kennung | None = None
     board: Kennung
     karte: Kennung | None = None
+    #: Schlüssel der Karte beim Hinweis: führt auch zu einer archivierten oder umgezogenen Karte
+    schluessel: str | None = None
     text: str
     gelesen: bool = False
 
@@ -443,6 +445,15 @@ class Kartenname(Modell):
     board: Kennung
     schluessel: str
     titel: str
+
+
+class Terminname(Modell):
+    """Ein Termin, auf den sichtbare Zeiteinträge zeigen, der selbst nicht im Stand ist (Board verlassen)."""
+
+    termin: Kennung
+    board: Kennung
+    titel: str
+    datum: str
 
 
 class Entfernt(Modell):

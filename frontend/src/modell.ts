@@ -357,8 +357,18 @@ export interface Hinweis {
   von?: Kennung;
   board: Kennung;
   karte?: Kennung;
+  /** Schlüssel der Karte beim Hinweis: führt auch zu einer archivierten oder umgezogenen Karte */
+  schluessel?: string;
   text: string;
   gelesen: boolean;
+}
+
+/** Ein Termin, auf den deine Zeiteinträge zeigen, der selbst nicht im Stand ist (Board verlassen) */
+export interface Terminname {
+  termin: Kennung;
+  board: Kennung;
+  titel: string;
+  datum: string;
 }
 
 /** Persönliche Einstellungen am Konto: auf welchem Weg welche Hinweise kommen */

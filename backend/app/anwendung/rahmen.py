@@ -19,6 +19,8 @@ from .sicht import Sicht
 
 #: Zähler laufen nur vorwärts: Rückgängig lässt sie stehen (und prüft sie nicht)
 NUR_VORWAERTS = {"laufnummern"}
+#: Folgen für andere (ein Hinweis an sie): Rückgängig nimmt sie mit, auch wenn die Person sie inzwischen gelesen hat
+NACHSICHTIG = {"hinweise"}
 
 NAMEN_DER_RECHTE = {
     "board.verwalten": "Board verwalten", "mitglieder.verwalten": "Mitglieder und Rollen verwalten",
@@ -112,6 +114,12 @@ class Anwendung:
         self.v = verzeichnis
         self.ereignisse = ereignisse
         self.uhr = uhr or Uhr()
+        self._beobachter: dict[str, list[Callable[[Kennung], None]]] = {}
+
+    def beobachten(self, tabelle: str, nach_aenderung: Callable[[Kennung], None]) -> None:
+        """Nach jeder Änderung einer Zeile dieser Tabelle Bescheid geben (mit ihrer Kennung), auch nach Rückgängig; für
+        Zwischenspeicher außerhalb der Datenbank."""
+        self._beobachter.setdefault(tabelle, []).append(nach_aenderung)
 
     async def aendern(self, konto: Konto, arbeit: Callable[[Kontext], str | None], *, rueckgaengig: bool = True,
                       melden: bool = True) -> Antwort:
@@ -134,6 +142,9 @@ class Anwendung:
             return text, journal, sichten
 
         (text, journal, sichten), bilder = await self.v.transaktion(transaktion)
+        for b in bilder:
+            for melden_an in self._beobachter.get(b.tabelle, []):
+                melden_an(b.id)
         anteile = [Anteil(Geaendert(tabelle=b.tabelle, id=b.id, daten=b.nachher), *sichten[(b.tabelle, b.id)]) for b in bilder]
         self._verteilen(anteile, konto.id, text if melden else None)
         return Antwort(meldung=text if melden else None, rueckgaengig=journal if (rueckgaengig and journal) else None,
@@ -152,7 +163,7 @@ class Anwendung:
             if z["zurueckgenommen"]:
                 raise Abgelehnt("Das ist schon rückgängig gemacht")
             bilder = [b for b in (Bild(**b) for b in json.loads(z["bilder"])) if b.tabelle not in NUR_VORWAERTS]
-            for b in bilder:
+            for b in (b for b in bilder if b.tabelle not in NACHSICHTIG):
                 jetzt = k.s.lies(b.tabelle, b.id)
                 if (jetzt or {}).get("fassung") != (b.nachher or {}).get("fassung"):
                     raise Abgelehnt("Inzwischen hat sich hier etwas geändert; Rückgängig würde es überschreiben", 409)

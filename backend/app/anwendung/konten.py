@@ -16,6 +16,7 @@ class Konten:
     def __init__(self, anwendung: Anwendung) -> None:
         self.a = anwendung
         self._bekannt: dict[str, Konto] = {}
+        anwendung.beobachten("konten", self.vergessen)
 
     async def ich(self, angemeldet: Anmeldekonto) -> Konto:
         """Das Konto der Pinnwand zur Anmeldung; legt es beim ersten Mal an und löst wartende Einladungen auf."""
@@ -56,5 +57,5 @@ class Konten:
         return Konto.model_validate(await self.a.v.lies("konten", angemeldet.id))
 
     def vergessen(self, konto_id: str) -> None:
-        """Nach einer Änderung am Konto (Kürzel, Farbe) neu lesen."""
+        """Nach jeder Änderung am Konto (Kürzel, Farbe, auch Rückgängig) beim nächsten Mal neu lesen."""
         self._bekannt.pop(konto_id, None)

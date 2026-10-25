@@ -22,6 +22,7 @@
     if (!b) return undefined;
     const k = h.karte ? karte(h.karte) : undefined;
     if (k) return telPfad(boardPfad(b.kuerzel, kartenNummer(k)), { von: "hinweise" });
+    if (h.schluessel) return telPfad(boardPfad(b.kuerzel, kartenNummer({ schluessel: h.schluessel })), { von: "hinweise" });
     return h.art === "termin" ? telPfad("/heute") : telPfad(boardPfad(b.kuerzel));
   }
 </script>

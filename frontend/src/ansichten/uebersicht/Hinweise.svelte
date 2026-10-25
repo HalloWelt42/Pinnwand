@@ -43,6 +43,8 @@
     if (!b) return undefined;
     const k = h.karte ? karte(h.karte) : undefined;
     if (k) return { pfad: boardPfad(b.kuerzel, kartenNummer(k)), name: k.schluessel };
+    // nicht im Zustand (archiviert, umgezogen): über den Schlüssel, das Board holt die Karte und folgt ihr
+    if (h.schluessel) return { pfad: boardPfad(b.kuerzel, kartenNummer({ schluessel: h.schluessel })), name: h.schluessel };
     if (h.art === "termin" && modulAn(b, "serien", stand.moduleDa)) return { pfad: "/serien", name: "Termin" };
     return { pfad: boardPfad(b.kuerzel), name: "Board" };
   }

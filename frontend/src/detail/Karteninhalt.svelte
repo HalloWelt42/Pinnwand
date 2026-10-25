@@ -224,7 +224,7 @@
 
   <Checkliste karte={k} {schreiben} ki={board.module.ki} />
 
-  <Anhaenge karte={k} {board} {schreiben} />
+  <Anhaenge karte={k} {schreiben} />
 
   {#if board.module.transkripte}
     <section class="pw-abschnitt">

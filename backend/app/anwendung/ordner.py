@@ -9,7 +9,6 @@ import re
 
 from ..modell import Kennung, Konto, Ordner
 from .boards import anzahl, name_pruefen, neue_reihenfolge
-from .konten import Konten
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
 
 #: Kürzel einer Person: ein bis drei Buchstaben, groß geschrieben
@@ -39,9 +38,8 @@ def speichern(k: Kontext, o: OrdnerZeile) -> None:
 
 
 class Persoenliches:
-    def __init__(self, anwendung: Anwendung, konten: Konten) -> None:
+    def __init__(self, anwendung: Anwendung) -> None:
         self.a = anwendung
-        self.konten = konten
 
     # --- Ordner -------------------------------------------------------------------------------------------------
 
@@ -135,6 +133,4 @@ class Persoenliches:
             k.s.schreib("konten", {**d, "kuerzel": neu})
             return f"Dein Kürzel ist jetzt {neu}"
 
-        antwort = await self.a.aendern(konto, arbeit)
-        self.konten.vergessen(konto.id)
-        return antwort
+        return await self.a.aendern(konto, arbeit)

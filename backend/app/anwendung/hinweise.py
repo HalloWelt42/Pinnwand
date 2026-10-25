@@ -97,7 +97,7 @@ def melden(k: Kontext, b: Board, art: HinweisArt, an: Iterable[Kennung], karte: 
         if konto == k.konto.id or konto not in mitglieder or not will(k, konto, art):
             continue
         h = Hinweis(id=neue_kennung("h"), konto=konto, art=art, zeit=k.jetzt, von=k.konto.id, board=b.id,
-                    karte=karte.id if karte else None, text=text)
+                    karte=karte.id if karte else None, schluessel=karte.schluessel if karte else None, text=text)
         k.s.schreib("hinweise", h.json_daten())
 
 
@@ -234,7 +234,7 @@ class Hinweise:
                             or (alt and alt["zeit"][:10] == k.heute):
                         continue
                     h = Hinweis(id=alt["id"] if alt else neue_kennung("h"), konto=konto, art="faellig", zeit=k.jetzt,
-                                board=b.id, karte=c.id, text=faellig_text(c, k.heute))
+                                board=b.id, karte=c.id, schluessel=c.schluessel, text=faellig_text(c, k.heute))
                     k.s.schreib("hinweise", h.json_daten())
                     n += 1
             return f"{n} {'Hinweis' if n == 1 else 'Hinweise'} zu fälligen Karten" if n else None

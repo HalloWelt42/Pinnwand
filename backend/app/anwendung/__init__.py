@@ -58,7 +58,7 @@ class Dienste:
         konten = Konten(a)
         return cls(anwendung=a, ereignisse=ereignisse, konten=konten, abfragen=Abfragen(a), boards=Boards(a, zugang),
                    karten=Karten(a), inhalte=Inhalte(a), hinweise=Hinweise(a), papierkorb=Papierkorb(a), aufbau=Aufbau(a),
-                   mitglieder=Mitglieder(a), persoenlich=Persoenliches(a, konten), anhaenge=Anhaenge(a, ablage),
+                   mitglieder=Mitglieder(a), persoenlich=Persoenliches(a), anhaenge=Anhaenge(a, ablage),
                    zeiterfassung=Zeiterfassung(a), arbeitszeit=Arbeitszeit(a), serien=Serien(a), termine=Termine(a))
 
 

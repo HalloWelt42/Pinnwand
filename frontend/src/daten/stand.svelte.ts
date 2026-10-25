@@ -4,7 +4,7 @@
 
 import { ereignisse, hole } from "appkern-oberflaeche";
 import type {
-  Abwesenheit, Bericht, Board, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Kartenname, Konto, Laufnummer, Mitglied, ModulKennung, Ordner, PersonEinstellungen,
+  Abwesenheit, Bericht, Board, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Kartenname, Konto, Laufnummer, Mitglied, ModulKennung, Ordner, PersonEinstellungen, Terminname,
   Serie, Termin, Timer, Verbindung, Vorlage, Zeiteintrag, Zeitkonto,
 } from "../modell";
 import { PINNWAND_KONTO } from "./konstanten";
@@ -39,6 +39,8 @@ export interface Zustand {
   entfernt: Entfernt[];
   /** Namen von Karten, auf die sichtbare Zeiteinträge zeigen, die selbst nicht im Stand sind (archiviert, Board verlassen) */
   kartennamen: Kartenname[];
+  /** dasselbe für Termine deiner bestätigten Zeit (Board verlassen) */
+  terminnamen: Terminname[];
   vorlagen: Vorlage[];
   berichte: Bericht[];
   /** Verbindung zum Ereignisstrom; getrennt: letzter Stand sichtbar, Schreibendes gesperrt */
@@ -49,7 +51,7 @@ export interface Zustand {
 export const stand = $state<Zustand>({
   geladen: false, moduleDa: [], konten: [], boards: [], karten: [], gruppen: [], laufnummern: [], ordner: [], timer: [], zeiteintraege: [],
   zeitkonten: [], abwesenheiten: [], serien: [], termine: [], hinweise: [], einstellungen: { hinweise: {} } as PersonEinstellungen, papierkorb: [],
-  entfernt: [], kartennamen: [], vorlagen: [], berichte: [], verbindung: "getrennt", meldung: null,
+  entfernt: [], kartennamen: [], terminnamen: [], vorlagen: [], berichte: [], verbindung: "getrennt", meldung: null,
 });
 
 /** Antwort von /stand: die Teile, die der Server schon kennt (die übrigen kommen mit ihren Stufen) */
@@ -74,6 +76,7 @@ interface Serverstand {
   papierkorb: Geloescht[];
   entfernt: Entfernt[];
   kartennamen: Kartenname[];
+  terminnamen: Terminname[];
   einstellungen: PersonEinstellungen;
 }
 
@@ -112,7 +115,7 @@ export async function laden(): Promise<void> {
   Object.assign(stand, {
     moduleDa: s.moduleDa, konten: s.konten, boards: s.boards, karten: s.karten, gruppen: s.gruppen, laufnummern: s.laufnummern, ordner: s.ordner,
     timer: s.timer, zeiteintraege: s.zeiteintraege, zeitkonten: s.zeitkonten, abwesenheiten: s.abwesenheiten,
-    serien: s.serien, termine: s.termine, hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, kartennamen: s.kartennamen,
+    serien: s.serien, termine: s.termine, hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, kartennamen: s.kartennamen, terminnamen: s.terminnamen,
     einstellungen: s.einstellungen, geladen: true,
   });
 }

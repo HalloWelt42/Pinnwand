@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from ..modell import MODULE_DA, Board, Karte, Kartenname, Kennung, Konto, Modell
+from ..modell import MODULE_DA, Board, Karte, Kartenname, Kennung, Konto, Modell, Terminname
 from ..regeln.board import hat_recht, im_archiv
 from ..regeln.tage import ist_tag, tage_zwischen
 from .rahmen import Abgelehnt, Anwendung
@@ -40,6 +40,7 @@ class Stand(Modell):
     kartennamen: list[Kartenname]
     serien: list[dict]
     termine: list[dict]
+    terminnamen: list[Terminname]
 
 
 class Team(Modell):
@@ -104,6 +105,8 @@ class Abfragen:
                                                 - {d["id"] for d in karten}),
             serien=serien,
             termine=termine,
+            terminnamen=await self._terminnamen({d["termin"] for d in zeiteintraege if d.get("termin")}
+                                                - {d["id"] for d in termine}),
         )
 
     async def _zeit(self, konto: Konto, boards: list[Board]) -> tuple[list[dict], list[dict]]:
@@ -132,6 +135,14 @@ class Abfragen:
             gefunden |= {c["id"]: c for c in eintrag.get("karten", []) if c["id"] in fehlend}
         return [Kartenname(karte=i, board=d["board"], schluessel=d["schluessel"], titel=d["titel"])
                 for i, d in gefunden.items()]
+
+    async def _terminnamen(self, fehlend: set[Kennung]) -> list[Terminname]:
+        """Namen der Termine, auf die eigene Einträge zeigen, die nicht im Stand sind (Board verlassen)."""
+        if not fehlend:
+            return []
+        liste = sorted(fehlend)
+        zeilen = await self.a.v.alle("termine", f"id IN ({','.join('?' * len(liste))})", tuple(liste))
+        return [Terminname(termin=d["id"], board=d["board"], titel=d["titel"], datum=d["datum"]) for d in zeilen]
 
     async def team(self, konto: Konto, board_id: Kennung, von: str, bis: str) -> Team:
         """Gebuchte Stunden je Tag aus allen Boards: mit dem Recht "Abwesenheiten sehen" für alle Mitglieder des Boards,

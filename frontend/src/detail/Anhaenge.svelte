@@ -6,11 +6,11 @@
   import { ablageOrt, dateiAdresse, entfernen, GRENZE_MB, hochladen } from "../daten/anwendung/anhaenge.svelte";
   import { ICH } from "../daten/ich";
   import { konto } from "../daten/stand.svelte";
-  import type { Anhang, Board, Karte } from "../modell";
+  import type { Anhang, Karte } from "../modell";
   import { SYMBOL } from "./anhang";
   import Kellerwolkewahl from "./Kellerwolkewahl.svelte";
 
-  let { karte, schreiben }: { karte: Karte; board: Board; schreiben: boolean } = $props();
+  let { karte, schreiben }: { karte: Karte; schreiben: boolean } = $props();
 
   let wahl = $state<HTMLInputElement>();
   let wolkeOffen = $state(false);

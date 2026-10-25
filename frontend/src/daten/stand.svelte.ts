@@ -4,8 +4,8 @@
 
 import { ereignisse, hole } from "appkern-oberflaeche";
 import type {
-  Abwesenheit, Bericht, Board, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Konto, Laufnummer, Mitglied, ModulKennung, Ordner, PersonEinstellungen, Serie, Termin,
-  Timer, Verbindung, Vorlage, Zeiteintrag, Zeitkonto,
+  Abwesenheit, Bericht, Board, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Kartenname, Konto, Laufnummer, Mitglied, ModulKennung, Ordner, PersonEinstellungen,
+  Serie, Termin, Timer, Verbindung, Vorlage, Zeiteintrag, Zeitkonto,
 } from "../modell";
 import { ICH, ichSetzen } from "./ich";
 
@@ -36,6 +36,8 @@ export interface Zustand {
   einstellungen: PersonEinstellungen;
   papierkorb: Geloescht[];
   entfernt: Entfernt[];
+  /** Namen von Karten, auf die sichtbare Zeiteinträge zeigen, die selbst nicht im Stand sind (archiviert, Board verlassen) */
+  kartennamen: Kartenname[];
   vorlagen: Vorlage[];
   berichte: Bericht[];
   /** Verbindung zum Ereignisstrom; getrennt: letzter Stand sichtbar, Schreibendes gesperrt */
@@ -46,7 +48,7 @@ export interface Zustand {
 export const stand = $state<Zustand>({
   geladen: false, moduleDa: [], konten: [], boards: [], karten: [], gruppen: [], laufnummern: [], ordner: [], timer: [], zeiteintraege: [],
   zeitkonten: [], abwesenheiten: [], serien: [], termine: [], hinweise: [], einstellungen: { hinweise: {} } as PersonEinstellungen, papierkorb: [],
-  entfernt: [], vorlagen: [], berichte: [], verbindung: "getrennt", meldung: null,
+  entfernt: [], kartennamen: [], vorlagen: [], berichte: [], verbindung: "getrennt", meldung: null,
 });
 
 /** Antwort von /stand: die Teile, die der Server schon kennt (die übrigen kommen mit ihren Stufen) */
@@ -60,10 +62,15 @@ interface Serverstand {
   gruppen: Gruppe[];
   laufnummern: Laufnummer[];
   ordner: Ordner[];
+  timer: Timer[];
+  zeiteintraege: Zeiteintrag[];
+  zeitkonten: Zeitkonto[];
+  abwesenheiten: Abwesenheit[];
   hinweise: Hinweis[];
   vorlagen: Vorlage[];
   papierkorb: Geloescht[];
   entfernt: Entfernt[];
+  kartennamen: Kartenname[];
   einstellungen: PersonEinstellungen;
 }
 
@@ -90,6 +97,7 @@ export const frisch = $state<Record<string, string>>({});
 /** Tabelle des Servers und Teil des Zustands (je Zeile ein Eintrag mit Kennung) */
 const TEILE = {
   konten: "konten", boards: "boards", karten: "karten", gruppen: "gruppen", laufnummern: "laufnummern", ordner: "ordner",
+  timer: "timer", zeiteintraege: "zeiteintraege", zeitkonten: "zeitkonten", abwesenheiten: "abwesenheiten",
   hinweise: "hinweise", vorlagen: "vorlagen", papierkorb: "papierkorb", entfernt: "entfernt",
 } as const satisfies Record<string, keyof Zustand>;
 
@@ -100,8 +108,9 @@ export async function laden(): Promise<void> {
   ichSetzen(s.ich);
   Object.assign(stand, {
     moduleDa: s.moduleDa, konten: s.konten, boards: s.boards, karten: s.karten, gruppen: s.gruppen, laufnummern: s.laufnummern, ordner: s.ordner,
-    hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, einstellungen: s.einstellungen,
-    geladen: true,
+    timer: s.timer, zeiteintraege: s.zeiteintraege, zeitkonten: s.zeitkonten, abwesenheiten: s.abwesenheiten,
+    hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, kartennamen: s.kartennamen,
+    einstellungen: s.einstellungen, geladen: true,
   });
 }
 
@@ -109,7 +118,15 @@ function fassung(z: unknown): number {
   return (z as Zeile | undefined)?.fassung ?? 0;
 }
 
-/** Übernimmt neue Stände; gibt zurück, ob der ganze Stand neu zu laden ist (ein Board kam neu hinzu oder fiel weg) */
+/** Hängt an diesen Teilen eines Boards, was du siehst? Module, Rollen und Mitglieder entscheiden, welche Zeiten,
+ *  Timer, Zeitkonten und Abwesenheiten anderer im Stand stehen */
+function sichtGeaendert(alt: Board, neu: Board): boolean {
+  const teile = (b: Board) => JSON.stringify([b.module, b.rollen, b.mitglieder]);
+  return teile(alt) !== teile(neu);
+}
+
+/** Übernimmt neue Stände; gibt zurück, ob der ganze Stand neu zu laden ist (ein Board kam neu hinzu oder fiel weg, oder
+ *  an einem Board änderte sich, was du siehst) */
 function einspielen(g: Geaendert): boolean {
   if (g.tabelle === "person_einstellungen") {
     if (g.daten && fassung(g.daten) >= fassung(stand.einstellungen)) stand.einstellungen = g.daten as unknown as PersonEinstellungen;
@@ -119,6 +136,7 @@ function einspielen(g: Geaendert): boolean {
   if (!teil) return false;
   const liste = stand[teil] as Zeile[];
   const i = liste.findIndex((z) => z.id === g.id);
+  let neuLaden = false;
   if (teil === "boards") {
     const mitglied = !!g.daten && (g.daten as unknown as Board).mitglieder.some((m) => m.konto === ICH);
     // nicht mehr sichtbar: sofort heraus, dann den ganzen Stand holen (Karten, Papierkorb); neu sichtbar: seine Karten fehlen
@@ -130,6 +148,8 @@ function einspielen(g: Geaendert): boolean {
       liste.push(g.daten!);
       return true;
     }
+    // Module, Rollen oder Mitglieder geändert: was du siehst, folgt daraus, also den ganzen Stand holen
+    neuLaden = fassung(g.daten) > fassung(liste[i]) && sichtGeaendert(liste[i] as unknown as Board, g.daten as unknown as Board);
   }
   if (!g.daten) {
     if (i >= 0) liste.splice(i, 1);
@@ -140,7 +160,7 @@ function einspielen(g: Geaendert): boolean {
   }
   // Ordner stehen in ihrer Reihenfolge, auch wenn sie auf einem anderen Gerät umgeordnet wurden
   if (teil === "ordner") liste.sort((a, b) => reihe(a) - reihe(b));
-  return false;
+  return neuLaden;
 }
 
 function reihe(z: unknown): number {

@@ -9,7 +9,7 @@ import tempfile
 from collections import defaultdict
 from pathlib import Path
 
-from ..berichtsdatei import ENDUNG, INHALTSTYP, Abschnitt, BerichtInhalt, datei_aus
+from ..berichtsdatei import ENDUNG, INHALTSTYP, Abschnitt, BerichtInhalt, als_markdown, datei_aus
 from ..modell import Abwesenheit, Bericht, BerichtArt, BerichtFormat, Board, Karte, Kennung, Konto, Modell, Zeiteintrag, Zeitkonto
 from ..regeln.arbeitszeit import art_name, fassung_am, soll_tag
 from ..regeln.board import hat_recht
@@ -34,6 +34,15 @@ class Auswahl(Modell):
     boards: list[Kennung] = []
     personen: list[Kennung] = []
     format: BerichtFormat = "pdf"
+
+
+class Vorschau(Modell):
+    """Was die Datei enthält, bevor es sie gibt: Name, Titel, Inhalt, bei Markdown dazu der Text der Datei."""
+
+    datei: str
+    titel: str
+    inhalt: BerichtInhalt
+    text: str | None = None
 
 
 def differenz(sek: float) -> str:
@@ -246,9 +255,11 @@ class Berichte:
             return a, lage, je_karte(a, lage)
         return a, lage, erledigt(a, lage, *await self._erledigte(a, lage))
 
-    async def vorschau(self, konto: Konto, auswahl: Auswahl) -> BerichtInhalt:
+    async def vorschau(self, konto: Konto, auswahl: Auswahl) -> Vorschau:
         """Genau das, was die Datei enthält, ohne sie zu erstellen."""
-        return (await self.inhalt(konto, auswahl))[2]
+        a, lage, inhalt = await self.inhalt(konto, auswahl)
+        return Vorschau(datei=dateiname(a, lage), titel=titel_von(a, lage), inhalt=inhalt,
+                        text=als_markdown(inhalt) if a.format == "markdown" else None)
 
     async def erstellen(self, konto: Konto, auswahl: Auswahl) -> Antwort:
         """Die Datei erstellen und in der Ablage der Pinnwand ablegen (Ordner Berichte); der Eintrag gehört dir. Eine

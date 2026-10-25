@@ -77,6 +77,7 @@ interface Serverstand {
   entfernt: Entfernt[];
   kartennamen: Kartenname[];
   terminnamen: Terminname[];
+  berichte: Bericht[];
   einstellungen: PersonEinstellungen;
 }
 
@@ -105,6 +106,7 @@ const TEILE = {
   konten: "konten", boards: "boards", karten: "karten", gruppen: "gruppen", laufnummern: "laufnummern", ordner: "ordner",
   timer: "timer", zeiteintraege: "zeiteintraege", zeitkonten: "zeitkonten", abwesenheiten: "abwesenheiten",
   serien: "serien", termine: "termine", hinweise: "hinweise", vorlagen: "vorlagen", papierkorb: "papierkorb", entfernt: "entfernt",
+  berichte: "berichte",
 } as const satisfies Record<string, keyof Zustand>;
 
 type Zeile = { id: string; fassung?: number };
@@ -115,7 +117,7 @@ export async function laden(): Promise<void> {
   Object.assign(stand, {
     moduleDa: s.moduleDa, konten: s.konten, boards: s.boards, karten: s.karten, gruppen: s.gruppen, laufnummern: s.laufnummern, ordner: s.ordner,
     timer: s.timer, zeiteintraege: s.zeiteintraege, zeitkonten: s.zeitkonten, abwesenheiten: s.abwesenheiten,
-    serien: s.serien, termine: s.termine, hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, kartennamen: s.kartennamen, terminnamen: s.terminnamen,
+    serien: s.serien, termine: s.termine, hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, kartennamen: s.kartennamen, terminnamen: s.terminnamen, berichte: s.berichte,
     einstellungen: s.einstellungen, geladen: true,
   });
 }
@@ -164,8 +166,9 @@ function einspielen(g: Geaendert): boolean {
   } else if (fassung(g.daten) > fassung(liste[i])) {
     liste[i] = g.daten;
   }
-  // Ordner stehen in ihrer Reihenfolge, auch wenn sie auf einem anderen Gerät umgeordnet wurden
+  // Ordner stehen in ihrer Reihenfolge, auch wenn sie auf einem anderen Gerät umgeordnet wurden; Berichte neueste zuerst
   if (teil === "ordner") liste.sort((a, b) => reihe(a) - reihe(b));
+  if (teil === "berichte") (liste as Bericht[]).sort((a, b) => b.erstellt.localeCompare(a.erstellt));
   return neuLaden;
 }
 

@@ -5,9 +5,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends
 
-from ..anwendung.berichte import Auswahl
+from ..anwendung.berichte import Auswahl, Vorschau
 from ..anwendung.rahmen import Antwort
-from ..berichtsdatei import BerichtInhalt
 from ..modell import Konto
 from .zugriff import Zugriff
 
@@ -16,8 +15,8 @@ def router(z: Zugriff) -> APIRouter:
     r = APIRouter()
     d, ich, tun = z.d, z.ich, z.tun
 
-    @r.post("/berichte/vorschau", response_model=BerichtInhalt)
-    async def vorschau(e: Auswahl, konto: Konto = Depends(ich)) -> BerichtInhalt:
+    @r.post("/berichte/vorschau", response_model=Vorschau)
+    async def vorschau(e: Auswahl, konto: Konto = Depends(ich)) -> Vorschau:
         return await tun(d.berichte.vorschau(konto, e))
 
     @r.post("/berichte", response_model=Antwort)

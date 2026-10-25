@@ -1,6 +1,5 @@
 // Wege der Pinnwand: welcher Pfad welche Ansicht zeigt. Jeder Bereich trägt seine Wege in ansichten/<bereich>/routen.ts
 // ein; die erste passende gilt. Am Telefon gelten die Wege der Telefonansicht (dieselben Pfade, eigene Ansichten).
-// Bereiche späterer Stufen (Berichte) kommen mit ihrer Stufe dazu.
 
 import type { Component } from "svelte";
 import BoardAnsicht from "./board/BoardAnsicht.svelte";

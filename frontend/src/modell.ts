@@ -472,16 +472,46 @@ export interface Entfernt {
 export type BerichtArt = "stundennachweis" | "board" | "erledigt";
 export type BerichtFormat = "pdf" | "tabelle" | "markdown";
 
-/** Ein erstellter Bericht, abgelegt in der Kellerwolke im Ordner der Pinnwand */
+/** Ein erstellter Bericht, abgelegt in der Kellerwolke im Ordner Berichte der Pinnwand; er gehört der Person, die ihn
+ *  erstellt hat */
 export interface Bericht {
   id: Kennung;
+  konto: Kennung;
   art: BerichtArt;
   titel: string;
   zeitraum: string;
   format: BerichtFormat;
+  /** Name der Datei */
   datei: string;
+  /** Kennung der Datei in der Kellerwolke */
+  dateiId: string;
   erstellt: string;
   groesse: string;
+}
+
+/** Was für einen Bericht gewählt ist */
+export interface BerichtAuswahl {
+  art: BerichtArt;
+  von: string;
+  bis: string;
+  boards: Kennung[];
+  personen: Kennung[];
+  format: BerichtFormat;
+}
+
+/** Inhalt eines Berichts unabhängig vom Format, gerechnet vom Server: Abschnitte mit Spalten, Zeilen und Summe */
+export interface BerichtInhalt {
+  titel: string;
+  zeitraum: string;
+  abschnitte: { titel: string; spalten: string[]; zeilen: string[][]; summe?: string[]; fuss?: string }[];
+}
+
+/** Vorschau genau dessen, was die Datei enthält: Name, Titel, Inhalt, bei Markdown der Text der Datei */
+export interface BerichtVorschau {
+  datei: string;
+  titel: string;
+  inhalt: BerichtInhalt;
+  text?: string;
 }
 
 export type Verbindung = "verbunden" | "getrennt";

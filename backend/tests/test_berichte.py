@@ -38,7 +38,7 @@ async def mit_zeiten(pw: Pinnwand) -> tuple[dict, dict]:
 async def vorschau(pw: Pinnwand, wer: str, **auswahl) -> dict:
     r = await pw.post(wer, "/berichte/vorschau", auswahl)
     assert r.status_code == 200, r.text
-    return r.json()
+    return r.json()["inhalt"]
 
 
 async def test_stundennachweis(pw: Pinnwand):
@@ -73,6 +73,14 @@ async def test_zeiten_je_karte_und_erledigt(pw: Pinnwand):
     v = await vorschau(pw, "anna", art="erledigt", von="2026-10-27", bis="2026-10-27", boards=[b["id"]])
     assert v["abschnitte"][0]["zeilen"] == [["HAUS-1", "Fenster putzen", "Di 27.10.", "AN", "6:30"]]
     assert v["abschnitte"][0]["summe"] == ["", "1 Karte", "", "", "6:30"]
+
+
+async def test_vorschau_mit_name_und_text(pw: Pinnwand):
+    b, _ = await mit_zeiten(pw)
+    r = (await pw.post("anna", "/berichte/vorschau", {"art": "board", "von": "2026-10-26", "bis": "2026-10-30",
+                                                       "boards": [b["id"]], "format": "markdown"})).json()
+    assert (r["datei"], r["titel"]) == ("Zeiten_HAUS_2026-10-26_2026-10-30.md", "Zeiten je Karte: Haushalt")
+    assert r["text"].startswith("# Zeiten je Board und Karte\n\nZeitraum: Mo 26.10. bis Fr 30.10.2026")
 
 
 async def test_ohne_modul_und_falsche_auswahl(pw: Pinnwand):

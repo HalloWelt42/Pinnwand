@@ -3,7 +3,7 @@ backend/.env.test
 __pycache__/
 *.pyc
 .pytest_cache/
-daten/
+/daten/
 zertifikate/
 sicherungen/
 frontend/node_modules/

@@ -26,6 +26,9 @@ Boards bleibt vollständig erhalten (Verzeichnis in `BOARD_MECHANIK.md`), neu wi
 | E-17 | Neues Board | Aus Vorlagen, eigene speicherbar; dazu leer anfangen |
 | E-18 | Bau und Betrieb | In Stufen, jede läuft nach ihrer Prüfung sofort auf dem Pi |
 | E-19 | Mockups | Alle Ansichten vorab, Rechner und Telefon, hell und dunkel, jeder Zustand eine Seite, altes Board zum Vergleich daneben; nach Freigabe verbindlicher Leitfaden |
+| E-20 | Rahmen | Leitstand wie Fundus: eigene Seitenleiste und Kopf aus den Bausteinen des Leitstands, Schriftstufen, volle Breite für das Board |
+| E-21 | Schriftstufe | Klein als Vorgabe (Nutzer: "wir nutzen die einstellung schrift klein"); Mittel und Groß wählbar |
+| E-22 | Adressen | Echte Pfade im Browser (Nutzer: "wichtig wäre, dass normale pfade im browser angezeigt werden"); über die Navigation des Appkerns wie in den übrigen Apps, ohne zweites Rahmenwerk |
 
 Folgt aus früheren Entscheidungen des Nutzers: Gestaltung aus dem Appkern (Grunddesign "Appkern, alle ziehen um"); eigene
 Themes und das Theme-Studio der alten App entfallen, Hell, Dunkel und Schriftstufen kommen aus der Schale.
@@ -111,6 +114,15 @@ Mechanik) auf den Pi.
 - **Telefon** (eigene, reduzierte Ansicht): Heute mit Abhaken per Halten; Timer und Zeit buchen; schnell erfassen,
   auch per Sprache; Board spaltenweise mit Kartendetail und Verschieben.
 
+### Pfade
+
+`/heute`, `/hinweise`, `/zeiten`, `/arbeitszeit[/kalender|urlaub|team]`, `/serien[/<kennung>]`, `/berichte`,
+`/einstellungen/<reiter>`, `/boards/neu`, `/board/<kürzel>` (Kürzel klein, etwa `/board/prod`), `/board/prod/131` (Karte
+PROD-131 im Detail über dem Board), `/board/prod/liste|kalender|zeitachse`, `/board/prod/einstellungen/<reiter>`,
+`/board/prod/archiv`, `/board/prod/papierkorb`. Das Kürzel bleibt beim Umbenennen fest und ist eindeutig, Verweise
+brechen also nie. Das Backend liefert für jeden Pfad außerhalb von `/api` die Oberfläche aus; am Telefon gelten dieselben
+Pfade mit der Telefonansicht.
+
 ## 7. Verbund
 
 - **Kellerwolke**: Anmeldung; Anhänge in der Ablage der Pinnwand (je Board ein Ordner); Dateiwahl aus der eigenen
@@ -132,10 +144,12 @@ Mechanik) auf den Pi.
 
 ## 9. Mockups
 
-Im Ordner `mockups/` mit den Gestaltungsmarken des Appkerns, echtem HTML und echten Beispieldaten, je Zustand eine
-Seite, eine Galerie als Einstieg; Rechner und Telefon, hell und dunkel, geprüft in 1920, 1440, 1280, 1100, 900 und
-390 Pixeln. Das alte Board läuft dazu lokal mit einer Kopie seiner Datenbank, seine Ansichten liegen als Vergleich
-neben den neuen. Nach der Freigabe sind die Mockups der Leitfaden; Änderungen an Aufbau und Optik erst im Mockup.
+Im Ordner `mockups/` im echten Stack (Vite, Svelte 5, Bausteine des Leitstands, Marken des Appkerns) mit Beispieldaten:
+nach der Freigabe werden diese Ansichten die Oberfläche der App, ein Entwurf kann also nicht schöner sein als die App.
+Jeder Zustand hat seinen echten Pfad (vorgeführte Zustände mit `?entwurf=`, Telefon mit `?geraet=telefon`), eine
+Galerie unter `/entwuerfe` ist der Einstieg; Regeln in `mockups/LEITFADEN.md`. Geprüft mit der Ansichtsprüfung des
+Appkerns in 1920, 1440, 1100, 900 und 390 Pixeln, hell und dunkel. Das alte Board läuft dazu lokal mit einer Kopie seiner
+Datenbank zum Vergleich. Nach der Freigabe sind die Entwürfe der Leitfaden; Änderungen an Aufbau und Optik erst dort.
 
 ## 10. Später
 

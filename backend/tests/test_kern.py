@@ -44,7 +44,7 @@ async def test_board_aus_vorlage(pw: Pinnwand):
     assert [r["id"] for r in b["rollen"]] == ["besitzer", "mitglied", "leser"]
     # von den Modulen der Vorlage sind nur die eingeschaltet, die diese Fassung anbietet
     assert [m for m, an in b["module"].items() if an] == ["zeiterfassung", "serien"] and b["kartenart"] == "arbeit"
-    assert (await pw.stand("anna"))["moduleDa"] == ["zeiterfassung", "arbeitszeit", "serien", "berichte", "ki"]
+    assert (await pw.stand("anna"))["moduleDa"] == ["zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte", "ki"]
 
 
 async def test_board_abgelehnt(pw: Pinnwand):

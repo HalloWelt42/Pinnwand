@@ -81,15 +81,15 @@ async def test_einstellungen_in_grenzen(pw: Pinnwand):
 
 async def test_module_bietet_diese_fassung_nicht_an(pw: Pinnwand, monkeypatch: pytest.MonkeyPatch):
     b = await pw.board("anna")
-    await abgelehnt(pw, "anna", f"/boards/{b['id']}/module/transkripte", {"an": True}, 400,
+    await abgelehnt(pw, "anna", f"/boards/{b['id']}/module/vorlesen", {"an": True}, 400,
                     "Dieses Modul bietet diese Pinnwand nicht an")
     await abgelehnt(pw, "anna", f"/boards/{b['id']}/module/gibt-es-nicht", {"an": False}, 400,
                     "Dieses Modul bietet diese Pinnwand nicht an")
-    assert not (await board(pw))["module"]["transkripte"]
+    assert not (await board(pw))["module"]["vorlesen"]
     # bietet eine spätere Fassung ein Modul an, schaltet derselbe Weg es
-    monkeypatch.setattr("app.anwendung.boards.MODULE_DA", ("zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte"))
-    a = await ok(pw, "anna", f"/boards/{b['id']}/module/transkripte", {"an": True})
-    assert a["meldung"] == "Transkripte in Haushalt eingeschaltet" and (await board(pw))["module"]["transkripte"]
+    monkeypatch.setattr("app.anwendung.boards.MODULE_DA", ("zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte", "ki", "vorlesen"))
+    a = await ok(pw, "anna", f"/boards/{b['id']}/module/vorlesen", {"an": True})
+    assert a["meldung"] == "Vorlesen in Haushalt eingeschaltet" and (await board(pw))["module"]["vorlesen"]
 
 
 async def test_als_vorlage_speichern(pw: Pinnwand):

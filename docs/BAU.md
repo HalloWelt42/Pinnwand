@@ -298,6 +298,39 @@ wird nur, was die Person in der Vorschau bestätigt, und zwar über die gewohnte
 | `POST /boards/{id}/ki/karten` | `{text}`; Antwort `{karten: [{titel, beschreibung, checkliste}]}` |
 | `POST /boards/{id}/karten/mehrere` | `{spalte, art, karten}`; legt alle in einer Änderung an (ein Rückgängig) |
 
+### Transkripte
+
+Modul `transkripte` in `MODULE_DA`, ohne eigene Rechte. Die Transkription ist eine App des Verbunds; ihre Adresse steht
+in der Einstellung `transkription_adresse`. Die Pinnwand ruft sie über den Baustein `appkern.verbund` mit ihrem
+App-Schlüssel der Kellerwolke und **im Auftrag der Person** (Kopf `X-Kellerwolke-Sitzung`): suchen, abspielen und
+sprechen kann nur, wer die Transkription selbst nutzen darf. Was an der Karte steht, sehen alle Mitglieder.
+
+- **Marke** an der Karte (`TranskriptMarke`, Mechanik M-112 und M-113): Kennung, Transkript, Name, Sekunde (ohne: das
+  ganze Transkript), Sprecher und Text des Abschnitts an der Stelle, eine Notiz, wer und wann. Name, Sprecher und Text
+  holt der Server beim Verknüpfen aus dem Transkript (die Oberfläche schickt nur Transkript und Sekunde). Verknüpfen,
+  Notiz und Entfernen mit "Karten bearbeiten", mit Verlaufszeile und Rückgängig.
+- **Suchen** wie in der Transkription (Name und Text, Fundstellen mit Zeit und Ausschnitt); verknüpft wird eine Fundstelle
+  oder das ganze Transkript.
+- **Abspielen ab der Stelle** in der Pinnwand: `GET /inhalt/transkripte/{karte}/{marke}/ton` reicht die Abspielfassung
+  der Transkription durch (Bereichsanfragen, damit Springen in langen Aufnahmen nur das Nötige lädt); dazu "In der
+  Transkription öffnen" (`<adresse>/transkripte/<id>/<sekunde>`).
+- **Notiz vorschlagen** (mit dem Modul KI an der Karte): aus den Abschnitten um die Stelle (30 Sekunden davor, 90 danach).
+- **Spracheingabe beim Erfassen** am Telefon (Nutzer: "Nach dem Stopp"): Aufnahme mit Zeit und Pegel, nach dem Stopp
+  `POST /boards/{id}/sprache` (an `/api/v1/hoeren` der Transkription, bis zwei Minuten); der erste Satz wird Titel, alles
+  die Beschreibung, sichtbar vor dem Anlegen.
+- Ohne eingetragene Adresse zeigt die Oberfläche das Modul nicht an (`transkription_adresse` im Stand leer); Fehler der
+  Transkription kommen als Ablehnung mit Grund (503 nicht erreichbar, 403 kein Zugang).
+
+| Weg | Inhalt |
+|---|---|
+| `GET /karten/{id}/transkripte/suche?text=&ab=` | Seite der Treffer mit Fundstellen |
+| `POST /karten/{id}/transkripte` | `{transkript, sekunde}`; verknüpft eine Stelle |
+| `POST /karten/{id}/transkripte/{marke}/notiz` | `{notiz}` |
+| `DELETE /karten/{id}/transkripte/{marke}` | entfernt die Marke |
+| `POST /karten/{id}/transkripte/{marke}/ki/notiz` | Vorschlag `{text}` |
+| `GET /inhalt/transkripte/{karte}/{marke}/ton` | Ton der Aufnahme, auch mit dem Inhalts-Cookie |
+| `POST /boards/{id}/sprache` | Ton als Körper (Art im Kopf `Content-Type`); Antwort `{text}` |
+
 ## 10. Prüfen
 
 - Tests je Anwendungsfall (Recht, Regel, Fassung, Journal, Rückgängig, Ereignis) gegen eine Datenbank im Speicher; der

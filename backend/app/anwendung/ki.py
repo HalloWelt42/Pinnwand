@@ -2,7 +2,8 @@
 übernommen wird nur, was die Person in der Vorschau bestätigt, über die gewohnten Anwendungsfälle mit Rückgängig.
 
 Vier Vorschläge: eine Zusammenfassung der Karte (jedes Mitglied), neue Punkte für die Checkliste und Labels des Boards
-(mit "Karten bearbeiten"), Karten aus einem Text (mit "Karten anlegen"). Jede Anfrage verlangt eine feste Antwortform,
+(mit "Karten bearbeiten"), Karten aus einem Text (mit "Karten anlegen"); dazu mit dem Modul Transkripte eine Notiz zu
+einer verknüpften Stelle aus den Abschnitten um sie herum. Jede Anfrage verlangt eine feste Antwortform,
 die Begründung steht vor den Listen; Labels wählt das Modell über Kennungen der Anfrage (L1, L2, ...), die der Server
 auf die echten abbildet. Alles vom Modell Geschriebene geht durch die Säuberung des Appkerns (nur gerade Zeichen); Punkte
 und Titel werden gekürzt, Doppeltes und Vorhandenes fällt weg. Gerechnet wird hinter dem Anschluss `Sprachmodell`."""
@@ -19,8 +20,9 @@ from ..modell import Board, Karte, Kennung, Konto, Modell
 from ..regeln.board import hat_recht, mitglied, modul_an, spalte_von
 from ..regeln.tage import datum_text
 from .karten import Kartenentwurf
-from .kartenbasis import KURZ_LAENGE, TITEL_LAENGE
+from .kartenbasis import FELD_LAENGE, KURZ_LAENGE, TITEL_LAENGE
 from .rahmen import NAMEN_DER_RECHTE, Abgelehnt, Anwendung
+from .transkripte import KeineTranskription, Transkription, board_pruefen, marke_von, stelle_text
 
 #: so viel Text je Feld der Karte geht höchstens an das Modell (Zeichen); die jüngsten Kommentare zuerst
 FELD_HOECHSTENS = 12_000
@@ -31,6 +33,8 @@ AUS_TEXT_HOECHSTENS = 20_000
 PUNKTE_VORSCHLAG = 10
 KARTEN_VORSCHLAG = 20
 ZUSAMMENFASSUNG_HOECHSTENS = 4_000
+#: so viel Gespräch um eine Stelle liest das Modell für ihre Notiz (Sekunden davor und danach; ohne Stelle der Anfang)
+STELLE_DAVOR, STELLE_DANACH, ANFANG = 30, 90, 600
 #: Aufzählungszeichen, Nummern und Kästchen vor einem Punkt, wie Modelle sie gern mitliefern
 _VORSATZ = re.compile(r"^\s*(?:[-*•]+|\d+[.)]|\[[ xX]?\])\s*")
 _LEERRAUM = re.compile(r"\s+")
@@ -164,9 +168,10 @@ TEXTE = {"type": "array", "items": {"type": "string"}}
 
 
 class Ki:
-    def __init__(self, anwendung: Anwendung, modell: Sprachmodell) -> None:
+    def __init__(self, anwendung: Anwendung, modell: Sprachmodell, transkription: Transkription | None = None) -> None:
         self.a = anwendung
         self.modell = modell
+        self.transkription = transkription or KeineTranskription()
 
     def bereit(self) -> bool:
         return self.modell.bereit()
@@ -274,3 +279,29 @@ class Ki:
             karten.append(Kartenentwurf(titel=titel, beschreibung=gekuerzt(beschreibung) or None,
                                         checkliste=neue_punkte(roh.get("checkliste"), [], PUNKTE_VORSCHLAG)))
         return Kartenvorschlag(karten=karten[:KARTEN_VORSCHLAG])
+
+    async def notiz_vorschlagen(self, konto: Konto, karte_id: Kennung, marke_id: Kennung, sitzung: str) -> Zusammenfassung:
+        """Eine Notiz zu einer verknüpften Stelle aus den Abschnitten um sie herum (das Transkript liest die Pinnwand im
+        Auftrag der Person)."""
+        b, c, _ = await self._karte(konto, karte_id, "karten.bearbeiten")
+        board_pruefen(b, konto, None)
+        m = marke_von(c, marke_id)
+        t = await self.transkription.lesen(sitzung, m.transkript)
+        von, bis = (m.sekunde - STELLE_DAVOR, m.sekunde + STELLE_DANACH) if m.sekunde is not None else (0, ANFANG)
+        teile = [a for a in t.abschnitte if a.ende >= von and a.start <= bis]
+        if not teile:
+            raise Abgelehnt("An dieser Stelle steht im Transkript kein Text", 422)
+        gespraech = "\n".join(f"[{stelle_text(a.start)}] {a.sprecher or 'Jemand'}: {a.text}" for a in teile)
+        antwort = await self.modell.fragen(Auftrag(
+            name="notiz", titel=f"Notiz zu einer Stelle an {c.schluessel}", laenge=1_000,
+            text=f"Karte {c.schluessel}: {c.titel}\nTranskript: {t.name}\nMarkierte Stelle: {stelle_text(m.sekunde)}\n\n"
+                 f"Gespräch:\n{gekuerzt(gespraech)}",
+            anweisung="Du schreibst eine kurze Notiz zu einer Stelle aus einem Gespräch, die an einer Karte eines Boards "
+                      "hängt. Ein bis zwei Sätze: was an der markierten Stelle gesagt oder entschieden wird, mit Namen, "
+                      "Tagen und Zahlen aus dem Gespräch, soweit es die Karte betrifft. Nur, was im Gespräch steht; "
+                      "nichts erfinden. Kein Markdown. " + GERADE,
+            schema=_objekt({"text": {"type": "string"}})))
+        notiz = gerade(str(antwort.get("text") or "")).strip()[:FELD_LAENGE]
+        if not notiz:
+            raise Abgelehnt("Das Modell hat keine Notiz geliefert; noch einmal versuchen", 502)
+        return Zusammenfassung(text=notiz)

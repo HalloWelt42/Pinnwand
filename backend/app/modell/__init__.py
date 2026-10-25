@@ -19,7 +19,7 @@ HinweisArt = Literal["zugewiesen", "faellig", "erwaehnt", "termin", "kommentar",
 HinweisWeg = Literal["pinnwand", "push", "assistent"]
 MODULE: tuple[str, ...] = ("zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte", "vorlesen", "ki")
 #: Module, die diese Fassung der Pinnwand anbietet; die übrigen lassen sich in keinem Board einschalten
-MODULE_DA: tuple[str, ...] = ("zeiterfassung", "arbeitszeit", "serien", "berichte", "ki")
+MODULE_DA: tuple[str, ...] = ("zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte", "ki")
 Kartenart = Literal["arbeit", "idee"]
 
 
@@ -153,9 +153,18 @@ class Anhang(Modell):
 
 
 class TranskriptMarke(Modell):
-    aufnahme: str
-    stelle: str
-    text: str
+    """Eine Stelle der Transkription an einer Karte (ohne Sekunde: das ganze Transkript). Name, Sprecher und Text des
+    Abschnitts holt der Server beim Verknüpfen aus dem Transkript; die Notiz schreibt man selbst."""
+
+    id: Kennung
+    transkript: str
+    name: str
+    sekunde: float | None = None
+    sprecher: str | None = None
+    text: str | None = None
+    notiz: str | None = None
+    von: Kennung
+    am: str
 
 
 class Ereignis(Modell):

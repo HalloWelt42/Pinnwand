@@ -2,7 +2,7 @@
 Passwort "geheim", anna besitzt den App-Schlüssel, bert und cora dürfen erst nach einer Einladung. Dazu die Ablage im
 Speicher (`ABLAGE`), so weit der Zugang des Appkerns sie für Anhänge ruft: Ordner, Dateien schreiben, lesen und in den
 Papierkorb legen im Zweig der App, und die Dateiwahl mit der Anmeldung einer Person in ihren eigenen Dateien. Dazu die
-Leitstelle (`LEITSTELLE`) mit Antworten des Modells der Reihe nach."""
+Leitstelle (`LEITSTELLE`) mit Antworten des Modells der Reihe nach und die Transkription (`TRANSKRIPTION`)."""
 
 from __future__ import annotations
 
@@ -260,6 +260,68 @@ class Leitstelle:
 
 LEITSTELLE = Leitstelle()
 
+#: Transkription für die Einstellungen der App (Adresse nur zum Schein)
+TRANSKRIPTION_EINRICHTUNG = {"transkription_adresse": "https://tr.test/"}
+TELEFONAT = "6f1e2d3c-0000-4000-8000-000000000001"
+
+
+@dataclass
+class Transkription:
+    """Die Transkription (Host tr.test), so weit die Pinnwand sie ruft: Suche, Transkript, Ton mit Bereichen und Hören.
+    Sie lässt nur den App-Schlüssel der Pinnwand zu, im Auftrag von anna und bert (cora darf sie nicht nutzen); jede
+    Anfrage steht in `anfragen`. `gehoert` ist der Text, den Hören liefert."""
+
+    anfragen: list[httpx.Request] = field(default_factory=list)
+    gehoert: str = "Dachrinne an der Nordseite reparieren. Vorher Leiter holen und Halterungen kaufen."
+    ton: bytes = bytes(range(256)) * 64
+
+    def leeren(self) -> None:
+        self.anfragen.clear()
+
+    def transkript(self) -> dict:
+        return {"name": "Telefonat Kunde 26.10.", "sprache": "de", "dauer_s": 300.0,
+                "sprecher": [{"kennung": "s1", "name": "Brandt"}, {"kennung": "s2", "name": "Anna"}],
+                "segmente": [{"start": 0.0, "ende": 5.0, "sprecher": "s1", "text": "Guten Tag, hier Brandt."},
+                             {"start": 5.0, "ende": 12.0, "sprecher": "s2", "text": "Wir brauchen 120 Gehäuse bis KW 50."},
+                             {"start": 252.0, "ende": 260.0, "sprecher": "s1", "text": "Den Preis der Beschichtung sage ich am 28.10."}]}
+
+    def antwort(self, request: httpx.Request) -> httpx.Response:
+        self.anfragen.append(request)
+        pfad = request.url.path
+        if request.headers.get("authorization") != f"Bearer {EINRICHTUNG['kellerwolke_schluessel']}":
+            return httpx.Response(401, json={"detail": "Anmeldung erforderlich"})
+        if pfad == "/api/v1/app":
+            return httpx.Response(200, json={"fassung": "0.12.0"})
+        if request.headers.get("x-kellerwolke-sitzung") == "t-cora":
+            return httpx.Response(403, json={"detail": "Dieses Konto darf die Transkription nicht nutzen"})
+        t = self.transkript()
+        if pfad == "/api/v1/transkripte":
+            suche = request.url.params.get("suche", "").lower()
+            fund = [{"zeit": s["start"], "art": "text", "ausschnitt": s["text"]} for s in t["segmente"]
+                    if suche and suche in s["text"].lower()]
+            treffer = not suche or fund or suche in t["name"].lower()
+            eintraege = [{"id": TELEFONAT, "name": t["name"], "dauer_s": t["dauer_s"], "treffer": len(fund),
+                          "fundstellen": fund}] if treffer else []
+            return httpx.Response(200, json={"gesamt": len(eintraege), "ab": 0, "anzahl": 12, "eintraege": eintraege})
+        if pfad == f"/api/v1/transkripte/{TELEFONAT}":
+            return httpx.Response(200, json={"id": TELEFONAT, "pfad": "Apps/Transkription/Telefonat.transkript.json",
+                                             "stand": "e1", "transkript": t})
+        if pfad == f"/api/v1/inhalt/transkripte/{TELEFONAT}/ton":
+            bereich = re.fullmatch(r"bytes=(\d+)-(\d*)", request.headers.get("range", ""))
+            if bereich:
+                start = int(bereich.group(1))
+                ende = int(bereich.group(2)) if bereich.group(2) else len(self.ton) - 1
+                return httpx.Response(206, content=self.ton[start:ende + 1], headers={
+                    "content-type": "audio/wav", "accept-ranges": "bytes",
+                    "content-range": f"bytes {start}-{ende}/{len(self.ton)}"})
+            return httpx.Response(200, content=self.ton, headers={"content-type": "audio/wav", "accept-ranges": "bytes"})
+        if pfad == "/api/v1/hoeren" and request.method == "POST":
+            return httpx.Response(200, json={"text": self.gehoert, "sprache": "de", "dauer_s": 6.5, "segmente": []})
+        return httpx.Response(404, json={"detail": "Transkript nicht gefunden"})
+
+
+TRANSKRIPTION = Transkription()
+
 
 def kellerwolke(request: httpx.Request) -> httpx.Response:
     pfad = request.url.path
@@ -268,6 +330,8 @@ def kellerwolke(request: httpx.Request) -> httpx.Response:
         return httpx.Response(201)
     if request.url.host == "ls.test":
         return LEITSTELLE.antwort(request)
+    if request.url.host == "tr.test":
+        return TRANSKRIPTION.antwort(request)
     if pfad == "/api/v1/ablage/ich":
         return httpx.Response(200, json={"app": "Pinnwand", "konto": "anna", "rechte": []})
     if pfad.startswith("/api/v1/ablage/"):

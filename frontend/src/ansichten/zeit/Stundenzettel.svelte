@@ -1,6 +1,8 @@
 <script lang="ts">
   // Zeiten: dein Stundenzettel der Woche aus allen Boards. Zeilen je Karte, Spalten Mo bis So; jede Zelle ist deine Zeit
-  // auf der Karte an dem Tag und direkt änderbar (sekundengenau). Darunter Summe, Soll aus dem Zeitkonto und Differenz.
+  // auf der Karte an dem Tag und direkt änderbar (sekundengenau). Bestätigte Termine stehen als eigene Zeile mit ihrem
+  // Titel; ihre Zeit ändert sich nicht in der Zelle, gelöscht wird sie in den Einträgen des Tags wie jeder eigene
+  // Eintrag. Darunter Summe, Soll aus dem Zeitkonto und Differenz.
   // Ein Klick auf einen Tag öffnet seine Einträge rechts als Leiste (wie das Kartendetail über dem Board); "Zeit
   // nachtragen" öffnet dort die Buchung. Gelesen wird über die Abfragen, geändert nur über die Anwendungsfälle.
   import { istAm, modulIrgendwo, saldo, sitzungAm, sitzungSek, sollTag, timerErlaubt, timerVon } from "../../daten/abfragen";
@@ -13,9 +15,11 @@
   import { ARTEN, fassungAm } from "../../regeln/arbeitszeit";
   import { montagVon, plusTage, tageVon } from "../../regeln/tage";
   import DauerFeld from "../../teile/DauerFeld.svelte";
+  import type { Zeiteintrag } from "../../modell";
   import KartenName from "./KartenName.svelte";
   import Nachtragen from "./Nachtragen.svelte";
   import TagLeiste from "./TagLeiste.svelte";
+  import TerminName from "./TerminName.svelte";
 
   type Leiste = { art: "tag"; tag: string } | { art: "nachtragen"; tag: string } | null;
   let montag = $state(montagVon(uhr.heute));
@@ -32,20 +36,33 @@
     return timer?.karte === karteId ? sitzungAm(timer, tag) : 0;
   }
 
-  interface Zeile { id: string; sek: Record<string, number>; woche: number }
+  /** Eine Zeile: deine Zeit auf einer Karte oder für einen Termin, je Tag und in der Woche */
+  interface Zeile { art: "karte" | "termin"; id: string; sek: Record<string, number>; woche: number }
+
+  function zeile(art: Zeile["art"], id: string, gehoert: (e: Zeiteintrag) => boolean, laufend: (tag: string) => number): Zeile {
+    const sek: Record<string, number> = {};
+    for (const t of tage) sek[t] = eintraege.filter((e) => gehoert(e) && e.datum === t).reduce((s, e) => s + e.sekunden, 0) + laufend(t);
+    return { art, id, sek, woche: Object.values(sek).reduce((a, x) => a + x, 0) };
+  }
+
   const zeilen = $derived.by(() => {
-    const ids = new Set(eintraege.flatMap((e) => (e.karte ? [e.karte] : [])));
-    if (timer && tage.some((t) => sitzungAm(timer, t) > 0)) ids.add(timer.karte);
-    if (vorschau && tage.includes(vorschau.tag)) ids.add(vorschau.karte);
-    const out: Zeile[] = [...ids].map((id) => {
-      const sek: Record<string, number> = {};
-      for (const t of tage) sek[t] = eintraege.filter((e) => e.karte === id && e.datum === t).reduce((s, e) => s + e.sekunden, 0) + laufendAm(t, id);
-      return { id, sek, woche: Object.values(sek).reduce((a, x) => a + x, 0) };
-    });
-    // nach Board und Nummer; Karten, die nicht mehr im Board stehen (Papierkorb, entfernt, archiviert), zuletzt
+    const karten = new Set(eintraege.flatMap((e) => (e.karte ? [e.karte] : [])));
+    if (timer && tage.some((t) => sitzungAm(timer, t) > 0)) karten.add(timer.karte);
+    if (vorschau && tage.includes(vorschau.tag)) karten.add(vorschau.karte);
+    const termine = new Set(eintraege.flatMap((e) => (e.termin ? [e.termin] : [])));
+    const out = [
+      ...[...karten].map((id) => zeile("karte", id, (e) => e.karte === id, (t) => laufendAm(t, id))),
+      ...[...termine].map((id) => zeile("termin", id, (e) => e.termin === id, () => 0)),
+    ];
+    // Karten nach Board und Nummer, dann die Termine nach ihrer Zeit; Karten, die nicht mehr im Board stehen (Papierkorb,
+    // entfernt, archiviert), zuletzt
+    const rang = (z: Zeile) => (z.art === "termin" ? 1 : karte(z.id) ? 0 : 2);
     const nummer = (id: string) => Number(karte(id)?.schluessel.split("-")[1] ?? 0);
     const boardName = (id: string) => { const k = karte(id); return k ? board(k.board).name : ""; };
-    return out.sort((a, b) => Number(!karte(a.id)) - Number(!karte(b.id)) || boardName(a.id).localeCompare(boardName(b.id)) || nummer(a.id) - nummer(b.id));
+    const terminZeit = (id: string) => { const t = stand.termine.find((x) => x.id === id); return t ? t.datum + t.von : ""; };
+    return out.sort((a, b) => rang(a) - rang(b) || (a.art === "termin"
+      ? terminZeit(a.id).localeCompare(terminZeit(b.id))
+      : boardName(a.id).localeCompare(boardName(b.id)) || nummer(a.id) - nummer(b.id)));
   });
 
   const istTag = $derived(Object.fromEntries(tage.map((t) => [t, istAm(ICH, t)])));
@@ -149,7 +166,21 @@
           </tr>
         </thead>
         <tbody>
-          {#each zeilen as z (z.id)}
+          {#each zeilen as z (`${z.art}-${z.id}`)}
+            {#if z.art === "termin"}
+            <tr>
+              <td class="pw-zeiten-kartenzelle">
+                <span class="pw-zeiten-ohne-timer" title="Termin: kein Timer; die Zeit kommt aus deiner Bestätigung"></span>
+                <TerminName id={z.id} zeilen={2} />
+              </td>
+              {#each tage as t (t)}
+                <td class="pw-zeiten-zelle" class:heute={t === heute} class:frei={frei(t)}>
+                  {#if z.sek[t]}<span class="pw-zeiten-fest" title="Bestätigte Zeit des Termins; löschen geht in den Einträgen des Tags">{dauer(z.sek[t])}</span>{/if}
+                </td>
+              {/each}
+              <td class="zahl pw-zeiten-woche-summe">{dauer(z.woche)}</td>
+            </tr>
+            {:else}
             {@const k = karte(z.id)}
             <tr>
               <td class="pw-zeiten-kartenzelle">
@@ -181,6 +212,7 @@
               {/each}
               <td class="zahl pw-zeiten-woche-summe">{dauer(z.woche)}</td>
             </tr>
+            {/if}
           {/each}
           {#if !zeilen.length}
             <tr><td colspan="9" class="schwach">In dieser Woche ist noch keine Zeit gebucht.</td></tr>

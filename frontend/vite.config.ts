@@ -1,16 +1,22 @@
-import { defineConfig } from 'vite'
-import { svelte } from '@sveltejs/vite-plugin-svelte'
+import { readFileSync } from "node:fs";
+import { svelte } from "@sveltejs/vite-plugin-svelte";
+import { defineConfig } from "vite";
 
-import fassungDatei from '../version.json'
+// Fassung der gebauten Oberfläche (aus version.json): eingebaut ins Skript und als Meta in die Startseite. Der Server
+// meldet die der ausgelieferten Startseite; weicht sie ab, lädt ein offener Tab von selbst neu.
+const FASSUNG = JSON.parse(readFileSync(new URL("../version.json", import.meta.url), "utf-8")).version as string;
+const fassungEinsetzen = {
+  name: "fassung-einsetzen",
+  transformIndexHtml: (html: string) => html.replace("</head>", `  <meta name="app-fassung" content="${FASSUNG}" />\n  </head>`),
+};
 
-// Fassung der Oberfläche aus der einzigen Quelle (version.json); weicht die des Servers ab, lädt die Oberfläche neu
-// (src/lib/fassung.svelte.ts). Als Import zählt version.json zu den Abhängigkeiten der Konfiguration: ändert sie
-// sich, startet der Entwicklungsserver von selbst neu, und eingebaute und Server-Fassung bleiben gleich.
+// Beim Entwickeln leitet Vite /api ans Backend; im Betrieb liefert das Backend die gebaute Oberfläche selbst aus.
 export default defineConfig({
-  plugins: [svelte()],
-  define: { __FASSUNG__: JSON.stringify(fassungDatei.version) },
+  plugins: [svelte(), fassungEinsetzen],
+  define: { __APP_FASSUNG__: JSON.stringify(FASSUNG) },
   server: {
-    port: 5198,
-    strictPort: false,
+    port: 9420,
+    strictPort: true,
+    proxy: { "/api": { target: "http://127.0.0.1:8420", changeOrigin: false } },
   },
-})
+});

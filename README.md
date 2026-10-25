@@ -1,51 +1,49 @@
 # Pinnwand
 
-Lokale, modulare Kanban-Plattform. Das Board ist nur das erste Modul - Ansichten, Karten-Felder und weitere Funktionalität kommen über Module dazu, ohne den Kern umzubauen. Themes (hell und dunkel gleichwertig) sind über Token austauschbar.
+Pinnwand plant Arbeit auf Boards. Eine App auf dem [Appkern](https://github.com/HalloWelt42/appkern): Dateien in der Kellerwolke
+(Zweig `Apps/Pinnwand`), KI nur über die Leitstelle, Anmeldung mit dem Kellerwolke-Konto, gestartet vom Stellwerk.
 
-## Stack
-
-- Frontend: Svelte 5 + TypeScript + Vite
-- Backend: Python + FastAPI + Pydantic, SQLite
-- Schriften: Chakra Petch (Display), Inter (Text), JetBrains Mono (Mono) via @fontsource
-- Icons: Font Awesome
-- Highlight-Farben: echte Material-Design-Werte (siehe `frontend/src/lib/theme/palette.ts`)
-
-## Start
+## Einrichten
 
 ```bash
-./start.sh
+./einrichten.sh
 ```
 
-- Frontend: http://localhost:5198
-- Backend: http://localhost:8420 (API-Doku unter `/docs`)
+Legt die Python-Umgebung an, holt die Pakete der Oberfläche und baut sie. Danach im Stellwerk starten (Eintrag
+`stellwerk.toml`) und `http://127.0.0.1:8420` öffnen: die erste Einrichtung fragt nach der Adresse der
+Kellerwolke und dem App-Schlüssel (in der Kellerwolke unter Einstellungen, Zugänge). Alles Weitere unter Einstellungen.
 
-Beim ersten Lauf werden das Python-venv und die npm-Pakete eingerichtet.
+## Entwickeln
+
+| Teil | Befehl |
+|---|---|
+| Backend | `cd backend && .venv/bin/uvicorn app.main:app --port 8420 --reload` |
+| Oberfläche | `cd frontend && npm run dev` (Port 9420, leitet `/api` ans Backend) |
+| Tests | `cd backend && .venv/bin/python -m pytest` |
+| Symbole | `python3 tools/symbole.py` nach einer Änderung an `frontend/public/symbol.svg` |
+| Fassung | `tools/version.sh minor` für eine neue Fähigkeit; jeder Commit zählt sonst selbst hoch |
+| Appkern | `tools/appkern.sh` hebt Oberfläche und Backend auf denselben neuesten Commit |
+| Ausrollen | `tools/ausrollen.sh` (Angaben in `deploy/ausrollen.toml`) |
+
+Der Verbundtest (`tests/test_verbund.py`) spricht mit einer echten Kellerwolke und braucht `backend/.env.test` (nicht
+im Repo) mit `KELLERWOLKE_ADRESSE`, `KELLERWOLKE_SCHLUESSEL`, `KELLERWOLKE_KENNUNG`, `KELLERWOLKE_PASSWORT`: ein eigener
+Zugang nur für Tests, nicht der der Entwicklungsinstanz. Aufräumen und Zurückziehen der Aktionen kommen aus
+`appkern.testen`.
+
+## Prüfungen
+
+Vor jedem Commit (Hook in `tools/git-hooks`, eingerichtet von `einrichten.sh`): Fassung hochzählen, nur gerade
+Zeichen, Stil ohne `!important`, ohne einseitige Streifen und ohne Regeln auf Klassen der Schale. Beim Ausrollen: Tests,
+gleicher Appkern in Oberfläche und Backend, Fassungen, HTTP/2, deckende Symbole. Von Hand vor dem Vorzeigen:
+`docs/ABNAHME.md`.
 
 ## Aufbau
 
-```
-backend/
-  app/            Host (domänenneutral): generische DB-Verbindung,
-                  Modul-Registry, FastAPI-App
-  module/         Backend-Module (je eigenes Modell, Schema, Router)
-    kanban_kern/  models.py, persistence.py, api.py, manifest.json
-frontend/
-  src/
-    lib/
-      theme/      Palette, Token, Theme-Engine
-      module/     Frontend-Module + Registry
-        kanban/   Board-, Spalten-, Karten-Komponenten
-```
-
-## Module
-
-Ein Modul beschreibt sich über `manifest.json` und bringt sein eigenes Datenmodell und Schema mit - der Kern kennt keine Domäne.
-
-- Backend: Die Registry findet Module per Verzeichnis-Scan, ruft den Schema-Init-Hook (`backend.init`) auf und bindet den Router (`backend.router`) ein. Ein neues Modul = ein neuer Ordner unter `module/`, ohne Änderung am Kern.
-- Frontend: Module werden beim Start automatisch entdeckt (jedes `module/<name>/index.ts` exportiert `registriere`). Auch hier bleibt der Kern unverändert.
-
-Erweiterungspunkte im Manifest werden unter `/api/erweiterungen` aggregiert bereitgestellt. Aktiv ausgewertet wird `views` (steuert die Ansichten der Oberfläche). `cardFields`, `mappeTabs` und `commands` sind als Erweiterungspunkte vorgesehen und werden bereits ausgeliefert; die zugehörigen Renderer folgen mit den nächsten Modulen.
-
-## Ansichten
-
-Aktuell: Heute (Was steht an), Board, Zeiten (Wochen-Stundenzettel mit Soll/Ist), Kalender (Heatmap + Monatsansicht), Jahreskalender (12-Monats-Gitter und Team-Matrix mit umschaltbaren Ebenen Anwesenheit/Feiertage/Stunden/Auslastung, direkter Eingabe und Halbtags-Regeln), Serien (wiederkehrende Termine), Suche, Transkripte, Planung (Personen, Bundesland, Wochenstunden, Urlaubsanspruch, Urlaub, Feiertage, Abwesenheits-Arten), Berichte (PDF/CSV/Markdown mit Archiv), Einstellungen (Sicherung, Agenten-Token). Vorgesehen als weitere Module: Tabelle, Zeitachse.
+| Ort | Inhalt |
+|---|---|
+| `backend/app/main.py` | baut die App auf dem Gerüst |
+| `backend/app/einstellungen.py` | eigene Einstellungen (dazu kommen Kellerwolke, Leitstelle, Konten) |
+| `backend/app/arten.py` | Arten von Aufträgen |
+| `backend/app/api.py` | eigene Endpunkte |
+| `frontend/src/App.svelte` | Bereiche der App in der gemeinsamen Schale |
+| `frontend/src/seiten/` | Seiten der Bereiche |

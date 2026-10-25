@@ -1,10 +1,4 @@
-fastapi>=0.115
-uvicorn[standard]>=0.32
-pydantic>=2.9
-httpx>=0.27
-python-multipart>=0.0.9
-mcp>=1.2
-holidays>=0.40
-weasyprint>=62
-markdown-it-py>=3
-pygments>=2.17
+appkern[web] @ https://github.com/HalloWelt42/appkern/archive/d8e20f40dd5299ea43d377642a65d2d9588fa49e.tar.gz
+uvicorn[standard]>=0.30
+pytest>=8
+pytest-asyncio>=0.24

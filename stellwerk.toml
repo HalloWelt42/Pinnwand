@@ -1,0 +1,11 @@
+name = "Pinnwand"
+beschreibung = "plant Arbeit auf Boards"
+oberflaeche = "http://127.0.0.1:8420"
+
+[[teile]]
+kennung = "backend"
+name = "Backend"
+ordner = "~/Entwicklung/Werkzeuge/Pinnwand/backend"
+befehl = [".venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8420", "--log-level", "warning"]
+port = 8420
+speicher_gb = 0.3

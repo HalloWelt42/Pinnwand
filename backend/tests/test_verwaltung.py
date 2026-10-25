@@ -81,15 +81,15 @@ async def test_einstellungen_in_grenzen(pw: Pinnwand):
 
 async def test_module_bietet_diese_fassung_nicht_an(pw: Pinnwand, monkeypatch: pytest.MonkeyPatch):
     b = await pw.board("anna")
-    await abgelehnt(pw, "anna", f"/boards/{b['id']}/module/berichte", {"an": True}, 400,
+    await abgelehnt(pw, "anna", f"/boards/{b['id']}/module/transkripte", {"an": True}, 400,
                     "Dieses Modul bietet diese Pinnwand nicht an")
     await abgelehnt(pw, "anna", f"/boards/{b['id']}/module/gibt-es-nicht", {"an": False}, 400,
                     "Dieses Modul bietet diese Pinnwand nicht an")
-    assert not (await board(pw))["module"]["berichte"]
+    assert not (await board(pw))["module"]["transkripte"]
     # bietet eine spätere Fassung ein Modul an, schaltet derselbe Weg es
-    monkeypatch.setattr("app.anwendung.boards.MODULE_DA", ("zeiterfassung", "arbeitszeit", "serien", "berichte"))
-    a = await ok(pw, "anna", f"/boards/{b['id']}/module/berichte", {"an": True})
-    assert a["meldung"] == "Berichte in Haushalt eingeschaltet" and (await board(pw))["module"]["berichte"]
+    monkeypatch.setattr("app.anwendung.boards.MODULE_DA", ("zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte"))
+    a = await ok(pw, "anna", f"/boards/{b['id']}/module/transkripte", {"an": True})
+    assert a["meldung"] == "Transkripte in Haushalt eingeschaltet" and (await board(pw))["module"]["transkripte"]
 
 
 async def test_als_vorlage_speichern(pw: Pinnwand):
@@ -258,7 +258,7 @@ async def test_felder(pw: Pinnwand):
 
 # --- Rollen und Rechte -------------------------------------------------------------------------------------------
 
-async def test_rollen_und_rechte(pw: Pinnwand):
+async def test_rollen_und_rechte(pw: Pinnwand, monkeypatch: pytest.MonkeyPatch):
     b = await mit_bert(pw, "leser")
     pfad = f"/boards/{b['id']}/rollen"
     a = await ok(pw, "anna", pfad, {"name": "Helfer", "kopieVon": "mitglied"})
@@ -274,6 +274,8 @@ async def test_rollen_und_rechte(pw: Pinnwand):
     k = await pw.karte("anna", b, "Fenster")
     assert (await pw.post("bert", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "Dran")})).status_code == 200
 
+    # ein Recht eines Moduls, das diese Fassung nicht anbietet (hier: Berichte weggenommen)
+    monkeypatch.setattr("app.anwendung.mitglieder.MODULE_DA", ("zeiterfassung", "arbeitszeit", "serien"))
     for rolle, daten, meldung in [
         ("besitzer", {"recht": "board.verwalten", "an": False}, "Besitzer behalten Board verwalten und Mitglieder verwalten"),
         ("leser", {"recht": "gibt.es.nicht", "an": True}, "Dieses Recht gibt es nicht"),

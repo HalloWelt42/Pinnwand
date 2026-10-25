@@ -35,6 +35,10 @@ class Ereignisse:
     def __init__(self) -> None:
         self._hoerer: dict[Kennung, set[asyncio.Queue[Neuigkeit | None]]] = {}
 
+    def verbunden(self) -> set[Kennung]:
+        """Konten mit mindestens einer offenen Verbindung."""
+        return set(self._hoerer)
+
     def senden(self, neuigkeit: Neuigkeit, empfaenger: set[Kennung] | None) -> None:
         """An die genannten Konten, None: an alle Verbundenen."""
         if not neuigkeit.geaendert:

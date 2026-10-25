@@ -29,7 +29,8 @@ class Tabelle:
         return [daten.get(self.felder.get(s, s)) for s in self.spalten]
 
 
-TABELLEN: dict[str, Tabelle] = {t.name: t for t in (
+#: Tabellen je Stufe des Schemas; eine Stufe ändert sich nie mehr, sobald sie ausgerollt ist
+TABELLEN_DER_STUFEN: tuple[tuple[Tabelle, ...], ...] = ((
     Tabelle("konten", ("kellerwolke",)),
     Tabelle("boards", ("kuerzel",)),
     Tabelle("karten", ("board", "schluessel", "spalte", "reihe")),
@@ -41,7 +42,13 @@ TABELLEN: dict[str, Tabelle] = {t.name: t for t in (
     Tabelle("vorlagen", ("konto",)),
     Tabelle("hinweise", ("konto", "gelesen", "zeit")),
     Tabelle("person_einstellungen"),
-)}
+), (
+    Tabelle("zeiteintraege", ("konto", "karte", "board", "datum")),
+    Tabelle("timer", ("konto", "karte", "board")),
+    Tabelle("zeitkonten", ("konto", "ab")),
+    Tabelle("abwesenheiten", ("konto", "von", "bis")),
+))
+TABELLEN: dict[str, Tabelle] = {t.name: t for stufe in TABELLEN_DER_STUFEN for t in stufe}
 
 
 def _tabelle_sql(t: Tabelle) -> str:
@@ -49,8 +56,12 @@ def _tabelle_sql(t: Tabelle) -> str:
     return f"CREATE TABLE {t.name} (id TEXT PRIMARY KEY, fassung INTEGER NOT NULL DEFAULT 1, daten TEXT NOT NULL{zusatz});"
 
 
+def _tabellen_sql(stufe: int) -> str:
+    return "\n".join(_tabelle_sql(t) for t in TABELLEN_DER_STUFEN[stufe])
+
+
 STUFEN: list[str] = [
-    "\n".join(_tabelle_sql(t) for t in TABELLEN.values()) + """
+    _tabellen_sql(0) + """
     CREATE UNIQUE INDEX boards_kuerzel ON boards(kuerzel);
     CREATE UNIQUE INDEX karten_schluessel ON karten(schluessel);
     CREATE INDEX karten_board ON karten(board, spalte, reihe);
@@ -62,6 +73,15 @@ STUFEN: list[str] = [
       bilder TEXT NOT NULL, rueckgaengig INTEGER NOT NULL DEFAULT 1, zurueckgenommen TEXT
     );
     CREATE INDEX journal_zeit ON journal(zeit);
+    """,
+    _tabellen_sql(1) + """
+    CREATE INDEX zeiteintraege_konto ON zeiteintraege(konto, datum);
+    CREATE INDEX zeiteintraege_karte ON zeiteintraege(karte);
+    CREATE INDEX zeiteintraege_board ON zeiteintraege(board);
+    CREATE INDEX timer_karte ON timer(karte);
+    CREATE INDEX timer_board ON timer(board);
+    CREATE UNIQUE INDEX zeitkonten_ab ON zeitkonten(konto, ab);
+    CREATE INDEX abwesenheiten_konto ON abwesenheiten(konto, von);
     """,
 ]
 
@@ -104,6 +124,23 @@ class Schreiber:
     def alle(self, tabelle: str, wo: str = "", werte: tuple = (), ordnung: str = "") -> list[dict]:
         sql = f"SELECT fassung, daten FROM {tabelle}" + (f" WHERE {wo}" if wo else "") + (f" ORDER BY {ordnung}" if ordnung else "")
         return [_zeile_zu_daten(z) for z in self.v.execute(sql, werte).fetchall()]  # type: ignore[misc]
+
+    def lies_vorher(self, tabelle: str, id: str) -> dict | None:
+        """Der Stand einer Zeile vor dieser Transaktion."""
+        b = self._bilder.get((tabelle, id))
+        return b.vorher if b else self.lies(tabelle, id)
+
+    def alle_vorher(self, tabelle: str) -> list[dict]:
+        """Alle Zeilen einer Tabelle, wie sie vor dieser Transaktion standen."""
+        zeilen = {d["id"]: d for d in self.alle(tabelle)}
+        for (t, id), b in self._bilder.items():
+            if t != tabelle:
+                continue
+            if b.vorher is None:
+                zeilen.pop(id, None)
+            else:
+                zeilen[id] = b.vorher
+        return list(zeilen.values())
 
     def wert(self, sql: str, werte: tuple = ()) -> Any:
         z = self.v.execute(sql, werte).fetchone()

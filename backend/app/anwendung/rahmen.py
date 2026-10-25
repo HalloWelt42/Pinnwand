@@ -1,23 +1,22 @@
 """Der Rahmen jeder Änderung: eine Transaktion, die Rechte und Regeln prüft, schreibt, Vorher und Nachher ins Journal legt
-und danach die neuen Stände als Ereignis an alle sendet, die sie sehen dürfen. Rückgängig stellt die Vorher-Stände her,
-wenn jede Zeile noch ihren Nachher-Stand hat. Es gibt keinen zweiten Weg zu schreiben."""
+und danach die neuen Stände als Ereignis an alle sendet, die sie sehen dürfen (je Zeile nach der Regel in sicht.py).
+Rückgängig stellt die Vorher-Stände her, wenn jede Zeile noch ihren Nachher-Stand hat. Es gibt keinen zweiten Weg zu
+schreiben."""
 
 from __future__ import annotations
 
 import json
 import secrets
 from collections.abc import Callable
+from dataclasses import dataclass
 
 from ..modell import Board, Kennung, Konto, Modell
 from ..regeln.board import hat_recht
 from ..uhr import Uhr
 from ..verzeichnis import Bild, Schreiber, Verzeichnis
 from .ereignisse import Ereignisse, Geaendert, Neuigkeit
+from .sicht import Sicht
 
-#: Tabellen, deren Zeilen einem Board gehören (Ereignis an seine Mitglieder)
-JE_BOARD = {"karten": "board", "gruppen": "board", "laufnummern": "board", "papierkorb": "board", "entfernt": "board"}
-#: Tabellen, deren Zeilen einer Person gehören (Ereignis und Antwort nur an sie, auch in einer Änderung an einem Board)
-JE_KONTO = {"ordner": "konto", "hinweise": "konto", "vorlagen": "konto"}
 #: Zähler laufen nur vorwärts: Rückgängig lässt sie stehen (und prüft sie nicht)
 NUR_VORWAERTS = {"laufnummern"}
 
@@ -25,6 +24,8 @@ NAMEN_DER_RECHTE = {
     "board.verwalten": "Board verwalten", "mitglieder.verwalten": "Mitglieder und Rollen verwalten",
     "karten.anlegen": "Karten anlegen", "karten.bearbeiten": "Karten bearbeiten", "karten.verschieben": "Karten verschieben",
     "karten.loeschen": "Karten löschen", "kommentieren": "Kommentieren", "papierkorb.leeren": "Papierkorb leeren",
+    "zeit.buchen": "Eigene Zeit buchen", "zeit.andere.sehen": "Zeiten anderer sehen",
+    "zeit.andere.bearbeiten": "Zeiten anderer bearbeiten", "abwesenheit.sehen": "Abwesenheiten sehen",
 }
 
 
@@ -44,6 +45,24 @@ class Antwort(Modell):
     meldung: str | None = None
     rueckgaengig: Kennung | None = None
     geaendert: list[Geaendert] = []
+
+
+@dataclass
+class Anteil:
+    """Eine geschriebene Zeile mit denen, die ihren alten und ihren neuen Stand sehen (None: alle)."""
+
+    geaendert: Geaendert
+    sahen: set[Kennung] | None
+    sehen: set[Kennung] | None
+
+    def fuer(self, konto: Kennung) -> Geaendert | None:
+        """Was diese Person von der Zeile erfährt: den neuen Stand, wenn sie ihn sieht; den Wegfall, wenn sie nur den
+        alten sah; sonst nichts."""
+        if self.sehen is None or konto in self.sehen:
+            return self.geaendert
+        if self.sahen is None or konto in self.sahen:
+            return Geaendert(tabelle=self.geaendert.tabelle, id=self.geaendert.id)
+        return None
 
 
 def neue_kennung(vorsatz: str) -> Kennung:
@@ -99,23 +118,25 @@ class Anwendung:
         geschah; Ablehnungen kommen als `Abgelehnt`."""
         uhr = self.uhr
 
-        def transaktion(s: Schreiber) -> tuple[str | None, Kennung | None, set[Kennung] | None]:
+        def transaktion(s: Schreiber) -> tuple[str | None, Kennung | None, dict[tuple[str, str], tuple]]:
             k = Kontext(s, konto, uhr)
             text = arbeit(k)
+            sicht = Sicht(s)
+            sichten = {(b.tabelle, b.id): (sicht.wer(b.tabelle, b.vorher, vorher=True) if b.vorher else set(),
+                                           sicht.wer(b.tabelle, b.nachher) if b.nachher else set()) for b in s.bilder}
             if text is None or not s.bilder:
-                return text, None, set()
-            empfaenger = self._empfaenger(s, s.bilder)
+                return text, None, sichten
             journal = neue_kennung("j")
             s.v.execute("INSERT INTO journal (id, konto, zeit, text, bilder, rueckgaengig) VALUES (?, ?, ?, ?, ?, ?)",
                         (journal, konto.id, k.jetzt, text, json.dumps([b.__dict__ for b in s.bilder], ensure_ascii=False),
                          1 if rueckgaengig else 0))
-            return text, journal, empfaenger
+            return text, journal, sichten
 
-        (text, journal, empfaenger), bilder = await self.v.transaktion(transaktion)
-        anteile = [(Geaendert(tabelle=b.tabelle, id=b.id, daten=b.nachher), _eigentuemer(b)) for b in bilder]
-        self._verteilen(anteile, empfaenger, konto.id, text if melden else None)
+        (text, journal, sichten), bilder = await self.v.transaktion(transaktion)
+        anteile = [Anteil(Geaendert(tabelle=b.tabelle, id=b.id, daten=b.nachher), *sichten[(b.tabelle, b.id)]) for b in bilder]
+        self._verteilen(anteile, konto.id, text if melden else None)
         return Antwort(meldung=text if melden else None, rueckgaengig=journal if (rueckgaengig and journal) else None,
-                       geaendert=[g for g, eigen in anteile if eigen is None or konto.id in eigen])
+                       geaendert=[g for a in anteile if (g := a.fuer(konto.id))])
 
     async def rueckgaengig(self, konto: Konto, journal_id: Kennung) -> Antwort:
         """Stellt die Vorher-Stände einer Änderung her, wenn jede Zeile noch ihren Nachher-Stand hat."""
@@ -141,51 +162,13 @@ class Anwendung:
 
         return await self.aendern(konto, arbeit, rueckgaengig=False)
 
-    def _verteilen(self, anteile: list[tuple[Geaendert, set[Kennung] | None]], empfaenger: set[Kennung] | None,
-                   von: Kennung, text: str | None) -> None:
-        """Geteilte Zeilen an alle Empfänger; Zeilen, die einer Person gehören (ein Hinweis an sie), nur an diese. Jede
-        Neuigkeit trägt, wer änderte, und die Meldung."""
-
-        def senden(geaendert: list[Geaendert], an: set[Kennung] | None) -> None:
-            self.ereignisse.senden(Neuigkeit(von=von, text=text, geaendert=geaendert), an)
-
-        if empfaenger is None:
-            senden([g for g, eigen in anteile if eigen is None], None)
-            empfaenger = set().union(*(eigen for _, eigen in anteile if eigen))
-            for konto in empfaenger:
-                senden([g for g, eigen in anteile if eigen and konto in eigen], {konto})
-            return
+    def _verteilen(self, anteile: list[Anteil], von: Kennung, text: str | None) -> None:
+        """Jede Person bekommt in einer Neuigkeit, was sie von den Zeilen erfahren darf, mit der Person, die änderte,
+        und der Meldung."""
+        alle = self.ereignisse.verbunden() | {von}
+        empfaenger: set[Kennung] = set()
+        for a in anteile:
+            empfaenger |= alle if a.sahen is None or a.sehen is None else (a.sahen | a.sehen)
         for konto in empfaenger:
-            senden([g for g, eigen in anteile if eigen is None or konto in eigen], {konto})
-
-    def _empfaenger(self, s: Schreiber, bilder: list[Bild]) -> set[Kennung] | None:
-        """Wer die Änderung sehen darf: Mitglieder der berührten Boards, die berührten Personen; None: alle."""
-        konten: set[Kennung] = set()
-        for b in bilder:
-            stande = [d for d in (b.vorher, b.nachher) if d]
-            if b.tabelle == "boards":
-                for d in stande:
-                    konten |= {m["konto"] for m in d.get("mitglieder", []) if m.get("konto")}
-            elif b.tabelle in JE_BOARD:
-                for d in stande:
-                    # liegt das Board selbst im Papierkorb, trägt sein Eintrag es mit seinen Mitgliedern
-                    board = s.lies("boards", d[JE_BOARD[b.tabelle]]) or (d.get("inhalt") or {}).get("board")
-                    if board:
-                        konten |= {m["konto"] for m in board.get("mitglieder", []) if m.get("konto")}
-            elif b.tabelle in JE_KONTO:
-                konten |= {d[JE_KONTO[b.tabelle]] for d in stande if d.get(JE_KONTO[b.tabelle])}
-            elif b.tabelle == "person_einstellungen":
-                konten.add(b.id)
-            else:
-                return None                                  # Konten, Gruppen: alle Verbundenen
-        return konten
-
-
-def _eigentuemer(b: Bild) -> set[Kennung] | None:
-    """Wem eine geschriebene Zeile allein gehört (Hinweise, Ordner, Vorlagen, Einstellungen einer Person); None: geteilt."""
-    if b.tabelle == "person_einstellungen":
-        return {b.id}
-    if b.tabelle in JE_KONTO:
-        feld = JE_KONTO[b.tabelle]
-        return {d[feld] for d in (b.vorher, b.nachher) if d and d.get(feld)} or None
-    return None
+            geaendert = [g for a in anteile if (g := a.fuer(konto))]
+            self.ereignisse.senden(Neuigkeit(von=von, text=text, geaendert=geaendert), {konto})

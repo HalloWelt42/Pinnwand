@@ -42,9 +42,9 @@ async def test_board_aus_vorlage(pw: Pinnwand):
     assert [s.get("zeitfenster") for s in b["spalten"]] == [None, None, "heute"]
     assert b["mitglieder"] == [{"konto": "1", "kellerwolke": "anna", "rolle": "besitzer", "seit": "2026-10-27"}]
     assert [r["id"] for r in b["rollen"]] == ["besitzer", "mitglied", "leser"]
-    # Module bietet diese Fassung noch keine an: keines ist eingeschaltet, Karten sind trotzdem Arbeit
-    assert not any(b["module"].values()) and b["kartenart"] == "arbeit"
-    assert (await pw.stand("anna"))["moduleDa"] == []
+    # von den Modulen der Vorlage sind nur die eingeschaltet, die diese Fassung anbietet
+    assert [m for m, an in b["module"].items() if an] == ["zeiterfassung"] and b["kartenart"] == "arbeit"
+    assert (await pw.stand("anna"))["moduleDa"] == ["zeiterfassung", "arbeitszeit"]
 
 
 async def test_board_abgelehnt(pw: Pinnwand):

@@ -19,7 +19,7 @@ HinweisArt = Literal["zugewiesen", "faellig", "erwaehnt", "termin", "kommentar",
 HinweisWeg = Literal["pinnwand", "push", "assistent"]
 MODULE: tuple[str, ...] = ("zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte", "vorlesen", "ki")
 #: Module, die diese Fassung der Pinnwand anbietet; die übrigen lassen sich in keinem Board einschalten
-MODULE_DA: tuple[str, ...] = ()
+MODULE_DA: tuple[str, ...] = ("zeiterfassung", "arbeitszeit")
 Kartenart = Literal["arbeit", "idee"]
 
 
@@ -284,6 +284,101 @@ class Geloescht(Modell):
     am: str
     #: bei einem Board: das Board selbst und sein Ordner
     inhalt: dict | None = None
+
+
+Herkunft = Literal["timer", "hand", "korrektur", "serie"]
+
+
+class Sitzung(Modell):
+    von: str
+    bis: str
+
+
+class Deckel(Modell):
+    """Vermerk an Einträgen einer Sitzung, die länger als 12 Stunden lief: gebucht sind die ersten 12, bis die Person
+    das echte Ende nennt oder die 12 bestätigt. Die echte Sitzung als Zeitpunkte."""
+
+    seit: str
+    bis: str
+    sekunden: int
+
+
+class Zeiteintrag(Modell):
+    """Gebuchte Zeit einer Person auf einer Karte an einem Tag; die Zeit einer Karte ist die Summe ihrer Einträge. Das
+    Board der Karte steht dabei, danach richtet sich, wer den Eintrag sieht."""
+
+    id: Kennung
+    karte: Kennung
+    board: Kennung
+    konto: Kennung
+    datum: str
+    von: str | None = None
+    bis: str | None = None
+    sekunden: int
+    herkunft: Herkunft
+    notiz: str | None = None
+    #: Timer-Sitzungen, die je Karte und Tag zu diesem einen Eintrag zusammengefasst sind
+    sitzungen: list[Sitzung] | None = None
+    #: an Mitternacht zerlegt: der andere Teil derselben Sitzung liegt an diesem Tag
+    zerlegt: str | None = None
+    gedeckelt: Deckel | None = None
+
+
+class Timer(Modell):
+    """Der eine Timer einer Person (Kennung gleich dem Konto): läuft seit `seit` oder ist angehalten."""
+
+    id: Kennung
+    konto: Kennung
+    karte: Kennung
+    board: Kennung
+    seit: str | None = None
+
+
+class Halbtagsregel(Modell):
+    """Halber Arbeitstag an einem festen Tag im Jahr (etwa Heiligabend)."""
+
+    monat: int
+    tag: int
+    name: str
+
+
+class Zeitkonto(Modell):
+    """Zeitkonto einer Person; eine neue Fassung gilt ab einem Tag, frühere Tage behalten ihr Soll. Tage zählen ab
+    Sonntag (0) bis Samstag (6) wie in der Oberfläche."""
+
+    id: Kennung
+    konto: Kennung
+    ab: str
+    wochenstunden: float
+    tage: list[int]
+    bundesland: str
+    urlaubsanspruch: float
+    resturlaub_vorjahr: float = 0
+    halbtage: list[Halbtagsregel] = Field(default_factory=list)
+
+
+AbwesenheitArt = Literal["urlaub", "krank", "frei", "feiertag", "fortbildung"]
+
+
+class Abwesenheit(Modell):
+    id: Kennung
+    konto: Kennung
+    von: str
+    bis: str
+    art: AbwesenheitArt
+    #: halber Tag: 0,5; leer: ganze Tage
+    anteil: float | None = None
+    notiz: str | None = None
+
+
+class Kartenname(Modell):
+    """Name einer Karte, auf die sichtbare Zeiteinträge zeigen, die selbst nicht im Stand ist (archiviert, Board
+    verlassen)."""
+
+    karte: Kennung
+    board: Kennung
+    schluessel: str
+    titel: str
 
 
 class Entfernt(Modell):

@@ -1,7 +1,8 @@
 <script lang="ts">
   // Einträge eines Tags im Einzelnen, als Leiste rechts über dem Stundenzettel: von, bis, Herkunft (Timer, nachgetragen,
-  // Korrektur, Serie), Dauer und Notiz direkt änderbar, Löschen mit Rückgängig. Die Spuren der Buchungsregeln stehen am
-  // Eintrag: zusammengefasste Sitzungen, Zerlegung an Mitternacht, der Deckel von 12 Stunden mit seiner Rückfrage.
+  // Korrektur, Serie, Termin), Dauer und Notiz direkt änderbar, Löschen mit Rückgängig. Die bestätigte Zeit eines Termins
+  // läuft von seinem Beginn bis zum Ende; ihre Dauer ändert sich hier nicht, löschen geht. Die Spuren der Buchungsregeln
+  // stehen am Eintrag: zusammengefasste Sitzungen, Zerlegung an Mitternacht, der Deckel von 12 Stunden mit seiner Rückfrage.
   import { HERKUNFT } from "../../anzeige";
   import { istAm, kartenName, sitzungAm, sollTag, timerVon } from "../../daten/abfragen";
   import { anhalten } from "../../daten/anwendung/timer.svelte";
@@ -15,6 +16,7 @@
   import { plusTage } from "../../regeln/tage";
   import DauerFeld from "../../teile/DauerFeld.svelte";
   import KartenName from "./KartenName.svelte";
+  import TerminName from "./TerminName.svelte";
 
   let { tag, schliessen, tagWechseln, nachtragen }: {
     tag: string; schliessen: () => void; tagWechseln: (tag: string) => void; nachtragen: (tag: string) => void;
@@ -25,6 +27,7 @@
     hand: { symbol: "fa-pen", titel: "Von Hand auf diesen Tag gebucht" },
     korrektur: { symbol: "fa-sliders", titel: "Differenz aus dem Setzen der Zeit (Zelle oder Ticketzeit)" },
     serie: { symbol: "fa-repeat", titel: "Aus einer Serie nachgetragen, mit der geplanten Dauer als Vorschlag" },
+    termin: { symbol: "fa-handshake", titel: "Bestätigte Zeit eines Termins, von Beginn bis Ende" },
   };
 
   const heute = $derived(uhr.heute);
@@ -42,6 +45,8 @@
   const amTag = (d: Deckel) => d.seit.slice(0, 10) <= tag && tag <= d.bis.slice(0, 10);
   const sitzung = $derived(stand.zeiteintraege.find((e) => e.konto === ICH && e.gedeckelt && amTag(e.gedeckelt))?.gedeckelt);
   const gedeckelt = $derived(sitzung ? stand.zeiteintraege.filter((e) => e.konto === ICH && e.gedeckelt?.seit === sitzung.seit) : []);
+  /** Karte der gedeckelten Sitzung (ein Timer läuft immer auf einer Karte) */
+  const deckelKarte = $derived(gedeckelt.find((e) => e.karte)?.karte);
   let ende = $state("");
 
   function istGedeckelt(e: Zeiteintrag): boolean {
@@ -91,7 +96,7 @@
     {#if sitzung && gedeckelt.length}
       <div class="hinweis warnung pw-zeiten-rueckfrage">
         <i class="fa-solid fa-hourglass-end"></i>
-        <div><b>Timer lief {dauer(sitzung.sekunden)} Stunden.</b> Dein Timer auf {kartenName(gedeckelt[0].karte).schluessel} lief
+        <div><b>Timer lief {dauer(sitzung.sekunden)} Stunden.</b> Dein Timer{deckelKarte ? ` auf ${kartenName(deckelKarte).schluessel}` : ""} lief
           von {datum(sitzung.seit, true)} {uhrzeit(sitzung.seit)} bis {datum(sitzung.bis, true)} {uhrzeit(sitzung.bis)}.
           Gebucht sind die ersten 12 Stunden{gedeckelt.length > 1 ? ", an Mitternacht zerlegt" : ""}:
           {gedeckelt.map((e) => `${datum(e.datum, true)} ${dauer(e.sekunden)}`).join(" und ")}. Wann hast du aufgehört?</div>
@@ -109,12 +114,16 @@
     <div class="pw-zeiten-eintraege">
       {#each liste as e (e.id)}
         <div class="pw-zeiten-eintrag" class:gedeckelt={istGedeckelt(e)}>
-          <span class="was"><KartenName id={e.karte} /></span>
+          <span class="was">{#if e.termin}<TerminName id={e.termin} />{:else if e.karte}<KartenName id={e.karte} />{/if}</span>
           <button class="knopf ohne symbol klein" title="Eintrag löschen (Rückgängig möglich)" onclick={() => loeschen(e.id)}><i class="fa-solid fa-xmark"></i></button>
           <div class="mitte">
             <span class="uhr zahl">{e.von ? `${e.von} bis ${e.bis}` : "ohne Uhrzeit"}</span>
             <span class="zustand" title={SYMBOL[e.herkunft].titel}><i class="fa-solid {SYMBOL[e.herkunft].symbol}"></i>{HERKUNFT[e.herkunft]}</span>
-            <DauerFeld sek={e.sekunden} mitSekunden klasse="gross" titel="Dauer ändern (H:MM:SS, H:MM oder 1,5)" leerErlaubt={false} onwert={(sek) => dauerAendern(e.id, sek)} />
+            {#if e.termin}
+              <span class="dauer zahl" title="Bestätigte Zeit des Termins von Beginn bis Ende; ändern geht nicht, löschen schon">{dauer(e.sekunden)}</span>
+            {:else}
+              <DauerFeld sek={e.sekunden} mitSekunden klasse="gross" titel="Dauer ändern (H:MM:SS, H:MM oder 1,5)" leerErlaubt={false} onwert={(sek) => dauerAendern(e.id, sek)} />
+            {/if}
           </div>
           <div class="unten">
             <input class="eingabe notiz" value={e.notiz ?? ""} placeholder="Notiz" title="Notiz zum Eintrag, steht im Stundennachweis"

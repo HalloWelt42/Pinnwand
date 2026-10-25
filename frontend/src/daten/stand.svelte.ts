@@ -7,6 +7,7 @@ import type {
   Abwesenheit, Bericht, Board, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Kartenname, Konto, Laufnummer, Mitglied, ModulKennung, Ordner, PersonEinstellungen,
   Serie, Termin, Timer, Verbindung, Vorlage, Zeiteintrag, Zeitkonto,
 } from "../modell";
+import { PINNWAND_KONTO } from "./konstanten";
 import { ICH, ichSetzen } from "./ich";
 
 /** Meldung unten: was eben geschah, mit Rückgängig, solange sie steht */
@@ -66,6 +67,8 @@ interface Serverstand {
   zeiteintraege: Zeiteintrag[];
   zeitkonten: Zeitkonto[];
   abwesenheiten: Abwesenheit[];
+  serien: Serie[];
+  termine: Termin[];
   hinweise: Hinweis[];
   vorlagen: Vorlage[];
   papierkorb: Geloescht[];
@@ -98,7 +101,7 @@ export const frisch = $state<Record<string, string>>({});
 const TEILE = {
   konten: "konten", boards: "boards", karten: "karten", gruppen: "gruppen", laufnummern: "laufnummern", ordner: "ordner",
   timer: "timer", zeiteintraege: "zeiteintraege", zeitkonten: "zeitkonten", abwesenheiten: "abwesenheiten",
-  hinweise: "hinweise", vorlagen: "vorlagen", papierkorb: "papierkorb", entfernt: "entfernt",
+  serien: "serien", termine: "termine", hinweise: "hinweise", vorlagen: "vorlagen", papierkorb: "papierkorb", entfernt: "entfernt",
 } as const satisfies Record<string, keyof Zustand>;
 
 type Zeile = { id: string; fassung?: number };
@@ -109,7 +112,7 @@ export async function laden(): Promise<void> {
   Object.assign(stand, {
     moduleDa: s.moduleDa, konten: s.konten, boards: s.boards, karten: s.karten, gruppen: s.gruppen, laufnummern: s.laufnummern, ordner: s.ordner,
     timer: s.timer, zeiteintraege: s.zeiteintraege, zeitkonten: s.zeitkonten, abwesenheiten: s.abwesenheiten,
-    hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, kartennamen: s.kartennamen,
+    serien: s.serien, termine: s.termine, hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, kartennamen: s.kartennamen,
     einstellungen: s.einstellungen, geladen: true,
   });
 }
@@ -256,8 +259,10 @@ export function kartenDerSpalte(spalte: string): Karte[] {
   return stand.karten.filter((k) => k.spalte === spalte).sort((a, b) => a.reihe - b.reihe);
 }
 
-/** Konto einer Person; eine unbekannte Kennung ergibt einen Platzhalter statt einer fremden Person */
+/** Konto einer Person, auch der Pinnwand selbst (Vorbuchung der Serien); eine unbekannte Kennung ergibt einen Platzhalter
+ *  statt einer fremden Person */
 export function konto(id: string): Konto {
+  if (id === PINNWAND_KONTO.id) return PINNWAND_KONTO;
   return stand.konten.find((k) => k.id === id) ?? { id, name: "Unbekannte Person", kuerzel: "?", farbe: "stahl", kellerwolke: "" };
 }
 

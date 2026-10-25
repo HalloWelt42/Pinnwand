@@ -25,11 +25,6 @@ export function melden(text: string): void {
   stand.meldung = { text };
 }
 
-/** Ein Modul, das der Server (noch) nicht anbietet, ist in keinem Board eingeschaltet; seine Wege sagen das nur */
-export function nichtEingeschaltet(modul: string): void {
-  melden(`${modul} ist in dieser Pinnwand nicht eingeschaltet`);
-}
-
 export function meldungSchliessen(): void {
   stand.meldung = null;
 }
@@ -37,6 +32,11 @@ export function meldungSchliessen(): void {
 /** POST an einen Weg der Pinnwand (unter /api/v1) */
 export function senden(pfad: string, daten: unknown = {}): Promise<Antwort> {
   return hole<Antwort>(pfad, { method: "POST", ...json(daten) });
+}
+
+/** PATCH an einen Weg der Pinnwand (unter /api/v1): nur die genannten Teile ändern, null leert einen Teil */
+export function teilweiseAn(pfad: string, daten: Record<string, unknown>): Promise<Antwort> {
+  return hole<Antwort>(pfad, { method: "PATCH", ...json(daten) });
 }
 
 /** DELETE an einen Weg der Pinnwand (unter /api/v1), ohne Inhalt */

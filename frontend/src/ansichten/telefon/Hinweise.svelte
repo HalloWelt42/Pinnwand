@@ -1,7 +1,7 @@
 <script lang="ts">
   // Hinweise am Telefon: kurz, neueste zuerst, neue mit Wort und Rahmen markiert; ein Tippen springt zur Karte (ohne
-  // geladene Karte zu ihrem Board) und gilt als gelesen, am Konto und damit auf allen Geräten. Ein Hinweis aus einem
-  // Board, das du nicht mehr siehst, hat kein Ziel; "Alle gelesen" erfasst auch ihn.
+  // geladene Karte zu ihrem Board, ein Termin nach Heute, wo die Termine stehen) und gilt als gelesen, am Konto und damit
+  // auf allen Geräten. Ein Hinweis aus einem Board, das du nicht mehr siehst, hat kein Ziel; "Alle gelesen" erfasst auch ihn.
   import { HINWEIS_ARTEN } from "../../anzeige";
   import { kartenNummer, ungelesen } from "../../daten/abfragen";
   import { alleGelesen, gelesen } from "../../daten/anwendung/hinweise.svelte";
@@ -21,7 +21,8 @@
     const b = stand.boards.find((x) => x.id === h.board);
     if (!b) return undefined;
     const k = h.karte ? karte(h.karte) : undefined;
-    return k ? telPfad(boardPfad(b.kuerzel, kartenNummer(k)), { von: "hinweise" }) : telPfad(boardPfad(b.kuerzel));
+    if (k) return telPfad(boardPfad(b.kuerzel, kartenNummer(k)), { von: "hinweise" });
+    return h.art === "termin" ? telPfad("/heute") : telPfad(boardPfad(b.kuerzel));
   }
 </script>
 

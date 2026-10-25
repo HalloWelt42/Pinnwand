@@ -1,6 +1,6 @@
 <script lang="ts">
-  // Hinweise: was dich in deinen Boards betrifft (zugewiesen, fällig, erwähnt, Kommentar, verschoben), neueste zuerst und
-  // nach Tagen. Ungelesene stehen hervorgehoben mit dem Wort "Neu"; ein Klick springt zur Karte und gilt als gelesen. Der
+  // Hinweise: was dich in deinen Boards betrifft (zugewiesen, fällig, erwähnt, Termin, Kommentar, verschoben), neueste
+  // zuerst und nach Tagen. Ungelesene stehen hervorgehoben mit dem Wort "Neu"; ein Klick springt zur Karte und gilt als gelesen. Der
   // Gelesen-Stand gehört dem Konto, nicht dem Browser. Welche Arten kommen, steht in den Einstellungen.
   import { kartenNummer, ungelesen as ungeleseneZahl } from "../../daten/abfragen";
   import { alleGelesen, artenDa, gelesen } from "../../daten/anwendung/hinweise.svelte";
@@ -10,6 +10,7 @@
   import Person from "../../board/Person.svelte";
   import { HINWEIS_ARTEN } from "../../anzeige";
   import type { Hinweis, HinweisArt } from "../../modell";
+  import { modulAn } from "../../regeln/board";
   import { tageZwischen } from "../../regeln/tage";
   import { boardPfad } from "../../weg.svelte";
   import BoardMarke from "./BoardMarke.svelte";
@@ -35,12 +36,15 @@
   /** Board eines Hinweises, solange du es siehst */
   const boardVon = (h: Hinweis) => stand.boards.find((b) => b.id === h.board);
 
-  /** Ziel eines Hinweises: die Karte über ihren Pfad, sonst ihr Board; keines, wenn du das Board nicht mehr siehst */
+  /** Ziel eines Hinweises: die Karte über ihren Pfad, ein Termin in Serien und Termine (solange sein Board das Modul an
+   *  hat), sonst das Board; keines, wenn du das Board nicht mehr siehst */
   function ziel(h: Hinweis): { pfad: string; name: string } | undefined {
     const b = boardVon(h);
     if (!b) return undefined;
     const k = h.karte ? karte(h.karte) : undefined;
-    return k ? { pfad: boardPfad(b.kuerzel, kartenNummer(k)), name: k.schluessel } : { pfad: boardPfad(b.kuerzel), name: "Board" };
+    if (k) return { pfad: boardPfad(b.kuerzel, kartenNummer(k)), name: k.schluessel };
+    if (h.art === "termin" && modulAn(b, "serien", stand.moduleDa)) return { pfad: "/serien", name: "Termin" };
+    return { pfad: boardPfad(b.kuerzel), name: "Board" };
   }
 </script>
 

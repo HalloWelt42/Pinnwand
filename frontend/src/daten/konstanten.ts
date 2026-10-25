@@ -1,7 +1,11 @@
 // Feste Angaben der Oberfläche, gleich denen des Servers (backend/app/regeln/board.py, anwendung/rahmen.py): Namen und
-// Erklärungen der Rechte je Modul.
+// Erklärungen der Rechte je Modul, das Konto der Pinnwand selbst.
 
-import type { Recht } from "../modell";
+import type { Konto, Recht } from "../modell";
+
+/** Die Pinnwand selbst als Konto: so schreibt die tägliche Vorbuchung der Serien (Begleiter im Server) in den Verlauf
+ *  und in Ereignisse. Es steht in keinem Board und nicht unter den Konten des Stands. */
+export const PINNWAND_KONTO: Konto = { id: "pinnwand", name: "Pinnwand", kuerzel: "PW", farbe: "stahl", kellerwolke: "" };
 
 export const RECHTE: Recht[] = [
   { id: "board.verwalten", modul: "kern", name: "Board verwalten", erklaerung: "Name, Spalten, Labels, Felder, Module und Einstellungen ändern" },

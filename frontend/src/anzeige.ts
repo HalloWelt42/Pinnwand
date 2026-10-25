@@ -20,7 +20,7 @@ export const ZEITFENSTER_VORGABE: Zeitfenster = "heute";
 export const PRIORITAETEN: [Prioritaet, string][] = [["keine", "Keine"], ["niedrig", "Niedrig"], ["mittel", "Mittel"], ["hoch", "Hoch"],
   ["dringend", "Dringend"]];
 
-export const HERKUNFT: Record<Herkunft, string> = { timer: "Timer", hand: "nachgetragen", korrektur: "Korrektur", serie: "Serie" };
+export const HERKUNFT: Record<Herkunft, string> = { timer: "Timer", hand: "nachgetragen", korrektur: "Korrektur", serie: "Serie", termin: "Termin" };
 
 export const HINWEIS_WEGE: { id: HinweisWeg; name: string; symbol: string; text: string }[] = [
   { id: "pinnwand", name: "In der Pinnwand", symbol: "fa-bell", text: "Glocke und Seite Hinweise; gelesen gilt auf allen Geräten" },

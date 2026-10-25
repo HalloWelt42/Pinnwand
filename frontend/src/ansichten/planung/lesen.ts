@@ -10,6 +10,7 @@ import { ICH } from "../../daten/ich";
 import { konto, mitKonto, stand } from "../../daten/stand.svelte";
 import type { Abwesenheit, Board, Karte, Kennung, Serie, Termin } from "../../modell";
 import { abwesenheitAm, ARTEN, artName, fassungAm } from "../../regeln/arbeitszeit";
+import { modulAn } from "../../regeln/board";
 import { feiertag } from "../../regeln/feiertage";
 import { vorkommen, type Vorkommen } from "../../regeln/serien";
 import { boardPfad } from "../../weg.svelte";
@@ -18,7 +19,7 @@ export { serienUmfeld };
 
 /** Boards, in denen du Mitglied bist und das Modul Serien und Termine an ist */
 export function boardsMitSerien(): Board[] {
-  return stand.boards.filter((b) => b.module.serien && b.mitglieder.some((m) => m.konto === ICH));
+  return stand.boards.filter((b) => modulAn(b, "serien", stand.moduleDa) && b.mitglieder.some((m) => m.konto === ICH));
 }
 
 export function boardVon(id: Kennung): Board | undefined {

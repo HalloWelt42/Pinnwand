@@ -12,9 +12,10 @@ export type NeueAbwesenheit = Omit<Abwesenheit, "id" | "konto">;
 /** Was die Person für eine Fassung ihres Zeitkontos wählt; Kennung und Konto vergibt der Server */
 export type NeueFassung = Omit<Zeitkonto, "id" | "konto">;
 
-export function eintragen(a: NeueAbwesenheit): void {
+/** Eine Abwesenheit eintragen. Ergebnis: ob sie eingetragen ist */
+export async function eintragen(a: NeueAbwesenheit): Promise<boolean> {
   const daten = { von: a.von, bis: a.bis, art: a.art, ...(a.anteil ? { anteil: a.anteil } : {}), ...(a.notiz?.trim() ? { notiz: a.notiz.trim() } : {}) };
-  void aendern(() => senden("/abwesenheiten", daten));
+  return (await aendern(() => senden("/abwesenheiten", daten))) !== null;
 }
 
 /** Eine oder mehrere Abwesenheiten entfernen, mit einem Rückgängig für alle */

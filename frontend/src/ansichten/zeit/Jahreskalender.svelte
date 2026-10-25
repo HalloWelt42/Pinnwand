@@ -1,0 +1,214 @@
+<script lang="ts">
+  // Jahreskalender deines Zeitkontos: zwölf Monate mit Feiertagen deines Bundeslands, Urlaub, halben Tagen, krank, frei,
+  // Fortbildung und Wochenenden; jeder Monat nennt seine Einträge in Worten. Eingeben per Klick auf einen Tag oder Ziehen
+  // über mehrere Tage (auch über Monatsgrenzen); daneben steht die Auswahl mit ihrer Wirkung und wird dort eingetragen.
+  // Arbeitszeit zeigt den Kalender nur mit Zeitkonto.
+  import { sollTag, urlaub } from "../../daten/abfragen";
+  import { eintragen as abwesenheitEintragen, entfernen } from "../../daten/anwendung/abwesenheiten.svelte";
+  import { dauer, spanne, tageZahl } from "../../daten/format";
+  import { ICH } from "../../daten/ich";
+  import { stand } from "../../daten/stand.svelte";
+  import { uhr } from "../../daten/uhr.svelte";
+  import type { Abwesenheit, AbwesenheitArt } from "../../modell";
+  import { ARTEN, artName, fassungAm, wirkung } from "../../regeln/arbeitszeit";
+  import { feiertage } from "../../regeln/feiertage";
+  import { kalenderwoche, MONATE, tageImMonat, tageVon, TAGE_KURZ, WOCHE_AB_MONTAG, wochentag } from "../../regeln/tage";
+
+  let jahr = $state(Number(uhr.heute.slice(0, 4)));
+  let auswahl = $state<{ von: string; bis: string } | null>(null);
+  let ziehen = $state<string | null>(null);
+  let art = $state<AbwesenheitArt>("urlaub");
+  let halb = $state(false);
+  let notiz = $state("");
+
+  const WT = WOCHE_AB_MONTAG.map((t) => TAGE_KURZ[t]);
+  const WAHL: AbwesenheitArt[] = ["urlaub", "krank", "frei", "fortbildung"];
+  const LEGENDE: AbwesenheitArt[] = ["urlaub", "krank", "frei", "fortbildung"];
+  /** die Fassung des Zeitkontos, die im gezeigten Jahr gilt (für Bundesland und halbe Tage) */
+  const k = $derived(fassungAm(stand.zeitkonten, ICH, `${jahr}-07-01`)!);
+
+  interface Zelle { tag: string | null }
+  function wochen(monat: number): Zelle[][] {
+    const erster = `${jahr}-${String(monat).padStart(2, "0")}-01`;
+    const versatz = (wochentag(erster) + 6) % 7;
+    const zellen: Zelle[] = Array.from({ length: versatz }, () => ({ tag: null }));
+    for (let t = 1; t <= tageImMonat(jahr, monat); t++) zellen.push({ tag: `${jahr}-${String(monat).padStart(2, "0")}-${String(t).padStart(2, "0")}` });
+    while (zellen.length < 42) zellen.push({ tag: null });
+    const out: Zelle[][] = [];
+    for (let w = 0; w < 6; w++) out.push(zellen.slice(w * 7, w * 7 + 7));
+    return out;
+  }
+
+  function klasse(t: string): string {
+    const s = sollTag(ICH, t);
+    const teile: string[] = [];
+    if (!s || s.grund === "wochenende" || s.grund === "arbeitsfrei") teile.push("we");
+    if (s?.feiertag) teile.push("ft");
+    if (s?.abwesenheit) teile.push(`art-${s.abwesenheit.art}`, s.abwesenheit.anteil === 0.5 ? "halbtag" : "");
+    if (s?.regel) teile.push("halb");
+    if (t === uhr.heute) teile.push("heute");
+    if (auswahl && t >= auswahl.von && t <= auswahl.bis) teile.push("gewaehlt");
+    return teile.filter(Boolean).join(" ");
+  }
+  function titel(t: string): string {
+    const s = sollTag(ICH, t);
+    if (!s) return spanne(t, t);
+    const was = s.feiertag ?? (s.abwesenheit ? artName(s.abwesenheit) : s.regel ? `${s.regel}, halber Tag` : s.grund === "wochenende" ? "Wochenende" : s.grund === "arbeitsfrei" ? "kein Arbeitstag" : "Arbeitstag");
+    return `${spanne(t, t)}: ${was}, Soll ${dauer(s.sollSek)}`;
+  }
+
+  /** Einträge eines Monats in Worten: Feiertage, Abwesenheiten (auf den Monat geschnitten), halbe Tage */
+  function eintraege(monat: number): { tag: number; text: string; klasse: string }[] {
+    const vonM = `${jahr}-${String(monat).padStart(2, "0")}-01`, bisM = `${jahr}-${String(monat).padStart(2, "0")}-${tageImMonat(jahr, monat)}`;
+    const out: { tag: number; text: string; klasse: string }[] = [];
+    for (const [t, name] of feiertage(jahr, k.bundesland)) if (t >= vonM && t <= bisM) out.push({ tag: Number(t.slice(8)), text: `${Number(t.slice(8))}. ${name}`, klasse: "ft" });
+    for (const a of stand.abwesenheiten.filter((x) => x.konto === ICH && x.von <= bisM && x.bis >= vonM)) {
+      const v = a.von < vonM ? vonM : a.von, b = a.bis > bisM ? bisM : a.bis;
+      const tg = v === b ? `${Number(v.slice(8))}.` : `${Number(v.slice(8))}. bis ${Number(b.slice(8))}.`;
+      out.push({ tag: Number(v.slice(8)), text: `${tg} ${artName(a)}${a.notiz ? `, ${a.notiz}` : ""}`, klasse: `art-${a.art}` });
+    }
+    for (const r of k.halbtage) if (r.monat === monat) out.push({ tag: r.tag, text: `${r.tag}. ${r.name}, halber Tag`, klasse: "halb" });
+    return out.sort((a, b) => a.tag - b.tag);
+  }
+
+  function runter(t: string, e: PointerEvent): void {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    ziehen = t;
+    auswahl = { von: t, bis: t };
+  }
+  function ueber(t: string): void {
+    if (ziehen) auswahl = ziehen <= t ? { von: ziehen, bis: t } : { von: t, bis: ziehen };
+  }
+  $effect(() => {
+    const los = () => (ziehen = null);
+    addEventListener("pointerup", los);
+    return () => removeEventListener("pointerup", los);
+  });
+
+  /** die Auswahl als geplante Abwesenheit, nur zur Vorschau der Wirkung */
+  const neu = $derived<Abwesenheit | null>(auswahl ? { id: "vorschau", konto: ICH, von: auswahl.von, bis: auswahl.bis, art,
+    anteil: halb ? 0.5 : undefined, notiz: notiz || undefined } : null);
+  const kNeu = $derived(auswahl ? fassungAm(stand.zeitkonten, ICH, auswahl.von)! : k);
+  const w = $derived(neu ? wirkung(kNeu, neu) : null);
+  const vorhanden = $derived(auswahl ? stand.abwesenheiten.filter((a) => a.konto === ICH && a.von <= auswahl!.bis && a.bis >= auswahl!.von) : []);
+  const u = $derived(urlaub(ICH, jahr)!);
+  /** Urlaubstage, die die Auswahl neu belegt (vorhandener Urlaub im Bereich wird ersetzt) */
+  const ersetzt = $derived(vorhanden.reduce((s, a) => s + wirkung(kNeu, a).urlaubstage, 0));
+
+  const jahresTage = $derived.by(() => {
+    const zaehl: Record<string, number> = {};
+    for (const t of tageVon(`${jahr}-01-01`, `${jahr}-12-31`)) {
+      const s = sollTag(ICH, t);
+      if (!s) continue;
+      if (s.abwesenheit && s.basisSek > 0) zaehl[s.abwesenheit.art] = (zaehl[s.abwesenheit.art] ?? 0) + (s.abwesenheit.anteil ?? 1) * (s.regel ? 0.5 : 1);
+      if (s.grund === "feiertag") zaehl.feiertag = (zaehl.feiertag ?? 0) + 1;
+    }
+    return zaehl;
+  });
+
+  /** Eintragen; die Auswahl geht erst, wenn der Server eingetragen hat */
+  async function eintragen(): Promise<void> {
+    if (!neu) return;
+    if (await abwesenheitEintragen({ von: neu.von, bis: neu.bis, art: neu.art, anteil: neu.anteil, notiz: neu.notiz })) {
+      auswahl = null; notiz = ""; halb = false;
+    }
+  }
+  function leeren(): void {
+    entfernen(vorhanden.map((a) => a.id));
+    auswahl = null;
+  }
+</script>
+
+<div class="spalten pw-arbeitszeit-spalten">
+  <div class="rollfeld">
+    <div class="pw-arbeitszeit-jahr">
+      <button class="knopf symbol klein" title="Voriges Jahr" onclick={() => (jahr -= 1)}><i class="fa-solid fa-chevron-left"></i></button>
+      <b class="zahl">{jahr}</b>
+      <button class="knopf symbol klein" title="Nächstes Jahr" onclick={() => (jahr += 1)}><i class="fa-solid fa-chevron-right"></i></button>
+      <span class="schwach klein">Feiertage {k.bundesland}</span>
+    </div>
+    <div class="pw-arbeitszeit-monate" class:zieht={!!ziehen}>
+      {#each MONATE as name, i (name)}
+        <section class="pw-arbeitszeit-monat" aria-label="{name} {jahr}">
+          <h3>{name}</h3>
+          <div class="gitter" role="grid">
+            <span class="kw">KW</span>{#each WT as t (t)}<span class="wt">{t}</span>{/each}
+            {#each wochen(i + 1) as reihe, r (r)}
+              {@const erster = reihe.find((z) => z.tag)?.tag}
+              <span class="kw">{erster ? kalenderwoche(erster) : ""}</span>
+              {#each reihe as z, c (c)}
+                {#if z.tag}
+                  {@const tg = z.tag}
+                  <button class="tag {klasse(tg)}" title={titel(tg)} onpointerdown={(e) => runter(tg, e)} onpointerenter={() => ueber(tg)}>{Number(tg.slice(8))}</button>
+                {:else}<span class="tag leer"></span>{/if}
+              {/each}
+            {/each}
+          </div>
+          <ul class="worte">
+            {#each eintraege(i + 1) as e, j (j)}<li class={e.klasse}>{e.text}</li>{/each}
+          </ul>
+        </section>
+      {/each}
+    </div>
+  </div>
+
+  <div class="rollfeld pw-arbeitszeit-seite">
+    {#if auswahl && neu && w}
+      <section class="bereich pw-arbeitszeit-auswahl pw-arbeitszeit-vorn">
+        <div class="etikett">Auswahl</div>
+        <h2>{spanne(auswahl.von, auswahl.bis)}</h2>
+        <p class="schwach klein">{tageZahl(w.arbeitstage)} {w.arbeitstage === 1 ? "Arbeitstag" : "Arbeitstage"}, {tageVon(auswahl.von, auswahl.bis).length} Kalendertage</p>
+        <div class="stufen" role="group" aria-label="Art">
+          {#each WAHL as a (a)}<button class:an={art === a} title={ARTEN[a].wirkung} onclick={() => (art = a)}><i class="fa-solid {ARTEN[a].symbol}"></i> {ARTEN[a].name}</button>{/each}
+        </div>
+        {#if art !== "frei"}
+          <label class="pw-arbeitszeit-schalter"><button class="schalter" class:an={halb} aria-pressed={halb} aria-label="Halbe Tage" onclick={() => (halb = !halb)}></button>
+            Halbe Tage <span class="schwach klein">jeder Tag zählt halb</span></label>
+        {/if}
+        <input class="eingabe" bind:value={notiz} placeholder="Notiz, etwa Messe oder Sommer" />
+        <div class="pw-arbeitszeit-wirkung">
+          <div class="zeile-wert"><span>Soll</span><b class="zahl">-{dauer(w.sollSek)}</b></div>
+          {#if ARTEN[neu.art].urlaub > 0}
+            <div class="zeile-wert"><span>Urlaubstage</span><b class="zahl">{tageZahl(w.urlaubstage)}</b></div>
+            <div class="zeile-wert"><span>Frei verplanbar danach</span><b class="zahl" class:minus={u.rest + ersetzt - w.urlaubstage < 0}>{tageZahl(u.rest + ersetzt - w.urlaubstage)} von {tageZahl(u.rest)}</b></div>
+          {/if}
+          <p class="schwach klein">{ARTEN[neu.art].wirkung}{neu.anteil ? ", je Tag zur Hälfte" : ""}.{vorhanden.length ? ` Ersetzt ${vorhanden.map((a) => artName(a)).join(", ")} in diesem Zeitraum.` : ""}</p>
+        </div>
+        <div class="knoepfe">
+          <button class="knopf haupt" disabled={w.arbeitstage === 0} onclick={eintragen}><i class="fa-solid fa-check"></i>Eintragen</button>
+          {#if vorhanden.length}<button class="knopf gefahr" onclick={leeren} title="Abwesenheiten in der Auswahl entfernen (Rückgängig möglich)">Leeren</button>{/if}
+          <button class="knopf ohne" onclick={() => (auswahl = null)}>Aufheben</button>
+        </div>
+      </section>
+    {:else}
+      <div class="hinweis pw-arbeitszeit-vorn"><i class="fa-solid fa-hand-pointer"></i><div>Einen Tag anklicken oder mit gedrückter Maustaste über mehrere Tage ziehen; die Auswahl erscheint dann hier zum Eintragen.</div></div>
+    {/if}
+
+    <section class="bereich">
+      <div class="etikett">Legende</div>
+      <ul class="pw-arbeitszeit-legende">
+        <li><span class="muster"></span>Arbeitstag</li>
+        <li><span class="muster we"></span>Wochenende, frei</li>
+        <li><span class="muster ft"></span>Feiertag</li>
+        <li><span class="muster halb"></span>Halber Arbeitstag</li>
+        {#each LEGENDE as a (a)}<li><span class="muster art-{a}"></span>{ARTEN[a].name}</li>{/each}
+        <li><span class="muster art-urlaub halbtag"></span>{artName({ art: "urlaub", anteil: 0.5 })}</li>
+        <li><span class="muster heute"></span>Heute</li>
+      </ul>
+    </section>
+
+    <section class="bereich">
+      <div class="etikett">{jahr} in Tagen</div>
+      <div class="pw-arbeitszeit-wirkung">
+        <div class="zeile-wert"><span>Urlaub genommen</span><b class="zahl">{tageZahl(u.genommen)}</b></div>
+        <div class="zeile-wert"><span>Urlaub geplant</span><b class="zahl">{tageZahl(u.geplant)}</b></div>
+        <div class="zeile-wert"><span>Frei verplanbar</span><b class="zahl">{tageZahl(u.rest)}</b></div>
+        <div class="zeile-wert"><span>Krank</span><b class="zahl">{tageZahl(jahresTage.krank ?? 0)}</b></div>
+        <div class="zeile-wert"><span>Fortbildung</span><b class="zahl">{tageZahl(jahresTage.fortbildung ?? 0)}</b></div>
+        <div class="zeile-wert"><span>{ARTEN.frei.name}</span><b class="zahl">{tageZahl(jahresTage.frei ?? 0)}</b></div>
+        <div class="zeile-wert"><span>Feiertage an Arbeitstagen</span><b class="zahl">{jahresTage.feiertag ?? 0}</b></div>
+      </div>
+    </section>
+  </div>
+</div>

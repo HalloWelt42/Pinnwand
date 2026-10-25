@@ -4,7 +4,6 @@ der der Entwicklungsinstanz), KELLERWOLKE_KENNUNG und KELLERWOLKE_PASSWORT des K
 wird übersprungen. Am Ende: Angelegtes in den Papierkorb (Dateien vor Ordnern), Aktionen des Testzugangs zurückziehen,
 Sitzung beenden. Tests gehen nur Wege, die auch die Oberfläche geht (Lehre 19)."""
 
-import asyncio
 import uuid
 from pathlib import Path
 
@@ -37,13 +36,9 @@ async def test_einrichten_anmelden_auftrag_ablage(tmp_path: Path):
                 assert (await c.post("/api/v1/adresse", headers=h, json={"adresse": "http://t"})).status_code == 200
                 verbindungen = {v["name"]: v for v in (await c.get("/api/v1/verbindungen", headers=h)).json()}
                 assert verbindungen["Kellerwolke"]["ok"]
-                a = (await c.post("/api/v1/probe", headers=h, json={"schritte": 2, "pause_s": 0})).json()
-                for _ in range(300):
-                    if (await c.get(f"/api/v1/auftraege/{a['id']}", headers=h)).json()["zustand"] == "fertig":
-                        break
-                    await asyncio.sleep(0.01)
-                else:
-                    pytest.fail("Probeauftrag wurde nicht fertig")
+                # der erste Stand legt das Konto der Pinnwand an
+                stand = (await c.get("/api/v1/stand", headers=h)).json()
+                assert stand["konten"][0]["kellerwolke"] == W["KELLERWOLKE_KENNUNG"]
                 # Ablage im eigenen Zweig: Ordner mit Datei anlegen, am Ende wieder weg
                 kw = geruest.kellerwolke
                 zweig = (await kw.ich()).zweig

@@ -11,21 +11,25 @@ from fastapi import FastAPI
 
 from appkern.app import Geruest
 
-from .api import router
-from .arten import arten
+from .anwendung import Dienste, Start
 from .einstellungen import AppEinstellungen
 from .fassung import FASSUNG, WURZEL
+from .schnittstelle.rest import router
+from .schnittstelle.zugang import GeruestZugang
+from .uhr import Uhr
 
 
-def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None) -> FastAPI:
-    """`transport` nur für Tests (Kellerwolke und Leitstelle nachgestellt)."""
+def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None, uhr: Uhr | None = None) -> FastAPI:
+    """`transport` und `uhr` nur für Tests (Kellerwolke und Leitstelle nachgestellt, feste Uhr)."""
     geruest = Geruest(name="Pinnwand", kennung="pinnwand", rolle="plant Arbeit auf Boards", symbol="fa-thumbtack", farbe="#2f8f86", fassung=FASSUNG,
                       daten=daten, einstellungen=AppEinstellungen, oberflaeche=WURZEL / "frontend" / "dist",
                       transport=transport)
-    geruest.auftraege.anmelden(*arten(geruest))
+    dienste = Dienste.bauen(geruest.db, GeruestZugang(geruest), uhr)
+    geruest.begleiter_anmelden(Start(geruest.db))
     app = geruest.fastapi()
     app.state.geruest = geruest
-    app.include_router(router(geruest))
+    app.state.dienste = dienste
+    app.include_router(router(geruest, dienste))
     geruest.oberflaeche_ausliefern(app)
     return app
 

@@ -1,14 +1,15 @@
 <script lang="ts">
   // Ein Termin in Heute (Modul Serien und Termine): Zeit, Titel, Board, Ort, Teilnehmer, deine Zusage.
+  import { zusagen } from "../../beispiel/anwendung/termine.svelte";
+  import { ICH } from "../../beispiel/daten";
   import { datum } from "../../beispiel/format";
   import { board } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
   import type { Termin } from "../../modell";
   import BoardMarke from "./BoardMarke.svelte";
 
-  let { termin, mitTag = false, zugesagt, gesperrt = false, zusagen }: {
-    termin: Termin; mitTag?: boolean; zugesagt: boolean; gesperrt?: boolean; zusagen: () => void;
-  } = $props();
+  let { termin, mitTag = false, gesperrt = false }: { termin: Termin; mitTag?: boolean; gesperrt?: boolean } = $props();
+  const zugesagt = $derived(termin.zugesagt.includes(ICH));
 </script>
 
 <div class="pw-uebersicht-termin">
@@ -24,6 +25,6 @@
   {#if zugesagt}
     <span class="zustand fertig"><i class="fa-solid fa-check"></i>zugesagt</span>
   {:else}
-    <button class="knopf klein" disabled={gesperrt} onclick={zusagen}>Zusagen</button>
+    <button class="knopf klein" disabled={gesperrt} onclick={() => zusagen(termin.id)}>Zusagen</button>
   {/if}
 </div>

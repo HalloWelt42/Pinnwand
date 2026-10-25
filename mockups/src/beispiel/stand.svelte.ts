@@ -21,6 +21,28 @@ export interface Meldung {
   rueckgaengig?: () => void;
 }
 
+/** Alle Teile des Zustands (Daten, Verbindung, Meldung) */
+export interface Ausgangsstand {
+  konten: Konto[];
+  boards: Board[];
+  karten: Karte[];
+  gruppen: Gruppe[];
+  reihen: Record<string, string[]>;
+  ordner: Ordner[];
+  timer: Timer[];
+  zeiteintraege: Zeiteintrag[];
+  zeitkonten: Zeitkonto[];
+  abwesenheiten: Abwesenheit[];
+  serien: Serie[];
+  termine: Termin[];
+  hinweise: Hinweis[];
+  einstellungen: PersonEinstellungen;
+  papierkorb: Geloescht[];
+  entfernt: Entfernt[];
+  verbindung: Verbindung;
+  meldung: Meldung | null;
+}
+
 const ALLE_KARTEN: Karte[] = [...KARTEN, ...KARTEN_ZEIT, ...KARTEN_PLANUNG, ...KARTEN_ARCHIV];
 
 function anfangsreihen(): Record<string, string[]> {
@@ -30,7 +52,7 @@ function anfangsreihen(): Record<string, string[]> {
 }
 
 /** Der Ausgangsstand aus den Beispieldaten, frisch kopiert */
-function ausgangsstand() {
+function ausgangsstand(): Ausgangsstand {
   return {
     /** Personen mit Konto in der Pinnwand (aus der Kellerwolke; neue kommen mit der ersten Einladung dazu) */
     konten: structuredClone(KONTEN) as Konto[],
@@ -60,9 +82,13 @@ function ausgangsstand() {
 export const stand = $state(ausgangsstand());
 
 /** Zurück zum Ausgangsstand: jeder vorgeführte Zustand (?entwurf=...) beginnt hier und richtet sich danach über die
- *  Anwendungsfälle ein, damit nichts aus einem anderen Entwurf hineinwirkt und die ganze Seite zusammenpasst */
-export function zuruecksetzen(): void {
-  Object.assign(stand, ausgangsstand());
+ *  Anwendungsfälle ein, damit nichts aus einem anderen Entwurf hineinwirkt und die ganze Seite zusammenpasst. Zeigt ein
+ *  Entwurf einen Stand, den kein Anwendungsfall herstellt (etwa einen Timer, den der Server nach 12 Stunden gedeckelt
+ *  hat), gibt er eine Abwandlung der Beispieldaten mit (daten-<bereich>.ts), nie eine eigene Kopie. */
+export function zuruecksetzen(abwandlung?: (d: Ausgangsstand) => void): void {
+  const d = ausgangsstand();
+  abwandlung?.(d);
+  Object.assign(stand, d);
 }
 
 /** Die Teile des Zustands, die Rückgängig wiederherstellt (alles außer Meldung und Verbindung) */

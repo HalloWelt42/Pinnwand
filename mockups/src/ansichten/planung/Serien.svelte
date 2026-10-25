@@ -1,16 +1,21 @@
 <script lang="ts">
   // Serien und Termine aller Boards, in denen du Mitglied bist (Modul Serien und Termine an): je Serie Rhythmus,
-  // Uhrzeit, Dauer, nächster Tag, Teilnehmer, Board und Zielspalte, Zustand; die kommenden Termine mit der Bestätigung
-  // je Person. Oben der Nachtrag deiner vorgebuchten Zeiten vergangener Tage, als Bereich auf der Seite.
+  // Uhrzeit, Dauer, nächster Tag, Teilnehmer, Board und Zielspalte, Zustand; die kommenden Termine mit der Zusage je
+  // Person. Oben der Nachtrag deiner vorgebuchten Zeiten vergangener Tage, als Bereich auf der Seite.
+  import { darf } from "../../beispiel/abfragen";
+  import { nachtrag, serienUmfeld } from "../../beispiel/abfragen";
+  import { terminAnlegen, zusagen } from "../../beispiel/anwendung/termine.svelte";
   import { HEUTE, ICH } from "../../beispiel/daten";
   import { datum, dauer } from "../../beispiel/format";
-  import { konto } from "../../beispiel/stand.svelte";
+  import { konto, stand } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
-  import type { Kennung, Termin } from "../../modell";
+  import type { Kennung } from "../../modell";
+  import { istPausiert, naechstes } from "../../regeln/serien";
+  import DatumFeld from "../../teile/DatumFeld.svelte";
+  import { rhythmusText } from "./anzeige";
+  import { boardsMitSerien, boardVon, terminStand } from "./lesen";
   import Nachtrag from "./Nachtrag.svelte";
-  import PersonenFeld from "./PersonenFeld.svelte";
-  import { boardsMitSerien, boardVon, hatRecht, istPausiert, nachtrag, naechstes, plan, regel, rhythmusText, terminStand } from "./plan.svelte";
-  import { minutenAus } from "./tage";
+  import Teilnehmer from "./Teilnehmer.svelte";
 
   let { entwurf = "" }: { entwurf?: string } = $props();
 
@@ -23,36 +28,35 @@
   function sichtbar(boardId: Kennung, teilnehmer: Kennung[]): boolean {
     return boards.some((b) => b.id === boardId) && (!boardFilter || boardFilter === boardId) && (!nurMeine || teilnehmer.includes(ICH));
   }
-  const serien = $derived(plan.serien.filter((s) => sichtbar(s.board, s.teilnehmer))
-    .map((s) => ({ s, naechster: naechstes(s), r: regel(s) }))
-    .sort((a, b) => (a.naechster?.tag ?? "9999").localeCompare(b.naechster?.tag ?? "9999") || (a.s.uhrzeit ?? "").localeCompare(b.s.uhrzeit ?? "")));
-  const termine = $derived(plan.termine.filter((t) => t.datum >= HEUTE && sichtbar(t.board, t.teilnehmer))
+  const serien = $derived.by(() => {
+    const u = serienUmfeld();
+    return stand.serien.filter((s) => sichtbar(s.board, s.teilnehmer))
+      .map((s) => ({ s, naechster: naechstes(s, u), pausiert: istPausiert(s, HEUTE) }))
+      .sort((a, b) => (a.naechster?.tag ?? "9999").localeCompare(b.naechster?.tag ?? "9999") || (a.s.uhrzeit ?? "").localeCompare(b.s.uhrzeit ?? ""));
+  });
+  const termine = $derived(stand.termine.filter((t) => t.datum >= HEUTE && sichtbar(t.board, t.teilnehmer))
     .sort((a, b) => (a.datum + a.von).localeCompare(b.datum + b.von)));
   const offen = $derived(nachtrag());
 
-  // Termin an Ort und Stelle anlegen (ohne Karte; Teilnehmer bestätigen selbst)
+  // Termin an Ort und Stelle anlegen (ohne Karte); das Formular ist Stand der Ansicht, gespeichert wird über terminAnlegen
   let terminNeu = $state(false);
   let neu = $state({ titel: "", board: "b-prod", tag: "", von: "", bis: "", ort: "", teilnehmer: [ICH] as Kennung[] });
   let fehler = $state("");
-  const kandidaten = $derived((boardVon(neu.board)?.mitglieder ?? []).map((m) => ({ konto: m.konto })));
+  const neuBoard = $derived(boardVon(neu.board));
+  const UHRZEIT = /^([01]?\d|2[0-3]):[0-5]\d$/;
 
-  function terminAnlegen(): void {
-    const d = neu.tag.trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
-    const zeit = /^\d{1,2}:\d{2}$/;
+  function anlegen(): void {
     if (!neu.titel.trim()) { fehler = "Titel fehlt"; return; }
-    if (!d) { fehler = "Tag als TT.MM.JJJJ, etwa 05.11.2026"; return; }
-    if (!zeit.test(neu.von) || !zeit.test(neu.bis) || minutenAus(neu.bis) <= minutenAus(neu.von)) { fehler = "Von und bis als Uhrzeit, etwa 09:00 bis 10:00"; return; }
-    const t: Termin = { id: `t-${crypto.randomUUID().slice(0, 8)}`, board: neu.board, titel: neu.titel.trim(),
-                        datum: `${d[3]}-${d[2].padStart(2, "0")}-${d[1].padStart(2, "0")}`, von: neu.von.padStart(5, "0"), bis: neu.bis.padStart(5, "0"),
-                        teilnehmer: neu.teilnehmer, ort: neu.ort.trim() || undefined, bestaetigt: [ICH] };
-    plan.termine.push(t);
+    if (!neu.tag) { fehler = "Tag fehlt, etwa 05.11.2026"; return; }
+    if (!UHRZEIT.test(neu.von) || !UHRZEIT.test(neu.bis)) { fehler = "Von und bis als Uhrzeit, etwa 09:00 bis 10:00"; return; }
+    const von = neu.von.padStart(5, "0"), bis = neu.bis.padStart(5, "0");
+    if (bis <= von) { fehler = "Das Ende liegt vor dem Beginn"; return; }
+    if (!neu.teilnehmer.length) { fehler = "Mindestens eine Person nimmt teil"; return; }
+    const id = terminAnlegen({ board: neu.board, titel: neu.titel, datum: neu.tag, von, bis, ort: neu.ort, teilnehmer: [...neu.teilnehmer] });
+    if (!id) return;
     neu = { titel: "", board: neu.board, tag: "", von: "", bis: "", ort: "", teilnehmer: [ICH] };
     fehler = "";
     terminNeu = false;
-  }
-
-  function zusagen(t: Termin): void {
-    if (!t.bestaetigt.includes(ICH)) t.bestaetigt.push(ICH);
   }
 </script>
 
@@ -82,7 +86,7 @@
 <div class="rollfeld pw-serien">
   {#if offen.length}
     {#if nachtragOffen}
-      <Nachtrag posten={offen} vorbelegt={entwurf === "nachtrag" ? { t3: "1:20" } : {}} schliessen={() => (nachtragOffen = false)} />
+      <Nachtrag posten={offen} vorbelegt={entwurf === "nachtrag" ? { "se-runde|2026-10-26": 20 * 60 } : {}} schliessen={() => (nachtragOffen = false)} />
     {:else}
       <div class="hinweis"><i class="fa-solid fa-clock-rotate-left"></i>
         <div><b>{offen.length} vorgebuchte {offen.length === 1 ? "Zeit wartet" : "Zeiten warten"} auf deine Bestätigung.</b>
@@ -99,17 +103,17 @@
         <thead><tr><th>Serie</th><th>Rhythmus</th><th class="zahl">Uhrzeit</th><th class="zahl" title="Stunden:Minuten je Tag und Teilnehmer">Dauer</th>
           <th>Nächster Tag</th><th>Teilnehmer</th><th>Board und Zielspalte</th><th>Zustand</th></tr></thead>
         <tbody>
-          {#each serien as { s, naechster, r } (s.id)}
+          {#each serien as { s, naechster, pausiert } (s.id)}
             {@const b = boardVon(s.board)!}
             {@const ziel = b.spalten.find((x) => x.id === s.zielspalte)}
             <tr>
-              <td><a class="pw-serien-name" href="/serien/{s.id}" title={hatRecht(b, "serien.verwalten") ? "Serie bearbeiten" : "Serie ansehen"}>
+              <td><a class="pw-serien-name" href="/serien/{s.id}" title={darf(b, "serien.verwalten") ? "Serie bearbeiten" : "Serie ansehen"}>
                 <i class="fa-solid fa-repeat"></i>{s.titel}</a></td>
-              <td data-titel="Rhythmus">{rhythmusText(s, r)}</td>
+              <td data-titel="Rhythmus">{rhythmusText(s)}</td>
               <td data-titel="Uhrzeit" class="zahl"><span class="zahl">{s.uhrzeit ?? "ganztägig"}</span></td>
               <td data-titel="Dauer" class="zahl"><span class="zahl">{dauer(s.dauerMin * 60)}</span></td>
               <td data-titel="Nächster Tag">
-                {#if istPausiert(r)}<span class="schwach" title="Pausiert seit {datum(r.pausiertSeit ?? HEUTE, true)}">keiner</span>
+                {#if pausiert}<span class="schwach" title="Pausiert seit {datum(s.pausiertSeit ?? HEUTE, true)}">keiner</span>
                 {:else if naechster}<span class="zahl">{datum(naechster.tag, true)}</span>
                   {#if naechster.ohne.length}<span class="schwach" title={naechster.ohne.map((o) => `${konto(o.konto).name}: ${o.grund}`).join(", ")}>
                     ohne {naechster.ohne.length} {naechster.ohne.length === 1 ? "Person" : "Personen"}</span>{/if}
@@ -120,8 +124,8 @@
                 <span class="paar"><span class="pw-farbpunkt" data-farbe={b.farbe}></span>{b.name}</span>
                 <span class="paar"><i class="fa-solid fa-arrow-right schwach"></i><span class="pw-farbpunkt" data-farbe={ziel?.farbe}></span>{ziel?.name ?? "erste Spalte"}</span></span></td>
               <td data-titel="Zustand">
-                {#if istPausiert(r)}<span class="zustand pausiert" title="Keine neuen Vorbuchungen; unberührte Zukunftskarten sind entfernt"><i class="fa-solid fa-circle-pause"></i>pausiert</span>
-                {:else}<span class="zustand fertig" title="Bucht {r.vorlaufTage} Tage im Voraus vor"><i class="fa-solid fa-circle-play"></i>aktiv</span>{/if}
+                {#if pausiert}<span class="zustand pausiert" title="Keine neuen Vorbuchungen; unberührte Zukunftskarten sind zurückgenommen"><i class="fa-solid fa-circle-pause"></i>pausiert</span>
+                {:else}<span class="zustand fertig" title="Bucht {s.vorlaufTage} Tage im Voraus vor"><i class="fa-solid fa-circle-play"></i>aktiv</span>{/if}
               </td>
             </tr>
           {:else}
@@ -141,21 +145,22 @@
           <span class="name"><i class="fa-solid fa-heading"></i>Titel</span>
           <span class="wert"><input class="eingabe" bind:value={neu.titel} placeholder="Worum geht es" /></span>
           <span class="name"><i class="fa-solid fa-table-columns"></i>Board</span>
-          <span class="wert"><span class="stufen">{#each boards as b (b.id)}<button class:an={neu.board === b.id} onclick={() => (neu.board = b.id)}>{b.name}</button>{/each}</span></span>
+          <span class="wert"><span class="stufen">{#each boards.filter((b) => darf(b, "serien.verwalten")) as b (b.id)}
+            <button class:an={neu.board === b.id} onclick={() => { neu.board = b.id; neu.teilnehmer = neu.teilnehmer.filter((k) => b.mitglieder.some((m) => m.konto === k)); }}>{b.name}</button>{/each}</span></span>
           <span class="name"><i class="fa-regular fa-calendar"></i>Wann</span>
-          <span class="wert">
-            <input class="eingabe" style="width: 150px" bind:value={neu.tag} placeholder="TT.MM.JJJJ" title="Tag im deutschen Format, etwa 05.11.2026" />
-            <input class="eingabe" style="width: 90px" bind:value={neu.von} placeholder="09:00" title="Beginn als Uhrzeit" />
+          <span class="wert pw-serien-wannfelder">
+            <DatumFeld tag={neu.tag} ontag={(t) => (neu.tag = t)} titel="Tag des Termins, etwa 05.11.2026" breite="150px" />
+            <input class="eingabe zahl pw-serien-kurz" class:falsch={neu.von !== "" && !UHRZEIT.test(neu.von)} bind:value={neu.von} placeholder="09:00" title="Beginn als Uhrzeit" />
             <span class="schwach">bis</span>
-            <input class="eingabe" style="width: 90px" bind:value={neu.bis} placeholder="10:00" title="Ende als Uhrzeit" />
+            <input class="eingabe zahl pw-serien-kurz" class:falsch={neu.bis !== "" && !UHRZEIT.test(neu.bis)} bind:value={neu.bis} placeholder="10:00" title="Ende als Uhrzeit" />
           </span>
           <span class="name"><i class="fa-solid fa-location-dot"></i>Ort</span>
           <span class="wert"><input class="eingabe" bind:value={neu.ort} placeholder="frei lassen, wenn egal" /></span>
           <span class="name"><i class="fa-solid fa-user-group"></i>Teilnehmer</span>
-          <span class="wert"><PersonenFeld bind:konten={neu.teilnehmer} {kandidaten} /></span>
+          <span class="wert">{#if neuBoard}<Teilnehmer board={neuBoard} bind:konten={neu.teilnehmer} />{/if}</span>
         </div>
         <div class="pw-serien-knoepfe">
-          <button class="knopf haupt klein" onclick={terminAnlegen}><i class="fa-solid fa-check"></i>Anlegen</button>
+          <button class="knopf haupt klein" onclick={anlegen}><i class="fa-solid fa-check"></i>Anlegen</button>
           <button class="knopf ohne klein" onclick={() => { terminNeu = false; fehler = ""; }}>Abbrechen</button>
           {#if fehler}<span class="pw-serien-fehler"><i class="fa-solid fa-triangle-exclamation"></i>{fehler}</span>
           {:else}<span class="schwach klein">Du bist zugesagt; die anderen sagen selbst zu und bekommen einen Hinweis.</span>{/if}
@@ -185,8 +190,9 @@
               </td>
               <td data-titel="Du">
                 {#if !t.teilnehmer.includes(ICH)}<span class="schwach">nicht dabei</span>
-                {:else if t.bestaetigt.includes(ICH)}<span class="zustand fertig"><i class="fa-solid fa-circle-check"></i>zugesagt</span>
-                {:else}<button class="knopf klein" onclick={() => zusagen(t)} title="Teilnahme zusagen; die Zeit zählt nach dem Termin, wenn du sie bestätigst">Zusagen</button>{/if}
+                {:else if t.zugesagt.includes(ICH)}<span class="pw-serien-du"><span class="zustand fertig"><i class="fa-solid fa-circle-check"></i>zugesagt</span>
+                  <button class="knopf ohne klein" onclick={() => zusagen(t.id, false)} title="Zusage zurücknehmen">Absagen</button></span>
+                {:else}<button class="knopf klein" onclick={() => zusagen(t.id)} title="Teilnahme zusagen; die Zeit zählt nach dem Termin, wenn du sie bestätigst">Zusagen</button>{/if}
               </td>
             </tr>
           {:else}

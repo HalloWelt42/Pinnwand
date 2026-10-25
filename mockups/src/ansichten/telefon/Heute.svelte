@@ -1,12 +1,14 @@
 <script lang="ts">
   // Heute am Telefon: deine offenen Karten aus allen Boards nach Dringlichkeit (wie Heute am Rechner, M-120), dazu deine
-  // nächsten Termine; jede Gruppe erscheint nur, wenn sie etwas enthält. Erledigen per Halten des Rings, ein Tippen auf
-  // die Karte öffnet sie. Serienkarten stehen mit ihrer Uhrzeit dabei.
-  import { HEUTE, ICH, TERMINE } from "../../beispiel/daten";
-  import { alterTage, datum } from "../../beispiel/format";
-  import { tageZwischen } from "../../regeln/tage";
-  import { board, stand } from "../../beispiel/stand.svelte";
+  // Termine der nächsten Tage mit Zusagen; jede Gruppe erscheint nur, wenn sie etwas enthält. Erledigen per Halten des
+  // Rings, ein Tippen auf die Karte öffnet sie. Serienkarten stehen mit ihrer Uhrzeit dabei.
+  import { meinTag, type TagEintrag } from "../../beispiel/abfragen";
+  import { zusagen } from "../../beispiel/anwendung/termine.svelte";
+  import { HEUTE, ICH } from "../../beispiel/daten";
+  import { datum } from "../../beispiel/format";
+  import { board } from "../../beispiel/stand.svelte";
   import type { Karte } from "../../modell";
+  import { tageZwischen } from "../../regeln/tage";
   import TelefonSchale from "./TelefonSchale.svelte";
   import TelKarte from "./TelKarte.svelte";
 
@@ -14,34 +16,18 @@
 
   /** Entwurf "halten": an dieser Karte füllt sich gerade der Ring */
   const VORGEFUEHRT = "c-h61";
-  const LIEGT_AB = 8;
-  const PRIO = { dringend: 0, hoch: 1, mittel: 2, niedrig: 3, keine: 4 };
 
-  const offen = (k: Karte): boolean => !board(k.board).spalten.find((s) => s.id === k.spalte)?.erledigt;
-  const meine = $derived(stand.karten.filter((k) => k.zustaendig.includes(ICH)));
-  const bis = (k: Karte): number => (k.faellig ? tageZwischen(HEUTE, k.faellig) : Infinity);
-  const ordnen = (a: Karte, b: Karte): number => bis(a) - bis(b) || PRIO[a.prioritaet] - PRIO[b.prioritaet];
-
-  const gruppen = $derived.by(() => {
-    const auf = meine.filter(offen);
-    const ueber = auf.filter((k) => bis(k) < 0).sort(ordnen);
-    const heute = auf.filter((k) => bis(k) === 0).sort(ordnen);
-    const woche = auf.filter((k) => bis(k) > 0 && bis(k) <= 7).sort(ordnen);
-    const gelistet = new Set([...ueber, ...heute, ...woche].map((k) => k.id));
-    const liegt = auf.filter((k) => !gelistet.has(k.id) && !k.laeuft && alterTage(k.bewegtAm) >= LIEGT_AB);
-    const blockiert = auf.filter((k) => !gelistet.has(k.id) && k.blockiert);
-    const fertig = meine.filter((k) => !offen(k) && k.abgeschlossen === HEUTE);
-    return [
-      { id: "ueber", name: "Überfällig", karten: ueber, zahl: "gefahr" },
-      { id: "heute", name: "Heute fällig", karten: heute, zahl: "warnung" },
-      { id: "woche", name: "Diese Woche", karten: woche, zahl: "" },
-      { id: "liegt", name: "Liegengeblieben", karten: liegt, zahl: "" },
-      { id: "blockiert", name: "Blockiert", karten: blockiert, zahl: "" },
-      { id: "fertig", name: "Heute erledigt", karten: fertig, zahl: "erfolg" },
-    ].filter((g) => g.karten.length);
-  });
-  const termine = $derived(TERMINE.filter((t) => t.teilnehmer.includes(ICH) && t.datum >= HEUTE && tageZwischen(HEUTE, t.datum) <= 7)
-    .sort((a, b) => (a.datum + a.von).localeCompare(b.datum + b.von)));
+  const tag = $derived(meinTag(ICH));
+  const karten = (liste: TagEintrag[]): Karte[] => liste.map((e) => e.karte);
+  const gruppen = $derived([
+    { id: "ueber", name: "Überfällig", karten: karten(tag.ueberfaellig), zahl: "gefahr" },
+    { id: "heute", name: "Heute fällig", karten: karten([...tag.heute, ...tag.serien]), zahl: "warnung" },
+    { id: "woche", name: "Diese Woche", karten: karten(tag.woche), zahl: "" },
+    { id: "liegt", name: "Liegengeblieben", karten: karten(tag.liegengeblieben), zahl: "" },
+    { id: "blockiert", name: "Blockiert", karten: karten(tag.blockiert.filter((e) => !tag.liegengeblieben.includes(e))), zahl: "" },
+    { id: "fertig", name: "Heute erledigt", karten: karten(tag.erledigt), zahl: "erfolg" },
+  ].filter((g) => g.karten.length));
+  const termine = $derived([...tag.termine.heute, ...tag.termine.woche]);
   const wochentag = (iso: string): string => {
     const t = tageZwischen(HEUTE, iso);
     return t === 0 ? "Heute" : t === 1 ? "Morgen" : datum(iso, true);
@@ -79,10 +65,10 @@
         <span class="was">
           <span class="titel">{t.titel}</span>
           <span class="angaben" data-farbe={b.farbe} title={b.name}><span class="pw-farbpunkt"></span>{b.kuerzel} · bis <span class="zahl">{t.bis}</span>{t.ort ? ` · ${t.ort}` : ""}</span>
-          {#if t.bestaetigt.includes(ICH)}
+          {#if t.zugesagt.includes(ICH)}
             <span class="zustand fertig"><i class="fa-solid fa-check"></i>Zugesagt</span>
           {:else}
-            <span class="zustand wartet" title="Noch nicht zugesagt">Noch offen</span>
+            <button class="knopf" onclick={() => zusagen(t.id, true)}><i class="fa-solid fa-check"></i>Zusagen</button>
           {/if}
         </span>
       </div>

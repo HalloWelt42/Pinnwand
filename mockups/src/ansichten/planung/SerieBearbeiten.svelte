@@ -1,97 +1,92 @@
 <script lang="ts">
   // Eine Serie anlegen oder bearbeiten: links tun (Karte, Rhythmus, Teilnehmer, Vorbuchen), rechts das Ergebnis (die
-  // Tage der Serie mit ihrem Stand). Ändern zieht nur unberührte Vorbuchungen nach; angefasste Karten, vergangene und
-  // bewusst gelöschte Tage bleiben, wie sie sind (M-108, M-109). Pause räumt unberührte Zukunftskarten, Löschen legt
-  // unberührte in den Papierkorb und löst Karten mit Zeit von der Serie (M-110). Rückfragen stehen in der Fläche.
+  // Tage der Serie mit ihrem Stand). Das Formular ist Stand der Ansicht; gespeichert wird über die Anwendungsfälle.
+  // Ändern zieht nur unberührte Vorbuchungen nach; angefasste Karten, vergangene und bewusst gelöschte Tage bleiben
+  // (M-108, M-109). Pause nimmt unberührte Zukunftskarten zurück, Löschen löst Karten mit Zeit von der Serie (M-110).
+  // Rückfragen stehen in der Fläche, jede Änderung meldet sich unten mit Rückgängig.
   import { untrack } from "svelte";
+  import { darf as darfIm } from "../../beispiel/abfragen";
+  import { serienUmfeld } from "../../beispiel/abfragen";
+  import { fortsetzen, pausieren, serieAendern, serieAnlegen, serieLoeschen, tagAuslassen } from "../../beispiel/anwendung/serien.svelte";
   import { HEUTE, ICH } from "../../beispiel/daten";
   import { datum, dauer } from "../../beispiel/format";
-  import { konto } from "../../beispiel/stand.svelte";
+  import { karte, konto, stand } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
-  import type { Board, Kennung, Rhythmus, Serie } from "../../modell";
+  import type { Kennung, Monatsregel, Rhythmus, Serie } from "../../modell";
+  import { istPausiert, naechstes, vorkommenListe, vorlaufEnde, type Vorkommen } from "../../regeln/serien";
+  import { kalenderwoche, montagVon, plusTage, TAGE_KURZ, TAGE_LANG, WOCHE_AB_MONTAG } from "../../regeln/tage";
+  import DatumFeld from "../../teile/DatumFeld.svelte";
+  import DauerFeld from "../../teile/DauerFeld.svelte";
   import { gehe } from "../../weg.svelte";
-  import { STAND } from "./anzeige";
-  import PersonenFeld from "./PersonenFeld.svelte";
-  import { boardsMitSerien, boardVon, hatRecht, istPausiert, naechstes, plan, regel, rhythmusText, vorkommenListe } from "./plan.svelte";
-  import { kalenderwoche, montagVon, plusTage, TAGE_KURZ, TAGE_LANG, tagLang, WOCHE_AB_MONTAG } from "./tage";
-  import type { Monatsregel, SerienRegel, Vorkommen } from "./typen";
+  import { rhythmusText, STAND } from "./anzeige";
+  import { boardsMitSerien, boardVon, kartenPfad } from "./lesen";
+  import Teilnehmer from "./Teilnehmer.svelte";
 
   let { serieId = "", neu = false, entwurf = "" }: { serieId?: string; neu?: boolean; entwurf?: string } = $props();
 
-  const original = $derived(neu ? undefined : plan.serien.find((x) => x.id === serieId));
+  const original = $derived(neu ? undefined : stand.serien.find((x) => x.id === serieId));
 
-  /** Vorschlag einer neuen Serie (in der App: leer bis auf dich als Teilnehmer und die erste Spalte) */
+  /** Vorschlag einer neuen Serie (in der App: du als Teilnehmer und die erste offene Spalte) */
   function neueSerie(): Serie {
-    return { id: "neu", board: "b-prod", titel: "Wochenplanung Werkstatt", rhythmus: "woechentlich", tage: [4], uhrzeit: "15:00", dauerMin: 30,
-             zielspalte: "s-geplant", teilnehmer: [ICH, "k-jonas"], naechste: "" };
-  }
-  function neueRegel(): SerienRegel {
-    return { serie: "neu", beschreibung: "Aufträge der nächsten Woche, Maschinenbelegung, Material.", labels: ["l-intern"], ab: HEUTE,
-             vorlaufTage: 14, wochenendenUeberspringen: false, feiertageUeberspringen: true, auslass: [], beruehrt: [], verworfen: [] };
+    return { id: "neu", board: "b-prod", titel: "Wochenplanung Werkstatt", beschreibung: "Aufträge der nächsten Woche, Maschinenbelegung, Material.",
+             labels: ["l-intern"], rhythmus: "woechentlich", tage: [4], uhrzeit: "15:00", dauerMin: 30, zielspalte: "s-geplant",
+             teilnehmer: [ICH, "k-jonas"], ab: HEUTE, vorlaufTage: 14, wochenendenUeberspringen: false, feiertageUeberspringen: true,
+             auslass: [], beruehrt: [], verworfen: [] };
   }
 
+  /** Formular: die änderbaren Felder; Pause, Auslass und angefasste Tage kommen immer aus dem Zustand */
   let s = $state<Serie>(neueSerie());
-  let r = $state<SerienRegel>(neueRegel());
-  let dauerText = $state("");
-  let abText = $state("");
-  let bisText = $state("");
   let loeschenFrage = $state(false);
-  let bericht = $state("");
 
   function laden(): void {
     s = original ? $state.snapshot(original) as Serie : neueSerie();
-    r = original ? $state.snapshot(regel(original)) as SerienRegel : neueRegel();
     if (entwurf === "aendern") { s.uhrzeit = "07:45"; s.dauerMin = 20; }
-    dauerText = dauer(s.dauerMin * 60);
-    abText = tagLang(r.ab);
-    bisText = r.bis ? tagLang(r.bis) : "";
     loeschenFrage = entwurf === "loeschen";
-    bericht = "";
   }
   // neu laden, wenn Serie oder Entwurf wechseln; was laden() selbst liest und schreibt, zählt nicht als Abhängigkeit
   $effect(() => { void serieId; void neu; void entwurf; untrack(laden); });
 
-  const b = $derived(boardVon(s.board) as Board);
-  const darf = $derived(!!b && hatRecht(b, "serien.verwalten"));
-  const pausiert = $derived(istPausiert(r));
-  const liste = $derived(vorkommenListe(s, r));
-  const naechster = $derived(naechstes(s, r));
+  /** Vorschau mit dem Formular und dem Stand der Serie (Pause, Auslass, angefasste und verworfene Tage) */
+  const vorschau = $derived<Serie>(original
+    ? { ...s, pausiertSeit: original.pausiertSeit, fortgesetzt: original.fortgesetzt, auslass: original.auslass, beruehrt: original.beruehrt,
+        verworfen: original.verworfen }
+    : s);
+  const b = $derived(boardVon(s.board));
+  const darf = $derived(!!b && darfIm(b, "serien.verwalten"));
+  const pausiert = $derived(istPausiert(vorschau, HEUTE));
+  const umfeld = $derived(serienUmfeld());
+  const liste = $derived(vorkommenListe(vorschau, umfeld));
+  const naechster = $derived(naechstes(vorschau, umfeld));
   const spalten = $derived(b?.spalten.filter((x) => !x.erledigt) ?? []);
-  const kandidaten = $derived((b?.mitglieder ?? []).map((m) => ({
-    konto: m.konto,
-    gesperrt: hatRecht(b, "zeit.buchen", m.konto) ? undefined : `${b.rollen.find((x) => x.id === m.rolle)?.name ?? "Rolle"}: bucht keine Zeit`,
-  })));
+  const UHRZEIT = /^([01]?\d|2[0-3]):[0-5]\d$/;
+  const uhrzeitFalsch = $derived(!!s.uhrzeit && !UHRZEIT.test(s.uhrzeit));
 
-  function textDauer(t: string): number | undefined {
-    const m = t.trim().match(/^(\d{1,2}):(\d{2})$/);
-    return m ? Number(m[1]) * 60 + Number(m[2]) : undefined;
-  }
-  function textTag(t: string): string | undefined {
-    const m = t.trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
-    return m ? `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}` : undefined;
+  /** Die änderbaren Felder des Formulars (ohne Kennung, Board und den Stand aus Pause, Auslass und Nachtrag) */
+  function felder(x: Serie): Partial<Serie> {
+    const { id: _i, board: _b, pausiertSeit: _p, fortgesetzt: _f, auslass: _a, beruehrt: _r, verworfen: _v, ...rest } = $state.snapshot(x) as Serie;
+    return { ...rest, uhrzeit: rest.uhrzeit?.trim() ? rest.uhrzeit.padStart(5, "0") : undefined };
   }
 
   /** Was sich gegenüber der gespeicherten Fassung geändert hat, als kurze Sätze */
   const aenderungen = $derived.by(() => {
     if (!original) return [] as string[];
     const o = original;
-    const or = regel(o);
     const a: string[] = [];
     if (s.titel !== o.titel) a.push(`Titel "${s.titel}"`);
-    if (s.rhythmus !== o.rhythmus || JSON.stringify(s.tage ?? []) !== JSON.stringify(o.tage ?? []) || r.monatsregel !== or.monatsregel
-        || r.monatstag !== or.monatstag || r.wochenendenUeberspringen !== or.wochenendenUeberspringen) a.push(`Rhythmus ${rhythmusText(s, r)}`);
-    if (s.uhrzeit !== o.uhrzeit) a.push(`Uhrzeit ${s.uhrzeit || "ganztägig"} statt ${o.uhrzeit || "ganztägig"}`);
+    if (s.rhythmus !== o.rhythmus || JSON.stringify(s.tage ?? []) !== JSON.stringify(o.tage ?? []) || s.monatsregel !== o.monatsregel
+        || s.monatstag !== o.monatstag || s.wochenendenUeberspringen !== o.wochenendenUeberspringen) a.push(`Rhythmus ${rhythmusText(s)}`);
+    if ((s.uhrzeit || "") !== (o.uhrzeit || "")) a.push(`Uhrzeit ${s.uhrzeit || "ganztägig"} statt ${o.uhrzeit || "ganztägig"}`);
     if (s.dauerMin !== o.dauerMin) a.push(`Dauer ${dauer(s.dauerMin * 60)} statt ${dauer(o.dauerMin * 60)}`);
     if (s.zielspalte !== o.zielspalte) a.push(`Zielspalte ${spalten.find((x) => x.id === s.zielspalte)?.name}`);
     if (JSON.stringify(s.teilnehmer) !== JSON.stringify(o.teilnehmer)) a.push(`Teilnehmer ${s.teilnehmer.map((k) => konto(k).name).join(", ")}`);
-    if (r.vorlaufTage !== or.vorlaufTage) a.push(`Vorlauf ${r.vorlaufTage} Tage`);
-    if (r.feiertageUeberspringen !== or.feiertageUeberspringen) a.push(r.feiertageUeberspringen ? "Feiertage auslassen" : "Feiertage nicht auslassen");
-    if (r.ab !== or.ab || r.bis !== or.bis) a.push("Zeitraum");
-    if ((r.beschreibung ?? "") !== (or.beschreibung ?? "")) a.push("Beschreibung");
+    if (s.vorlaufTage !== o.vorlaufTage) a.push(`Vorlauf ${s.vorlaufTage} Tage`);
+    if (s.feiertageUeberspringen !== o.feiertageUeberspringen) a.push(s.feiertageUeberspringen ? "Feiertage auslassen" : "Feiertage nicht auslassen");
+    if (s.ab !== o.ab || s.bis !== o.bis) a.push("Zeitraum");
+    if ((s.beschreibung ?? "") !== (o.beschreibung ?? "")) a.push("Beschreibung");
     return a;
   });
   const geaendert = $derived(aenderungen.length > 0);
-  const zaehle = (st: Vorkommen["stand"]): number => liste.filter((v) => v.stand === st).length;
+  const zaehle = (st: Vorkommen["stand"]): number => liste.filter((v) => v.stand === st && v.tag > HEUTE).length;
 
   function anzeige(v: Vorkommen): { text: string; symbol: string; klasse: string; erklaerung: string } {
     if (neu && (v.stand === "vorgebucht" || v.stand === "heute")) {
@@ -102,10 +97,14 @@
     }
     return STAND[v.stand];
   }
-  /** Uhrzeit eines Tages: unberührte und künftige folgen dem Entwurf, alle anderen bleiben bei der gespeicherten */
+  /** Uhrzeit eines Tages: unberührte und künftige folgen dem Formular, alle anderen bleiben bei der gespeicherten */
   function uhrzeitAm(v: Vorkommen): string {
     const folgt = neu || ["vorgebucht", "geplant"].includes(v.stand);
     return (folgt ? s.uhrzeit : original?.uhrzeit) || "ganztägig";
+  }
+  function geloeschtText(tag: string): string {
+    const a = vorschau.auslass.find((x) => x.tag === tag);
+    return a ? `gelöscht von ${konto(a.von).name} am ${datum(a.am)}` : "";
   }
 
   const wochen = $derived.by(() => {
@@ -130,76 +129,71 @@
     const nb = boardVon(id);
     s.zielspalte = nb?.spalten.find((x) => !x.erledigt)?.id ?? "";
     s.teilnehmer = s.teilnehmer.filter((k) => nb?.mitglieder.some((m) => m.konto === k));
-    r.labels = [];
+    s.labels = [];
+  }
+
+  /** Pfad innerhalb dieses Bereichs; ein vorgeführter Zustand bleibt, damit die eben gemachte Änderung sichtbar bleibt */
+  function hin(pfad: string): void {
+    gehe(entwurf ? `${pfad}?entwurf=${entwurf}` : pfad);
   }
 
   function speichern(): void {
-    const kopie = $state.snapshot(s) as Serie;
-    const regelKopie = $state.snapshot(r) as SerienRegel;
+    if (uhrzeitFalsch) return;
     if (neu) {
-      const id = `se-${crypto.randomUUID().slice(0, 8)}`;
-      plan.serien.push({ ...kopie, id });
-      plan.regeln[id] = { ...regelKopie, serie: id };
-      gehe(`/serien/${id}`);
+      const id = serieAnlegen({ ...(felder(s) as Omit<Serie, "id">), board: s.board, auslass: [], beruehrt: [], verworfen: [] });
+      if (id) hin(`/serien/${id}`);
       return;
     }
     if (!original) return;
-    const angepasst = zaehle("vorgebucht");
-    Object.assign(original, kopie);
-    plan.regeln[original.id] = regelKopie;
-    bericht = `Gespeichert: ${angepasst} unberührte ${angepasst === 1 ? "Vorbuchung" : "Vorbuchungen"} angepasst; angefasste, vergangene und gelöschte Tage bleiben.`;
+    serieAendern(original.id, felder(s));
+    laden();
   }
 
-  function pauseUmschalten(): void {
-    if (!original) return;
-    const echt = (plan.regeln[original.id] ??= $state.snapshot(r) as SerienRegel);
-    if (istPausiert(echt)) {
-      echt.fortgesetzt = HEUTE;
-      original.pausiert = false;
-      bericht = "Fortgesetzt: ab heute wird wieder vorgebucht; gelöschte Tage bleiben gelöscht.";
-    } else {
-      const entfernt = zaehle("vorgebucht");
-      echt.pausiertSeit = HEUTE;
-      echt.fortgesetzt = undefined;
-      original.pausiert = true;
-      bericht = `Pausiert: ${entfernt} unberührte ${entfernt === 1 ? "Vorbuchung" : "Vorbuchungen"} entfernt; angefasste Karten bleiben stehen.`;
-    }
-    r.pausiertSeit = echt.pausiertSeit;
-    r.fortgesetzt = echt.fortgesetzt;
-  }
-
+  /** erst zurück zur Übersicht, dann löschen: so steht die Ansicht nie auf einer Serie, die es nicht mehr gibt */
   function loeschen(): void {
     if (!original) return;
-    plan.serien.splice(plan.serien.indexOf(original), 1);
-    gehe("/serien");
+    const id = original.id;
+    hin("/serien");
+    serieLoeschen(id);
   }
 </script>
 
+{#if !neu && !original}
+<div class="rahmen-kopf">
+  <div class="seitenkopf"><h1>Serie nicht gefunden</h1></div>
+</div>
+<div class="rollfeld">
+  <div class="leer"><i class="fa-solid fa-repeat"></i><h2>Diese Serie gibt es nicht mehr</h2>
+    <p>Sie wurde gelöscht; solange die Meldung steht, holt Rückgängig sie zurück.</p>
+    <a class="knopf" href="/serien"><i class="fa-solid fa-chevron-left"></i>Serien und Termine</a></div>
+</div>
+{:else}
 <div class="rahmen-kopf">
   <div class="seitenkopf">
     <h1><i class="fa-solid fa-repeat pw-serien-kopfsymbol"></i>{neu ? "Neue Serie" : original?.titel}</h1>
     {#if !neu}
-      {#if pausiert}<span class="zustand pausiert"><i class="fa-solid fa-circle-pause"></i>pausiert seit {datum(r.pausiertSeit ?? HEUTE, true)}</span>
+      {#if pausiert}<span class="zustand pausiert"><i class="fa-solid fa-circle-pause"></i>pausiert seit {datum(vorschau.pausiertSeit ?? HEUTE, true)}</span>
       {:else}<span class="zustand fertig"><i class="fa-solid fa-circle-play"></i>aktiv</span>{/if}
     {/if}
     <div class="aktionen">
       {#if neu}
         <a class="knopf ohne" href="/serien">Abbrechen</a>
-        <button class="knopf haupt" onclick={speichern} disabled={!s.titel.trim() || !s.teilnehmer.length}
+        <button class="knopf haupt" onclick={speichern} disabled={!s.titel.trim() || !s.teilnehmer.length || uhrzeitFalsch}
                 title="Legt die Serie an und bucht die Tage im Vorlauf als Karten vor"><i class="fa-solid fa-check"></i>Anlegen und vorbuchen</button>
       {:else if darf}
-        <button class="knopf" onclick={pauseUmschalten} title={pausiert ? "Ab heute wieder vorbuchen" : "Keine neuen Vorbuchungen; unberührte Zukunftskarten werden entfernt"}>
+        <button class="knopf" onclick={() => (pausiert ? fortsetzen(original!.id) : pausieren(original!.id))}
+                title={pausiert ? "Ab heute wieder vorbuchen" : "Keine neuen Vorbuchungen; unberührte Zukunftskarten werden zurückgenommen"}>
           <i class="fa-solid {pausiert ? 'fa-play' : 'fa-pause'}"></i>{pausiert ? "Fortsetzen" : "Pausieren"}</button>
         <button class="knopf ohne gefahr" onclick={() => (loeschenFrage = true)}><i class="fa-solid fa-trash-can"></i>Löschen</button>
       {/if}
     </div>
     <div class="unterzeile"><a class="pw-serien-zurueck" href="/serien"><i class="fa-solid fa-chevron-left"></i> Serien und Termine</a>
-      {#if b}<span class="schwach"> · {b.name} · {rhythmusText(s, r)}{s.uhrzeit ? ` um ${s.uhrzeit}` : ""}</span>{/if}</div>
+      {#if b}<span class="schwach"> · {b.name} · {rhythmusText(s)}{s.uhrzeit ? ` um ${s.uhrzeit}` : ""}</span>{/if}</div>
   </div>
 
   {#if loeschenFrage && original}
     <div class="hinweis gefahr"><i class="fa-solid fa-trash-can"></i>
-      <div><b>Serie "{original.titel}" löschen?</b> {zaehle("vorgebucht")} unberührte Vorbuchungen gehen in den Papierkorb.
+      <div><b>Serie "{original.titel}" löschen?</b> {zaehle("vorgebucht")} unberührte Vorbuchungen werden zurückgenommen.
         {#if zaehle("beruehrt")}{zaehle("beruehrt")} angefasste {zaehle("beruehrt") === 1 ? "Karte bleibt" : "Karten bleiben"} stehen.{/if}
         Karten mit erfasster Zeit und erledigte bleiben als Verlauf und werden von der Serie gelöst; bestätigte Zeiten zählen weiter.</div>
       <span class="rechts"><button class="knopf klein" onclick={() => (loeschenFrage = false)}>Behalten</button>
@@ -210,15 +204,12 @@
       <div><b>Nicht gespeichert: {aenderungen.join(", ")}.</b> Speichern passt {zaehle("vorgebucht")} unberührte Vorbuchungen an;
         {zaehle("beruehrt") === 0 ? "" : zaehle("beruehrt") === 1 ? "die angefasste Karte, " : "angefasste Karten, "}vergangene und gelöschte Tage bleiben, wie sie sind.</div>
       <span class="rechts"><button class="knopf klein" onclick={laden}>Verwerfen</button>
-        <button class="knopf haupt klein" onclick={speichern}><i class="fa-solid fa-check"></i>Speichern</button></span>
+        <button class="knopf haupt klein" onclick={speichern} disabled={uhrzeitFalsch}><i class="fa-solid fa-check"></i>Speichern</button></span>
     </div>
-  {:else if bericht}
-    <div class="hinweis erfolg"><i class="fa-solid fa-circle-check"></i><div>{bericht}</div>
-      <span class="rechts"><button class="knopf ohne klein" onclick={() => (bericht = "")}>Ausblenden</button></span></div>
   {:else if pausiert}
     <div class="hinweis warnung"><i class="fa-solid fa-circle-pause"></i>
-      <div>Pausiert: es entstehen keine neuen Karten, unberührte Zukunftskarten sind entfernt, angefasste bleiben. Fortsetzen bucht ab
-        heute wieder vor; gelöschte Tage bleiben gelöscht.</div></div>
+      <div>Pausiert: es entstehen keine neuen Karten, unberührte Zukunftskarten sind zurückgenommen, angefasste bleiben. Fortsetzen bucht
+        ab heute wieder vor; gelöschte Tage bleiben gelöscht.</div></div>
   {/if}
 </div>
 
@@ -236,7 +227,7 @@
           <span class="name"><i class="fa-solid fa-table-columns"></i>Board</span>
           <span class="wert">
             {#if neu}
-              <span class="stufen">{#each boardsMitSerien().filter((x) => hatRecht(x, "serien.verwalten")) as x (x.id)}
+              <span class="stufen">{#each boardsMitSerien().filter((x) => darfIm(x, "serien.verwalten")) as x (x.id)}
                 <button class:an={s.board === x.id} onclick={() => boardWaehlen(x.id)}>{x.name}</button>{/each}</span>
             {:else if b}
               <span class="pw-serien-ort" title="Das Board einer Serie steht nach dem Anlegen fest"><span class="pw-farbpunkt" data-farbe={b.farbe}></span>{b.name}</span>
@@ -247,11 +238,11 @@
             <button class:an={s.zielspalte === x.id} onclick={() => (s.zielspalte = x.id)}><span class="pw-farbpunkt" data-farbe={x.farbe}></span>{x.name}</button>{/each}</span></span>
           <span class="name"><i class="fa-solid fa-tag"></i>Labels</span>
           <span class="wert">
-            {#each r.labels as l (l)}{@const lab = b?.labels.find((x) => x.id === l)}{#if lab}<span class="pw-label" data-farbe={lab.farbe}>{lab.name}</span>{/if}{/each}
+            {#each s.labels as l (l)}{@const lab = b?.labels.find((x) => x.id === l)}{#if lab}<span class="pw-label" data-farbe={lab.farbe}>{lab.name}</span>{/if}{/each}
             <button class="knopf ohne symbol klein" title="Label wählen"><i class="fa-solid fa-plus"></i></button>
           </span>
         </div>
-        <textarea class="eingabe" rows="2" bind:value={r.beschreibung} placeholder="Beschreibung jeder Karte (Markdown)"></textarea>
+        <textarea class="eingabe" rows="2" bind:value={s.beschreibung} placeholder="Beschreibung jeder Karte (Markdown)"></textarea>
       </section>
 
       <section class="bereich">
@@ -266,34 +257,33 @@
           {:else if s.rhythmus === "monatlich"}
             <span class="name"><i class="fa-solid fa-calendar-day"></i>Im Monat</span>
             <span class="wert">
-              <span class="stufen">{#each MONATSREGELN as [w, n] (w)}<button class:an={(r.monatsregel ?? "tag") === w} onclick={() => (r.monatsregel = w)}>{n}</button>{/each}</span>
-              {#if (r.monatsregel ?? "tag") === "tag"}
-                <input class="eingabe pw-serien-kurz" value={r.monatstag ?? Number(r.ab.slice(8, 10))} title="Tag im Monat; hat ein Monat weniger Tage, gilt sein letzter"
-                       oninput={(e) => { const n = Number(e.currentTarget.value); if (n >= 1 && n <= 31) r.monatstag = n; }} />.
+              <span class="stufen">{#each MONATSREGELN as [w, n] (w)}<button class:an={(s.monatsregel ?? "tag") === w} onclick={() => (s.monatsregel = w)}>{n}</button>{/each}</span>
+              {#if (s.monatsregel ?? "tag") === "tag"}
+                <input class="eingabe zahl pw-serien-kurz" value={s.monatstag ?? Number(s.ab.slice(8, 10))} title="Tag im Monat; hat ein Monat weniger Tage, gilt sein letzter"
+                       oninput={(e) => { const n = Number(e.currentTarget.value); if (n >= 1 && n <= 31) s.monatstag = n; }} />.
               {/if}
             </span>
           {:else if s.rhythmus === "taeglich"}
             <span class="name"><i class="fa-solid fa-calendar-week"></i>Wochenende</span>
-            <span class="wert"><button class="schalter" class:an={r.wochenendenUeberspringen} aria-label="Samstag und Sonntag auslassen"
-              onclick={() => (r.wochenendenUeberspringen = !r.wochenendenUeberspringen)}></button><span class="leise klein">Samstag und Sonntag auslassen</span></span>
+            <span class="wert"><button class="schalter" class:an={s.wochenendenUeberspringen} aria-label="Samstag und Sonntag auslassen"
+              onclick={() => (s.wochenendenUeberspringen = !s.wochenendenUeberspringen)}></button><span class="leise klein">Samstag und Sonntag auslassen</span></span>
           {/if}
           <span class="name"><i class="fa-regular fa-clock"></i>Uhrzeit</span>
-          <span class="wert"><input class="eingabe pw-serien-kurz" bind:value={s.uhrzeit} placeholder="ganztägig" title="Steht vor dem Titel jeder Karte; leer: ganztägig" />
+          <span class="wert"><input class="eingabe zahl pw-serien-kurz" class:falsch={uhrzeitFalsch} bind:value={s.uhrzeit} placeholder="ganztägig"
+                                    title={uhrzeitFalsch ? "Uhrzeit bitte wie 07:30" : "Steht vor dem Titel jeder Karte; leer: ganztägig"} />
             <span class="name-neben"><i class="fa-solid fa-hourglass-half"></i>Dauer</span>
-            <input class="eingabe pw-serien-kurz" bind:value={dauerText} title="Stunden:Minuten; Schätzung jeder Karte und vorgebuchte Zeit je Teilnehmer"
-                   oninput={() => { const m = textDauer(dauerText); if (m !== undefined) s.dauerMin = m; }} /></span>
+            <span class="pw-serien-kurz"><DauerFeld sek={s.dauerMin * 60} onwert={(sek) => (s.dauerMin = Math.round(sek / 60))} klasse="feld" leerErlaubt={false}
+                       titel="Stunden:Minuten; Schätzung jeder Karte und vorgebuchte Zeit je Teilnehmer" /></span></span>
           <span class="name"><i class="fa-regular fa-calendar"></i>Zeitraum</span>
-          <span class="wert"><input class="eingabe pw-serien-tag" bind:value={abText} title="Erster möglicher Tag, TT.MM.JJJJ"
-                                    oninput={() => { const t = textTag(abText); if (t) r.ab = t; }} />
+          <span class="wert pw-serien-zeitraum"><DatumFeld tag={s.ab} ontag={(t) => { if (t) s.ab = t; }} titel="Erster möglicher Tag" breite="150px" />
             <span class="schwach">bis</span>
-            <input class="eingabe pw-serien-tag" bind:value={bisText} placeholder="ohne Ende" title="Letzter möglicher Tag, TT.MM.JJJJ; leer: ohne Ende"
-                   oninput={() => { r.bis = bisText.trim() ? textTag(bisText) ?? r.bis : undefined; }} /></span>
+            <DatumFeld tag={s.bis ?? ""} ontag={(t) => (s.bis = t || undefined)} leerErlaubt titel="Letzter möglicher Tag; leer: ohne Ende" breite="150px" /></span>
         </div>
       </section>
 
       <section class="bereich">
         <h2>Teilnehmer</h2>
-        <PersonenFeld bind:konten={s.teilnehmer} {kandidaten} vorschlagOffen={neu} />
+        {#if b}<Teilnehmer board={b} bind:konten={s.teilnehmer} />{/if}
         <p class="leise klein">Jeder Teilnehmer bekommt die Zeit vorgebucht und bestätigt sie am Folgetag selbst. Wer an einem Tag fehlt
           (Urlaub, Abwesenheit, Feiertag seines Bundeslands), bekommt nichts vorgebucht; fehlen alle, entfällt der Tag.</p>
       </section>
@@ -302,13 +292,13 @@
         <h2>Vorbuchen</h2>
         <div class="einstellung">
           <div><div class="name">Vorlauf</div><div class="erklaerung">So viele Tage im Voraus liegen die Karten in der Zielspalte; 0: nur heute</div></div>
-          <div class="wert"><input class="eingabe" value={r.vorlaufTage}
-            oninput={(e) => { const n = Number(e.currentTarget.value); if (Number.isInteger(n) && n >= 0 && n <= 90) r.vorlaufTage = n; }} /><span class="einheit">Tage</span></div>
+          <div class="wert"><input class="eingabe" value={s.vorlaufTage}
+            oninput={(e) => { const n = Number(e.currentTarget.value); if (Number.isInteger(n) && n >= 0 && n <= 90) s.vorlaufTage = n; }} /><span class="einheit">Tage</span></div>
         </div>
         <div class="einstellung">
           <div><div class="name">Feiertage auslassen</div><div class="erklaerung">Nach dem Bundesland jedes Teilnehmers aus seinem Zeitkonto</div></div>
-          <div class="wert"><button class="schalter" class:an={r.feiertageUeberspringen} aria-label="Feiertage auslassen"
-            onclick={() => (r.feiertageUeberspringen = !r.feiertageUeberspringen)}></button></div>
+          <div class="wert"><button class="schalter" class:an={s.feiertageUeberspringen} aria-label="Feiertage auslassen"
+            onclick={() => (s.feiertageUeberspringen = !s.feiertageUeberspringen)}></button></div>
         </div>
       </section>
     </fieldset>
@@ -319,7 +309,7 @@
       <h2>{neu ? "So bucht die Serie vor" : "Tage der Serie"}</h2>
       <p class="leise klein">
         {#if pausiert}Pausiert: keine Vorbuchungen.
-        {:else}Karten liegen bis {datum(plusTage(HEUTE, r.vorlaufTage), true)} in {spalten.find((x) => x.id === s.zielspalte)?.name ?? "der ersten Spalte"};
+        {:else}Karten liegen bis {datum(vorlaufEnde(s, HEUTE), true)} in {spalten.find((x) => x.id === s.zielspalte)?.name ?? "der ersten Spalte"};
           {#if naechster}nächster Tag {datum(naechster.tag, true)}{:else}kein weiterer Tag{/if}{/if}</p>
     </div>
     {#each wochen as w (w.von)}
@@ -327,13 +317,22 @@
       <div class="pw-serien-tagliste">
         {#each w.tage as v (v.tag)}
           {@const a = anzeige(v)}
+          {@const k = v.karte ? karte(v.karte) : undefined}
+          {@const notiz = v.stand === "geloescht" ? geloeschtText(v.tag) : v.notiz}
           <div class="pw-serien-tagzeile {v.stand}" class:heute={v.tag === HEUTE}>
             <span class="wann"><b class="zahl">{datum(v.tag, true)}</b><span class="zahl">{uhrzeitAm(v)}</span></span>
-            <span class="zustand {a.klasse}" title={a.erklaerung}><i class="fa-solid {a.symbol}"></i>{a.text}</span>
-            {#if v.stand === "wartet" || v.notiz || (v.ohne.length && v.stand !== "ausgelassen")}
+            <span class="kopfzeile">
+              <span class="zustand {a.klasse}" title={a.erklaerung}><i class="fa-solid {a.symbol}"></i>{a.text}</span>
+              {#if k && b}<a class="pw-schluessel" href={kartenPfad(b, k)} title="Karte des Tags öffnen">{k.schluessel}</a>{/if}
+              {#if !neu && darf && original && v.tag > HEUTE && ["vorgebucht", "geplant", "beruehrt"].includes(v.stand)}
+                <button class="knopf ohne symbol klein auslassen" onclick={() => tagAuslassen(original!.id, v.tag)}
+                        title="Diesen Tag auslassen: er wird gemerkt und kommt nicht wieder"><i class="fa-solid fa-calendar-xmark"></i></button>
+              {/if}
+            </span>
+            {#if v.stand === "wartet" || notiz || (v.ohne.length && v.stand !== "ausgelassen")}
             <span class="notiz">
-              {#if v.stand === "wartet"}<span class="schwach">wartet auf</span>{#each v.offen as k (k)}<span class="pw-serien-mini" title={konto(k).name}><Person id={k} /></span>{/each}
-              {:else if v.notiz}<span class="schwach">{v.notiz}</span>{/if}
+              {#if v.stand === "wartet"}<span class="schwach">wartet auf</span>{#each v.offen as x (x)}<span class="pw-serien-mini" title={konto(x).name}><Person id={x} /></span>{/each}
+              {:else if notiz}<span class="schwach">{notiz}</span>{/if}
               {#if v.ohne.length && v.stand !== "ausgelassen"}
                 <span class="schwach">ohne</span>{#each v.ohne as o (o.konto)}<span class="pw-serien-mini" title="{konto(o.konto).name}: {o.grund}"><Person id={o.konto} /><span class="klein schwach">{o.grund}</span></span>{/each}
               {/if}
@@ -347,3 +346,4 @@
     {/each}
   </div>
 </div>
+{/if}

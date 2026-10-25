@@ -1,16 +1,17 @@
 <script lang="ts">
   // Eine Karte im Kalender: Spaltenfarbe, Schlüssel, Titel; erledigt mit Haken und durchgestrichen, überfällig mit
   // Warnzeichen (Wort im Hinweis). Klick öffnet die Karte, Ziehen auf einen anderen Tag ändert die Fälligkeit.
+  import { darf as darfIm } from "../../beispiel/abfragen";
   import { HEUTE } from "../../beispiel/daten";
   import type { Board, Karte } from "../../modell";
-  import { hatRecht, istErledigt, kartenPfad } from "./plan.svelte";
+  import { istErledigt, kartenPfad } from "./lesen";
 
-  let { board, karte, ziehen }: { board: Board; karte: Karte; ziehen: (id: string | null) => void } = $props();
+  let { board, karte, ziehen, gesperrt = false }: { board: Board; karte: Karte; ziehen: (id: string | null) => void; gesperrt?: boolean } = $props();
 
   const spalte = $derived(board.spalten.find((s) => s.id === karte.spalte));
   const erledigt = $derived(istErledigt(board, karte));
   const ueberfaellig = $derived(!erledigt && !!karte.faellig && karte.faellig < HEUTE);
-  const darf = $derived(hatRecht(board, "karten.bearbeiten"));
+  const darf = $derived(darfIm(board, "karten.bearbeiten") && !gesperrt);
   const hinweis = $derived(`${karte.schluessel} ${karte.titel} (${spalte?.name}${ueberfaellig ? ", überfällig" : ""}${erledigt ? ", erledigt" : ""})`
     + (darf ? ": auf einen anderen Tag ziehen ändert die Fälligkeit" : ""));
 

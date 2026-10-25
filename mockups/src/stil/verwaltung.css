@@ -1,18 +1,9 @@
 /* Verwaltung: Einstellungen eines Boards, Board anlegen, persönliche Einstellungen. Nur Marken des Appkerns, Bausteine
    des Leitstands unverändert; Eigenes mit pw-verwaltung vorne. */
 
-/* ═══ Reiter mit eigener Adresse: gebaut wie die Reiter des Leitstands (die nur Knöpfe kennen) ════════════════ */
+/* ═══ Reiter im Kopf (Baustein reiter des Leitstands): ohne Abstand darunter, schmal ohne Symbole in einer Zeile ═══ */
 
-.pw-verwaltung-reiter { display: flex; gap: var(--a1); flex-wrap: wrap; }
-.pw-verwaltung-reiter a {
-  display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 var(--a4); white-space: nowrap;
-  border: 1px solid transparent; border-radius: var(--r2); color: var(--text-2); font-weight: 600; font-size: var(--klein);
-}
-.pw-verwaltung-reiter a i { color: var(--text-3); }
-.pw-verwaltung-reiter a:hover { background: var(--bereich); color: var(--text); }
-.pw-verwaltung-reiter a.aktiv { background: var(--bereich); border-color: var(--rand-stark); color: var(--text); }
-.pw-verwaltung-reiter a.aktiv i { color: var(--akzent); }
-/* schmal passen die Reiter ohne Symbole in eine Zeile */
+.reiter.pw-verwaltung-reiter { margin-bottom: 0; }
 @media (max-width: 1000px) {
   .pw-verwaltung-reiter a i { display: none; }
 }
@@ -45,7 +36,8 @@
 /* Zeile zum Anlegen: Eingabe, Wahl, Knopf */
 .pw-verwaltung-formular { display: flex; align-items: center; gap: var(--a2) var(--a3); flex-wrap: wrap; min-width: 0; }
 /* mit Vorschlägen unter dem Feld: die Zeile richtet sich oben aus, die Vorschläge schieben, statt zu überdecken */
-.pw-verwaltung-formular:has(.pw-verwaltung-personenwahl) { align-items: flex-start; }
+.pw-verwaltung-formular:has(.pw-personenwahl) { align-items: flex-start; }
+.pw-verwaltung-formular > .pw-personenwahl { flex: 1 1 280px; }
 .pw-verwaltung-formular > .eingabe { flex: 1 1 220px; max-width: 420px; }
 .pw-verwaltung-formular > select.eingabe { flex: 0 1 auto; }
 .pw-verwaltung-formular > .pw-verwaltung-satz { flex: 1 1 320px; }
@@ -55,12 +47,6 @@
 .pw-verwaltung-zahl .eingabe { width: 90px; height: 36px; text-align: right; font-family: var(--schrift-zahl); }
 .pw-verwaltung-zahl .einheit { font-size: var(--klein); color: var(--text-3); }
 .pw-verwaltung-zahl .fehler { flex-basis: 100%; font-size: var(--klein); color: var(--gefahr); }
-
-/* Farbwahl: Palette als Knöpfe, das Wort dabei */
-.pw-verwaltung-farbe { display: inline-flex; align-items: center; gap: var(--a2); flex-wrap: wrap; min-width: 0; }
-.pw-verwaltung-farbe .chip { height: 36px; }
-.pw-verwaltung-farbe .chip i { font-size: 11px; color: var(--text-3); }
-.pw-verwaltung-farbname { display: inline-flex; align-items: center; gap: 6px; font-size: var(--klein); color: var(--text-2); }
 
 /* ═══ Listen: Spalten, Labels, Felder, Rollen ════════════════════════════════════════════════════════════ */
 
@@ -80,7 +66,7 @@
 .pw-verwaltung-eintrag .angabe { display: inline-flex; align-items: center; gap: var(--a2); flex-wrap: wrap; font-size: var(--klein); color: var(--text-2); min-width: 0; }
 .pw-verwaltung-eintrag .angabe select.eingabe { height: 36px; }
 /* die aufgeklappte Palette bricht in ihrer Angabe um, das Etikett bleibt davor */
-.pw-verwaltung-eintrag .angabe > .pw-verwaltung-farbe { flex: 1 1 0; }
+.pw-verwaltung-eintrag .angabe > .pw-farbwahl { flex: 1 1 0; }
 /* Labels gleich breit, damit die Namensfelder untereinander stehen */
 .pw-verwaltung-eintrag .oben > .pw-label { min-width: 96px; justify-content: center; }
 .pw-verwaltung-griff { width: 24px; height: 36px; display: inline-grid; place-items: center; flex: none; border-radius: var(--r1);
@@ -121,7 +107,7 @@
   .pw-verwaltung-tabelle td.pw-verwaltung-aktion { text-align: right; }
 }
 .pw-verwaltung-person { display: flex; align-items: center; gap: var(--a3); min-width: 0; }
-.pw-verwaltung-person .wer, .pw-verwaltung-eingeladen .wer, .pw-verwaltung-vorschlaege .wer, .pw-verwaltung-konto .wer {
+.pw-verwaltung-person .wer, .pw-verwaltung-eingeladen .wer, .pw-verwaltung-konto .wer {
   display: flex; flex-direction: column; min-width: 0; line-height: 1.3; overflow-wrap: anywhere;
 }
 .pw-verwaltung-datum { font-family: var(--schrift-zahl); white-space: nowrap; }
@@ -131,25 +117,7 @@
 .pw-verwaltung-schalterwort { margin-left: var(--a2); font-size: var(--klein); color: var(--text-2); vertical-align: middle; }
 .pw-verwaltung-tabelle .schalter { vertical-align: middle; }
 
-/* ═══ Person finden: Textfeld mit Vorschlägen ═════════════════════════════════════════════════════════════ */
-
-.pw-verwaltung-personenwahl { display: flex; flex-direction: column; gap: var(--a1); max-width: 460px; min-width: 0; }
-.pw-verwaltung-formular > .pw-verwaltung-personenwahl { flex: 1 1 280px; }
-.pw-verwaltung-personenwahl .suche { flex: none; max-width: none; width: 100%; }
-.pw-verwaltung-vorschlaege {
-  display: flex; flex-direction: column; padding: var(--a1);
-  background: var(--karte); border: 1px solid var(--rand-stark); border-radius: var(--r2);
-}
-.pw-verwaltung-vorschlaege button {
-  display: flex; align-items: center; gap: var(--a3); padding: var(--a2) var(--a3); min-width: 0;
-  border: 0; border-radius: var(--r1); background: none; color: var(--text); text-align: left; cursor: pointer;
-}
-.pw-verwaltung-vorschlaege button:hover, .pw-verwaltung-vorschlaege button:focus-visible { background: var(--karte-2); }
-.pw-verwaltung-vorschlaege .woher { margin-left: auto; font-size: var(--marke); color: var(--text-3); text-align: right; }
-.pw-verwaltung-vorschlaege .leer-zeile { padding: var(--a2) var(--a3); font-size: var(--klein); color: var(--text-3); }
-.pw-verwaltung-neuperson { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; flex: none;
-                           background: var(--karte-2); color: var(--text-3); font-size: 13px; box-shadow: 0 0 0 2px var(--karte); }
-.pw-verwaltung-neuperson.gross { width: 38px; height: 38px; }
+/* gewählte Person vor dem Einladen */
 .pw-verwaltung-gewaehlt { height: 40px; padding-right: 2px; }
 
 /* ═══ Module ═════════════════════════════════════════════════════════════════════════════════════════════ */
@@ -202,6 +170,7 @@
                                      background: color-mix(in srgb, var(--f) 10%, var(--karte)); }
 .pw-verwaltung-minispalten .name { font-size: var(--marke); font-weight: 700; line-height: 1.25; color: var(--f); overflow-wrap: anywhere; }
 .pw-verwaltung-minispalten .erledigt { margin-left: 4px; color: var(--gut); }
+.pw-verwaltung-minispalten .grenze { display: block; margin-top: var(--a1); font-family: var(--schrift-zahl); font-size: var(--marke); color: var(--text-2); }
 
 /* ═══ Persönlich: Schriftstufe mit Vorschau, Push, Konto ════════════════════════════════════════════════════ */
 

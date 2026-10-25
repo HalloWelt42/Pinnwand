@@ -8,13 +8,12 @@
   import { datum } from "../../beispiel/format";
   import { konto } from "../../beispiel/stand.svelte";
   import type { Board } from "../../modell";
-  import type { TagInhalt } from "./kalender";
-  import KalenderKarte from "./KalenderKarte.svelte";
-  import { ABWESENHEIT_NAME, ABWESENHEIT_SYMBOL, feiertagTitel } from "./plan.svelte";
+  import { istWochenende, kalenderwoche, TAGE_KURZ, TAGE_LANG, WOCHE_AB_MONTAG } from "../../regeln/tage";
   import { STAND } from "./anzeige";
-  import { istWochenende, kalenderwoche, TAGE_KURZ, TAGE_LANG, WOCHE_AB_MONTAG } from "./tage";
+  import KalenderKarte from "./KalenderKarte.svelte";
+  import { abwesenheitSymbol, artName, feiertagTitel, type TagInhalt } from "./lesen";
 
-  let { board, tage, inhalt, monat, gezogen = $bindable(null), ablegen, zuTag }: {
+  let { board, tage, inhalt, monat, gezogen = $bindable(null), ablegen, zuTag, gesperrt = false }: {
     board: Board;
     tage: string[];
     inhalt: Map<string, TagInhalt>;
@@ -23,6 +22,8 @@
     gezogen?: string | null;
     ablegen: (id: string, tag: string) => void;
     zuTag: (tag: string) => void;
+    /** Ziehen gesperrt (Suche oder Filter aktiv) */
+    gesperrt?: boolean;
   } = $props();
 
   const MAX = 4;
@@ -38,7 +39,7 @@
   const wochen = $derived(Array.from({ length: tage.length / 7 }, (_, i) => tage.slice(i * 7, i * 7 + 7)));
 
   function ueber(e: DragEvent, tag: string): void {
-    if (!gezogen) return;
+    if (!gezogen || gesperrt) return;
     e.preventDefault();
     ziel = tag;
   }
@@ -67,13 +68,13 @@
           <div class="tagkopf">
             <span class="nummer zahl">{Number(t.slice(8, 10))}</span>
             {#if t === HEUTE}<span class="heute-wort">heute</span>{/if}
-            {#each i.feiertage as f (f.feiertag.name)}<span class="feiertag-name" title={feiertagTitel(f.feiertag, f.konten)}><i class="fa-solid fa-flag"></i>{f.feiertag.name}</span>{/each}
+            {#each i.feiertage as f (f.name)}<span class="feiertag-name" title={feiertagTitel(f)}><i class="fa-solid fa-flag"></i>{f.name}</span>{/each}
           </div>
           {#if i.abwesend.length}
             <div class="abwesend">
               {#each i.abwesend as a (a.konto)}
-                <span class="pw-kalender-abwesend" data-farbe={konto(a.konto).farbe} title="{konto(a.konto).name}: {ABWESENHEIT_NAME[a.art]}{a.notiz ? ` (${a.notiz})` : ''}">
-                  <i class="fa-solid {ABWESENHEIT_SYMBOL[a.art]}"></i>{konto(a.konto).kuerzel}</span>
+                <span class="pw-kalender-abwesend" data-farbe={konto(a.konto).farbe} title="{konto(a.konto).name}: {artName(a)}{a.notiz ? ` (${a.notiz})` : ''}">
+                  <i class="fa-solid {abwesenheitSymbol(a)}"></i>{konto(a.konto).kuerzel}</span>
               {/each}
             </div>
           {/if}
@@ -88,7 +89,7 @@
           {/if}
           {#each sichtbar as e (e.art + e.id)}
             {#if e.art === "karte"}
-              <KalenderKarte {board} karte={e.x} ziehen={(id) => (gezogen = id)} />
+              <KalenderKarte {board} karte={e.x} {gesperrt} ziehen={(id) => (gezogen = id)} />
             {:else}
               <span class="pw-kalender-eintrag termin" title="Termin {e.x.von} bis {e.x.bis}: {e.x.titel}{e.x.ort ? `, ${e.x.ort}` : ''}">
                 <i class="fa-solid fa-handshake zeichen"></i><span class="schluessel">{e.x.von}</span><span class="titel">{e.x.titel}</span></span>

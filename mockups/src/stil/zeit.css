@@ -4,7 +4,7 @@
 
 /* ═══ Farben der Abwesenheiten: eine Stelle für alle Ansichten, immer mit Wort oder Kürzel ═══════════════ */
 
-.pw-zeiten-raum .art-urlaub, .pw-zeiten-raum .art-halbtag { --f: var(--himmel); }
+.pw-zeiten-raum .art-urlaub { --f: var(--himmel); }
 .pw-zeiten-raum .art-krank { --f: var(--koralle); }
 .pw-zeiten-raum .art-frei { --f: var(--sand); }
 .pw-zeiten-raum .art-fortbildung { --f: var(--violett); }
@@ -15,22 +15,6 @@
 
 .pw-zeiten-raum { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
-/* Dauer in einer Zelle oder Zeile: ruhig wie Text, beim Überfahren und im Fokus als Feld erkennbar */
-.pw-zeit-dauer {
-  width: 100%; min-width: 0; height: 34px; padding: 0 6px; text-align: right;
-  font-family: var(--schrift-zahl); font-size: var(--klein); font-weight: 600; color: var(--text);
-  background: transparent; border: 1px solid transparent; border-radius: var(--r1); outline: 0;
-}
-.pw-zeit-dauer:hover { border-color: var(--rand-stark); background: var(--karte); }
-.pw-zeit-dauer:focus { border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); background: var(--karte); }
-.pw-zeit-dauer.gross { height: 38px; font-size: var(--gross); }
-.pw-zeit-dauer.falsch, .pw-zeiten-raum .eingabe.falsch { border-color: color-mix(in srgb, var(--gefahr) 70%, transparent); background: color-mix(in srgb, var(--gefahr) 8%, var(--karte)); }
-
-.pw-zeit-datum { display: inline-flex; flex-direction: column; gap: 2px; min-width: 0; }
-.pw-zeit-datum .eingabe { width: 100%; }
-.pw-zeit-datum small { font-size: var(--marke); color: var(--text-3); min-height: 1.3em; }
-.pw-zeit-datum small.falsch { color: var(--gefahr); }
-
 /* Karte in Listen: Farbpunkt des Boards, Schlüssel, Titel */
 .pw-zeit-karte { display: flex; align-items: center; gap: var(--a2); min-width: 0; }
 .pw-zeit-karte .pw-schluessel { flex: none; }
@@ -38,6 +22,7 @@
 .pw-zeit-karte a.titel:hover { color: var(--akzent); }
 .pw-zeit-karte.zwei .titel { white-space: normal; overflow-wrap: break-word; hyphens: auto; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
 .pw-zeit-karte .erledigt { color: var(--gut); font-size: var(--marke); flex: none; }
+.pw-zeit-karte .zustand { flex: none; }
 
 .pw-zeiten-raum .zeile-wert { display: flex; align-items: baseline; justify-content: space-between; gap: var(--a3); padding: 4px 0; font-size: var(--klein); }
 .pw-zeiten-raum .zeile-wert > span { color: var(--text-2); min-width: 0; }
@@ -55,11 +40,10 @@
 .pw-zeiten-woche .text span { font-family: var(--schrift-zahl); font-size: var(--marke); color: var(--text-3); }
 a.kennzahl.pw-zeiten-verweis { color: var(--text); }
 a.kennzahl.pw-zeiten-verweis:hover { background: var(--karte); }
-.kennzahl.pw-zeiten-lauf { display: grid; grid-template-columns: minmax(0, auto) auto; column-gap: var(--a3); align-items: center; max-width: 100%; }
-.kennzahl.pw-zeiten-lauf > span, .kennzahl.pw-zeiten-lauf > b, .kennzahl.pw-zeiten-lauf > small { grid-column: 1; min-width: 0; }
-.kennzahl.pw-zeiten-lauf > span { color: var(--akzent); }
-.kennzahl.pw-zeiten-lauf > small { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.kennzahl.pw-zeiten-lauf > .knopf { grid-column: 2; grid-row: 1 / span 3; }
+.kennzahl.pw-zeiten-lauf { max-width: 100%; min-width: 0; }
+.kennzahl.pw-zeiten-lauf > span i { margin-right: 2px; }
+.kennzahl.pw-zeiten-lauf.laeuft > span { color: var(--akzent); }
+.kennzahl.pw-zeiten-lauf > small { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .pw-zeiten-blatt { background: var(--bereich); border-radius: var(--r2); padding: var(--a1) var(--a3) var(--a2); overflow-x: auto; overscroll-behavior-x: contain; }
 .pw-zeiten-tabelle { table-layout: fixed; min-width: 720px; }
@@ -207,7 +191,7 @@ th.tag.offen .pw-zeiten-tagknopf { border-color: color-mix(in srgb, var(--akzent
 .pw-arbeitszeit-monat .tag.leer { background: transparent; cursor: default; }
 .pw-arbeitszeit-monat .tag.we { background: transparent; color: var(--text-3); }
 .pw-arbeitszeit-monat .tag.ft, .pw-arbeitszeit-monat .tag[class*="art-"] { background: color-mix(in srgb, var(--f) var(--toenung), transparent); color: var(--f); font-weight: 700; }
-.pw-arbeitszeit-monat .tag.halb, .pw-arbeitszeit-monat .tag.art-halbtag {
+.pw-arbeitszeit-monat .tag.halb, .pw-arbeitszeit-monat .tag.halbtag {
   background: linear-gradient(135deg, color-mix(in srgb, var(--f) var(--toenung), transparent) 50%, var(--karte) 50%); color: var(--f); font-weight: 700;
 }
 .pw-arbeitszeit-monat .tag.heute { box-shadow: inset 0 0 0 2px var(--info); }
@@ -232,7 +216,7 @@ th.tag.offen .pw-zeiten-tagknopf { border-color: color-mix(in srgb, var(--akzent
 }
 .pw-arbeitszeit-legende .muster.we, .pw-arbeitszeit-legende .muster.frei { background: transparent; box-shadow: inset 0 0 0 1px var(--rand-stark); }
 .pw-arbeitszeit-legende .muster.ft, .pw-arbeitszeit-legende .muster[class*="art-"] { background: color-mix(in srgb, var(--f) var(--toenung), transparent); }
-.pw-arbeitszeit-legende .muster.halb, .pw-arbeitszeit-legende .muster.art-halbtag { background: linear-gradient(135deg, color-mix(in srgb, var(--f) var(--toenung), transparent) 50%, var(--karte) 50%); }
+.pw-arbeitszeit-legende .muster.halb, .pw-arbeitszeit-legende .muster.halbtag { background: linear-gradient(135deg, color-mix(in srgb, var(--f) var(--toenung), transparent) 50%, var(--karte) 50%); }
 .pw-arbeitszeit-legende .muster.heute { box-shadow: inset 0 0 0 2px var(--info); }
 .pw-arbeitszeit-legende .muster.da { background: color-mix(in srgb, var(--gut) 16%, transparent); }
 .pw-arbeitszeit-legende .muster.stunden { background: linear-gradient(90deg, color-mix(in srgb, var(--himmel) 14%, transparent), color-mix(in srgb, var(--himmel) 60%, transparent)); }
@@ -286,7 +270,7 @@ th.tag.offen .pw-zeiten-tagknopf { border-color: color-mix(in srgb, var(--akzent
 .pw-arbeitszeit-matrix td.da { background: color-mix(in srgb, var(--gut) 16%, var(--karte)); }
 .pw-arbeitszeit-matrix td.frei { background: transparent; box-shadow: inset 0 0 0 1px var(--rand); }
 .pw-arbeitszeit-matrix td.ft, .pw-arbeitszeit-matrix td[class*="art-"] { background: color-mix(in srgb, var(--f) var(--toenung), var(--hg)); color: var(--f); }
-.pw-arbeitszeit-matrix td.art-halbtag { background: linear-gradient(135deg, color-mix(in srgb, var(--f) var(--toenung), var(--hg)) 50%, var(--karte) 50%); }
+.pw-arbeitszeit-matrix td.halbtag { background: linear-gradient(135deg, color-mix(in srgb, var(--f) var(--toenung), var(--hg)) 50%, var(--karte) 50%); }
 .pw-arbeitszeit-matrix td.stunden { background: color-mix(in srgb, var(--himmel) var(--anteil, 12%), var(--karte)); color: var(--text); font-weight: 600; letter-spacing: -0.02em; }
 .pw-arbeitszeit-matrix td.imsoll { background: color-mix(in srgb, var(--gut) var(--toenung), var(--hg)); color: var(--gut); }
 .pw-arbeitszeit-matrix td.ueber { background: color-mix(in srgb, var(--warn) var(--toenung), var(--hg)); color: var(--warn); }

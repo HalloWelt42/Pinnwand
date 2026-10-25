@@ -4,15 +4,17 @@
   // Module ruhen (ausgegraut, mit Hinweis). Ein Häkchen wirkt sofort für alle Mitglieder dieser Rolle. Besitzer behalten
   // "Board verwalten" und "Mitglieder verwalten", damit immer jemand das Board führen kann.
   import { untrack } from "svelte";
+  import { MODUL_NAME } from "../../../anzeige";
+  import {
+    BESITZER_FEST, rechtSetzen, rolleAnlegen, rolleLoeschen, rolleUmbenennen, rolleVergeben,
+  } from "../../../beispiel/anwendung/boards.svelte";
   import { RECHTE } from "../../../beispiel/daten";
   import Person from "../../../board/Person.svelte";
   import type { Board, ModulKennung, Recht, Rolle } from "../../../modell";
   import { boardPfad } from "../../../weg.svelte";
-  import { MODUL_NAME } from "../daten";
 
   let { board }: { board: Board; entwurf?: string } = $props();
 
-  const BESITZER_FEST = ["board.verwalten", "mitglieder.verwalten"];
   const gruppen = (() => {
     const g: { modul: "kern" | ModulKennung; rechte: Recht[] }[] = [];
     for (const r of RECHTE) {
@@ -26,44 +28,20 @@
   const fest = (rolle: Rolle, recht: string) => rolle.id === "besitzer" && BESITZER_FEST.includes(recht);
   const mitRolle = (id: string) => board.mitglieder.filter((m) => m.rolle === id);
 
-  function umschalten(rolle: Rolle, recht: string): void {
-    rolle.rechte = rolle.rechte.includes(recht) ? rolle.rechte.filter((x) => x !== recht) : [...rolle.rechte, recht];
-  }
-
-  const vergeben = (name: string, ausser = "") =>
-    board.rollen.find((r) => r.id !== ausser && r.name.toLowerCase() === name.trim().toLowerCase());
-  let fehler = $state<Record<string, string>>({});
   function umbenennen(r: Rolle, e: Event): void {
     const feld = e.currentTarget as HTMLInputElement;
-    const neu = feld.value.trim();
-    const doppelt = vergeben(neu, r.id);
-    if (!neu || doppelt) {
-      fehler[r.id] = neu ? `Die Rolle ${doppelt!.name} gibt es schon.` : "Eine Rolle braucht einen Namen.";
-      feld.value = r.name;
-      return;
-    }
-    fehler[r.id] = "";
-    r.name = neu;
+    if (feld.value.trim() === r.name || !rolleUmbenennen(board.id, r.id, feld.value)) feld.value = r.name;
   }
 
   let loeschen = $state<string | null>(null);
   let ersatz = $state("mitglied");
   $effect(() => { board.id; untrack(() => (loeschen = null)); });
-  function rolleLoeschen(r: Rolle): void {
-    for (const m of board.mitglieder) if (m.rolle === r.id) m.rolle = ersatz;
-    board.rollen = board.rollen.filter((x) => x.id !== r.id);
-    loeschen = null;
-  }
 
   let neuName = $state("");
   let kopie = $state("mitglied");
-  const neuDoppelt = $derived(neuName.trim() ? vergeben(neuName) : undefined);
+  const neuDoppelt = $derived(neuName.trim() ? rolleVergeben(board, neuName) : undefined);
   function anlegen(): void {
-    const name = neuName.trim();
-    if (!name || neuDoppelt) return;
-    const vorlage = board.rollen.find((r) => r.id === kopie);
-    board.rollen.push({ id: `r-${crypto.randomUUID()}`, name, rechte: [...(vorlage?.rechte ?? [])] });
-    neuName = "";
+    if (rolleAnlegen(board.id, neuName, kopie)) neuName = "";
   }
 </script>
 
@@ -91,7 +69,6 @@
                         onclick={() => { loeschen = r.id; ersatz = "mitglied"; }}><i class="fa-solid fa-trash-can"></i></button>
               {/if}
             </div>
-            {#if fehler[r.id]}<span class="pw-verwaltung-fehler" role="alert">{fehler[r.id]}</span>{/if}
             {#if loeschen === r.id}
               <div class="hinweis gefahr pw-verwaltung-rueckfrage" role="alert"><i class="fa-solid fa-trash-can"></i>
                 <div><b>Rolle {r.name} löschen?</b>
@@ -102,7 +79,7 @@
                     </select>
                   {:else}Niemand hat sie.{/if}</div>
                 <span class="rechts"><button class="knopf klein" onclick={() => (loeschen = null)}>Abbrechen</button>
-                  <button class="knopf gefahr-voll klein" onclick={() => rolleLoeschen(r)}><i class="fa-solid fa-trash-can"></i>Rolle löschen</button></span>
+                  <button class="knopf gefahr-voll klein" onclick={() => { if (rolleLoeschen(board.id, r.id, ersatz)) loeschen = null; }}><i class="fa-solid fa-trash-can"></i>Rolle löschen</button></span>
               </div>
             {/if}
           </article>
@@ -117,7 +94,7 @@
         </select>
         <button class="knopf" disabled={!neuName.trim() || !!neuDoppelt} onclick={anlegen}><i class="fa-solid fa-plus"></i>Rolle anlegen</button>
       </div>
-      {#if neuDoppelt}<span class="pw-verwaltung-fehler" role="alert">Die Rolle {neuDoppelt.name} gibt es schon.</span>{/if}
+      {#if neuDoppelt}<span class="pw-verwaltung-fehler" role="alert">Die Rolle {neuDoppelt} gibt es schon.</span>{/if}
     </section>
 
     <section class="bereich">
@@ -145,7 +122,7 @@
                   {#each board.rollen as r (r.id)}
                     <td class="haken" data-titel={r.name}>
                       <input type="checkbox" checked={r.rechte.includes(recht.id)} disabled={!an || fest(r, recht.id)}
-                             aria-label="{r.name}: {recht.name}" onchange={() => umschalten(r, recht.id)}
+                             aria-label="{r.name}: {recht.name}" onchange={(e) => rechtSetzen(board.id, r.id, recht.id, (e.currentTarget as HTMLInputElement).checked)}
                              title={fest(r, recht.id) ? "Besitzer behalten das immer, damit jemand das Board führen kann" : `${r.name}: ${recht.name}`} />
                       {#if fest(r, recht.id)}<i class="fa-solid fa-lock schwach" title="Fest für Besitzer"></i>{/if}
                     </td>

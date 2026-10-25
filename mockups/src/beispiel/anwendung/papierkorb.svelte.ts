@@ -94,5 +94,5 @@ export function entfernen(ids: Kennung[]): void {
     }
     stand.papierkorb = stand.papierkorb.filter((x) => !weg.includes(x));
     return weg.length === 1 ? `${eintragName(weg[0])} endgültig entfernt; gebuchte Zeit bleibt` : `${weg.length} Einträge endgültig entfernt; gebuchte Zeit bleibt`;
-  });
+  }, { rueckgaengig: false });
 }

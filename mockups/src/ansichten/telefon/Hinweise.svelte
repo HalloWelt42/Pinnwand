@@ -1,42 +1,36 @@
 <script lang="ts">
-  // Hinweise am Telefon: kurz, neueste zuerst, neue mit Wort und Punkt markiert; ein Tippen springt zur Karte (Termine
-  // ohne Karte nach Heute) und gilt als gelesen. Dieselben Hinweise kommen als Push aufs Telefon.
-  import { HINWEISE } from "../../beispiel/daten";
+  // Hinweise am Telefon: kurz, neueste zuerst, neue mit Wort und Rahmen markiert; ein Tippen springt zur Karte (Termine
+  // ohne Karte nach Heute) und gilt als gelesen, am Konto und damit auf allen Geräten. Dieselben Hinweise kommen als
+  // Push aufs Telefon.
+  import { HINWEIS_ARTEN } from "../../anzeige";
+  import { kartenNummer, ungelesen } from "../../beispiel/abfragen";
+  import { alleGelesen, gelesen } from "../../beispiel/anwendung/hinweise.svelte";
   import { wann } from "../../beispiel/format";
-  import { board, karte } from "../../beispiel/stand.svelte";
-  import type { Hinweis, HinweisArt } from "../../modell";
+  import { board, karte, stand } from "../../beispiel/stand.svelte";
+  import type { Hinweis } from "../../modell";
   import { boardPfad } from "../../weg.svelte";
-  import { gelesen, telefon } from "./aktionen.svelte";
   import TelefonSchale from "./TelefonSchale.svelte";
   import { telPfad } from "./weg";
 
-  const ART: Record<HinweisArt, [string, string]> = {
-    zugewiesen: ["Zugewiesen", "fa-user-plus"],
-    faellig: ["Fällig", "fa-calendar-day"],
-    erwaehnt: ["Erwähnt", "fa-at"],
-    termin: ["Termin", "fa-calendar-check"],
-    kommentar: ["Kommentar", "fa-comment"],
-    verschoben: ["Verschoben", "fa-arrow-right-arrow-left"],
-  };
-  const liste = $derived([...HINWEISE].sort((a, b) => b.zeit.localeCompare(a.zeit)));
-  const neu = (h: Hinweis): boolean => !h.gelesen && !telefon.gelesen.includes(h.id);
-  const ungelesen = $derived(liste.filter(neu));
+  const liste = $derived([...stand.hinweise].sort((a, b) => b.zeit.localeCompare(a.zeit)));
+  const neu = $derived(ungelesen());
+  const art = (h: Hinweis) => HINWEIS_ARTEN.find((a) => a.art === h.art);
   function ziel(h: Hinweis): string {
     const k = h.karte ? karte(h.karte) : undefined;
-    return k ? telPfad(boardPfad(board(k.board).kuerzel, k.schluessel.split("-")[1]), { von: "hinweise" }) : telPfad("/heute");
+    return k ? telPfad(boardPfad(board(k.board).kuerzel, kartenNummer(k)), { von: "hinweise" }) : telPfad("/heute");
   }
 </script>
 
-<TelefonSchale titel="Hinweise" unter={ungelesen.length ? `${ungelesen.length} neu` : "Alles gelesen"} zurueck={telPfad("/heute")} glocke={false}>
-  {#if ungelesen.length}
-    <button class="knopf ohne pw-tel-alle" onclick={() => gelesen(...ungelesen.map((h) => h.id))}><i class="fa-solid fa-check-double"></i>Alle gelesen</button>
+<TelefonSchale titel="Hinweise" unter={neu ? `${neu} neu` : "Alles gelesen"} zurueck={telPfad("/heute")} glocke={false}>
+  {#if neu}
+    <button class="knopf ohne pw-tel-alle" onclick={alleGelesen}><i class="fa-solid fa-check-double"></i>Alle gelesen</button>
   {/if}
   <div class="pw-tel-liste">
     {#each liste as h (h.id)}
-      <a class="pw-tel-hinweis" class:neu={neu(h)} href={ziel(h)} onclick={() => gelesen(h.id)}>
-        <span class="zeichen"><i class="fa-solid {ART[h.art][1]}"></i></span>
+      <a class="pw-tel-hinweis" class:neu={!h.gelesen} href={ziel(h)} onclick={() => gelesen(h.id)}>
+        <span class="zeichen"><i class="fa-solid {art(h)?.symbol ?? 'fa-bell'}"></i></span>
         <span class="text">
-          <span class="kopfzeile"><b>{ART[h.art][0]}</b><span class="zeit">{wann(h.zeit)}</span>{#if neu(h)}<span class="zaehler pille info">neu</span>{/if}</span>
+          <span class="kopfzeile"><b>{art(h)?.name ?? "Hinweis"}</b><span class="zeit">{wann(h.zeit)}</span>{#if !h.gelesen}<span class="zaehler pille info">neu</span>{/if}</span>
           <span class="was">{h.text}</span>
         </span>
         <i class="fa-solid fa-chevron-right"></i>

@@ -5,9 +5,10 @@
   import { onMount } from "svelte";
   import Person from "../../board/Person.svelte";
   import type { Board, Karte } from "../../modell";
-  import { farbeDerSpalte, kartenPfad } from "./plan.svelte";
+  import { darf as darfIm } from "../../beispiel/abfragen";
+  import { farbeDerSpalte, kartenPfad } from "./lesen";
 
-  let { board, karten, titel, erklaerung, gezogen = $bindable(null), ablegen }: {
+  let { board, karten, titel, erklaerung, gezogen = $bindable(null), ablegen, gesperrt = false }: {
     board: Board;
     karten: Karte[];
     titel: string;
@@ -16,7 +17,10 @@
     gezogen?: string | null;
     /** Ablegen auf der Leiste: Datum entfernen */
     ablegen?: (id: string) => void;
+    /** Ziehen gesperrt (Suche oder Filter aktiv) */
+    gesperrt?: boolean;
   } = $props();
+  const ziehbar = $derived(darfIm(board, "karten.bearbeiten") && !gesperrt);
 
   let eingeklappt = $state(false);
   let ziel = $state(false);
@@ -29,7 +33,7 @@
     gezogen = k.id;
   }
   function ueber(e: DragEvent): void {
-    if (!ablegen || !gezogen || karten.some((k) => k.id === gezogen)) return;
+    if (!ablegen || !gezogen || !ziehbar || karten.some((k) => k.id === gezogen)) return;
     e.preventDefault();
     ziel = true;
   }
@@ -58,8 +62,8 @@
     <div class="erklaerung">{erklaerung}</div>
     <div class="liste">
       {#each karten as k (k.id)}
-        <a class="pw-planung-mini" class:gezogen={gezogen === k.id} href={kartenPfad(board, k)} draggable="true" data-farbe={farbeDerSpalte(board, k)}
-           title="{k.schluessel} {k.titel}: auf einen Tag ziehen" ondragstart={(e) => ziehenBeginnt(e, k)} ondragend={() => (gezogen = null)}>
+        <a class="pw-planung-mini" class:gezogen={gezogen === k.id} href={kartenPfad(board, k)} draggable={ziehbar} data-farbe={farbeDerSpalte(board, k)}
+           title="{k.schluessel} {k.titel}{ziehbar ? ': auf einen Tag ziehen' : ''}" ondragstart={(e) => ziehenBeginnt(e, k)} ondragend={() => (gezogen = null)}>
           <span class="oben"><span class="pw-farbpunkt"></span><span class="pw-schluessel">{k.schluessel}</span>
             <span class="rechts pw-personen">{#each k.zustaendig.slice(0, 2) as p (p)}<Person id={p} />{/each}</span></span>
           <span class="titel">{k.titel}</span>

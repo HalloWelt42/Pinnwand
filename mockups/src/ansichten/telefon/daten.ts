@@ -1,12 +1,5 @@
-// Eigene Beispieldaten der Telefonansicht: nur, was der gemeinsame Bestand (beispiel/daten.ts) nicht hat. Dieselbe
-// Welt: Dienstag, der 27. Oktober 2026, 10:42 Uhr; angemeldet ist Max Paulsen.
-
-/** Eigene gebuchte Zeit je Tag in Sekunden (ohne den laufenden Timer), wie im Kopf der Rechneransicht: heute 3:05,
- *  Woche 11:47 */
-export const TAGESSTAND: Record<string, number> = {
-  "2026-10-26": 8 * 3600 + 42 * 60,
-  "2026-10-27": 3 * 3600 + 5 * 60,
-};
+// Eigene Beispieldaten der Telefonansicht: nur, was zum Gerät gehört und nicht zum gemeinsamen Bestand
+// (beispiel/daten.ts). Dieselbe Welt: Dienstag, der 27. Oktober 2026, 10:42 Uhr; angemeldet ist Max Paulsen.
 
 /** Zuletzt genutztes Board beim Erfassen (je Gerät gemerkt) */
 export const ZULETZT_BOARD = "b-prod";

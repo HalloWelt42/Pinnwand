@@ -1,14 +1,17 @@
 <script lang="ts">
   // Karte in den Listen des Telefons (Heute, Board): groß und lesbar, ein Tippen öffnet sie. Links auf Wunsch der Ring
-  // zum Erledigen (Halten), rechts der Timer für Arbeit in Boards mit Zeiterfassung (ein Start hält einen laufenden an
-  // und bucht ihn). Alter im Status ab 4 Tagen als Warnung, ab 8 als Gefahr wie im Board.
-  import { ICH, SERIEN } from "../../beispiel/daten";
+  // zum Erledigen (Halten), rechts der Timer für Karten, auf denen einer laufen darf (ein Start beendet deinen Timer auf
+  // einer anderen Karte und bucht ihn). Zeit, Timer und Alterung kommen aus der gemeinsamen Schicht.
+  import { kartenNummer, laufendAuf, timerErlaubt, timerVon, zeitDerKarte } from "../../beispiel/abfragen";
+  import { erledigen } from "../../beispiel/anwendung/karten.svelte";
+  import { anhalten, fortsetzen, starten } from "../../beispiel/anwendung/timer.svelte";
+  import { ICH } from "../../beispiel/daten";
   import { alterTage, datum, dauer, faelligText } from "../../beispiel/format";
-  import { board, konto } from "../../beispiel/stand.svelte";
+  import { board, konto, stand } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
   import type { Karte } from "../../modell";
+  import { alterung } from "../../regeln/board";
   import { boardPfad } from "../../weg.svelte";
-  import { anhalten, erledigen, kartenzeit, starten } from "./aktionen.svelte";
   import HaltKnopf from "./HaltKnopf.svelte";
   import { telPfad } from "./weg";
 
@@ -25,16 +28,23 @@
   } = $props();
 
   const b = $derived(board(k.board));
-  const spalte = $derived(b.spalten.find((s) => s.id === k.spalte)!);
-  const erledigt = $derived(spalte.erledigt);
+  const spalte = $derived(b.spalten.find((s) => s.id === k.spalte));
+  const erledigt = $derived(spalte?.erledigt ?? false);
   const kannErledigen = $derived(halten && !erledigt && b.spalten.some((s) => s.erledigt));
-  const uhrzeit = $derived(k.serie ? SERIEN.find((s) => s.id === k.serie)?.uhrzeit : undefined);
   const faellig = $derived(k.faellig && !erledigt ? faelligText(k.faellig) : null);
+  /** Uhrzeit einer Serienkarte bei der Fälligkeit, solange sie nicht überfällig ist und nicht schon im Titel steht */
+  const uhrzeit = $derived.by(() => {
+    const u = k.serie ? stand.serien.find((s) => s.id === k.serie)?.uhrzeit : undefined;
+    return u && faellig?.klasse !== "gefahr" && !k.titel.startsWith(u) ? u : undefined;
+  });
   const alter = $derived(alterTage(k.bewegtAm));
   const punkte = $derived(k.checkliste.filter((p) => p.erledigt).length);
-  const mitZeit = $derived(b.module.zeiterfassung && k.art === "arbeit" && !erledigt);
+  const mitZeit = $derived(timerErlaubt(k));
+  const zeit = $derived(zeitDerKarte(k.id));
+  const meiner = $derived(timerVon(ICH)?.karte === k.id ? timerVon(ICH) : undefined);
+  const fremd = $derived(laufendAuf(k.id).find((t) => t.konto !== ICH));
   const andere = $derived(ort ? k.zustaendig.filter((p) => p !== ICH) : k.zustaendig);
-  const pfad = $derived(telPfad(boardPfad(b.kuerzel, k.schluessel.split("-")[1]), von ? { von } : {}));
+  const pfad = $derived(telPfad(boardPfad(b.kuerzel, kartenNummer(k)), von ? { von } : {}));
   let fortschritt = $state(0);
   let hinweis = $state(false);
 </script>
@@ -48,7 +58,7 @@
   <a class="inhalt" href={pfad}>
     {#if ort}
       <span class="ort" data-farbe={b.farbe}><span class="pw-farbpunkt"></span><span class="pw-schluessel">{k.schluessel}</span>
-        <span class="spalte">{spalte.name}</span></span>
+        <span class="spalte">{spalte?.name}</span></span>
     {/if}
     <span class="titel">{k.titel}</span>
     {#if fortschritt > 0}
@@ -67,7 +77,7 @@
         {#if erledigt && k.abgeschlossen}
           <span class="pw-angabe gut"><i class="fa-solid fa-check"></i>{datum(k.abgeschlossen, true)}</span>
         {:else if !ort}
-          <span class="pw-angabe {alter >= 8 ? 'gefahr' : alter >= 4 ? 'warnung' : 'flaeche'}" title="Seit {alter} {alter === 1 ? 'Tag' : 'Tagen'} in dieser Spalte">
+          <span class="pw-angabe {alterung(alter, b.einstellungen)}" title="Seit {alter} {alter === 1 ? 'Tag' : 'Tagen'} in dieser Spalte">
             <i class="fa-solid fa-hourglass-half"></i>{alter}</span>
         {/if}
         {#if k.checkliste.length}<span class="pw-angabe" title="Checkliste"><i class="fa-regular fa-square-check"></i>{punkte}/{k.checkliste.length}</span>{/if}
@@ -76,16 +86,17 @@
       </span>
     {/if}
   </a>
-  {#if mitZeit}
-    {#if k.laeuft?.konto === ICH}
-      <button class="pw-tel-timer laeuft" title="Dein Timer läuft: anhalten und buchen" aria-label="Timer anhalten" onclick={anhalten}>
-        <i class="fa-solid fa-pause"></i><span class="zahl">{dauer(kartenzeit(k))}</span></button>
-    {:else if k.laeuft}
-      <span class="pw-tel-timer fremd" title="Timer von {konto(k.laeuft.konto).name} läuft">
-        <i class="fa-solid fa-circle-play"></i><span class="zahl">{konto(k.laeuft.konto).kuerzel}</span></span>
-    {:else}
-      <button class="pw-tel-timer" title="Timer starten; ein laufender hält dabei an und bucht" aria-label="Timer starten" onclick={() => starten(k.id)}>
-        <i class="fa-solid fa-play"></i>{#if k.erfasstSek}<span class="zahl">{dauer(k.erfasstSek)}</span>{/if}</button>
-    {/if}
+  {#if meiner?.seit}
+    <button class="pw-tel-timer laeuft" title="Dein Timer läuft: anhalten, die Sitzung wird gebucht" aria-label="Timer anhalten" onclick={anhalten}>
+      <i class="fa-solid fa-pause"></i><span class="zahl">{dauer(zeit)}</span></button>
+  {:else if meiner}
+    <button class="pw-tel-timer angehalten" title="Dein Timer ist angehalten: fortsetzen" aria-label="Timer fortsetzen" onclick={fortsetzen}>
+      <i class="fa-solid fa-play"></i><span class="zahl">{dauer(zeit)}</span></button>
+  {:else if fremd}
+    <span class="pw-tel-timer fremd" title="Timer von {konto(fremd.konto).name} läuft">
+      <i class="fa-solid fa-circle-play"></i><span class="zahl">{konto(fremd.konto).kuerzel}</span></span>
+  {:else if mitZeit}
+    <button class="pw-tel-timer" title="Timer starten; dein Timer auf einer anderen Karte endet dabei und bucht" aria-label="Timer starten"
+            onclick={() => starten(k.id)}><i class="fa-solid fa-play"></i>{#if zeit}<span class="zahl">{dauer(zeit)}</span>{/if}</button>
   {/if}
 </div>

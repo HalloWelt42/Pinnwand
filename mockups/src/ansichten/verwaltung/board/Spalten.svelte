@@ -1,39 +1,42 @@
 <script lang="ts">
-  // Spalten: Reihenfolge per Ziehen am Griff (wie im Board), je Spalte Name, Farbe, Grenze, Erledigt-Spalte und die
-  // Vorgabe des Zeitfensters. Löschen fragt in der Fläche und sagt, wohin die Karten gehen: verschieben (derselbe Weg
-  // wie Ziehen: Alter neu, Gruppe zieht mit, Grenze warnt) oder mit der Spalte in den Papierkorb (Wiederherstellen an
-  // der alten Stelle, mit Zeiten). Serien, die hier Karten anlegen, bekommen die neue Zielspalte. Die letzte Spalte bleibt.
+  // Spalten: Reihenfolge per Ziehen am Griff (wie im Board), je Spalte Name, Farbe, Grenze oder Zeitfenster; genau eine
+  // Erledigt-Spalte. Löschen fragt in der Fläche und sagt, wohin die Karten gehen: verschieben (derselbe Weg wie Ziehen:
+  // Alter neu, Gruppe zieht mit, Grenze warnt) oder mit der Spalte in den Papierkorb (Wiederherstellen an der alten
+  // Stelle, mit Zeiten). Die Erledigt-Spalte und die letzte Spalte bleiben. Alles über die Anwendungsfälle.
   import { untrack } from "svelte";
   import { dragHandle, dragHandleZone, type DndEvent } from "svelte-dnd-action";
-  import { SERIEN } from "../../../beispiel/daten";
+  import { laufendAuf, zeitDerKarte } from "../../../beispiel/abfragen";
+  import {
+    spalteAendern, spalteAnlegen, spalteLoeschen, spaltenOrdnen, zurErledigtSpalte,
+  } from "../../../beispiel/anwendung/boards.svelte";
   import { dauer } from "../../../beispiel/format";
-  import { stand } from "../../../beispiel/stand.svelte";
-  import { ablegen } from "../../../beispiel/anwendung/karten.svelte";
+  import { kartenDerSpalte, stand } from "../../../beispiel/stand.svelte";
+  import { ZEITFENSTER, ZEITFENSTER_VORGABE } from "../../../anzeige";
   import type { Board, Farbe, Spalte, Zeitfenster } from "../../../modell";
-  import { ZEITFENSTER } from "../daten";
-  import Farbwahl from "../Farbwahl.svelte";
+  import Farbwahl from "../../../teile/Farbwahl.svelte";
+  import { GRENZEN } from "../daten";
   import Zahlfeld from "../Zahlfeld.svelte";
 
   let { board, entwurf = "" }: { board: Board; entwurf?: string } = $props();
 
+  // Ziehen ordnet erst die Anzeige, das Ablegen ruft den Anwendungsfall (wie im Board)
   let items = $state<Spalte[]>([]);
   $effect(() => { items = [...board.spalten]; });
   function erwaegen(e: CustomEvent<DndEvent<Spalte>>): void { items = e.detail.items; }
   function abgelegt(e: CustomEvent<DndEvent<Spalte>>): void {
     items = e.detail.items;
-    board.spalten = items;
+    spaltenOrdnen(board.id, items.map((s) => s.id));
+    items = [...board.spalten];
   }
 
-  const kartenIn = (id: string) => stand.karten.filter((k) => k.spalte === id);
   const anzahl = (n: number, eins: string, viele: string) => `${n} ${n === 1 ? eins : viele}`;
 
   function umbenennen(s: Spalte, e: Event): void {
     const feld = e.currentTarget as HTMLInputElement;
-    if (feld.value.trim()) s.name = feld.value.trim();
-    else feld.value = s.name;
+    if (!spalteAendern(board.id, s.id, { name: feld.value })) feld.value = s.name;
   }
 
-  // Rückfrage beim Löschen
+  // Rückfrage beim Löschen: eine Ansichtssache, die Änderung kommt erst mit dem Knopf
   let loeschen = $state<string | null>(null);
   let weg = $state<"verschieben" | "papierkorb">("verschieben");
   let ziel = $state("");
@@ -43,48 +46,35 @@
     if (i < 0) return;
     loeschen = id;
     weg = "verschieben";
-    ziel = (board.spalten[i - 1] ?? board.spalten[i + 1])?.id ?? "";
+    ziel = (board.spalten.slice(0, i).reverse().find((s) => !s.erledigt) ?? board.spalten.find((s, j) => j > i && !s.erledigt))?.id ?? "";
   }
+  // vorgeführter Zustand: die Rückfrage zu Geplant steht offen (einmal je Entwurf)
   $effect(() => {
     const e = entwurf;
     untrack(() => { if (e === "rueckfrage") fragen("s-geplant"); else loeschen = null; });
   });
+  function bestaetigen(): void {
+    if (loeschen && spalteLoeschen(board.id, loeschen, weg === "verschieben" ? ziel : undefined)) loeschen = null;
+  }
 
   const fort = $derived(board.spalten.find((s) => s.id === loeschen));
-  const betroffen = $derived(loeschen ? kartenIn(loeschen) : []);
+  const betroffen = $derived(loeschen ? kartenDerSpalte(loeschen) : []);
   const zielSpalte = $derived(board.spalten.find((s) => s.id === ziel));
   const erste = $derived(board.spalten.find((s) => s.id !== loeschen));
   const gruppen = $derived(new Set(betroffen.map((k) => k.gruppe).filter(Boolean)));
   const mitgezogen = $derived(stand.karten.filter((k) => k.board === board.id && k.gruppe && gruppen.has(k.gruppe)
     && k.spalte !== loeschen && k.spalte !== ziel));
-  const laufend = $derived(betroffen.filter((k) => k.laeuft));
-  const zeit = $derived(betroffen.reduce((s, k) => s + k.erfasstSek, 0));
-  const serien = $derived(SERIEN.filter((s) => s.board === board.id && s.zielspalte === loeschen));
-  const danach = $derived(zielSpalte && !zielSpalte.erledigt ? kartenIn(zielSpalte.id).length + betroffen.length + mitgezogen.length : 0);
+  const laufend = $derived(betroffen.filter((k) => laufendAuf(k.id).length));
+  const zeit = $derived(betroffen.reduce((s, k) => s + zeitDerKarte(k.id), 0));
+  const serien = $derived(stand.serien.filter((s) => s.board === board.id && s.zielspalte === loeschen));
+  const danach = $derived(zielSpalte ? kartenDerSpalte(zielSpalte.id).length + betroffen.length + mitgezogen.length : 0);
   const ueberGrenze = $derived(zielSpalte?.grenze !== undefined && danach > zielSpalte.grenze);
-
-  /** Verschieben geht denselben Weg wie das Ziehen im Board (Alter neu, Gruppe zieht mit, Erledigt bucht Timer);
-   *  sonst gehen die Karten mit der Spalte in den Papierkorb */
-  function spalteLoeschen(): void {
-    if (!loeschen) return;
-    if (betroffen.length && weg === "verschieben" && zielSpalte) {
-      ablegen(zielSpalte.id, [...(stand.reihen[zielSpalte.id] ?? []), ...betroffen.map((k) => k.id)], zielSpalte.erledigt);
-    } else {
-      const id = loeschen;
-      stand.karten = stand.karten.filter((k) => k.spalte !== id);
-    }
-    board.spalten = board.spalten.filter((s) => s.id !== loeschen);
-    loeschen = null;
-  }
 
   // neue Spalte: ans Ende, ohne Grenze, nicht erledigt
   let neuName = $state("");
   let neuFarbe = $state<Farbe>("himmel");
   function anlegen(): void {
-    const name = neuName.trim();
-    if (!name) return;
-    board.spalten.push({ id: `s-${crypto.randomUUID()}`, name, farbe: neuFarbe, erledigt: false });
-    neuName = "";
+    if (spalteAnlegen(board.id, neuName, neuFarbe)) neuName = "";
   }
 </script>
 
@@ -96,7 +86,7 @@
     <div class="pw-verwaltung-liste" use:dragHandleZone={{ items, flipDurationMs: 160, type: "spalte", dropTargetStyle: {} }}
          onconsider={erwaegen} onfinalize={abgelegt}>
       {#each items as s (s.id)}
-        {@const n = kartenIn(s.id).length}
+        {@const n = kartenDerSpalte(s.id).length}
         <article class="pw-verwaltung-eintrag" class:gefahr={loeschen === s.id} data-farbe={s.farbe} aria-label="Spalte {s.name}">
           <div class="oben">
             <span class="pw-verwaltung-griff" use:dragHandle aria-label="Spalte {s.name} ziehen zum Umsortieren" title="Ziehen zum Umsortieren">
@@ -104,29 +94,32 @@
             <span class="pw-farbpunkt"></span>
             <input class="eingabe pw-verwaltung-name" value={s.name} aria-label="Name der Spalte" onchange={(e) => umbenennen(s, e)} />
             <span class="pw-angabe flaeche" title="Karten in dieser Spalte"><i class="fa-regular fa-note-sticky"></i>{anzahl(n, "Karte", "Karten")}</span>
-            <button class="knopf ohne symbol klein" disabled={board.spalten.length === 1 || loeschen === s.id} onclick={() => fragen(s.id)}
-                    title={board.spalten.length === 1 ? "Die letzte Spalte bleibt: ein Board braucht mindestens eine" : `Spalte ${s.name} löschen`}
+            <button class="knopf ohne symbol klein" disabled={s.erledigt || board.spalten.length === 1 || loeschen === s.id} onclick={() => fragen(s.id)}
+                    title={s.erledigt ? "Die Erledigt-Spalte bleibt; mach erst eine andere Spalte zur Erledigt-Spalte"
+                      : board.spalten.length === 1 ? "Die letzte Spalte bleibt: ein Board braucht mindestens eine" : `Spalte ${s.name} löschen`}
                     aria-label="Spalte {s.name} löschen"><i class="fa-solid fa-trash-can"></i></button>
           </div>
           <div class="angaben">
             <span class="angabe"><span class="etikett">Farbe</span>
-              <Farbwahl kompakt wert={s.farbe} waehlen={(f) => (s.farbe = f)} wofuer="Farbe der Spalte {s.name}" /></span>
+              <Farbwahl kompakt wert={s.farbe} waehlen={(f) => f && spalteAendern(board.id, s.id, { farbe: f })} wofuer="Farbe der Spalte {s.name}" /></span>
             {#if s.erledigt}
               <span class="angabe" title="Welche erledigten Karten das Board zuerst zeigt; im Board stellt jede Person es für sich um">
                 <span class="etikett">Zeitfenster</span>
-                <select class="eingabe" value={s.zeitfenster ?? "heute"} aria-label="Zeitfenster der Spalte {s.name}"
-                        onchange={(e) => (s.zeitfenster = (e.currentTarget as HTMLSelectElement).value as Zeitfenster)}>
+                <select class="eingabe" value={s.zeitfenster ?? ZEITFENSTER_VORGABE} aria-label="Zeitfenster der Spalte {s.name}"
+                        onchange={(e) => spalteAendern(board.id, s.id, { zeitfenster: (e.currentTarget as HTMLSelectElement).value as Zeitfenster })}>
                   {#each Object.entries(ZEITFENSTER) as [w, t] (w)}<option value={w}>{t}</option>{/each}
                 </select></span>
+              <span class="angabe" title="Genau eine Erledigt-Spalte je Board: ihre Karten gelten als erledigt und laden nach Abschlussdatum">
+                <span class="zustand fertig"><i class="fa-solid fa-circle-check"></i>Erledigt-Spalte</span></span>
             {:else}
               <span class="angabe"><span class="etikett">Grenze</span>
-                <Zahlfeld wert={s.grenze} setzen={(g) => (s.grenze = g)} min={1} max={999} leer="keine" name="Grenze der Spalte {s.name}" einheit="offene Karten" /></span>
+                <Zahlfeld wert={s.grenze} setzen={(g) => spalteAendern(board.id, s.id, { grenze: g ?? null })} min={GRENZEN.grenze[0]} max={GRENZEN.grenze[1]}
+                          leer="keine" name="Grenze der Spalte {s.name}" einheit="offene Karten" /></span>
+              <span class="angabe">
+                <button class="knopf ohne klein" onclick={() => zurErledigtSpalte(board.id, s.id)}
+                        title="Wird die Erledigt-Spalte: ihre Karten gelten als erledigt (Abschluss heute, laufende Timer halten an und buchen); die bisherige Erledigt-Spalte wird offen">
+                  <i class="fa-regular fa-circle-check"></i>Zur Erledigt-Spalte machen</button></span>
             {/if}
-            <span class="angabe" title={s.erledigt ? "Ausschalten: die Karten sind wieder offen, ihr Alter beginnt neu"
-                                                   : "Einschalten: die Karten gelten als erledigt (Abschluss heute), laufende Timer halten an und buchen; das Board lädt sie nach Abschlussdatum"}>
-              <span class="etikett">Erledigt-Spalte</span>
-              <button class="schalter" class:an={s.erledigt} aria-pressed={s.erledigt} aria-label="Erledigt-Spalte {s.name}"
-                      onclick={() => (s.erledigt = !s.erledigt)}></button>{s.erledigt ? "ja" : "nein"}</span>
           </div>
 
           {#if loeschen === s.id && fort}
@@ -154,8 +147,8 @@
                     <label class:an={weg === "papierkorb"}>
                       <input type="radio" name="wohin-{s.id}" value="papierkorb" bind:group={weg} /><span class="kreis"></span>
                       <div><b>Mit der Spalte in den Papierkorb</b>
-                        <span>Samt {dauer(zeit)} Stunden erfasster Zeit, Kommentaren und Anhängen. Wiederherstellen bringt die Spalte an ihre alte
-                          Stelle zurück, mit allem.{#if laufend.length} Laufende Timer ({laufend.map((k) => k.schluessel).join(", ")}) halten an und buchen.{/if}</span>
+                        <span>Samt {dauer(zeit)} Stunden gebuchter Zeit, Kommentaren und Anhängen. Wiederherstellen bringt die Spalte an ihre alte
+                          Stelle zurück, mit allem.{laufend.length ? ` Laufende Timer (${laufend.map((k) => k.schluessel).join(", ")}) halten an und buchen.` : ""}</span>
                       </div>
                     </label>
                   </div>
@@ -167,7 +160,7 @@
               </div>
               <span class="rechts">
                 <button class="knopf klein" onclick={() => (loeschen = null)}>Abbrechen</button>
-                <button class="knopf gefahr-voll klein" onclick={spalteLoeschen}><i class="fa-solid fa-trash-can"></i>Spalte löschen</button>
+                <button class="knopf gefahr-voll klein" onclick={bestaetigen}><i class="fa-solid fa-trash-can"></i>Spalte löschen</button>
               </span>
             </div>
           {/if}
@@ -183,9 +176,9 @@
         <button class="knopf haupt" disabled={!neuName.trim()} onclick={anlegen}><i class="fa-solid fa-plus"></i>Spalte anlegen</button>
       </div>
       <div class="pw-verwaltung-formular">
-        <span class="etikett">Farbe</span><Farbwahl wert={neuFarbe} waehlen={(f) => (neuFarbe = f)} wofuer="Farbe der neuen Spalte" />
+        <span class="etikett">Farbe</span><Farbwahl wert={neuFarbe} waehlen={(f) => f && (neuFarbe = f)} wofuer="Farbe der neuen Spalte" />
       </div>
-      <p class="pw-verwaltung-satz">Kommt ans Ende, ohne Grenze und nicht erledigt; alles andere stellst du danach in ihrer Zeile ein.</p>
+      <p class="pw-verwaltung-satz">Kommt ans Ende, ohne Grenze und offen; alles andere stellst du danach in ihrer Zeile ein.</p>
     </section>
   </div>
 </div>

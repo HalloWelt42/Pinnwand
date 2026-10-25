@@ -49,6 +49,9 @@ export const KARTEN_PLANUNG: Karte[] = [
   karte({ id: "c-124", schluessel: "PROD-124", spalte: "s-geplant", titel: "Kundenbesuch Hoffmann vorbereiten", zustaendig: ["k-max"],
           prioritaet: "niedrig", labels: ["l-kunde"], start: "2026-10-29", faellig: "2026-10-30", erstelltAm: "2026-10-20T16:00:00",
           felder: { "f-kunde": "Hoffmann Antriebe" } }),
+  // Englisch lernen vom 26.10. (Haushalt): liegt noch offen, Max hat seine Zeit nicht bestätigt (Nachtrag)
+  karte({ id: "c-h60", board: "b-haus", schluessel: "HAUS-60", spalte: "s-offen", titel: "12:00 Englisch lernen", zustaendig: ["k-max"],
+          prioritaet: "keine", faellig: "2026-10-26", schaetzungMin: 30, serie: "se-englisch", erstelltAm: "2026-10-19T00:00:00" }),
   // Produktionsrunde vom 26.10.: hat stattgefunden, Anna und Jonas haben ihre Zeit bestätigt, Max fehlt noch (Nachtrag)
   karte({ id: "c-117", schluessel: "PROD-117", spalte: "s-fertig", titel: "07:30 Produktionsrunde", zustaendig: ["k-max", "k-anna", "k-jonas", "k-tim"],
           prioritaet: "keine", faellig: "2026-10-26", schaetzungMin: 15, abgeschlossen: "2026-10-26", serie: "se-runde",

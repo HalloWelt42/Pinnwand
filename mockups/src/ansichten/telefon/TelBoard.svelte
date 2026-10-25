@@ -2,10 +2,11 @@
   // Ein Board am Telefon, spaltenweise: oben die Spalten als Reiter mit Zahl (offene Karten und Grenze), darunter die
   // Karten der gewählten Spalte groß und lesbar; Wischen nach links oder rechts wechselt die Spalte. Die gewählte Spalte
   // bleibt je Board gemerkt. Verschoben wird im Kartendetail; Erledigt zeigt das Zeitfenster des Boards.
-  import { ORDNER } from "../../beispiel/daten";
-  import { board, kartenDerSpalte } from "../../beispiel/stand.svelte";
+  import { sichtbareKarten } from "../../beispiel/abfragen";
+  import { board, kartenDerSpalte, ordnerVon } from "../../beispiel/stand.svelte";
+  import { ZEITFENSTER } from "../../anzeige";
   import type { Spalte } from "../../modell";
-  import { telefon } from "./aktionen.svelte";
+  import { geraet } from "./geraet.svelte";
   import TelefonSchale from "./TelefonSchale.svelte";
   import TelKarte from "./TelKarte.svelte";
   import { telPfad } from "./weg";
@@ -13,15 +14,15 @@
 
   let { boardId }: { boardId: string } = $props();
 
-  const FENSTER = { heute: "heute", gestern: "gestern", woche: "in dieser Woche", monat: "in diesem Monat", jahr: "in diesem Jahr", alle: "insgesamt" } as const;
   const b = $derived(board(boardId));
-  const aktiv = $derived(b.spalten.find((s) => s.id === telefon.spalte[b.id]) ?? b.spalten.find((s) => !s.erledigt) ?? b.spalten[0]);
-  const karten = $derived(kartenDerSpalte(aktiv.id));
-  const ordner = $derived(ORDNER.find((o) => o.boards.includes(b.id))?.name ?? "");
-  const zahl = (s: Spalte): number => kartenDerSpalte(s.id).length;
+  const aktiv = $derived(b.spalten.find((s) => s.id === geraet.spalte[b.id]) ?? b.spalten.find((s) => !s.erledigt) ?? b.spalten[0]);
+  /** offene Spalten zeigen alle Karten, Erledigt-Spalten ihr Zeitfenster */
+  const karten = $derived(sichtbareKarten(b, aktiv));
+  const ordner = $derived(ordnerVon(b.id)?.name ?? "");
+  const zahl = (s: Spalte): number => (s.erledigt ? sichtbareKarten(b, s) : kartenDerSpalte(s.id)).length;
   const ueber = (s: Spalte): boolean => !s.erledigt && s.grenze !== undefined && zahl(s) > s.grenze;
 
-  function waehlen(s: Spalte): void { telefon.spalte[b.id] = s.id; }
+  function waehlen(s: Spalte): void { geraet.spalte[b.id] = s.id; }
   function nachbar(schritt: number): void {
     const i = b.spalten.indexOf(aktiv) + schritt;
     if (i >= 0 && i < b.spalten.length) waehlen(b.spalten[i]);
@@ -54,7 +55,7 @@
         <div>{aktiv.name} ist über der Grenze: <span class="zahl">{zahl(aktiv)}</span> offene Karten, Grenze <span class="zahl">{aktiv.grenze}</span>.</div></div>
     {/if}
     {#if aktiv.erledigt}
-      <div class="pw-tel-fenster schwach"><i class="fa-solid fa-circle-check"></i>Erledigt {FENSTER[aktiv.zeitfenster ?? "woche"]}</div>
+      <div class="pw-tel-fenster schwach"><i class="fa-solid fa-circle-check"></i>Zeitfenster: {ZEITFENSTER[aktiv.zeitfenster ?? "woche"]}</div>
     {/if}
     {#each karten as k (k.id)}
       <TelKarte karte={k} von="board" />

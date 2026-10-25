@@ -3,20 +3,11 @@
 
 /* ═══ Geteilt: Personen wählen, Leiste der Karten ohne Datum, Steuerleiste ═══════════════════════════════════ */
 
-.pw-planung-personen { display: flex; flex-direction: column; gap: var(--a2); min-width: 0; width: 100%; }
-.pw-planung-personen .gewaehlt { display: flex; flex-wrap: wrap; gap: var(--a2); }
-.pw-planung-personen .gewaehlt .chip { padding-right: 2px; cursor: default; }
-.pw-planung-personen .gewaehlt .chip .knopf.symbol.klein { width: 30px; height: 30px; }
-.pw-planung-personen .suche { max-width: none; height: 40px; }
-.pw-planung-personen .vorschlaege { display: flex; flex-direction: column; gap: 2px; padding: var(--a1); border-radius: var(--r2);
-                                    background: var(--karte); border: 1px solid var(--rand); }
-.pw-planung-personen .vorschlaege .zeile { width: 100%; border: 0; background: transparent; color: var(--text); cursor: pointer; text-align: left;
-                                           padding: 6px var(--a2); font-size: var(--klein); }
-.pw-planung-personen .vorschlaege .zeile:hover { background: var(--karte-2); }
-.pw-planung-personen .vorschlaege .zeile[disabled] { cursor: not-allowed; }
-.pw-planung-personen .vorschlaege .zeile[disabled] .name { color: var(--text-3); }
-.pw-planung-personen .vorschlaege .name { flex: 1; min-width: 0; }
-.pw-planung-personen .vorschlaege .grund { color: var(--text-3); font-size: var(--marke); }
+/* Teilnehmer: gewählte als Chips, darunter die gemeinsame Personenwahl */
+.pw-planung-teilnehmer { display: flex; flex-direction: column; gap: var(--a2); min-width: 0; width: 100%; }
+.pw-planung-teilnehmer .gewaehlt { display: flex; flex-wrap: wrap; gap: var(--a2); }
+.pw-planung-teilnehmer .gewaehlt .chip { padding-right: 2px; cursor: default; }
+.pw-planung-teilnehmer .gewaehlt .chip .knopf.symbol.klein { width: 30px; height: 30px; }
 
 /* Raum einer Ansicht des Boards (Kalender, Zeitachse): links die Ansicht, rechts die Leiste ohne Datum */
 .pw-planung-raum { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--a3); padding: 0 var(--a6) var(--a4); }
@@ -97,6 +88,9 @@
 .pw-serien-mini .pw-person { width: 24px; height: 24px; box-shadow: none; }
 
 .pw-serien-terminneu { display: flex; flex-direction: column; gap: var(--a3); }
+.pw-serien-wannfelder, .pw-serien-zeitraum { align-items: flex-start; }
+.pw-serien-wannfelder > .schwach, .pw-serien-zeitraum > .schwach { line-height: 42px; }
+.pw-serien-du { display: inline-flex; align-items: center; gap: var(--a2); flex-wrap: wrap; }
 .pw-serien-knoepfe { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; }
 .pw-serien-fehler { display: inline-flex; align-items: center; gap: 6px; color: var(--gefahr); font-size: var(--klein); }
 
@@ -116,8 +110,7 @@
 .zeile-nachtrag .was b i { color: var(--text-3); font-size: 13px; }
 .zeile-nachtrag .was .schwach { font-size: var(--marke); display: flex; align-items: center; flex-wrap: wrap; gap: 2px 4px; }
 .zeile-nachtrag .dauer { display: inline-flex; align-items: center; gap: var(--a2); }
-.zeile-nachtrag .dauer .eingabe { width: 76px; height: 36px; text-align: right; font-family: var(--schrift-zahl); }
-.zeile-nachtrag .zustand { grid-column: span 2; justify-self: end; }
+.zeile-nachtrag .dauer .pw-dauerfeld { width: 84px; height: 36px; text-align: right; }
 .pw-serien-nachtrag .nachtragfuss { display: flex; align-items: center; gap: var(--a3); flex-wrap: wrap; }
 
 @container tabelle (max-width: 900px) {
@@ -128,7 +121,6 @@
   .zeile-nachtrag { grid-template-columns: 70px minmax(0, 1fr) auto auto; row-gap: var(--a2); }
   .zeile-nachtrag .was { grid-column: 2 / -1; }
   .zeile-nachtrag .dauer { grid-column: 2; }
-  .zeile-nachtrag .zustand { grid-column: 2 / 4; justify-self: start; }
 }
 
 /* Serie anlegen und bearbeiten: links das Formular, rechts die Tage */
@@ -157,7 +149,10 @@
 .pw-serien-tagliste { display: flex; flex-direction: column; gap: 2px; }
 .pw-serien-tagzeile { display: grid; grid-template-columns: 140px minmax(0, 1fr); align-items: center; gap: 4px var(--a3);
                       padding: 6px var(--a2); border-radius: var(--r2); background: var(--bereich); }
-.pw-serien-tagzeile > .zustand { justify-self: start; }
+.pw-serien-tagzeile > .kopfzeile { display: flex; align-items: center; gap: var(--a2); min-width: 0; flex-wrap: wrap; }
+.pw-serien-tagzeile .kopfzeile .pw-schluessel:hover { color: var(--akzent); }
+.pw-serien-tagzeile .kopfzeile .auslassen { margin-left: auto; width: 32px; height: 32px; opacity: 0; }
+.pw-serien-tagzeile:hover .kopfzeile .auslassen, .pw-serien-tagzeile .kopfzeile .auslassen:focus-visible { opacity: 1; }
 .pw-serien-tagzeile > .notiz { grid-column: 2; }
 .pw-serien-tagzeile.heute { outline: 1px solid color-mix(in srgb, var(--akzent-flaeche) 55%, transparent); }
 .pw-serien-tagzeile .wann { display: flex; gap: var(--a2); align-items: baseline; }
@@ -361,3 +356,4 @@
 @media (max-width: 1240px) {
   .pw-zeitachse-zeile > .name .pw-personen { display: none; }
 }
+.pw-serien-formular .pw-dauerfeld.feld { height: 42px; font-size: var(--gross); font-weight: 500; }

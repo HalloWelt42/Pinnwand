@@ -1,7 +1,6 @@
 // Wege der Telefonansicht (?geraet=telefon): dieselben Pfade wie am Rechner, eigene Ansichten (siehe src/routen.ts).
 import type { Route } from "../../routen";
-import { boardAusKuerzel } from "../../routen";
-import { stand } from "../../beispiel/stand.svelte";
+import { boardAusKuerzel, karteAusNummer } from "../../beispiel/stand.svelte";
 import Boards from "./Boards.svelte";
 import Erfassen from "./Erfassen.svelte";
 import Heute from "./Heute.svelte";
@@ -26,7 +25,7 @@ export const ROUTEN: Route[] = [
     muster: /^\/board\/([a-z0-9]+)\/(\d+)$/,
     ansicht: (m, entwurf) => {
       const b = boardAusKuerzel(m[1]);
-      const k = b ? stand.karten.find((x) => x.board === b.id && x.schluessel === `${b.kuerzel}-${m[2]}`) : undefined;
+      const k = b ? karteAusNummer(b, m[2]) : undefined;
       return b && k ? { navi: b.id, komponente: TelKartendetail, werte: { kartenId: k.id, entwurf } } : null;
     },
   },

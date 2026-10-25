@@ -3,34 +3,34 @@
   // zuerst und nach Tagen. Ungelesene stehen hervorgehoben mit dem Wort "Neu"; ein Klick springt zur Karte und gilt als
   // gelesen. Der Gelesen-Stand gehört dem Konto, nicht dem Browser. Welche Arten zusätzlich per Push aufs Telefon und an
   // den Assistenten gehen, steht in den Einstellungen.
+  import { kartenNummer, ungelesen as ungeleseneZahl } from "../../beispiel/abfragen";
+  import { alleGelesen, gelesen } from "../../beispiel/anwendung/hinweise.svelte";
   import { HEUTE } from "../../beispiel/daten";
   import { datum, wann } from "../../beispiel/format";
-  import { tageZwischen } from "../../regeln/tage";
-  import { board, karte, konto } from "../../beispiel/stand.svelte";
+  import { board, karte, konto, stand } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
+  import { HINWEIS_ARTEN } from "../../anzeige";
   import type { Farbe, Hinweis, HinweisArt } from "../../modell";
+  import { tageZwischen } from "../../regeln/tage";
   import { boardPfad } from "../../weg.svelte";
-  import { alleGelesen, gelesen, uebersicht } from "./aktionen.svelte";
   import BoardMarke from "./BoardMarke.svelte";
 
-  const ARTEN: Record<HinweisArt, { name: string; symbol: string; farbe: Farbe }> = {
-    zugewiesen: { name: "Zugewiesen", symbol: "fa-user-plus", farbe: "himmel" },
-    faellig: { name: "Fällig", symbol: "fa-calendar-day", farbe: "koralle" },
-    erwaehnt: { name: "Erwähnt", symbol: "fa-at", farbe: "violett" },
-    termin: { name: "Termin", symbol: "fa-calendar-check", farbe: "petrol" },
-    kommentar: { name: "Kommentar", symbol: "fa-comment", farbe: "stahl" },
-    verschoben: { name: "Verschoben", symbol: "fa-arrow-right-arrow-left", farbe: "tuerkis" },
+  /** Farbe je Art (Wort und Farbe; Namen und Zeichen aus anzeige.ts) */
+  const FARBE: Record<HinweisArt, Farbe> = {
+    zugewiesen: "himmel", faellig: "koralle", erwaehnt: "violett", termin: "petrol", kommentar: "stahl", verschoben: "tuerkis",
   };
-  const ART_LISTE = Object.keys(ARTEN) as HinweisArt[];
+  const ARTEN = Object.fromEntries(HINWEIS_ARTEN.map((a) => [a.art, { ...a, farbe: FARBE[a.art] }])) as
+    Record<HinweisArt, (typeof HINWEIS_ARTEN)[number] & { farbe: Farbe }>;
+  const ART_LISTE = HINWEIS_ARTEN.map((a) => a.art);
 
   let filter = $state<"alle" | "ungelesen" | HinweisArt>("alle");
-  const alle = $derived([...uebersicht.hinweise].sort((a, b) => b.zeit.localeCompare(a.zeit)));
-  const ungelesen = $derived(alle.filter((h) => !h.gelesen).length);
+  const alle = $derived([...stand.hinweise].sort((a, b) => b.zeit.localeCompare(a.zeit)));
+  const ungelesen = $derived(ungeleseneZahl());
   const liste = $derived(alle.filter((h) => filter === "alle" || (filter === "ungelesen" ? !h.gelesen : h.art === filter)));
   const tage = $derived.by(() => {
     const t: { name: string; hinweise: Hinweis[] }[] = [];
     for (const h of liste) {
-      const d = tageZwischen(h.zeit, HEUTE);
+      const d = tageZwischen(h.zeit.slice(0, 10), HEUTE);
       const name = d === 0 ? "Heute" : d === 1 ? "Gestern" : datum(h.zeit, true);
       if (t.at(-1)?.name !== name) t.push({ name, hinweise: [] });
       t.at(-1)!.hinweise.push(h);
@@ -41,7 +41,7 @@
   /** Ziel eines Hinweises: die Karte über ihren Pfad, ein Termin in Serien und Termine */
   function ziel(h: Hinweis): { pfad: string; name: string } {
     const k = h.karte ? karte(h.karte) : undefined;
-    if (k) return { pfad: boardPfad(board(k.board).kuerzel, k.schluessel.split("-")[1]), name: k.schluessel };
+    if (k) return { pfad: boardPfad(board(k.board).kuerzel, kartenNummer(k)), name: k.schluessel };
     return h.art === "termin" ? { pfad: "/serien", name: "Termin" } : { pfad: boardPfad(board(h.board).kuerzel), name: "Board" };
   }
 </script>

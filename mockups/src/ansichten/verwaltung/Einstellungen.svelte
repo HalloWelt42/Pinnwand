@@ -8,7 +8,6 @@
   import Darstellung from "./person/Darstellung.svelte";
   import Hinweise from "./person/Hinweise.svelte";
   import Konto from "./person/Konto.svelte";
-  import Reiter from "./Reiter.svelte";
 
   let { reiter = "darstellung" }: { reiter?: string; entwurf?: string } = $props();
 
@@ -22,7 +21,12 @@
     <div class="unterzeile">Was nur dich betrifft. Einstellungen eines Boards findest du im Board, dein Zeitkonto unter
       <a href="/arbeitszeit">Arbeitszeit</a>.</div>
   </div>
-  <Reiter reiter={PERSON_REITER} aktiv={reiter} name="Persönliche Einstellungen" pfad={(id) => `/einstellungen/${id}`} />
+  <nav class="reiter pw-verwaltung-reiter" aria-label="Persönliche Einstellungen">
+    {#each PERSON_REITER as r (r.id)}
+      <a href="/einstellungen/{r.id}" class:aktiv={r.id === reiter} aria-current={r.id === reiter ? "page" : undefined}>
+        <i class="fa-solid {r.symbol}"></i>{r.name}</a>
+    {/each}
+  </nav>
 </div>
 {#if Seite}
   <Seite />

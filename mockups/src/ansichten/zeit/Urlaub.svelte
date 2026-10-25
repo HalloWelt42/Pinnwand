@@ -2,17 +2,17 @@
   // Urlaub und Abwesenheit: links eintragen (von, bis, Art, halber Tag, Notiz) und die Liste des Jahres mit ihrer Wirkung
   // auf das Soll, rechts das Ergebnis der Eingabe Tag für Tag und Brückentage als Vorschlag. Wochenenden und Feiertage
   // zählen nie als Urlaubstag; was sich mit einer vorhandenen Abwesenheit überschneidet, wird ersetzt.
-  import { HEUTE, ICH, SERIEN } from "../../beispiel/daten";
-  import { datum, dauer } from "../../beispiel/format";
+  import { urlaub } from "../../beispiel/abfragen";
+  import { eintragen as abwesenheitEintragen, entfernen } from "../../beispiel/anwendung/abwesenheiten.svelte";
+  import { HEUTE, ICH } from "../../beispiel/daten";
+  import { datum, dauer, spanne, tageZahl } from "../../beispiel/format";
+  import { stand } from "../../beispiel/stand.svelte";
   import type { Abwesenheit, AbwesenheitArt } from "../../modell";
-  import { spanne, tageZahl } from "./anzeige";
-  import DatumFeld from "./DatumFeld.svelte";
-  import { ARTEN, brueckentage, urlaubstage, wirkung, wochentag } from "./regeln";
-  import { abwesenheitEintragen, abwesenheitEntfernen, halbtage, kontoVon, zeit } from "./stand.svelte";
+  import { ARTEN, artName, brueckentage, fassungAm, wirkung } from "../../regeln/arbeitszeit";
+  import DatumFeld from "../../teile/DatumFeld.svelte";
 
   let { entwurf: _entwurf = "" }: { entwurf?: string } = $props();
 
-  const k = kontoVon(ICH)!;
   const jahr = Number(HEUTE.slice(0, 4));
   let von = $state("2026-11-16");
   let bis = $state("2026-11-20");
@@ -22,30 +22,20 @@
   const WAHL: AbwesenheitArt[] = ["urlaub", "krank", "frei", "fortbildung"];
 
   const gueltig = $derived(von <= bis);
-  const neu = $derived<Abwesenheit>({ konto: ICH, von, bis: gueltig ? bis : von, art: art === "urlaub" && halb ? "halbtag" : art, notiz: notiz || undefined });
-  const w = $derived(wirkung(k, halbtage(ICH), neu));
-  const vorhanden = $derived(zeit.abwesenheiten.filter((a) => a.konto === ICH && a.von <= neu.bis && a.bis >= neu.von));
-  const ersetzt = $derived(vorhanden.reduce((s, a) => s + wirkung(k, halbtage(ICH), a).urlaubstage, 0));
-  const genommen = $derived(urlaubstage(k, halbtage(ICH), zeit.abwesenheiten, jahr, HEUTE));
-  const geplant = $derived(urlaubstage(k, halbtage(ICH), zeit.abwesenheiten, jahr, HEUTE, true));
-  const frei = $derived(k.urlaubsanspruch + k.resturlaubVorjahr - genommen - geplant);
-
-  /** Serien nur für dich legen an Abwesenheitstagen keine Karte an (wie bisher: Urlaubstage werden übersprungen) */
-  const ausgesetzt = $derived.by(() => {
-    if (ARTEN[neu.art].soll >= 1) return [];
-    const weg = w.tage.filter((t) => t.basisSek > 0 && t.sollSek < t.basisSek).map((t) => t.tag);
-    return SERIEN.filter((x) => !x.pausiert && x.teilnehmer.length === 1 && x.teilnehmer[0] === ICH).map((x) => {
-      const passt = (t: string) => x.rhythmus === "taeglich" || (x.rhythmus === "werktags" && wochentag(t) >= 1 && wochentag(t) <= 5)
-        || (x.rhythmus === "woechentlich" && !!x.tage?.includes(wochentag(t)));
-      return { titel: x.titel, tage: weg.filter(passt).length };
-    }).filter((x) => x.tage > 0);
-  });
-  const liste = $derived(zeit.abwesenheiten.filter((a) => a.konto === ICH && a.bis.slice(0, 4) >= String(jahr)).slice().sort((a, b) => a.von.localeCompare(b.von)));
-  const bruecken = $derived(brueckentage(k, HEUTE, `${jahr + 1}-12-31`));
+  /** die Eingabe als geplante Abwesenheit, nur zur Vorschau der Wirkung */
+  const neu = $derived<Abwesenheit>({ id: "vorschau", konto: ICH, von, bis: gueltig ? bis : von, art, anteil: halb ? 0.5 : undefined, notiz: notiz || undefined });
+  const k = $derived(fassungAm(stand.zeitkonten, ICH, von)!);
+  const w = $derived(wirkung(k, neu));
+  const vorhanden = $derived(stand.abwesenheiten.filter((a) => a.konto === ICH && a.von <= neu.bis && a.bis >= neu.von));
+  const ersetzt = $derived(vorhanden.reduce((s, a) => s + wirkung(k, a).urlaubstage, 0));
+  const u = $derived(urlaub(ICH)!);
+  const liste = $derived(stand.abwesenheiten.filter((a) => a.konto === ICH && a.bis.slice(0, 4) >= String(jahr)).slice().sort((a, b) => a.von.localeCompare(b.von)));
+  const kHeute = $derived(fassungAm(stand.zeitkonten, ICH, HEUTE)!);
+  const bruecken = $derived(brueckentage(kHeute, HEUTE, `${jahr + 1}-12-31`));
 
   function eintragen(): void {
     if (!gueltig || w.arbeitstage === 0) return;
-    abwesenheitEintragen(neu);
+    abwesenheitEintragen({ konto: ICH, von: neu.von, bis: neu.bis, art: neu.art, anteil: neu.anteil, notiz: neu.notiz });
     notiz = "";
   }
   function bruecke(t: string): void {
@@ -70,7 +60,7 @@
             <div><b><i class="fa-solid {ARTEN[a].symbol}"></i> {ARTEN[a].name}</b><span>{ARTEN[a].wirkung}</span></div></label>
         {/each}
       </div>
-      {#if art === "urlaub"}
+      {#if art !== "frei"}
         <label class="pw-arbeitszeit-schalter"><button class="schalter" class:an={halb} aria-pressed={halb} aria-label="Halbe Tage" onclick={() => (halb = !halb)}></button>
           Halbe Tage <span class="schwach klein">jeder Tag zählt halb, für Soll und Urlaub</span></label>
       {/if}
@@ -86,16 +76,16 @@
         <table class="tabelle pw-arbeitszeit-liste">
           <thead><tr><th>Zeitraum</th><th>Art</th><th class="zahl">Arbeitstage</th><th class="zahl">Urlaub</th><th class="zahl">Soll</th><th>Notiz</th><th></th></tr></thead>
           <tbody>
-            {#each liste as a (`${a.von}-${a.art}`)}
-              {@const wa = wirkung(k, halbtage(ICH), a)}
+            {#each liste as a (a.id)}
+              {@const wa = wirkung(fassungAm(stand.zeitkonten, ICH, a.von)!, a)}
               <tr class:spaeter={a.von > HEUTE}>
                 <td>{spanne(a.von, a.bis)} {#if a.von > HEUTE}<span class="zustand wartet">geplant</span>{/if}</td>
-                <td data-titel="Art"><span class="pw-arbeitszeit-art art-{a.art}"><i class="fa-solid {ARTEN[a.art].symbol}"></i>{ARTEN[a.art].name}</span></td>
+                <td data-titel="Art"><span class="pw-arbeitszeit-art art-{a.art}"><i class="fa-solid {ARTEN[a.art].symbol}"></i>{artName(a)}</span></td>
                 <td class="zahl" data-titel="Arbeitstage">{tageZahl(wa.arbeitstage)}</td>
                 <td class="zahl" data-titel="Urlaub">{wa.urlaubstage ? tageZahl(wa.urlaubstage) : ""}</td>
                 <td class="zahl" data-titel="Soll" title={ARTEN[a.art].wirkung}>{wa.sollSek ? `-${dauer(wa.sollSek)}` : "bleibt"}</td>
                 <td data-titel="Notiz">{a.notiz ?? ""}</td>
-                <td>{#if a.von > HEUTE}<button class="knopf ohne symbol klein" title="Entfernen (Rückgängig möglich)" onclick={() => abwesenheitEntfernen(a)}><i class="fa-solid fa-xmark"></i></button>{/if}</td>
+                <td>{#if a.von > HEUTE}<button class="knopf ohne symbol klein" title="Entfernen (Rückgängig möglich)" onclick={() => entfernen(a.id)}><i class="fa-solid fa-xmark"></i></button>{/if}</td>
               </tr>
             {/each}
           </tbody>
@@ -113,14 +103,11 @@
         <div class="zeile-wert"><span>Soll</span><b class="zahl">{w.sollSek ? `-${dauer(w.sollSek)}` : "bleibt"}</b></div>
         {#if ARTEN[neu.art].urlaub > 0}
           <div class="zeile-wert"><span>Urlaubstage</span><b class="zahl">{tageZahl(w.urlaubstage)}</b></div>
-          <div class="zeile-wert"><span>Frei verplanbar</span><b class="zahl" class:minus={frei + ersetzt - w.urlaubstage < 0}>{tageZahl(frei)} auf {tageZahl(frei + ersetzt - w.urlaubstage)}</b></div>
+          <div class="zeile-wert"><span>Frei verplanbar</span><b class="zahl" class:minus={u.rest + ersetzt - w.urlaubstage < 0}>{tageZahl(u.rest)} auf {tageZahl(u.rest + ersetzt - w.urlaubstage)}</b></div>
         {/if}
       </div>
-      {#each ausgesetzt as x (x.titel)}
-        <div class="zeile-wert"><span><i class="fa-solid fa-repeat"></i> Serie {x.titel}</span><b class="zahl">an {x.tage} {x.tage === 1 ? "Tag" : "Tagen"} ausgesetzt</b></div>
-      {/each}
       {#if vorhanden.length}
-        <div class="hinweis warnung"><i class="fa-solid fa-triangle-exclamation"></i><div>Ersetzt {vorhanden.map((a) => `${ARTEN[a.art].name} ${spanne(a.von, a.bis)}`).join(", ")}.</div></div>
+        <div class="hinweis warnung"><i class="fa-solid fa-triangle-exclamation"></i><div>Ersetzt {vorhanden.map((a) => `${artName(a)} ${spanne(a.von, a.bis)}`).join(", ")}.</div></div>
       {/if}
       <div class="pw-arbeitszeit-tage">
         {#each w.tage as t (t.tag)}
@@ -134,7 +121,7 @@
 
     <section class="bereich pw-arbeitszeit-spaeter">
       <div class="etikett">Brückentage</div>
-      <p class="schwach klein">Ein Urlaubstag zwischen Feiertag und Wochenende, in {k.bundesland}.</p>
+      <p class="schwach klein">Ein Urlaubstag zwischen Feiertag und Wochenende, in {kHeute.bundesland}.</p>
       {#each bruecken as b (b.tag)}
         <div class="pw-arbeitszeit-bruecke">
           <i class="fa-solid fa-bridge"></i>

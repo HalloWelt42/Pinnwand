@@ -2,15 +2,20 @@
 // und Summe. Zeiten kommen aus den Zeiteinträgen (jede Sekunde zählt einmal), Soll und Abwesenheit aus dem Zeitkonto.
 // In der App rechnet das der Dienst des Moduls Berichte; die Vorschau zeigt genau, was die Datei enthält.
 
-import { ICH } from "../../beispiel/daten";
-import { datum, dauer } from "../../beispiel/format";
-import { board, konto, stand } from "../../beispiel/stand.svelte";
-import type { Karte } from "../../modell";
-import { differenz, spanne } from "./anzeige";
-import { ZUSATZKARTEN } from "./daten";
-import { ARTEN, tageVonBis } from "./regeln";
-import { eintraegeVon, istAm, karteVon, soll } from "./stand.svelte";
-import type { BerichtArt, BerichtFormat, BerichtInhalt } from "./typen";
+import { darf, istAm, kartenName, sollTag, zeitDerKarte } from "../../beispiel/abfragen";
+import { HEUTE, ICH } from "../../beispiel/daten";
+import { datum, dauer, differenz, spanne } from "../../beispiel/format";
+import { board, karte, konto, stand } from "../../beispiel/stand.svelte";
+import type { BerichtArt, BerichtFormat } from "../../modell";
+import { artName, fassungAm } from "../../regeln/arbeitszeit";
+import { tageVon } from "../../regeln/tage";
+
+/** Inhalt eines Berichts unabhängig vom Format: Abschnitte mit Spalten, Zeilen und Summe (wie der Dienst der alten App) */
+export interface BerichtInhalt {
+  titel: string;
+  zeitraum: string;
+  abschnitte: { titel: string; spalten: string[]; zeilen: string[][]; summe?: string[]; fuss?: string }[];
+}
 
 export interface Auswahl {
   art: BerichtArt;
@@ -31,14 +36,14 @@ function nachweis(a: Auswahl): BerichtInhalt {
   const abschnitte = a.personen.map((p) => {
     const zeilen: string[][] = [];
     let s = 0, i = 0;
-    for (const t of tageVonBis(a.von, a.bis)) {
-      const sl = soll(p, t);
+    for (const t of tageVon(a.von, a.bis)) {
+      const sl = sollTag(p, t);
       if (!sl) continue;
       const ist = istAm(p, t);
       if (!sl.sollSek && !ist && !sl.feiertag && !sl.abwesenheit) continue;
       s += sl.sollSek; i += ist;
-      const karten = [...new Set(eintraegeVon(p, t).map((e) => karteVon(e.karte)?.schluessel ?? ""))].join(", ");
-      const hinweis = sl.feiertag ?? (sl.abwesenheit ? ARTEN[sl.abwesenheit.art].name : sl.regel ?? "");
+      const karten = [...new Set(stand.zeiteintraege.filter((e) => e.konto === p && e.datum === t).map((e) => kartenName(e.karte).schluessel))].join(", ");
+      const hinweis = sl.feiertag ?? (sl.abwesenheit ? artName(sl.abwesenheit) : sl.regel ?? "");
       zeilen.push([datum(t, true), dauer(sl.sollSek), dauer(ist), differenz(ist - sl.sollSek), karten, hinweis]);
     }
     return { titel: konto(p).name, spalten: ["Tag", "Soll", "Ist", "Differenz", "Karten", "Hinweis"], zeilen,
@@ -54,15 +59,15 @@ function jeKarte(a: Auswahl): BerichtInhalt {
     const je = new Map<string, { sek: number; wer: Set<string> }>();
     for (const p of b.mitglieder.map((m) => m.konto)) {
       if (a.personen.length && !a.personen.includes(p)) continue;
-      for (const e of eintraegeVon(p, a.von, a.bis)) {
-        if (karteVon(e.karte)?.board !== bid) continue;
+      for (const e of stand.zeiteintraege.filter((x) => x.konto === p && x.datum >= a.von && x.datum <= a.bis)) {
+        if (karte(e.karte)?.board !== bid) continue;
         const x = je.get(e.karte) ?? { sek: 0, wer: new Set<string>() };
         x.sek += e.sekunden; x.wer.add(konto(p).kuerzel);
         je.set(e.karte, x);
       }
     }
     const zeilen = [...je.entries()].sort((x, y) => y[1].sek - x[1].sek).map(([id, x]) => {
-      const k = karteVon(id)!;
+      const k = karte(id)!;
       return [k.schluessel, k.titel, [...x.wer].join(", "), dauer(x.sek), k.schaetzungMin ? dauer(k.schaetzungMin * 60) : ""];
     });
     const summe = [...je.values()].reduce((s, x) => s + x.sek, 0);
@@ -73,15 +78,15 @@ function jeKarte(a: Auswahl): BerichtInhalt {
 }
 
 function erledigt(a: Auswahl): BerichtInhalt {
-  const alle: Karte[] = [...stand.karten, ...ZUSATZKARTEN];
+  const alle = stand.karten;
   const abschnitte = a.boards.map((bid) => {
     const b = board(bid);
     const karten = alle.filter((k) => k.board === bid && k.abgeschlossen && k.abgeschlossen >= a.von && k.abgeschlossen <= a.bis
       && (!a.personen.length || k.zustaendig.some((p) => a.personen.includes(p))))
       .sort((x, y) => x.abgeschlossen!.localeCompare(y.abgeschlossen!));
     return { titel: b.name, spalten: ["Schlüssel", "Karte", "Erledigt", "Zuständig", "Zeit"],
-             zeilen: karten.map((k) => [k.schluessel, k.titel, datum(k.abgeschlossen!, true), k.zustaendig.map((p) => konto(p).kuerzel).join(", "), dauer(k.erfasstSek)]),
-             summe: ["", `${karten.length} Karten`, "", "", dauer(karten.reduce((s, k) => s + k.erfasstSek, 0))] };
+             zeilen: karten.map((k) => [k.schluessel, k.titel, datum(k.abgeschlossen!, true), k.zustaendig.map((p) => konto(p).kuerzel).join(", "), dauer(zeitDerKarte(k.id, false))]),
+             summe: ["", `${karten.length} Karten`, "", "", dauer(karten.reduce((s, k) => s + zeitDerKarte(k.id, false), 0))] };
   });
   return { titel: ARTNAMEN.erledigt, zeitraum: spanne(a.von, a.bis), abschnitte };
 }
@@ -117,15 +122,14 @@ export function titelVon(a: Auswahl): string {
   return `${a.art === "board" ? "Zeiten je Karte" : "Erledigte Karten"}: ${a.boards.map((b) => board(b).name).join(", ")}`;
 }
 
-/** Wer im Bericht vorkommen darf: du immer, andere nur mit dem Recht "Zeiten anderer sehen" in einem gemeinsamen Board */
-export function sichtbarePersonen(boardIds: string[]): string[] {
+/** Wer im Bericht vorkommen darf: du immer, andere nur mit dem Recht "Zeiten anderer sehen" in einem gemeinsamen Board;
+ *  im Stundennachweis nur Personen mit Zeitkonto */
+export function sichtbarePersonen(boardIds: string[], mitZeitkonto: boolean): string[] {
   const out = new Set<string>([ICH]);
   for (const b of stand.boards) {
     if (boardIds.length && !boardIds.includes(b.id)) continue;
-    const rolle = b.rollen.find((r) => r.id === b.mitglieder.find((m) => m.konto === ICH)?.rolle);
-    if (!rolle?.rechte.includes("zeit.andere.sehen")) continue;
+    if (!darf(b, "zeit.andere.sehen")) continue;
     for (const m of b.mitglieder) out.add(m.konto);
   }
-  return [...out];
+  return [...out].filter((p) => !mitZeitkonto || !!fassungAm(stand.zeitkonten, p, HEUTE));
 }
-

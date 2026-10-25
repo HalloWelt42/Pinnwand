@@ -1,8 +1,10 @@
 <script lang="ts">
   // Hinweise: je Art (zugewiesen, fällig, erwähnt, Termin, Kommentar, verschoben) und je Weg (in der Pinnwand, Push aufs
   // Telefon, über den Assistenten) ein Schalter. Push braucht das Telefon: das Einrichten steht als Schritte darüber.
-  import { HINWEIS_ARTEN, HINWEIS_WEGE } from "../daten";
-  import { verwaltung } from "../zustand.svelte";
+  // Gilt am Konto, auf allen Geräten; jeder Schalter über den Anwendungsfall.
+  import { HINWEIS_ARTEN, HINWEIS_WEGE } from "../../../anzeige";
+  import { hinweisWegSetzen } from "../../../beispiel/anwendung/boards.svelte";
+  import { stand } from "../../../beispiel/stand.svelte";
 </script>
 
 <div class="rollfeld">
@@ -35,10 +37,10 @@
               <tr>
                 <td><span class="pw-verwaltung-art"><i class="fa-solid {a.symbol}"></i><span><b>{a.name}</b><span class="pw-verwaltung-erklaerung">{a.text}</span></span></span></td>
                 {#each HINWEIS_WEGE as w (w.id)}
-                  {@const an = verwaltung.hinweise[a.art][w.id]}
+                  {@const an = stand.einstellungen.hinweise[a.art][w.id]}
                   <td class="haken" data-titel={w.name}>
                     <button class="schalter" class:an aria-pressed={an} aria-label="{a.name}: {w.name}"
-                            onclick={() => (verwaltung.hinweise[a.art][w.id] = !an)}></button>
+                            onclick={() => hinweisWegSetzen(a.art, w.id, !an)}></button>
                     <span class="pw-verwaltung-schalterwort">{an ? "an" : "aus"}</span>
                   </td>
                 {/each}

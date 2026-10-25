@@ -2,10 +2,11 @@
   // Verschieben nach: Auswahl der Zielspalte als Blatt von unten. Ein Tippen auf eine offene Spalte verschiebt (derselbe
   // Weg wie das Ziehen im Board: ans Ende, Gruppe zieht mit, Alter beginnt neu); über der Grenze nur eine Warnung.
   // Erledigen ist folgenreich und geht nur per Halten: der eigene Timer hält dabei an und bucht.
+  import { timerVon } from "../../beispiel/abfragen";
+  import { verschieben } from "../../beispiel/anwendung/karten.svelte";
   import { ICH } from "../../beispiel/daten";
   import { board, gruppenmitglieder, kartenDerSpalte } from "../../beispiel/stand.svelte";
   import type { Karte, Spalte } from "../../modell";
-  import { verschieben } from "./aktionen.svelte";
   import HaltKnopf from "./HaltKnopf.svelte";
 
   let { karte: k, schliessen }: { karte: Karte; schliessen: () => void } = $props();
@@ -41,7 +42,7 @@
         <div class="pw-tel-ziel erledigen" data-farbe={s.farbe}>
           <HaltKnopf beschriftung="{k.schluessel} erledigen" aktion={() => nach(s)} />
           <span class="text"><span class="name">{s.name}</span>
-            <span class="erklaerung">Ring halten zum Erledigen{k.laeuft?.konto === ICH ? "; dein Timer hält an und bucht" : ""}</span></span>
+            <span class="erklaerung">Ring halten zum Erledigen{timerVon(ICH)?.karte === k.id ? "; dein Timer endet und bucht" : ""}</span></span>
         </div>
       {:else}
         <button class="pw-tel-ziel" data-farbe={s.farbe} onclick={() => nach(s)}>

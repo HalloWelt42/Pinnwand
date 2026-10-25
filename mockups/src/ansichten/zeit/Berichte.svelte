@@ -2,45 +2,54 @@
   // Berichte: links die Auswahl als Schritte (Art, Zeitraum, Boards, Personen, Format), rechts die erstellten Berichte
   // aus der Kellerwolke oder die Vorschau genau dessen, was die Datei enthält. Erstellen legt die Datei im Ordner der
   // Pinnwand ab; von dort herunterladen oder vorlesen. Personen außer dir nur mit dem Recht "Zeiten anderer sehen".
-  import { HEUTE, ICH } from "../../beispiel/daten";
-  import { datum, wann } from "../../beispiel/format";
+  import { untrack } from "svelte";
+  import { darf } from "../../beispiel/abfragen";
+  import { melden } from "../../beispiel/anwendung/meldung.svelte";
+  import { neueKennung } from "../../beispiel/anwendung/zeiten.svelte";
+  import { HEUTE, ICH, JETZT } from "../../beispiel/daten";
+  import { BERICHTE, BERICHTSORDNER } from "../../beispiel/daten-zeit";
+  import { datumJahr, monatText, spanne, wann, wocheText } from "../../beispiel/format";
   import { konto, stand } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
-  import { datumJahr, monatText, spanne, wocheText } from "./anzeige";
+  import type { Bericht, BerichtArt, BerichtFormat } from "../../modell";
+  import { monatsende, montagVon, plusMonate, plusTage } from "../../regeln/tage";
+  import DatumFeld from "../../teile/DatumFeld.svelte";
   import { alsMarkdown, ARTNAMEN, dateiname, inhalt, sichtbarePersonen, titelVon, type Auswahl } from "./bericht";
-  import { BERICHTE, BERICHTSORDNER } from "./daten";
-  import DatumFeld from "./DatumFeld.svelte";
-  import Meldung from "./Meldung.svelte";
-  import { montagDer, plusTage, tageImMonat } from "./regeln";
-  import { kontoVon, zeit } from "./stand.svelte";
-  import type { Bericht, BerichtArt, BerichtFormat } from "./typen";
 
   let { entwurf = "" }: { entwurf?: string } = $props();
 
-  // svelte-ignore state_referenced_locally
-  let rechts = $state<"liste" | "vorschau">(entwurf === "vorschau" ? "vorschau" : "liste");
+  let rechts = $state<"liste" | "vorschau">("liste");
   let art = $state<BerichtArt>("stundennachweis");
   let zeitraum = $state("vorwoche");
   let eigenVon = $state("2026-10-01");
   let eigenBis = $state(HEUTE);
-  // svelte-ignore state_referenced_locally
-  let personen = $state<string[]>(entwurf === "vorschau" ? [ICH, "k-jonas"] : [ICH]);
+  let personen = $state<string[]>([ICH]);
   let boards = $state<string[]>(["b-prod"]);
   let format = $state<BerichtFormat>("pdf");
   let suche = $state("");
-  let liste = $state<Bericht[]>(structuredClone(BERICHTE));
+  /** in dieser Sitzung erstellte Berichte (die Ablage selbst liegt in der Kellerwolke) */
+  let erstellt = $state<Bericht[]>([]);
   let neu = $state("");
+  const liste = $derived([...erstellt, ...BERICHTE]);
 
-  const montag = montagDer(HEUTE);
-  const j = Number(HEUTE.slice(0, 4)), m = Number(HEUTE.slice(5, 7));
-  const vm = m === 1 ? 12 : m - 1, vj = m === 1 ? j - 1 : j;
-  const pad = (n: number) => String(n).padStart(2, "0");
+  // vorgeführte Vorschau: Stundennachweis der letzten Woche für dich und Jonas, einmal je Entwurf
+  $effect(() => {
+    const e = entwurf;
+    untrack(() => {
+      rechts = e === "vorschau" ? "vorschau" : "liste";
+      personen = e === "vorschau" ? [ICH, "k-jonas"] : [ICH];
+    });
+  });
+
+  const montag = montagVon(HEUTE);
+  const monatsanfang = HEUTE.slice(0, 8) + "01";
+  const vormonat = plusMonate(monatsanfang, -1);
   const ZEITRAEUME: Record<string, { name: string; von: string; bis: string }> = {
     woche: { name: "Diese Woche", von: montag, bis: plusTage(montag, 6) },
     vorwoche: { name: "Letzte Woche", von: plusTage(montag, -7), bis: plusTage(montag, -1) },
-    monat: { name: "Dieser Monat", von: `${j}-${pad(m)}-01`, bis: `${j}-${pad(m)}-${tageImMonat(j, m)}` },
-    vormonat: { name: "Letzter Monat", von: `${vj}-${pad(vm)}-01`, bis: `${vj}-${pad(vm)}-${tageImMonat(vj, vm)}` },
-    jahr: { name: "Dieses Jahr", von: `${j}-01-01`, bis: `${j}-12-31` },
+    monat: { name: "Dieser Monat", von: monatsanfang, bis: monatsende(monatsanfang) },
+    vormonat: { name: "Letzter Monat", von: vormonat, bis: monatsende(vormonat) },
+    jahr: { name: "Dieses Jahr", von: `${HEUTE.slice(0, 4)}-01-01`, bis: `${HEUTE.slice(0, 4)}-12-31` },
   };
   const bereich = $derived(zeitraum === "eigen" ? { von: eigenVon, bis: eigenBis } : ZEITRAEUME[zeitraum]);
   function zeitraumText(): string {
@@ -50,9 +59,8 @@
   }
 
   /** Boards, in denen das Modul Berichte an ist und deine Rolle Berichte erstellen darf */
-  const moeglicheBoards = $derived(stand.boards.filter((b) => b.module.berichte
-    && !!b.rollen.find((r) => r.id === b.mitglieder.find((x) => x.konto === ICH)?.rolle)?.rechte.includes("berichte.erstellen")));
-  const erlaubt = $derived(sichtbarePersonen(art === "stundennachweis" ? [] : boards).filter((p) => art !== "stundennachweis" || kontoVon(p)));
+  const moeglicheBoards = $derived(stand.boards.filter((b) => b.module.berichte && darf(b, "berichte.erstellen")));
+  const erlaubt = $derived(sichtbarePersonen(art === "stundennachweis" ? [] : boards, art === "stundennachweis"));
   const vorschlaege = $derived(erlaubt.filter((p) => !personen.includes(p) && konto(p).name.toLowerCase().includes(suche.trim().toLowerCase())).slice(0, 6));
   const auswahl = $derived<Auswahl>({ art, von: bereich.von, bis: bereich.bis, boards, personen: personen.filter((p) => erlaubt.includes(p)), format });
   const bereit = $derived((art !== "stundennachweis" || auswahl.personen.length > 0) && (art === "stundennachweis" || boards.length > 0) && bereich.von <= bereich.bis);
@@ -79,12 +87,12 @@
   }
   function erstellen(): void {
     if (!bereit) return;
-    const b: Bericht = { id: `r-${liste.length + 1}-${Date.now()}`, art, titel: titelVon(auswahl), zeitraum: zeitraumText(), format,
-      datei: dateiname(auswahl), erstellt: `${HEUTE}T10:42:00`, groesse: format === "pdf" ? `${40 + zeilenZahl * 2} KB` : `${2 + Math.ceil(zeilenZahl / 8)} KB` };
-    liste = [b, ...liste];
+    const b: Bericht = { id: neueKennung("r"), art, titel: titelVon(auswahl), zeitraum: zeitraumText(), format, datei: dateiname(auswahl),
+      erstellt: JETZT, groesse: format === "pdf" ? `${40 + zeilenZahl * 2} KB` : `${2 + Math.ceil(zeilenZahl / 8)} KB` };
+    erstellt = [b, ...erstellt];
     neu = b.id;
     rechts = "liste";
-    zeit.meldung = { text: `Abgelegt in ${BERICHTSORDNER}: ${b.datei}` };
+    melden(`Abgelegt in ${BERICHTSORDNER}: ${b.datei}`);
   }
 </script>
 
@@ -226,5 +234,4 @@
       {/if}
     </div>
   </div>
-  <Meldung />
 </div>

@@ -6,19 +6,20 @@
   import { datum } from "../../beispiel/format";
   import { konto } from "../../beispiel/stand.svelte";
   import type { Board, Serie, Termin } from "../../modell";
+  import type { Vorkommen } from "../../regeln/serien";
+  import { istWochenende, minutenAus, TAGE_LANG, uhrzeitAus, wochentag } from "../../regeln/tage";
   import { STAND } from "./anzeige";
-  import type { TagInhalt } from "./kalender";
   import KalenderKarte from "./KalenderKarte.svelte";
-  import { ABWESENHEIT_NAME, ABWESENHEIT_SYMBOL, feiertagTitel } from "./plan.svelte";
-  import { istWochenende, minutenAus, TAGE_LANG, uhrzeitAus, wochentag } from "./tage";
-  import type { Vorkommen } from "./typen";
+  import { abwesenheitSymbol, artName, feiertagTitel, type TagInhalt } from "./lesen";
 
-  let { board, tage, inhalt, gezogen = $bindable(null), ablegen }: {
+  let { board, tage, inhalt, gezogen = $bindable(null), ablegen, gesperrt = false }: {
     board: Board;
     tage: string[];
     inhalt: Map<string, TagInhalt>;
     gezogen?: string | null;
     ablegen: (id: string, tag: string) => void;
+    /** Ziehen gesperrt (Suche oder Filter aktiv) */
+    gesperrt?: boolean;
   } = $props();
 
   const STUNDE = 52;
@@ -55,7 +56,7 @@
 
   let ziel = $state<string | null>(null);
   function ueber(e: DragEvent, tag: string): void {
-    if (!gezogen) return;
+    if (!gezogen || gesperrt) return;
     e.preventDefault();
     ziel = tag;
   }
@@ -75,7 +76,7 @@
       <div class="spaltenkopf tagname" class:wochenende={istWochenende(t)} class:heute={t === HEUTE} title={TAGE_LANG[wochentag(t)]}>
         <b class="zahl">{datum(t, true)}</b>
         {#if t === HEUTE}<span class="heute-wort">heute</span>{/if}
-        {#each i.feiertage as f (f.feiertag.name)}<span class="feiertag-name" title={feiertagTitel(f.feiertag, f.konten)}><i class="fa-solid fa-flag"></i>{f.feiertag.name}</span>{/each}
+        {#each i.feiertage as f (f.name)}<span class="feiertag-name" title={feiertagTitel(f)}><i class="fa-solid fa-flag"></i>{f.name}</span>{/each}
       </div>
     {/each}
 
@@ -86,14 +87,14 @@
            role="gridcell" aria-label="{datum(t, true)} ganztägig" tabindex="-1"
            ondragover={(e) => ueber(e, t)} ondragleave={() => { if (ziel === t) ziel = null; }} ondrop={(e) => fallen(e, t)}>
         {#each i.abwesend as a (a.konto)}
-          <span class="pw-kalender-abwesend lang" data-farbe={konto(a.konto).farbe} title="{konto(a.konto).name}: {ABWESENHEIT_NAME[a.art]}{a.notiz ? ` (${a.notiz})` : ''}">
-            <i class="fa-solid {ABWESENHEIT_SYMBOL[a.art]}"></i>{konto(a.konto).kuerzel} {ABWESENHEIT_NAME[a.art]}</span>
+          <span class="pw-kalender-abwesend lang" data-farbe={konto(a.konto).farbe} title="{konto(a.konto).name}: {artName(a)}{a.notiz ? ` (${a.notiz})` : ''}">
+            <i class="fa-solid {abwesenheitSymbol(a)}"></i>{konto(a.konto).kuerzel} {artName(a)}</span>
         {/each}
         {#each i.serien.filter((x) => !x.serie.uhrzeit) as x (x.serie.id)}
           <a class="pw-kalender-eintrag serie {x.v.stand}" href="/serien/{x.serie.id}" title="Serie {x.serie.titel}: {STAND[x.v.stand].text}">
             <i class="fa-solid fa-repeat zeichen"></i><span class="titel">{x.serie.titel}</span></a>
         {/each}
-        {#each i.karten as k (k.id)}<KalenderKarte {board} karte={k} ziehen={(id) => (gezogen = id)} />{/each}
+        {#each i.karten as k (k.id)}<KalenderKarte {board} karte={k} {gesperrt} ziehen={(id) => (gezogen = id)} />{/each}
       </div>
     {/each}
 

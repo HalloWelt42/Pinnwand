@@ -4,7 +4,6 @@
   // Mitglieder eines Boards, nur mit dem Recht "Abwesenheiten sehen" in diesem Board.
   import type { Component } from "svelte";
   import Jahreskalender from "./Jahreskalender.svelte";
-  import Meldung from "./Meldung.svelte";
   import Team from "./Team.svelte";
   import Urlaub from "./Urlaub.svelte";
   import Zeitkonto from "./Zeitkonto.svelte";
@@ -33,5 +32,4 @@
 </div>
 <div class="pw-zeiten-raum">
   <Ansicht {entwurf} />
-  <Meldung />
 </div>

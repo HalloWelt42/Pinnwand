@@ -2,12 +2,15 @@
   // Karte am Telefon, reduziert auf das, was man unterwegs tut: lesen (Titel, Beschreibung, Angaben), verschieben mit
   // großem Knopf, Timer starten oder anhalten, Checkliste abhaken, Kommentare lesen und schreiben. Bearbeiten der Felder
   // bleibt am Rechner. Der Status ändert sich über denselben Weg wie das Ziehen im Board.
+  import { PRIORITAETEN } from "../../anzeige";
+  import { kartenName, timerErlaubt, timerVon, zeitDerKarte } from "../../beispiel/abfragen";
+  import { bearbeiten, kommentieren } from "../../beispiel/anwendung/karten.svelte";
+  import { anhalten, fortsetzen, starten, stoppen } from "../../beispiel/anwendung/timer.svelte";
   import { ICH } from "../../beispiel/daten";
   import { alterTage, datum, dauer, faelligText, uhrzeit, wann } from "../../beispiel/format";
   import { board, karte as holeKarte, konto } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
   import { boardPfad, wert } from "../../weg.svelte";
-  import { anhalten, kartenzeit, kommentieren, laufende, starten, stoppen, telefon } from "./aktionen.svelte";
   import TelefonSchale from "./TelefonSchale.svelte";
   import Verschieben from "./Verschieben.svelte";
   import { telPfad } from "./weg";
@@ -25,22 +28,29 @@
   const faellig = $derived(k.faellig && !spalte.erledigt ? faelligText(k.faellig) : null);
   const alter = $derived(alterTage(k.bewegtAm));
   const punkte = $derived(k.checkliste.filter((p) => p.erledigt).length);
+  /** Zeit zeigen Karten in Boards mit Zeiterfassung, die Arbeit sind; starten lässt sich nur, wo ein Timer laufen darf */
   const mitZeit = $derived(b.module.zeiterfassung && k.art === "arbeit");
-  const laeuftHier = $derived(k.laeuft?.konto === ICH);
-  const pausiertHier = $derived(telefon.pausiert === k.id);
-  const andererTimer = $derived(laufende()?.id !== k.id ? laufende() : undefined);
-  const gesamt = $derived(kartenzeit(k));
+  const timer = $derived(timerVon(ICH));
+  const laeuftHier = $derived(timer?.karte === k.id && !!timer.seit);
+  const angehaltenHier = $derived(timer?.karte === k.id && !timer.seit);
+  const andererTimer = $derived(timer && timer.karte !== k.id ? kartenName(timer.karte).schluessel : "");
+  const gesamt = $derived(zeitDerKarte(k.id));
   const anteil = $derived(k.schaetzungMin ? gesamt / 60 / k.schaetzungMin : 0);
-  const PRIO = { keine: ["Keine", ""], niedrig: ["Niedrig", ""], mittel: ["Mittel", ""], hoch: ["Hoch", "warnung"], dringend: ["Dringend", "gefahr"] } as const;
+  const prioName = $derived(PRIORITAETEN.find(([p]) => p === k.prioritaet)?.[1] ?? "");
+  const PRIO_KLASSE: Partial<Record<string, string>> = { hoch: "warnung", dringend: "gefahr" };
 
   let blattOffen = $state(false);
   $effect(() => { blattOffen = entwurf === "verschieben"; });
   let kommentar = $state("");
 
+  /** das Feld leert sich erst, wenn der Kommentar gespeichert ist (bei getrennter Verbindung bleibt der Text stehen) */
   function senden(): void {
-    if (!kommentar.trim()) return;
-    kommentieren(k.id, kommentar);
-    kommentar = "";
+    if (kommentieren(k.id, kommentar)) kommentar = "";
+  }
+
+  function abhaken(i: number): void {
+    const liste = k.checkliste.map((p, j) => (j === i ? { ...p, erledigt: !p.erledigt } : p));
+    bearbeiten(k.id, { checkliste: liste }, liste[i].erledigt ? `Punkt "${liste[i].text}" erledigt` : `Punkt "${liste[i].text}" wieder offen`);
   }
   const erwaehnungen = (text: string): string =>
     text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/@(\w+)/g, '<span class="erwaehnt">@$1</span>');
@@ -73,7 +83,7 @@
       <span class="name"><i class="fa-regular fa-calendar"></i>Fällig</span>
       <span class="wert">{#if k.faellig}{#if faellig?.klasse}<span class="pw-angabe {faellig.klasse}">{faellig.text}</span>{/if}{datum(k.faellig, true)}{:else}<span class="schwach">ohne</span>{/if}</span>
       <span class="name"><i class="fa-solid fa-flag"></i>Priorität</span>
-      <span class="wert">{#if PRIO[k.prioritaet][1]}<span class="pw-angabe {PRIO[k.prioritaet][1]}">{PRIO[k.prioritaet][0]}</span>{:else}{PRIO[k.prioritaet][0]}{/if}</span>
+      <span class="wert">{#if PRIO_KLASSE[k.prioritaet]}<span class="pw-angabe {PRIO_KLASSE[k.prioritaet]}">{prioName}</span>{:else}{prioName}{/if}</span>
       <span class="name"><i class="fa-solid fa-user"></i>Zuständig</span>
       <span class="wert personen">
         {#each k.zustaendig as p (p)}<span class="person"><Person id={p} />{konto(p).name}</span>{:else}<span class="schwach">niemand</span>{/each}
@@ -91,8 +101,8 @@
       <div class="pw-tel-uhr" class:laeuft={laeuftHier}>
         <div class="oben">
           {#if laeuftHier}
-            <span class="zustand laeuft"><i class="fa-solid fa-circle-play"></i>Läuft seit {uhrzeit(k.laeuft!.seit)}</span>
-          {:else if pausiertHier}
+            <span class="zustand laeuft"><i class="fa-solid fa-circle-play"></i>Läuft seit {uhrzeit(timer!.seit!)}</span>
+          {:else if angehaltenHier}
             <span class="zustand pausiert"><i class="fa-solid fa-circle-pause"></i>Angehalten</span>
           {:else}
             <span class="zustand">Gesamt</span>
@@ -107,16 +117,18 @@
           {#if laeuftHier}
             <button class="knopf" onclick={anhalten}><i class="fa-solid fa-pause"></i>Anhalten</button>
             <button class="knopf" onclick={stoppen}><i class="fa-solid fa-stop"></i>Stopp</button>
-          {:else if pausiertHier}
-            <button class="knopf" onclick={() => starten(k.id)}><i class="fa-solid fa-play"></i>Fortsetzen</button>
+          {:else if angehaltenHier}
+            <button class="knopf" onclick={fortsetzen}><i class="fa-solid fa-play"></i>Fortsetzen</button>
             <button class="knopf" onclick={stoppen}><i class="fa-solid fa-stop"></i>Stopp</button>
-          {:else if !spalte.erledigt}
+          {:else if timerErlaubt(k)}
             <button class="knopf" onclick={() => starten(k.id)}><i class="fa-solid fa-play"></i>Start</button>
           {/if}
-          <a class="knopf ohne" href={telPfad("/zeiten", { karte: k.schluessel })}><i class="fa-solid fa-plus"></i>Nachbuchen</a>
+          {#if timerErlaubt(k)}
+            <a class="knopf ohne" href={telPfad("/zeiten", { karte: k.schluessel })}><i class="fa-solid fa-plus"></i>Nachbuchen</a>
+          {/if}
         </div>
-        {#if andererTimer && !spalte.erledigt}
-          <span class="schwach klein">Start hält {andererTimer.schluessel} an und bucht dessen Zeit.</span>
+        {#if andererTimer && timerErlaubt(k)}
+          <span class="schwach klein">Start beendet deinen Timer auf {andererTimer} und bucht ihn.</span>
         {/if}
       </div>
     </section>
@@ -127,7 +139,7 @@
       <div class="etikett">Checkliste<span class="zaehler" class:erfolg={punkte === k.checkliste.length}>{punkte}/{k.checkliste.length}</span></div>
       <div class="pw-fortschritt"><span style="width: {(100 * punkte) / k.checkliste.length}%"></span></div>
       {#each k.checkliste as p, i (i)}
-        <label class="pw-tel-punkt" class:erledigt={p.erledigt}><input type="checkbox" bind:checked={p.erledigt} /><span>{p.text}</span></label>
+        <label class="pw-tel-punkt" class:erledigt={p.erledigt}><input type="checkbox" checked={p.erledigt} onchange={() => abhaken(i)} /><span>{p.text}</span></label>
       {/each}
     </section>
   {/if}

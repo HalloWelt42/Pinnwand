@@ -6,19 +6,20 @@
   // Karten ohne Datum stehen daneben und landen beim Ablegen mit Start und Fällig auf dem Tag. Eine eigene Fläche
   // rollt in beide Richtungen; Kopf und Namen bleiben stehen.
   import { onMount } from "svelte";
-  import { ABWESENHEITEN, HEUTE } from "../../beispiel/daten";
-  import { datum } from "../../beispiel/format";
-  import { tageZwischen } from "../../regeln/tage";
-  import { konto } from "../../beispiel/stand.svelte";
+  import { darf as darfIm } from "../../beispiel/abfragen";
+  import { bearbeiten } from "../../beispiel/anwendung/karten.svelte";
+  import { HEUTE } from "../../beispiel/daten";
+  import { datum, monatText } from "../../beispiel/format";
+  import { konto, stand } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
-  import type { Board, Karte, Kennung } from "../../modell";
+  import type { BoardAnsichtWerte } from "../../board/ansichten";
+  import type { Karte, Kennung } from "../../modell";
+  import { istWochenende, kalenderwoche, monatsanfang, MONATE, montagVon, plusMonate, plusTage, TAGE_LANG, tageVon, tageZwischen, wochentag } from "../../regeln/tage";
   import { gehe } from "../../weg.svelte";
   import OhneDatum from "./OhneDatum.svelte";
-  import { ABWESENHEIT_NAME, ABWESENHEIT_SYMBOL, abwesenheitenSichtbar, farbeDerSpalte, feiertageAm, feiertagTitel, hatRecht, istErledigt, kartenDesBoards,
-           kartenPfad, zeitraumSetzen } from "./plan.svelte";
-  import { istWochenende, kalenderwoche, monatsanfang, MONATE, monatsname, montagVon, plusMonate, plusTage, TAGE_LANG, tageVon, wochentag } from "./tage";
+  import { abwesenheitenSichtbar, abwesenheitSymbol, artName, farbeDerSpalte, feiertageAm, feiertagTitel, istErledigt, kartenDesBoards, kartenPfad } from "./lesen";
 
-  let { board, entwurf = "" }: { board: Board; entwurf?: string } = $props();
+  let { board, entwurf = "", suche = "", ziehenGesperrt = false }: BoardAnsichtWerte = $props();
 
   let gruppierung = $state<"spalte" | "person">("spalte");
   let massstab = $state<"woche" | "monat">("woche");
@@ -43,12 +44,12 @@
   const tage = $derived(tageVon(anfang, ende));
   const pos = (tag: string): number => tageZwischen(anfang, tag);
 
-  const karten = $derived(kartenDesBoards(board.id));
+  const karten = $derived(kartenDesBoards(board, suche));
   const mitDatum = $derived(karten.filter((k) => k.start || k.faellig));
   const ohneDatum = $derived(karten.filter((k) => !k.start && !k.faellig && !istErledigt(board, k)));
   const mitglieder = $derived(board.mitglieder.map((m) => m.konto));
   const abwSichtbar = $derived(abwesenheitenSichtbar(board));
-  const darf = $derived(hatRecht(board, "karten.bearbeiten"));
+  const darf = $derived(darfIm(board, "karten.bearbeiten") && !ziehenGesperrt);
 
   interface Zeile { k: Karte; s: number; e: number; warnung: string; mit: Kennung[] }
   interface Gruppe {
@@ -60,8 +61,8 @@
     const von = k.start ?? k.faellig!;
     const bis = k.faellig ?? k.start!;
     const treffer = abwSichtbar && !istErledigt(board, k)
-      ? ABWESENHEITEN.filter((a) => k.zustaendig.includes(a.konto) && a.von <= bis && von <= a.bis && a.art !== "feiertag") : [];
-    const warnung = treffer.map((a) => `fällt in ${ABWESENHEIT_NAME[a.art]} von ${konto(a.konto).name} (${datum(a.von)} bis ${datum(a.bis)})`).join("; ");
+      ? stand.abwesenheiten.filter((a) => k.zustaendig.includes(a.konto) && a.von <= bis && von <= a.bis && (a.anteil ?? 1) >= 1) : [];
+    const warnung = treffer.map((a) => `fällt in ${artName(a)} von ${konto(a.konto).name} (${datum(a.von)} bis ${datum(a.bis)})`).join("; ");
     return { k, s: pos(von), e: pos(bis), warnung, mit: k.zustaendig.filter((p) => p !== person) };
   }
   const nachStart = (a: Zeile, b: Zeile): number => a.s - b.s || a.e - b.e;
@@ -74,9 +75,9 @@
     const g: Gruppe[] = mitglieder.filter((p) => mitDatum.some((k) => k.zustaendig.includes(p))).map((p) => ({
       id: p, name: konto(p).name, konto: p,
       zeilen: mitDatum.filter((k) => k.zustaendig.includes(p)).map((k) => zeile(k, p)).sort(nachStart),
-      abwesend: abwSichtbar ? ABWESENHEITEN.filter((a) => a.konto === p && a.bis >= anfang && a.von <= ende).map((a) => ({
-        s: Math.max(0, pos(a.von)), e: Math.min(tage.length - 1, pos(a.bis)), text: ABWESENHEIT_NAME[a.art], symbol: ABWESENHEIT_SYMBOL[a.art],
-        titel: `${konto(p).name}: ${ABWESENHEIT_NAME[a.art]} ${datum(a.von)} bis ${datum(a.bis)}${a.notiz ? ` (${a.notiz})` : ""}` })) : [],
+      abwesend: abwSichtbar ? stand.abwesenheiten.filter((a) => a.konto === p && a.bis >= anfang && a.von <= ende).map((a) => ({
+        s: Math.max(0, pos(a.von)), e: Math.min(tage.length - 1, pos(a.bis)), text: artName(a), symbol: abwesenheitSymbol(a),
+        titel: `${konto(p).name}: ${artName(a)} ${datum(a.von)} bis ${datum(a.bis)}${a.notiz ? ` (${a.notiz})` : ""}` })) : [],
     }));
     const niemand = mitDatum.filter((k) => !k.zustaendig.length);
     if (niemand.length) g.push({ id: "niemand", name: "Ohne Zuständige", zeilen: niemand.map((k) => zeile(k)).sort(nachStart), abwesend: [] });
@@ -105,7 +106,7 @@
     .filter((x) => x.wochenende || x.feiertage.length));
   const heute = $derived(pos(HEUTE));
   const titel = $derived(anfang.slice(0, 4) === ende.slice(0, 4)
-    ? `${MONATE[Number(anfang.slice(5, 7)) - 1]} bis ${monatsname(ende)}` : `${monatsname(anfang)} bis ${monatsname(ende)}`);
+    ? `${MONATE[Number(anfang.slice(5, 7)) - 1]} bis ${monatText(ende)}` : `${monatText(anfang)} bis ${monatText(ende)}`);
 
   // Ziehen der Balken: Zeiger mit Fangen; ohne Bewegung ist es ein Klick und öffnet die Karte
   type Art = "ganz" | "start" | "ende";
@@ -125,7 +126,8 @@
     const k = z.k;
     const start = k.start || art === "start" ? plusTage(anfang, l.s) : undefined;
     const faellig = k.faellig || art === "ende" ? plusTage(anfang, l.e) : undefined;
-    zeitraumSetzen(k, start, faellig);
+    const text = [start ? `Start ${datum(start, true)}` : "", faellig ? `fällig ${datum(faellig, true)}` : ""].filter((x) => x).join(", ");
+    bearbeiten(k.id, { start, faellig }, text);
   }
   function greifen(e: PointerEvent, z: Zeile): void {
     if (e.button !== 0) return;
@@ -171,7 +173,7 @@
     e.preventDefault();
     const id = e.dataTransfer?.getData("text/plain") || gezogen;
     const k = karten.find((x) => x.id === id);
-    if (k) { const t = plusTage(anfang, tagUnter(e)); zeitraumSetzen(k, t, t); }
+    if (k && darf) { const t = plusTage(anfang, tagUnter(e)); bearbeiten(k.id, { start: t, faellig: t }, `Start und fällig ${datum(t, true)}`); }
     zielTag = null;
     gezogen = null;
   }
@@ -221,7 +223,7 @@
                 {#each tage as t, i (t)}
                   {@const f = feiertageAm(t, mitglieder)}
                   <span class="zahl" class:wochenende={istWochenende(t)} class:feiertag={f.length > 0} class:heute={t === HEUTE} style="left: {i * breite}px; width: {breite}px"
-                        title="{TAGE_LANG[wochentag(t)]}, {datum(t)}{f.map((x) => `; ${feiertagTitel(x.feiertag, x.konten)}`).join('')}">{Number(t.slice(8, 10))}</span>
+                        title="{TAGE_LANG[wochentag(t)]}, {datum(t)}{f.map((x) => `; ${feiertagTitel(x)}`).join('')}">{Number(t.slice(8, 10))}</span>
                 {/each}
               </div>
             {/if}
@@ -233,7 +235,7 @@
           <div class="streifen" bind:this={spuren} aria-hidden="true">
             {#each besondere as x (x.t)}
               <span class:feiertag={x.feiertage.length > 0} style="left: {x.i * breite}px; width: {breite}px"
-                    title={x.feiertage.map((f) => feiertagTitel(f.feiertag, f.konten)).join("; ") || "Wochenende"}></span>
+                    title={x.feiertage.map((f) => feiertagTitel(f)).join("; ") || "Wochenende"}></span>
             {/each}
             {#if zielTag !== null}<span class="ziel" style="left: {zielTag * breite}px; width: {breite}px"></span>{/if}
             {#if heute >= 0 && heute < tage.length}<span class="heute-linie" style="left: {heute * breite + breite / 2 - 1}px"></span>{/if}
@@ -298,6 +300,6 @@
       </div>
     </div>
   </div>
-  <OhneDatum {board} karten={ohneDatum} titel="Ohne Datum" bind:gezogen
+  <OhneDatum {board} karten={ohneDatum} titel="Ohne Datum" bind:gezogen gesperrt={ziehenGesperrt}
              erklaerung="Auf einen Tag ziehen setzt Start und Fällig auf diesen Tag; am Rand des Balkens ziehen verlängert ihn." />
 </div>

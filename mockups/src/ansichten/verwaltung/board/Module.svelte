@@ -1,10 +1,11 @@
 <script lang="ts">
   // Module des Boards: je Modul ein Schalter mit dem, was es bringt (Ansichten, Felder, Rechte). Abschalten blendet es in
-  // Board, Karten und Rollen aus; seine Daten bleiben und sind beim Einschalten wieder da.
+  // Board, Karten und Rollen aus; seine Daten bleiben und sind beim Einschalten wieder da. Schalten über den Anwendungsfall.
+  import { MODULE } from "../../../anzeige";
+  import { modulSchalten } from "../../../beispiel/anwendung/boards.svelte";
   import { RECHTE } from "../../../beispiel/daten";
   import type { Board } from "../../../modell";
   import { boardPfad } from "../../../weg.svelte";
-  import { MODULE } from "../daten";
 
   let { board }: { board: Board; entwurf?: string } = $props();
 
@@ -29,7 +30,7 @@
                 <span class="rechts">
                   <span class="zustand {an ? 'fertig' : 'aus'}">{an ? "an" : "aus"}</span>
                   <button class="schalter" class:an aria-pressed={an} aria-label="Modul {m.name} {an ? 'abschalten' : 'einschalten'}"
-                          onclick={() => (board.module[m.id] = !an)}></button>
+                          onclick={() => modulSchalten(board.id, m.id, !an)}></button>
                 </span></h3>
               <p>{m.text}</p>
               <dl class="pw-verwaltung-bringt">

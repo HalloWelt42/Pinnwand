@@ -5,25 +5,32 @@
   // Richtung; Status sortiert nach der Spaltenfolge des Boards. Kopf und die ersten Spalten bleiben beim Rollen stehen.
   // Kästchen wählen Karten für Sammelaktionen (verschieben, zuweisen, Label, Priorität, Papierkorb); ein Klick auf eine
   // Zeile öffnet die Karte über ihren Pfad.
-  import { dauer, datum, faelligText, laufendSek } from "../../beispiel/format";
-  import { kartenDerSpalte, konto } from "../../beispiel/stand.svelte";
+  import { kartenNummer, laufendAuf, passt, sichtbareKarten, woerter, zeitDerKarte } from "../../beispiel/abfragen";
+  import { sammelLabel, sammelPrioritaet, sammelVerschieben, sammelZuweisen } from "../../beispiel/anwendung/karten.svelte";
+  import { inPapierkorb } from "../../beispiel/anwendung/papierkorb.svelte";
+  import { dauer, datum, faelligText } from "../../beispiel/format";
+  import { konto } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
+  import { PRIORITAETEN, ZEITFENSTER } from "../../anzeige";
   import type { Board, Karte, Prioritaet, Spalte } from "../../modell";
+  import Personenwahl from "../../teile/Personenwahl.svelte";
   import { boardPfad, gehe } from "../../weg.svelte";
-  import { inPapierkorb, sammelLabel, sammelPrioritaet, sammelVerschieben, sammelZuweisen } from "./aktionen.svelte";
 
-  let { board, entwurf = "" }: { board: Board; entwurf?: string } = $props();
+  let { board, entwurf = "", suche = "" }: { board: Board; entwurf?: string; suche?: string } = $props();
 
   /** vorgeführter Zustand "auswahl": drei Karten gewählt, die Sammelleiste zeigt ihre Aktionen */
   const VORGABE_AUSWAHL = ["c-148", "c-139", "c-122"];
-  const PRIO: Record<Prioritaet, { name: string; rang: number }> = {
-    dringend: { name: "Dringend", rang: 0 }, hoch: { name: "Hoch", rang: 1 }, mittel: { name: "Mittel", rang: 2 },
-    niedrig: { name: "Niedrig", rang: 3 }, keine: { name: "Keine", rang: 4 },
-  };
-  const FENSTER = { heute: "Heute", gestern: "Gestern", woche: "Diese Woche", monat: "Dieser Monat", jahr: "Dieses Jahr", alle: "Alle" };
+  /** Name und Rang je Priorität (dringend zuerst) */
+  const PRIO = Object.fromEntries(PRIORITAETEN.map(([p, name], i) => [p, { name, rang: PRIORITAETEN.length - 1 - i }])) as
+    Record<Prioritaet, { name: string; rang: number }>;
 
   interface Zeile { karte: Karte; spalte: Spalte; rang: number }
-  const zeilen = $derived(board.spalten.flatMap((s, si) => kartenDerSpalte(s.id).map((karte, i) => ({ karte, spalte: s, rang: si * 10000 + i }))));
+  // dieselben Karten wie die Spalten: offene alle, erledigte im Zeitfenster der Spalte; die Suche der Werkzeugleiste filtert
+  const zeilen = $derived.by(() => {
+    const w = woerter(suche);
+    return board.spalten.flatMap((s, si) => sichtbareKarten(board, s).map((karte, i) => ({ karte, spalte: s, rang: si * 10000 + i })))
+      .filter((z) => passt(z.karte, board, w));
+  });
   const erledigtSpalte = $derived(board.spalten.find((s) => s.erledigt));
   const fertigZahl = $derived(zeilen.filter((z) => z.spalte.erledigt).length);
   const mitZeit = $derived(board.module.zeiterfassung);
@@ -40,7 +47,7 @@
   ]);
 
   function zeitSek(k: Karte): number {
-    return k.erfasstSek + (k.laeuft ? laufendSek(k.laeuft.seit) : 0);
+    return zeitDerKarte(k.id);
   }
   function wert(z: Zeile, feld: string): string | number {
     const k = z.karte;
@@ -70,7 +77,9 @@
 
   // Auswahl: räumt sich selbst auf, wenn Karten verschwinden (verschoben in ein anderes Board, im Papierkorb)
   let auswahl = $state<string[]>([]);
-  $effect(() => { auswahl = entwurf === "auswahl" ? [...VORGABE_AUSWAHL] : []; });
+  // nur beim Wechsel des Entwurfs neu setzen, nicht bei jeder Änderung des Zustands (abgeleitet, damit gleiche Werte nicht wirken)
+  const auswahlVorgefuehrt = $derived(entwurf === "auswahl");
+  $effect(() => { auswahl = auswahlVorgefuehrt ? [...VORGABE_AUSWAHL] : []; });
   const gewaehlt = $derived(auswahl.filter((id) => zeilen.some((z) => z.karte.id === id)));
   const alleGewaehlt = $derived(zeilen.length > 0 && gewaehlt.length === zeilen.length);
   function umschalten(id: string): void {
@@ -79,11 +88,10 @@
 
   // Zuweisen: Textfeld mit Vorschlägen aus den Mitgliedern des Boards
   let person = $state("");
-  const vorschlaege = $derived(person.trim()
-    ? board.mitglieder.map((m) => konto(m.konto)).filter((k) => k.name.toLowerCase().includes(person.trim().toLowerCase())) : []);
+  const mitglieder = $derived(board.mitglieder.map((m) => ({ kennung: konto(m.konto).kellerwolke, name: konto(m.konto).name, konto: m.konto })));
 
   function pfad(k: Karte): string {
-    return boardPfad(board.kuerzel, k.schluessel.split("-")[1]);
+    return boardPfad(board.kuerzel, kartenNummer(k));
   }
   function gewaehltWert(e: Event & { currentTarget: HTMLSelectElement }, tun: (wert: string) => void): void {
     const w = e.currentTarget.value;
@@ -101,14 +109,8 @@
         {#each board.spalten as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
       </select>
       <div class="pw-uebersicht-person">
-        <label class="suche"><i class="fa-solid fa-user-plus"></i><input placeholder="Zuweisen: Name tippen" aria-label="Zuweisen" bind:value={person} /></label>
-        {#if vorschlaege.length}
-          <div class="vorschlaege">
-            {#each vorschlaege as k (k.id)}
-              <button onclick={() => { sammelZuweisen(gewaehlt, k.id); person = ""; }}><Person id={k.id} />{k.name}</button>
-            {/each}
-          </div>
-        {/if}
+        <Personenwahl kandidaten={mitglieder} bind:text={person} platzhalter="Zuweisen: Name tippen"
+                      waehlen={(p) => { if (p.konto) sammelZuweisen(gewaehlt, p.konto); }} />
       </div>
       <select class="eingabe" aria-label="Label setzen" onchange={(e) => gewaehltWert(e, (w) => sammelLabel(gewaehlt, w))}>
         <option value="">Label ...</option>
@@ -116,7 +118,7 @@
       </select>
       <select class="eingabe" aria-label="Priorität setzen" onchange={(e) => gewaehltWert(e, (w) => sammelPrioritaet(gewaehlt, w as Prioritaet))}>
         <option value="">Priorität ...</option>
-        {#each Object.entries(PRIO) as [w, p] (w)}<option value={w}>{p.name}</option>{/each}
+        {#each PRIORITAETEN as [w, name] (w)}<option value={w}>{name}</option>{/each}
       </select>
       <span class="rechts">
         <button class="knopf ohne gefahr klein" title="Mit Zeiten, Kommentaren, Anhängen und Verknüpfungen; im Papierkorb wiederherstellbar"
@@ -125,7 +127,8 @@
       </span>
     {:else}
       <span class="anzahl"><span class="zaehler">{zeilen.length}</span>Karten: {zeilen.length - fertigZahl} offen, {fertigZahl} erledigt
-        {#if erledigtSpalte}<span class="schwach" title="Wie im Board: die Erledigt-Spalte zeigt ihr Zeitfenster">im Zeitfenster {FENSTER[erledigtSpalte.zeitfenster ?? "woche"]}</span>{/if}</span>
+        {#if erledigtSpalte}<span class="schwach" title="Wie im Board: die Erledigt-Spalte zeigt ihr Zeitfenster">im Zeitfenster {ZEITFENSTER[erledigtSpalte.zeitfenster ?? "woche"]}</span>{/if}
+        {#if suche}<span class="schwach">· Suche "{suche}"</span>{/if}</span>
       <span class="rechts schwach">Kästchen wählen für Sammelaktionen</span>
     {/if}
   </div>
@@ -176,16 +179,17 @@
             {#if mitZeit}
               <td class="zahl">
                 {#if k.art === "arbeit" && (sek || k.schaetzungMin)}
-                  <span class="pw-uebersicht-zeit" class:laeuft={!!k.laeuft} class:ueber
-                        title={k.laeuft ? `Timer von ${konto(k.laeuft.konto).name} läuft` : ueber ? "Über der Schätzung" : "Erfasst und Schätzung"}>
-                    {#if k.laeuft}<i class="fa-solid fa-circle-play"></i>{:else if ueber}<i class="fa-solid fa-triangle-exclamation"></i>{/if}
+                  {@const laeuft = laufendAuf(k.id)}
+                  <span class="pw-uebersicht-zeit" class:laeuft={laeuft.length > 0} class:ueber
+                        title={laeuft.length ? `Timer läuft: ${laeuft.map((t) => konto(t.konto).name).join(", ")}` : ueber ? "Über der Schätzung" : "Gebucht und Schätzung"}>
+                    {#if laeuft.length}<i class="fa-solid fa-circle-play"></i>{:else if ueber}<i class="fa-solid fa-triangle-exclamation"></i>{/if}
                     {dauer(sek)}{#if k.schaetzungMin}<span class="soll"> / {dauer(k.schaetzungMin * 60)}</span>{/if}</span>
                 {/if}
               </td>
             {/if}
           </tr>
         {:else}
-          <tr><td colspan={SPALTEN.length + 1}><div class="leer"><i class="fa-solid fa-table-list"></i><p>Keine Karten in diesem Board.</p></div></td></tr>
+          <tr><td colspan={SPALTEN.length + 1}><div class="leer"><i class="fa-solid fa-table-list"></i><p>{suche ? `Keine Karte passt zu "${suche}".` : "Keine Karten in diesem Board."}</p></div></td></tr>
         {/each}
       </tbody>
     </table>

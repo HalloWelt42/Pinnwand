@@ -88,7 +88,14 @@ export function erledigen(id: Kennung): void {
   if (ziel) verschieben(id, ziel.id);
 }
 
-/** Neue Karte ans Ende der Spalte: Schlüssel aus der Laufnummer des Boards (nie wiederverwendet), du bist zuständig */
+/** Getippter oder gesprochener Text als Absätze (die Beschreibung einer Karte ist formatierter Text) */
+function alsAbsaetze(text: string): string {
+  const sicher = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return sicher.split(/\n+/).map((z) => z.trim()).filter(Boolean).map((z) => `<p>${z}</p>`).join("");
+}
+
+/** Neue Karte ans Ende der Spalte: Schlüssel aus der Laufnummer des Boards (nie wiederverwendet), du bist zuständig;
+ *  die Beschreibung kommt als Text und wird hier zu Absätzen */
 export function anlegen(boardId: Kennung, spalteId: Kennung,
                         felder: { titel: string; art?: "arbeit" | "idee"; faellig?: string; beschreibung?: string }): Karte | undefined {
   const b = board(boardId);
@@ -101,7 +108,8 @@ export function anlegen(boardId: Kennung, spalteId: Kennung,
     const id = `c-${b.kuerzel.toLowerCase()}-${b.laufnummer}`;
     stand.karten.push({
       id, board: b.id, schluessel: `${b.kuerzel}-${b.laufnummer}`, spalte: spalte.id, titel,
-      art: felder.art ?? (b.module.zeiterfassung ? "arbeit" : "idee"), beschreibung: felder.beschreibung, zustaendig: [ICH],
+      art: felder.art ?? (b.module.zeiterfassung ? "arbeit" : "idee"),
+      beschreibung: felder.beschreibung?.trim() ? alsAbsaetze(felder.beschreibung) : undefined, zustaendig: [ICH],
       prioritaet: "keine", faellig: felder.faellig, labels: [], checkliste: [], kommentare: [], bewegtAm: JETZT, erstelltAm: JETZT,
       felder: {}, anhaenge: [], transkripte: [], verlauf: [{ zeit: JETZT, von: ICH, text: "hat die Karte angelegt" }],
     });
@@ -113,10 +121,10 @@ export function anlegen(boardId: Kennung, spalteId: Kennung,
 }
 
 /** Felder einer Karte ändern (Titel, Beschreibung, Fällig, Priorität, Checkliste und weitere Grundfelder) */
-export function bearbeiten(id: Kennung, aenderung: Partial<Omit<Karte, "id" | "board" | "schluessel" | "spalte">>, text = "Gespeichert"): void {
+export function bearbeiten(id: Kennung, aenderung: Partial<Omit<Karte, "id" | "board" | "schluessel" | "spalte">>, text = "Gespeichert"): boolean {
   const k = karte(id);
-  if (!k) return;
-  aendern(() => {
+  if (!k) return false;
+  return aendern(() => {
     Object.assign(k, aenderung);
     return `${k.schluessel}: ${text}`;
   });
@@ -133,11 +141,11 @@ export function artSetzen(id: Kennung, art: "arbeit" | "idee"): void {
   });
 }
 
-export function kommentieren(id: Kennung, text: string): void {
+export function kommentieren(id: Kennung, text: string): boolean {
   const k = karte(id);
   const t = text.trim();
-  if (!k || !t) return;
-  aendern(() => {
+  if (!k || !t) return false;
+  return aendern(() => {
     k.kommentare.push({ von: ICH, zeit: JETZT, text: t });
     return `Kommentar an ${k.schluessel} gespeichert`;
   });

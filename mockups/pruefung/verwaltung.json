@@ -5,7 +5,7 @@
       "wechsel": [{ "klick": ".knopf.gefahr", "fest": [".pw-verwaltung-reiter"] }] },
     { "name": "ohne-reiter", "pfad": "/board/prod/einstellungen" },
     { "name": "spalten", "pfad": "/board/prod/einstellungen/spalten",
-      "wechsel": [{ "klick": ".pw-verwaltung-farbe .chip", "fest": [".pw-verwaltung-reiter"] }] },
+      "wechsel": [{ "klick": ".pw-farbwahl .chip", "fest": [".pw-verwaltung-reiter"] }] },
     { "name": "spalten-rueckfrage", "pfad": "/board/prod/einstellungen/spalten?entwurf=rueckfrage" },
     { "name": "labels", "pfad": "/board/prod/einstellungen/labels",
       "wechsel": [{ "klick": "[aria-label='Label Fehler löschen']", "fest": [".pw-verwaltung-reiter"] }] },

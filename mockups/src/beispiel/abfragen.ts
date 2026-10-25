@@ -2,14 +2,18 @@
 // Hinweise, sichtbare Karten einer Spalte. In der App liefert das die Schnittstelle (dieselben Regeln auf dem Server);
 // die Ansichten fragen nur hier, nie mit eigener Rechnung.
 
-import type { Board, Karte, Spalte, Timer, Zeitfenster } from "../modell";
-import { fassungAm, sollAm, urlaubstage, type TagSoll } from "../regeln/arbeitszeit";
-import { hatRecht, imArchiv, imFenster } from "../regeln/board";
-import { tageVon } from "../regeln/tage";
-import { HEUTE, ICH } from "./daten";
+import { ZEITFENSTER_VORGABE } from "../anzeige";
+import type { Board, Karte, Kennung, Prioritaet, Serie, Spalte, Termin, Timer, Zeitfenster } from "../modell";
+import { abwesenheitAm, artName, fassungAm, sollAm, urlaubstage, type TagSoll } from "../regeln/arbeitszeit";
+import { feiertag } from "../regeln/feiertage";
+import { vorkommen, type Nachtragposten, type SerienUmfeld } from "../regeln/serien";
+import { hatRecht, imArchiv, imFenster, liegengeblieben } from "../regeln/board";
+import { minutenAus, plusTage, tageVon, tageZwischen } from "../regeln/tage";
+import { HEUTE, ICH, JETZT } from "./daten";
+import { BESTAETIGT_BIS } from "./daten-planung";
 import { MONATSIST, TAGESREST } from "./daten-zeit";
-import { laufendSek } from "./format";
-import { board, karte, kartenDerSpalte, stand } from "./stand.svelte";
+import { alterTage, laufendSek } from "./format";
+import { board, karte, kartenDerSpalte, konto, stand } from "./stand.svelte";
 
 // ═══ Timer ═══════════════════════════════════════════════════════════════════════════════════════════════
 
@@ -111,7 +115,7 @@ export function urlaub(konto: string, jahr = Number(HEUTE.slice(0, 4))): { anspr
 // ═══ Board ═══════════════════════════════════════════════════════════════════════════════════════════════
 
 /** Karten, die eine Spalte zeigt: offene alle, erledigte nur im Zeitfenster (nie die archivierten) */
-export function sichtbareKarten(b: Board, s: Spalte, fenster: Zeitfenster = s.zeitfenster ?? "woche"): Karte[] {
+export function sichtbareKarten(b: Board, s: Spalte, fenster: Zeitfenster = s.zeitfenster ?? ZEITFENSTER_VORGABE): Karte[] {
   const alle = kartenDerSpalte(s.id);
   return s.erledigt ? alle.filter((k) => imFenster(k, fenster, b.einstellungen, HEUTE)) : alle;
 }
@@ -144,4 +148,151 @@ export function kartenNummer(k: Karte): string {
 
 export function ungelesen(): number {
   return stand.hinweise.filter((h) => !h.gelesen).length;
+}
+
+// ═══ Suche ═══════════════════════════════════════════════════════════════════════════════════════════════
+
+/** Suchwörter aus der Eingabe (ohne Groß und Klein) */
+export function woerter(suche: string): string[] {
+  return suche.toLowerCase().split(/\s+/).filter(Boolean);
+}
+
+function suchtext(k: Karte, b: Board): string {
+  return [k.schluessel, k.titel, k.beschreibung?.replace(/<[^>]+>/g, " "), k.notizen?.replace(/<[^>]+>/g, " "),
+    ...k.labels.map((l) => b.labels.find((x) => x.id === l)?.name), ...Object.values(k.felder), ...k.kommentare.map((c) => c.text),
+    ...k.checkliste.map((p) => p.text), ...k.zustaendig.map((p) => konto(p).name)].filter(Boolean).join(" ").toLowerCase();
+}
+
+/** Volltextsuche in Board, Liste und Archiv: jedes Wort muss in den Werten der Karte vorkommen (Schlüssel, Titel,
+ *  Beschreibung, Notizen, Labels, eigene Felder, Kommentare, Checkliste, Zuständige), nie in gespeicherten Rohtexten */
+export function passt(k: Karte, b: Board, suche: string | string[]): boolean {
+  const w = typeof suche === "string" ? woerter(suche) : suche;
+  if (!w.length) return true;
+  const t = suchtext(k, b);
+  return w.every((x) => t.includes(x));
+}
+
+// ═══ Mein Tag (Heute am Rechner und am Telefon) ══════════════════════════════════════════════════════════
+
+/** "Diese Woche": fällig in den nächsten sieben Tagen */
+export const WOCHE_TAGE = 7;
+
+/** Eine Karte in Heute mit ihrem Board */
+export interface TagEintrag {
+  karte: Karte;
+  board: Board;
+}
+
+export interface MeinTag {
+  ueberfaellig: TagEintrag[];
+  /** heute fällig, ohne Serienkarten */
+  heute: TagEintrag[];
+  /** heute fällige Serienkarten */
+  serien: TagEintrag[];
+  woche: TagEintrag[];
+  ohneDatum: TagEintrag[];
+  /** offen, nicht fällig und seit der Gefahrschwelle des Boards im Status (ohne laufenden Timer) */
+  liegengeblieben: TagEintrag[];
+  /** offen, nicht fällig und blockiert */
+  blockiert: TagEintrag[];
+  /** heute erledigt */
+  erledigt: TagEintrag[];
+  termine: { heute: Termin[]; woche: Termin[] };
+}
+
+const RANG: Record<Prioritaet, number> = { dringend: 0, hoch: 1, mittel: 2, niedrig: 3, keine: 4 };
+
+function ordnung(a: TagEintrag, b: TagEintrag): number {
+  return (a.karte.faellig ?? "9999").localeCompare(b.karte.faellig ?? "9999") || RANG[a.karte.prioritaet] - RANG[b.karte.prioritaet];
+}
+
+/** Dein Tag über alle Boards, in denen du Mitglied bist: jede offene Karte genau einmal nach Fälligkeit; dazu, was
+ *  liegt oder blockiert ist, was heute erledigt wurde, und deine Termine von heute und den nächsten sieben Tagen */
+export function meinTag(kontoId = ICH): MeinTag {
+  const tag: MeinTag = { ueberfaellig: [], heute: [], serien: [], woche: [], ohneDatum: [], liegengeblieben: [], blockiert: [], erledigt: [],
+                         termine: { heute: [], woche: [] } };
+  const boards = stand.boards.filter((b) => b.mitglieder.some((m) => m.konto === kontoId));
+  const meine = stand.karten.flatMap((karte) => {
+    const b = boards.find((x) => x.id === karte.board);
+    return b && karte.zustaendig.includes(kontoId) ? [{ karte, board: b }] : [];
+  }).sort(ordnung);
+  for (const e of meine) {
+    const spalte = e.board.spalten.find((s) => s.id === e.karte.spalte);
+    if (spalte?.erledigt) {
+      if (e.karte.abgeschlossen === HEUTE) tag.erledigt.push(e);
+      continue;
+    }
+    const t = e.karte.faellig ? tageZwischen(HEUTE, e.karte.faellig) : null;
+    if (t !== null && t < 0) tag.ueberfaellig.push(e);
+    else if (t === 0) (e.karte.serie ? tag.serien : tag.heute).push(e);
+    else if (t !== null && t <= WOCHE_TAGE) tag.woche.push(e);
+    else {
+      if (t === null) tag.ohneDatum.push(e);
+      if (liegengeblieben(alterTage(e.karte.bewegtAm), e.board.einstellungen) && !laufendAuf(e.karte.id).length) tag.liegengeblieben.push(e);
+      if (e.karte.blockiert) tag.blockiert.push(e);
+    }
+  }
+  const termine = stand.termine.filter((t) => t.teilnehmer.includes(kontoId))
+    .filter((t) => { const d = tageZwischen(HEUTE, t.datum); return d >= 0 && d <= WOCHE_TAGE; })
+    .sort((a, b) => (a.datum + a.von).localeCompare(b.datum + b.von));
+  tag.termine = { heute: termine.filter((t) => t.datum === HEUTE), woche: termine.filter((t) => t.datum !== HEUTE) };
+  return tag;
+}
+
+// ═══ Serien: Umfeld der Regeln, Karte eines Tags, Nachtrag ═════════════════════════════════════════════════
+
+export function serie(id: Kennung): Serie | undefined {
+  return stand.serien.find((s) => s.id === id);
+}
+
+/** Die Karte eines Serientags: die Karte der Serie, fällig an diesem Tag (auch erledigt) */
+export function karteDesTags(serieId: Kennung, tag: string): Karte | undefined {
+  return stand.karten.find((k) => k.serie === serieId && k.faellig === tag);
+}
+
+/** Was die Regeln der Serien aus dem Zustand brauchen: Abwesenheiten (ganze Tage), Feiertage im Bundesland des
+ *  Zeitkontos, die Karte jedes Tags mit den Personen, die darauf Zeit gebucht haben */
+export function serienUmfeld(): SerienUmfeld {
+  return {
+    heute: HEUTE,
+    jetzt: JETZT.slice(11, 16),
+    abwesend: (k, tag) => {
+      const a = abwesenheitAm(stand.abwesenheiten, k, tag);
+      return a && (a.anteil ?? 1) >= 1 ? artName(a) : undefined;
+    },
+    feiertag: (k, tag) => {
+      const z = fassungAm(stand.zeitkonten, k, tag);
+      return z ? feiertag(tag, z.bundesland) : undefined;
+    },
+    tagKarte: (serieId, tag) => {
+      const k = karteDesTags(serieId, tag);
+      if (!k) return undefined;
+      const gebucht = [...new Set(stand.zeiteintraege.filter((e) => e.karte === k.id && e.datum === tag).map((e) => e.konto))];
+      return { id: k.id, zustaendig: k.zustaendig, gebucht };
+    },
+    bestaetigtBis: BESTAETIGT_BIS,
+  };
+}
+
+/** Deine vorgebuchten Zeiten vergangener Tage (höchstens 31 Tage zurück), die auf deine Bestätigung warten: Serientage
+ *  und Termine, nur deine (in der alten App fehlte die Grenze, M-111) */
+export function nachtrag(kontoId: Kennung = ICH): Nachtragposten[] {
+  const u = serienUmfeld();
+  const ab = plusTage(HEUTE, -31);
+  const gestern = plusTage(HEUTE, -1);
+  const posten: Nachtragposten[] = [];
+  for (const s of stand.serien.filter((x) => x.teilnehmer.includes(kontoId))) {
+    for (const v of vorkommen(s, ab, gestern, u)) {
+      if (v.stand !== "wartet" || !v.offen.includes(kontoId)) continue;
+      const k = karteDesTags(s.id, v.tag);
+      posten.push({ art: "serie", bezug: s.id, karte: v.karte, board: s.board, titel: s.titel, tag: v.tag, von: s.uhrzeit, geplantMin: s.dauerMin,
+                    bestaetigt: (k?.zustaendig ?? []).filter((x) => !v.offen.includes(x) && !v.ohne.some((o) => o.konto === x)) });
+    }
+  }
+  for (const t of stand.termine.filter((x) => x.datum >= ab && x.datum < HEUTE && x.teilnehmer.includes(kontoId) && !x.bestaetigt.includes(kontoId))) {
+    if (u.abwesend(kontoId, t.datum)) continue;
+    posten.push({ art: "termin", bezug: t.id, board: t.board, titel: t.titel, tag: t.datum, von: t.von,
+                  geplantMin: minutenAus(t.bis) - minutenAus(t.von), bestaetigt: t.bestaetigt });
+  }
+  return posten.sort((a, b) => (a.tag + (a.von ?? "")).localeCompare(b.tag + (b.von ?? "")));
 }

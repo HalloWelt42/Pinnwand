@@ -1,17 +1,17 @@
 <script lang="ts">
   // Zeit nachtragen, als Leiste rechts über dem Stundenzettel: Karte suchen (alle Boards, in denen du Zeit buchen darfst
   // und die Zeiterfassung an ist; keine Ideen), Tag, Dauer, Notiz. Links im Stundenzettel steht schon beim Tippen, wo die
-  // Zeit landet; Buchen lässt die Leiste offen für die nächste Buchung.
+  // Zeit landet; unten die Wirkung neben Buchen. Buchen lässt die Leiste offen für die nächste Buchung.
+  import { darf, istAm, sollTag } from "../../beispiel/abfragen";
+  import { buchen } from "../../beispiel/anwendung/zeiten.svelte";
   import { HEUTE, ICH } from "../../beispiel/daten";
-  import { datum, dauer } from "../../beispiel/format";
+  import { datum, datumJahr, dauer } from "../../beispiel/format";
   import { board, stand } from "../../beispiel/stand.svelte";
   import type { Karte } from "../../modell";
-  import { datumJahr } from "./anzeige";
-  import DatumFeld from "./DatumFeld.svelte";
-  import { ZUSATZKARTEN } from "./daten";
+  import { dauerLesen } from "../../regeln/eingabe";
+  import { plusTage } from "../../regeln/tage";
+  import DatumFeld from "../../teile/DatumFeld.svelte";
   import KartenName from "./KartenName.svelte";
-  import { dauerLesen, plusTage } from "./regeln";
-  import { buchen, eintraegeVon, istAm, soll } from "./stand.svelte";
 
   let { tag: tagVorgabe, vorfuehren = false, schliessen, vorschauSetzen }: {
     tag: string; vorfuehren?: boolean; schliessen: () => void;
@@ -29,29 +29,27 @@
   // svelte-ignore state_referenced_locally
   let notiz = $state(vorfuehren ? "Anschläge gesetzt" : "");
 
-  /** Darf ich auf diesem Board Zeit buchen? Recht der eigenen Rolle, Modul Zeiterfassung an */
+  /** Auf dieser Karte darfst du Zeit buchen: Arbeit, Board mit Zeiterfassung, Recht "Eigene Zeit buchen" */
   function buchbar(k: Karte): boolean {
     const b = board(k.board);
-    const rolle = b.rollen.find((r) => r.id === b.mitglieder.find((m) => m.konto === ICH)?.rolle);
-    return b.module.zeiterfassung && k.art === "arbeit" && !!rolle?.rechte.includes("zeit.buchen");
+    return b.module.zeiterfassung && k.art === "arbeit" && darf(b, "zeit.buchen");
   }
-  const alle = $derived([...stand.karten, ...ZUSATZKARTEN].filter(buchbar));
+  const erledigt = (k: Karte) => !!board(k.board).spalten.find((s) => s.id === k.spalte)?.erledigt;
   const treffer = $derived.by(() => {
     const woerter = suche.toLowerCase().split(/\s+/).filter(Boolean);
     if (!woerter.length) return [];
-    const erledigt = (k: Karte) => !!board(k.board).spalten.find((s) => s.id === k.spalte)?.erledigt;
-    return alle.filter((k) => woerter.every((w) => `${k.schluessel} ${k.titel}`.toLowerCase().includes(w)))
+    return stand.karten.filter((k) => buchbar(k) && woerter.every((w) => `${k.schluessel} ${k.titel}`.toLowerCase().includes(w)))
       .sort((a, b) => Number(erledigt(a)) - Number(erledigt(b)) || b.bewegtAm.localeCompare(a.bewegtAm)).slice(0, 8);
   });
-  const gewaehlt = $derived(alle.find((k) => k.id === karteId));
+  const gewaehlt = $derived(stand.karten.find((k) => k.id === karteId && buchbar(k)));
   const sek = $derived(dauerLesen(dauerText));
   const bereit = $derived(!!gewaehlt && !!sek && sek > 0);
 
   $effect(() => { vorschauSetzen(bereit ? { karte: karteId, tag, sek: sek! } : null); });
 
-  const aufKarte = $derived(eintraegeVon(ICH, tag).filter((e) => e.karte === karteId).reduce((s, e) => s + e.sekunden, 0));
+  const aufKarte = $derived(stand.zeiteintraege.filter((e) => e.konto === ICH && e.datum === tag && e.karte === karteId).reduce((s, e) => s + e.sekunden, 0));
   const tagIst = $derived(istAm(ICH, tag));
-  const tagSoll = $derived(soll(ICH, tag)?.sollSek ?? 0);
+  const tagSoll = $derived(sollTag(ICH, tag)?.sollSek ?? 0);
 
   function absenden(): void {
     if (!bereit) return;
@@ -75,17 +73,14 @@
         <input bind:value={suche} oninput={() => (karteId = "")} placeholder="Schlüssel oder Titel, in allen Boards"
                title="Jedes Wort muss vorkommen; Ideen und Boards ohne Zeiterfassung fehlen" /></label>
       {#if gewaehlt}
-        <div class="pw-zeiten-gewaehlt"><KartenName karte={gewaehlt} /><span class="schwach klein">{board(gewaehlt.board).name}</span>
+        <div class="pw-zeiten-gewaehlt"><KartenName id={gewaehlt.id} /><span class="schwach klein">{board(gewaehlt.board).name}</span>
           <button class="knopf ohne symbol klein" title="Andere Karte wählen" onclick={() => (karteId = "")}><i class="fa-solid fa-xmark"></i></button></div>
-      {/if}
-      {#if gewaehlt}
-        <!-- gewählt: die Liste ist zu, bis wieder getippt wird -->
       {:else if treffer.length}
         <div class="pw-zeiten-treffer" role="listbox" aria-label="Treffer">
           {#each treffer as k (k.id)}
             {@const b = board(k.board)}
-            <button class="zeile" class:gewaehlt={k.id === karteId} role="option" aria-selected={k.id === karteId} onclick={() => (karteId = k.id)}>
-              <KartenName karte={k} /><span class="spalte">{b.spalten.find((s) => s.id === k.spalte)?.name}</span>
+            <button class="zeile" role="option" aria-selected="false" onclick={() => (karteId = k.id)}>
+              <KartenName id={k.id} /><span class="spalte">{b.spalten.find((s) => s.id === k.spalte)?.name}</span>
             </button>
           {/each}
         </div>
@@ -114,7 +109,6 @@
       </div>
       <input class="eingabe" bind:value={notiz} placeholder="Notiz (steht im Stundennachweis)" />
     </section>
-
   </div>
 
   <div class="fuss pw-zeiten-nachtragen-fuss">

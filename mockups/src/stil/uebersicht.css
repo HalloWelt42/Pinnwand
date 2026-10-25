@@ -3,7 +3,7 @@
 
 /* ═══ Seite: fester Kopf, eigenes Rollfeld, Meldungen unten rechts ═══════════════════════════════════════════ */
 
-.pw-uebersicht-seite { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
+.pw-uebersicht-seite { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .pw-uebersicht-kopfteile { display: flex; flex-direction: column; gap: var(--a3); }
 .pw-uebersicht-spalten { overflow-x: clip; }
 .pw-uebersicht-seite .rollfeld { overflow-x: clip; }
@@ -20,6 +20,8 @@ a.pw-uebersicht-boardverweis:hover { color: var(--text); }
 .pw-uebersicht-gruppe > .etikett { padding: var(--a2) var(--a1) 0; }
 .pw-uebersicht-ruhig { display: flex; align-items: center; gap: var(--a2); padding: var(--a1) var(--a2) var(--a2); font-size: var(--klein); color: var(--text-2); }
 .pw-uebersicht-ruhig i { color: var(--gut); }
+/* nichts fällig: ruhiger Zustand statt leerer Abschnitte; was ohne Datum ist, steht darunter */
+.pw-uebersicht-nichts { background: var(--bereich); border-radius: var(--r3); margin-bottom: var(--a4); }
 
 /* Board einer Karte außerhalb des Boards */
 .pw-uebersicht-board { display: inline-flex; align-items: center; gap: 6px; font-size: var(--klein); color: var(--text-2); white-space: nowrap; }
@@ -64,6 +66,10 @@ a.pw-uebersicht-boardverweis:hover { color: var(--text); }
 .pw-uebersicht-laeuft .schaetzung.ueber { color: var(--warn); }
 .pw-uebersicht-laeuft .schaetzung .pw-fortschritt { width: 110px; }
 .pw-uebersicht-laeuft .zeit { font-family: var(--schrift-zahl); font-size: var(--titel); font-weight: 700; color: var(--akzent); min-width: 0; }
+.pw-uebersicht-laeuft .knoepfe { display: flex; flex-wrap: wrap; gap: var(--a2); }
+/* angehalten: nichts läuft, darum ohne Bernstein */
+.pw-uebersicht-laeuft.angehalten { background: var(--bereich); border-color: var(--rand-stark); }
+.pw-uebersicht-laeuft.angehalten .symbol, .pw-uebersicht-laeuft.angehalten .zeit { color: var(--text-2); }
 
 /* Termin */
 .pw-uebersicht-termin {
@@ -113,17 +119,13 @@ a.pw-uebersicht-boardverweis:hover { color: var(--text); }
 .pw-uebersicht-sammel .anzahl .schwach { font-weight: 500; }
 .pw-uebersicht-sammel select.eingabe { height: 36px; font-size: var(--klein); }
 .pw-uebersicht-sammel .rechts { margin-left: auto; display: flex; flex-wrap: wrap; gap: var(--a2); align-items: center; }
-.pw-uebersicht-person { position: relative; }
-.pw-uebersicht-person .suche { height: 36px; width: 230px; max-width: 100%; font-size: var(--klein); }
-.pw-uebersicht-person .vorschlaege {
-  position: absolute; top: calc(100% + 4px); left: 0; z-index: 10; min-width: 100%; display: flex; flex-direction: column; padding: var(--a1);
-  background: var(--karte-2); border: 1px solid var(--rand-stark); border-radius: var(--r2); box-shadow: var(--schatten-schwebend);
+/* Zuweisen mit der gemeinsamen Personenwahl; die Vorschläge schweben über der Tabelle, statt die Leiste zu dehnen */
+.pw-uebersicht-person { position: relative; width: 250px; max-width: 100%; }
+.pw-uebersicht-person .suche { height: 36px; font-size: var(--klein); }
+.pw-uebersicht-person .pw-personenwahl-vorschlaege {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 10; min-width: 100%; width: max-content; max-width: 420px;
+  box-shadow: var(--schatten-schwebend);
 }
-.pw-uebersicht-person .vorschlaege button {
-  display: flex; align-items: center; gap: var(--a2); padding: var(--a1) var(--a2); border: 0; border-radius: var(--r1);
-  background: none; color: var(--text); text-align: left; cursor: pointer; white-space: nowrap;
-}
-.pw-uebersicht-person .vorschlaege button:hover { background: var(--karte-3); }
 
 .pw-uebersicht-tabelle { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; background: var(--bereich); border-radius: var(--r3); }
 .pw-uebersicht-liste td { background: var(--bereich); white-space: nowrap; }

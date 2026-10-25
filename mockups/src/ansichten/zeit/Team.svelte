@@ -2,41 +2,38 @@
   // Team: Anwesenheit und Auslastung der Mitglieder eines Boards als Matrix Personen mal Tage, mit umschaltbaren Ebenen.
   // Nur Boards mit dem Modul Arbeitszeit, in denen deine Rolle das Recht "Abwesenheiten sehen" hat; ohne das Recht siehst
   // du nur dich. Stunden sind die Summe je Tag aus dem Zeitkonto der Person (alle Boards), ohne Einzelheiten.
+  import { darf, istAm, sollTag } from "../../beispiel/abfragen";
   import { HEUTE, ICH } from "../../beispiel/daten";
-  import { datum, dauer } from "../../beispiel/format";
+  import { datum, dauer, spanne, tageZahl } from "../../beispiel/format";
   import { board, konto, stand } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
-  import type { Board } from "../../modell";
+  import type { AbwesenheitArt, Board } from "../../modell";
+  import { ARTEN, artName, fassungAm } from "../../regeln/arbeitszeit";
+  import { istWochenende, kalenderwoche, montagVon, plusTage, tageVon } from "../../regeln/tage";
   import { boardPfad } from "../../weg.svelte";
-  import { spanne, tageZahl } from "./anzeige";
-  import type { AbwesenheitArt } from "../../modell";
-  import { ARTEN, kalenderwoche, montagDer, plusTage, tageVonBis, wochentag } from "./regeln";
-  import { istAm, kontoVon, soll } from "./stand.svelte";
 
   let { entwurf = "" }: { entwurf?: string } = $props();
 
-  function rolleVon(b: Board): string {
-    return b.mitglieder.find((m) => m.konto === ICH)?.rolle ?? "";
-  }
-  /** vorgeführt: dieselbe Ansicht mit einer Rolle ohne das Recht (Werkstatt) */
-  // svelte-ignore state_referenced_locally
-  const ohneRecht = entwurf === "ohne-recht";
+  /** vorgeführt: dieselbe Ansicht mit einer eigenen Rolle des Boards, der das Recht fehlt (in Produktionsplanung: Werkstatt) */
+  const ohneRecht = $derived(entwurf === "ohne-recht");
+  const rolleOhneRecht = (b: Board) => b.rollen.find((r) => !r.vorgabe && !r.rechte.includes("abwesenheit.sehen"))
+    ?? b.rollen.find((r) => !r.rechte.includes("abwesenheit.sehen"));
+  const rolleId = (b: Board) => (ohneRecht ? rolleOhneRecht(b)?.id : b.mitglieder.find((m) => m.konto === ICH)?.rolle) ?? "";
   function darfSehen(b: Board): boolean {
-    const rolle = ohneRecht ? "r-kunde" : rolleVon(b);
-    return !!b.rollen.find((r) => r.id === rolle)?.rechte.includes("abwesenheit.sehen");
+    return ohneRecht ? false : darf(b, "abwesenheit.sehen");
   }
   const boards = $derived(stand.boards.filter((b) => b.module.arbeitszeit && b.mitglieder.some((m) => m.konto === ICH)));
   let boardId = $state("b-prod");
   const b = $derived(board(boardId));
   const recht = $derived(darfSehen(b));
-  const rolleName = $derived(b.rollen.find((r) => r.id === (ohneRecht ? "r-kunde" : rolleVon(b)))?.name ?? "");
+  const rolleName = $derived(b.rollen.find((r) => r.id === rolleId(b))?.name ?? "");
 
-  let start = $state(plusTage(montagDer(HEUTE), -14));
+  let start = $state(plusTage(montagVon(HEUTE), -14));
   const WOCHEN = 4;
-  const tage = $derived(tageVonBis(start, plusTage(start, WOCHEN * 7 - 1)));
+  const tage = $derived(tageVon(start, plusTage(start, WOCHEN * 7 - 1)));
   const kws = $derived(Array.from({ length: WOCHEN }, (_, i) => plusTage(start, i * 7)));
 
-  const LEGENDE: AbwesenheitArt[] = ["urlaub", "halbtag", "krank", "frei", "fortbildung"];
+  const LEGENDE: AbwesenheitArt[] = ["urlaub", "krank", "frei", "fortbildung"];
   let ebenen = $state({ anwesenheit: true, feiertage: true, stunden: false, auslastung: false });
   const EBENEN = [
     ["anwesenheit", "Anwesenheit", "fa-user-check", "Wer da ist und wer fehlt, mit Art der Abwesenheit"],
@@ -49,19 +46,23 @@
     ebenen = { ...ebenen, [e]: an, ...(an && e === "stunden" ? { auslastung: false } : {}), ...(an && e === "auslastung" ? { stunden: false } : {}) };
   }
 
+  const hatKonto = (id: string) => !!fassungAm(stand.zeitkonten, id, HEUTE);
   /** Mitglieder mit Zeitkonto; ohne Recht nur du */
-  const personen = $derived(b.mitglieder.map((m) => m.konto).filter((id) => kontoVon(id) && (recht || id === ICH)));
-  const ohneKonto = $derived(b.mitglieder.filter((m) => !kontoVon(m.konto)).map((m) => konto(m.konto).name));
+  const personen = $derived(b.mitglieder.map((m) => m.konto).filter((id) => hatKonto(id) && (recht || id === ICH)));
+  const ohneKonto = $derived(b.mitglieder.filter((m) => !hatKonto(m.konto)).map((m) => konto(m.konto).name));
 
   interface ZelleInfo { klasse: string; text: string; titel: string; anteil?: number }
   function zelle(p: string, t: string): ZelleInfo {
-    const s = soll(p, t)!;
-    const ist = t <= HEUTE ? istAm(p, t) : 0;
+    const s = sollTag(p, t);
     const was = `${konto(p).name}, ${spanne(t, t)}`;
+    if (!s) return { klasse: "frei", text: "", titel: was };
+    const ist = t <= HEUTE ? istAm(p, t) : 0;
     if (ebenen.feiertage && s.feiertag) return { klasse: "ft", text: "FT", titel: `${was}: ${s.feiertag}` };
     if (ebenen.anwesenheit && s.abwesenheit && (s.basisSek > 0 || s.abwesenheit.art !== "frei")) {
-      const a = ARTEN[s.abwesenheit.art];
-      return { klasse: `art-${s.abwesenheit.art}`, text: a.kurz, titel: `${was}: ${a.name}${s.abwesenheit.notiz ? `, ${s.abwesenheit.notiz}` : ""}${ist ? `, gebucht ${dauer(ist)}` : ""}` };
+      const a = s.abwesenheit;
+      const halb = a.anteil === 0.5;
+      return { klasse: `art-${a.art}${halb ? " halbtag" : ""}`, text: `${halb ? "½" : ""}${ARTEN[a.art].kurz}`,
+               titel: `${was}: ${artName(a)}${a.notiz ? `, ${a.notiz}` : ""}${ist ? `, gebucht ${dauer(ist)}` : ""}` };
     }
     if (s.basisSek === 0 && !ist) return { klasse: "frei", text: "", titel: `${was}: ${s.grund === "wochenende" ? "Wochenende" : s.feiertag ?? "kein Arbeitstag"}` };
     if (ebenen.stunden && t <= HEUTE) return { klasse: "stunden", text: ist ? dauer(ist) : "0:00", titel: `${was}: ${dauer(ist)} gebucht`, anteil: Math.min(1, ist / (8 * 3600)) };
@@ -76,8 +77,9 @@
   function summe(p: string): { ist: number; soll: number; weg: number } {
     let ist = 0, sl = 0, weg = 0;
     for (const t of tage) {
-      const s = soll(p, t)!;
-      if (s.abwesenheit && s.basisSek > 0) weg += s.regel ? 0.5 : 1;
+      const s = sollTag(p, t);
+      if (!s) continue;
+      if (s.abwesenheit && s.basisSek > 0) weg += (s.abwesenheit.anteil ?? 1) * (s.regel ? 0.5 : 1);
       if (t <= HEUTE) { ist += istAm(p, t); sl += s.sollSek; }
     }
     return { ist, soll: sl, weg };
@@ -93,7 +95,7 @@
   <button class="knopf symbol klein" title="Vier Wochen früher" onclick={() => (start = plusTage(start, -7 * WOCHEN))}><i class="fa-solid fa-chevron-left"></i></button>
   <span class="pw-arbeitszeit-zeitraum zahl">{datum(tage[0])} bis {datum(tage[tage.length - 1])}{tage[tage.length - 1].slice(0, 4)}</span>
   <button class="knopf symbol klein" title="Vier Wochen später" onclick={() => (start = plusTage(start, 7 * WOCHEN))}><i class="fa-solid fa-chevron-right"></i></button>
-  {#if !tage.includes(HEUTE)}<button class="knopf klein" onclick={() => (start = plusTage(montagDer(HEUTE), -14))}>Heute</button>{/if}
+  {#if !tage.includes(HEUTE)}<button class="knopf klein" onclick={() => (start = plusTage(montagVon(HEUTE), -14))}>Heute</button>{/if}
   <div class="rechts">
     <span class="etikett">Ebenen</span>
     {#each EBENEN as [id, name, symbol, titel] (id)}
@@ -121,7 +123,7 @@
         <tr class="tage">
           <th class="person">Person</th>
           {#each tage as t (t)}
-            <th class:heute={t === HEUTE} class:we={wochentag(t) === 0 || wochentag(t) === 6} title={spanne(t, t)}>
+            <th class:heute={t === HEUTE} class:we={istWochenende(t)} title={spanne(t, t)}>
               <span>{datum(t, true).slice(0, 2)}</span><b class="zahl">{Number(t.slice(8))}</b></th>
           {/each}
         </tr>
@@ -148,6 +150,7 @@
     {#if ebenen.anwesenheit}
       <li><span class="muster da"></span>anwesend</li>
       {#each LEGENDE as a (a)}<li><span class="muster art-{a}">{ARTEN[a].kurz}</span>{ARTEN[a].name}</li>{/each}
+      <li><span class="muster art-urlaub halbtag">½U</span>{artName({ art: "urlaub", anteil: 0.5 })}</li>
     {/if}
     {#if ebenen.feiertage}<li><span class="muster ft">FT</span>Feiertag</li>{/if}
     {#if ebenen.stunden}<li><span class="muster stunden"></span>gebuchte Stunden (kräftiger ist mehr)</li>{/if}

@@ -1,41 +1,30 @@
 <script lang="ts">
-  // Labels des Boards mit Name und Farbe: anlegen, umbenennen (gilt sofort auf allen Karten, denn Karten tragen das
-  // Label, nicht seinen Text), Farbe wechseln, löschen mit Rückfrage, die sagt, an wie vielen Karten es hängt. Namen sind
-  // ohne Beachtung von Groß und klein eindeutig.
+  // Labels des Boards mit Name und Farbe: anlegen, umbenennen und umfärben (gilt sofort auf allen Karten, denn Karten
+  // tragen das Label, nicht seinen Text), löschen mit Rückfrage, die sagt, an welchen Karten es hängt. Namen sind ohne
+  // Beachtung von Groß und klein eindeutig. Alles über die Anwendungsfälle.
+  import { untrack } from "svelte";
+  import { labelAendern, labelAnlegen, labelLoeschen, labelVergeben } from "../../../beispiel/anwendung/boards.svelte";
   import { stand } from "../../../beispiel/stand.svelte";
   import type { Board, Farbe, Label } from "../../../modell";
-  import Farbwahl from "../Farbwahl.svelte";
+  import Farbwahl from "../../../teile/Farbwahl.svelte";
 
   let { board }: { board: Board; entwurf?: string } = $props();
 
   const tragen = (id: string) => stand.karten.filter((k) => k.board === board.id && k.labels.includes(id));
-  const vergeben = (name: string, ausser = "") =>
-    board.labels.find((l) => l.id !== ausser && l.name.toLowerCase() === name.trim().toLowerCase());
 
-  let fehler = $state<Record<string, string>>({});
   function umbenennen(l: Label, e: Event): void {
     const feld = e.currentTarget as HTMLInputElement;
-    const neu = feld.value.trim();
-    const doppelt = vergeben(neu, l.id);
-    if (!neu || doppelt) {
-      fehler[l.id] = neu ? `Das Label ${doppelt!.name} gibt es schon.` : "Ein Label braucht einen Namen.";
-      feld.value = l.name;
-      return;
-    }
-    fehler[l.id] = "";
-    l.name = neu;
+    if (feld.value.trim() === l.name || !labelAendern(board.id, l.id, { name: feld.value })) feld.value = l.name;
   }
 
   let loeschen = $state<string | null>(null);
+  $effect(() => { board.id; untrack(() => (loeschen = null)); });
 
   let neuName = $state("");
   let neuFarbe = $state<Farbe>("himmel");
-  const neuDoppelt = $derived(neuName.trim() ? vergeben(neuName) : undefined);
+  const neuDoppelt = $derived(neuName.trim() ? labelVergeben(board, neuName) : undefined);
   function anlegen(): void {
-    const name = neuName.trim();
-    if (!name || neuDoppelt) return;
-    board.labels.push({ id: `l-${crypto.randomUUID()}`, name, farbe: neuFarbe });
-    neuName = "";
+    if (labelAnlegen(board.id, neuName, neuFarbe)) neuName = "";
   }
 </script>
 
@@ -51,19 +40,18 @@
           <div class="oben">
             <span class="pw-label" data-farbe={l.farbe}>{l.name}</span>
             <input class="eingabe pw-verwaltung-name" value={l.name} aria-label="Name des Labels {l.name}" onchange={(e) => umbenennen(l, e)} />
-            <Farbwahl kompakt wert={l.farbe} waehlen={(f) => (l.farbe = f)} wofuer="Farbe des Labels {l.name}" />
+            <Farbwahl kompakt wert={l.farbe} waehlen={(f) => f && labelAendern(board.id, l.id, { farbe: f })} wofuer="Farbe des Labels {l.name}" />
             <span class="pw-angabe flaeche" title="Karten mit diesem Label"><i class="fa-regular fa-note-sticky"></i>an {n} {n === 1 ? "Karte" : "Karten"}</span>
             <button class="knopf ohne symbol klein" title="Label {l.name} löschen" aria-label="Label {l.name} löschen" disabled={loeschen === l.id}
                     onclick={() => (loeschen = l.id)}><i class="fa-solid fa-trash-can"></i></button>
           </div>
-          {#if fehler[l.id]}<span class="pw-verwaltung-fehler" role="alert">{fehler[l.id]}</span>{/if}
           {#if loeschen === l.id}
             <div class="hinweis gefahr pw-verwaltung-rueckfrage" role="alert"><i class="fa-solid fa-trash-can"></i>
               <div><b>Label {l.name} löschen?</b>
                 {#if n}Es hängt an {n === 1 ? "einer Karte" : `${n} Karten`} ({tragen(l.id).map((k) => k.schluessel).join(", ")}); dort fällt es weg,
                   sonst ändert sich nichts an den Karten.{:else}Keine Karte trägt es.{/if}</div>
               <span class="rechts"><button class="knopf klein" onclick={() => (loeschen = null)}>Abbrechen</button>
-                <button class="knopf gefahr-voll klein" onclick={() => { board.labels = board.labels.filter((x) => x.id !== l.id); loeschen = null; }}>
+                <button class="knopf gefahr-voll klein" onclick={() => { if (labelLoeschen(board.id, l.id)) loeschen = null; }}>
                   <i class="fa-solid fa-trash-can"></i>Label löschen</button></span>
             </div>
           {/if}
@@ -81,9 +69,9 @@
                onkeydown={(e) => { if (e.key === "Enter") anlegen(); }} />
         <button class="knopf haupt" disabled={!neuName.trim() || !!neuDoppelt} onclick={anlegen}><i class="fa-solid fa-plus"></i>Label anlegen</button>
       </div>
-      {#if neuDoppelt}<span class="pw-verwaltung-fehler" role="alert">Das Label {neuDoppelt.name} gibt es schon; Groß und klein zählen nicht.</span>{/if}
+      {#if neuDoppelt}<span class="pw-verwaltung-fehler" role="alert">Das Label {neuDoppelt} gibt es schon; Groß und klein zählen nicht.</span>{/if}
       <div class="pw-verwaltung-formular">
-        <span class="etikett">Farbe</span><Farbwahl wert={neuFarbe} waehlen={(f) => (neuFarbe = f)} wofuer="Farbe des neuen Labels" />
+        <span class="etikett">Farbe</span><Farbwahl wert={neuFarbe} waehlen={(f) => f && (neuFarbe = f)} wofuer="Farbe des neuen Labels" />
       </div>
     </section>
   </div>

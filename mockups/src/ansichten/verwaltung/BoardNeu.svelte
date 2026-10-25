@@ -1,66 +1,65 @@
 <script lang="ts">
   // Board anlegen (/boards/neu) als sichtbare Schritte: links wählen, rechts die Vorschau des Boards. Vorlage (eigene
-  // zuerst, dazu leer anfangen), Name und Kürzel (Vorschlag aus dem Namen, sofort auf Eindeutigkeit geprüft, über alle
-  // Boards), Ordner, Mitglieder (freiwillig). Am Ende "Board anlegen"; wer anlegt, ist Besitzer.
+  // zuerst, dazu leer anfangen), Name und Kürzel (Vorschlag aus dem Namen, sofort auf Eindeutigkeit über alle Boards
+  // geprüft), Ordner, Mitglieder (freiwillig). "Board anlegen" ruft den Anwendungsfall; wer anlegt, ist Besitzer.
   import { untrack } from "svelte";
-  import { ICH, ORDNER, VORLAGEN } from "../../beispiel/daten";
+  import {
+    boardAnlegen, kellerwolkePersonen, kuerzelPruefen, kuerzelSaeubern, kuerzelVorschlag, LEER_VORLAGE, neueBoardFarbe,
+    type Einladung,
+  } from "../../beispiel/anwendung/boards.svelte";
+  import { ICH, VORLAGEN } from "../../beispiel/daten";
   import { konto, stand } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
-  import type { Farbe } from "../../modell";
+  import type { KellerwolkePerson } from "../../modell";
+  import Personenwahl from "../../teile/Personenwahl.svelte";
+  import { boardPfad, gehe } from "../../weg.svelte";
   import BoardVorschau from "./BoardVorschau.svelte";
-  import { KENNUNGEN, KUERZEL_ANDERER, LEER_SPALTEN, VORLAGE_FELDER, type Vorschlag } from "./daten";
-  import { pruefen, saeubern, vorschlag, type Belegung } from "./kuerzel";
-  import Personenwahl from "./Personenwahl.svelte";
 
   let { entwurf = "" }: { entwurf?: string } = $props();
 
-  const LEER = "leer";
-  const vorlagen = [...VORLAGEN].sort((a, b) => Number(!!b.eigen) - Number(!!a.eigen));
-  const belegt: Belegung = $derived({ boards: stand.boards, anderer: KUERZEL_ANDERER });
-  /** ein neues Board bekommt die erste Farbe, die noch kein Board trägt (unterscheidbar in der Seitenleiste) */
-  const NEU_FARBEN: Farbe[] = ["tuerkis", "himmel", "honig", "violett", "rose", "sand", "stahl", "koralle", "petrol", "minze", "flieder"];
-  const farbe = $derived(NEU_FARBEN.find((f) => !stand.boards.some((b) => b.farbe === f)) ?? "tuerkis");
-  const ICH_VORSCHLAG: Vorschlag = { kennung: KENNUNGEN[ICH], name: konto(ICH).name, konto: ICH };
+  const vorlagen = [...[...VORLAGEN].sort((a, b) => Number(!!b.eigen) - Number(!!a.eigen)), LEER_VORLAGE];
+  const person = (id: string): KellerwolkePerson => ({ kennung: konto(id).kellerwolke, name: konto(id).name, konto: id });
 
-  let vorlage = $state("v-werkstatt");
+  let vorlageId = $state("v-werkstatt");
   let name = $state("");
   let kuerzelEigen = $state<string | null>(null);
   let ordner = $state("o-firma");
-  let einladungen = $state<{ p: Vorschlag; rolle: string }[]>([]);
+  let einladungen = $state<Einladung[]>([]);
   let suche = $state("");
 
-  // vorgeführte Zustände: Kürzel frei (Vorgabe) oder von Hand auf ein vergebenes gesetzt
+  // vorgeführte Zustände: Kürzel frei (Vorgabe) oder von Hand auf ein vergebenes gesetzt (einmal je Entwurf)
   $effect(() => {
     const e = entwurf;
     untrack(() => {
       const vergeben = e === "kuerzel-vergeben";
-      vorlage = vergeben ? "v-projekt" : "v-werkstatt";
+      vorlageId = vergeben ? "v-projekt" : "v-werkstatt";
       name = vergeben ? "Produktion Halle 2" : "Werkstatt Halle 2";
       kuerzelEigen = vergeben ? "PROD" : null;
       ordner = "o-firma";
-      einladungen = [{ p: { kennung: KENNUNGEN["k-anna"], name: konto("k-anna").name, konto: "k-anna" }, rolle: "mitglied" }];
+      einladungen = [{ person: person("k-anna"), rolle: "mitglied" }];
       suche = "";
     });
   });
 
-  const gewaehlt = $derived(VORLAGEN.find((v) => v.id === vorlage));
-  const spalten = $derived(gewaehlt?.spalten ?? LEER_SPALTEN);
-  const module = $derived(gewaehlt?.module ?? []);
-  const felder = $derived(VORLAGE_FELDER[vorlage] ?? []);
-  const vorgeschlagen = $derived(vorschlag(name, belegt));
+  const vorlage = $derived(vorlagen.find((v) => v.id === vorlageId) ?? LEER_VORLAGE);
+  const vorgeschlagen = $derived(kuerzelVorschlag(name));
   const kuerzel = $derived(kuerzelEigen ?? vorgeschlagen);
-  const pruefung = $derived(pruefen(kuerzel, name, belegt));
+  const pruefung = $derived(kuerzelPruefen(kuerzel, name));
   const nameOk = $derived(!!name.trim());
   const fertig = $derived(nameOk && pruefung.stand === "frei");
   const fehlt = $derived(!nameOk ? "ein Name" : pruefung.stand !== "frei" ? "ein freies Kürzel" : "");
-  const ordnerName = $derived(ORDNER.find((o) => o.id === ordner)?.name ?? "Ohne Ordner");
-  const mitglieder = $derived([ICH_VORSCHLAG, ...einladungen.map((x) => x.p)]);
+  const ordnerName = $derived(stand.ordner.find((o) => o.id === ordner)?.name ?? "Ohne Ordner");
+  const mitglieder = $derived([person(ICH), ...einladungen.map((x) => x.person)]);
 
   function kuerzelTippen(e: Event): void {
     const feld = e.currentTarget as HTMLInputElement;
-    const k = saeubern(feld.value);
+    const k = kuerzelSaeubern(feld.value);
     feld.value = k;
     kuerzelEigen = k === vorgeschlagen ? null : k;
+  }
+  function anlegen(): void {
+    const b = boardAnlegen({ vorlage, name, kuerzel, ordner, einladungen });
+    if (b) gehe(boardPfad(b.kuerzel));
   }
 </script>
 
@@ -77,19 +76,13 @@
         <h2><span class="pw-verwaltung-nr fertig" aria-label="erledigt"><i class="fa-solid fa-check"></i></span>Vorlage</h2>
         <div class="wahl pw-verwaltung-wahl pw-verwaltung-vorlagen" role="radiogroup" aria-label="Vorlage">
           {#each vorlagen as v (v.id)}
-            <label class:an={vorlage === v.id}>
-              <input type="radio" name="vorlage" value={v.id} bind:group={vorlage} /><span class="kreis"></span>
+            <label class:an={vorlageId === v.id}>
+              <input type="radio" name="vorlage" value={v.id} bind:group={vorlageId} /><span class="kreis"></span>
               <div><b><i class="fa-solid {v.symbol}"></i>{v.name}{#if v.eigen}<span class="zustand wartet">Eigene Vorlage</span>{/if}</b>
                 <span>{v.beschreibung}</span>
-                <span class="pw-verwaltung-reihe">{v.spalten.join(", ")}</span></div>
+                <span class="pw-verwaltung-reihe">{v.spalten.map((s) => s.name).join(", ")}</span></div>
             </label>
           {/each}
-          <label class:an={vorlage === LEER}>
-            <input type="radio" name="vorlage" value={LEER} bind:group={vorlage} /><span class="kreis"></span>
-            <div><b><i class="fa-regular fa-square"></i>Leer anfangen</b>
-              <span>Drei Spalten, ohne Module und Felder; alles Weitere stellst du selbst ein.</span>
-              <span class="pw-verwaltung-reihe">{LEER_SPALTEN.join(", ")}</span></div>
-          </label>
         </div>
       </li>
 
@@ -121,7 +114,7 @@
       <li class="bereich">
         <h2><span class="pw-verwaltung-nr fertig" aria-label="erledigt"><i class="fa-solid fa-check"></i></span>Ordner</h2>
         <span class="stufen" role="radiogroup" aria-label="Ordner">
-          {#each ORDNER as o (o.id)}
+          {#each stand.ordner as o (o.id)}
             <button role="radio" aria-checked={ordner === o.id} class:an={ordner === o.id} onclick={() => (ordner = o.id)}><i class="fa-solid fa-folder"></i> {o.name}</button>
           {/each}
           <button role="radio" aria-checked={ordner === ""} class:an={ordner === ""} onclick={() => (ordner = "")}>Ohne Ordner</button>
@@ -133,32 +126,32 @@
         <h2><span class="pw-verwaltung-nr">4</span>Mitglieder einladen <span class="schwach pw-verwaltung-frei">freiwillig</span></h2>
         <div class="pw-verwaltung-eingeladen">
           <div class="zeile"><Person id={ICH} /><span class="wer"><b>{konto(ICH).name} (du)</b></span><span class="zustand"><i class="fa-solid fa-crown"></i>Besitzer</span></div>
-          {#each einladungen as x, i (x.p.kennung)}
+          {#each einladungen as x, i (x.person.kennung)}
             <div class="zeile">
-              {#if x.p.konto}<Person id={x.p.konto} />{:else}<span class="pw-verwaltung-neuperson"><i class="fa-solid fa-user"></i></span>{/if}
-              <span class="wer"><b>{x.p.name}</b><span class="pw-schluessel">{x.p.kennung}</span></span>
-              <select class="eingabe" bind:value={einladungen[i].rolle} aria-label="Rolle von {x.p.name}">
+              {#if x.person.konto}<Person id={x.person.konto} />{:else}<span class="pw-personenwahl-neu"><i class="fa-solid fa-user"></i></span>{/if}
+              <span class="wer"><b>{x.person.name}</b><span class="pw-schluessel">{x.person.kennung}</span></span>
+              <select class="eingabe" bind:value={einladungen[i].rolle} aria-label="Rolle von {x.person.name}">
                 <option value="besitzer">Besitzer</option><option value="mitglied">Mitglied</option><option value="leser">Leser</option>
               </select>
-              <button class="knopf ohne symbol klein" title="{x.p.name} nicht einladen" aria-label="{x.p.name} nicht einladen"
-                      onclick={() => (einladungen = einladungen.filter((y) => y.p.kennung !== x.p.kennung))}><i class="fa-solid fa-xmark"></i></button>
+              <button class="knopf ohne symbol klein" title="{x.person.name} nicht einladen" aria-label="{x.person.name} nicht einladen"
+                      onclick={() => (einladungen = einladungen.filter((y) => y.person.kennung !== x.person.kennung))}><i class="fa-solid fa-xmark"></i></button>
             </div>
           {/each}
         </div>
-        <Personenwahl bind:text={suche} ausser={[ICH, ...einladungen.map((x) => x.p.konto ?? "")]}
-                      waehlen={(p) => { if (!einladungen.some((x) => x.p.kennung === p.kennung)) einladungen = [...einladungen, { p, rolle: "mitglied" }]; }} />
+        <Personenwahl bind:text={suche} kandidaten={kellerwolkePersonen().filter((p) => !einladungen.some((x) => x.person.kennung === p.kennung))}
+                      ausser={[ICH]} waehlen={(p) => (einladungen = [...einladungen, { person: p, rolle: "mitglied" }])} />
         <p class="pw-verwaltung-satz">Eingeladene sehen das Board sofort und bekommen einen Hinweis. Weitere Rollen legst du danach in den Einstellungen an.</p>
       </li>
     </ol>
 
     <div class="pw-verwaltung-abschluss">
-      <span class="klein leise">{nameOk ? name.trim() : "Das Board"} mit {spalten.length} Spalten, {module.length} {module.length === 1 ? "Modul" : "Modulen"}
-        und {mitglieder.length} {mitglieder.length === 1 ? "Mitglied" : "Mitgliedern"}{fehlt ? `; es fehlt noch ${fehlt}.` : "."}</span>
+      <span class="klein leise">{nameOk ? name.trim() : "Das Board"} mit {vorlage.spalten.length} Spalten, {vorlage.module.length}
+        {vorlage.module.length === 1 ? "Modul" : "Modulen"} und {mitglieder.length} {mitglieder.length === 1 ? "Mitglied" : "Mitgliedern"}{fehlt ? `; es fehlt noch ${fehlt}.` : "."}</span>
       <a class="knopf ohne" href="/heute">Abbrechen</a>
-      <button class="knopf haupt" disabled={!fertig}><i class="fa-solid fa-plus"></i>Board anlegen</button>
+      <button class="knopf haupt" disabled={!fertig} onclick={anlegen}><i class="fa-solid fa-plus"></i>Board anlegen</button>
     </div>
   </div>
   <aside class="rollfeld" aria-label="Vorschau">
-    <BoardVorschau name={name} kuerzel={kuerzel} {farbe} ordner={ordnerName} {spalten} {module} {felder} {mitglieder} />
+    <BoardVorschau {name} {kuerzel} farbe={neueBoardFarbe()} ordner={ordnerName} {vorlage} {mitglieder} />
   </aside>
 </div>

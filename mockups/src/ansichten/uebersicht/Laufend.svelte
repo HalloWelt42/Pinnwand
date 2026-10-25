@@ -1,30 +1,40 @@
 <script lang="ts">
-  // Dein laufender Timer oben in Heute: Karte, Board, Zeit, Schätzung; Anhalten bucht die Sitzung (ein Timer je Person).
-  import { dauer, laufendSek, uhrzeit } from "../../beispiel/format";
-  import type { Board, Karte } from "../../modell";
+  // Dein Timer oben in Heute: Karte, Board, Zeit, Schätzung. Anhalten bucht die Sitzung und lässt den Timer auf der
+  // Karte (fortsetzen geht später), Stoppen bucht und beendet ihn; ein Timer je Person.
+  import { kartenNummer, sitzungSek, zeitDerKarte } from "../../beispiel/abfragen";
+  import { anhalten, fortsetzen, stoppen } from "../../beispiel/anwendung/timer.svelte";
+  import { dauer, uhrzeit } from "../../beispiel/format";
+  import type { Board, Karte, Timer } from "../../modell";
   import { boardPfad } from "../../weg.svelte";
-  import { timerAnhalten } from "./aktionen.svelte";
   import BoardMarke from "./BoardMarke.svelte";
 
-  let { karte, board, gesperrt = false }: { karte: Karte; board: Board; gesperrt?: boolean } = $props();
-  const zeit = $derived(karte.erfasstSek + (karte.laeuft ? laufendSek(karte.laeuft.seit) : 0));
+  let { timer, karte, board, gesperrt = false }: { timer: Timer; karte: Karte; board: Board; gesperrt?: boolean } = $props();
+  const zeit = $derived(zeitDerKarte(karte.id));
   const anteil = $derived(karte.schaetzungMin ? zeit / 60 / karte.schaetzungMin : 0);
 </script>
 
-<div class="pw-uebersicht-laeuft">
-  <i class="fa-solid fa-circle-play symbol"></i>
+<div class="pw-uebersicht-laeuft" class:angehalten={!timer.seit}>
+  <i class="fa-solid {timer.seit ? 'fa-circle-play' : 'fa-circle-pause'} symbol"></i>
   <div class="was">
-    <span class="seit">Läuft seit {uhrzeit(karte.laeuft?.seit ?? "")}</span>
-    <a class="titel" href={boardPfad(board.kuerzel, karte.schluessel.split("-")[1])}><span class="pw-schluessel">{karte.schluessel}</span> {karte.titel}</a>
+    <span class="seit">{timer.seit ? `Läuft seit ${uhrzeit(timer.seit)}` : "Angehalten, die Sitzungen sind gebucht"}</span>
+    <a class="titel" href={boardPfad(board.kuerzel, kartenNummer(karte))}><span class="pw-schluessel">{karte.schluessel}</span> {karte.titel}</a>
   </div>
   <BoardMarke {board} />
   {#if karte.schaetzungMin}
-    <span class="schaetzung" class:ueber={anteil > 1} title="Erfasst gegen die Schätzung der Karte">
+    <span class="schaetzung" class:ueber={anteil > 1} title="Gebucht gegen die Schätzung der Karte">
       <span class="pw-fortschritt zeit" class:ueber={anteil > 1}><span style="width: {Math.min(100, anteil * 100)}%"></span></span>
       {Math.round(anteil * 100)} % von {dauer(karte.schaetzungMin * 60)}{anteil > 1 ? ", überschritten" : ""}
     </span>
   {/if}
   <span class="zeit">{dauer(zeit, true)}</span>
-  <button class="knopf haupt" disabled={gesperrt} title="Anhalten und die Sitzung buchen" onclick={() => timerAnhalten(karte.id)}>
-    <i class="fa-solid fa-pause"></i>Anhalten</button>
+  <span class="knoepfe">
+    {#if timer.seit}
+      <button class="knopf haupt" disabled={gesperrt} title="Anhalten: die Sitzung wird gebucht, fortsetzen geht später" onclick={anhalten}>
+        <i class="fa-solid fa-pause"></i>Anhalten</button>
+    {:else}
+      <button class="knopf haupt" disabled={gesperrt} onclick={fortsetzen}><i class="fa-solid fa-play"></i>Fortsetzen</button>
+    {/if}
+    <button class="knopf" disabled={gesperrt} title="Stoppen und buchen{timer.seit ? ` (${dauer(sitzungSek(timer))})` : ''}" onclick={stoppen}>
+      <i class="fa-solid fa-stop"></i>Stoppen</button>
+  </span>
 </div>

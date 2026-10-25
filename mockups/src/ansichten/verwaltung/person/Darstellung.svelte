@@ -1,41 +1,19 @@
 <script lang="ts">
   // Darstellung auf diesem Gerät: Thema (hell, dunkel, wie das System) und Schriftstufe (Klein ist die Vorgabe) mit
-  // Vorschau einer echten Karte in jeder Stufe. Die Wahl gilt sofort für die ganze Seite; in der App merkt sie sich die
-  // Anzeige des Appkerns im Browser, hier gilt sie bis zum Neuladen.
-  import { onMount } from "svelte";
+  // Vorschau einer echten Karte in jeder Stufe. Eine Wahrheit mit der Leiste der Entwürfe (darstellung.svelte.ts); die
+  // Wahl gilt sofort für die ganze Seite und bleibt im Browser gemerkt.
   import { board, karte } from "../../../beispiel/stand.svelte";
   import Karte from "../../../board/Karte.svelte";
+  import { darstellung, darstellungSetzen, type Schrift, type Thema } from "../../../darstellung.svelte";
 
-  type Thema = "hell" | "dunkel" | "system";
   const THEMEN: [Thema, string, string][] = [["hell", "Hell", "fa-sun"], ["dunkel", "Dunkel", "fa-moon"], ["system", "Wie das System", "fa-desktop"]];
-  const STUFEN = [
+  const STUFEN: [Schrift, string, string][] = [
     ["klein", "Klein", "Vorgabe: viel auf einen Blick"],
     ["mittel", "Mittel", "Etwas größer, auch Etiketten und Zähler"],
     ["gross", "Groß", "Für Abstand zum Bildschirm"],
-  ] as const;
-
-  const wurzel = document.documentElement;
-  let thema = $state<Thema>(wurzel.dataset.theme === "hell" ? "hell" : "dunkel");
-  let schrift = $state(wurzel.dataset.schrift ?? "klein");
-  const probe = karte("c-131")!;
-  const probeBoard = board("b-prod");
-
-  // Thema und Stufe können sich auch anderswo ändern (Leiste der Entwürfe): die Wahl hier folgt
-  onMount(() => {
-    const beobachter = new MutationObserver(() => {
-      const t = wurzel.dataset.theme;
-      if (thema !== "system" && (t === "hell" || t === "dunkel")) thema = t;
-      schrift = wurzel.dataset.schrift ?? "klein";
-    });
-    beobachter.observe(wurzel, { attributes: true, attributeFilter: ["data-theme", "data-schrift"] });
-    return () => beobachter.disconnect();
-  });
-
-  function themaSetzen(t: Thema): void {
-    thema = t;
-    const dunkel = t === "dunkel" || (t === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
-    wurzel.dataset.theme = dunkel ? "dunkel" : "hell";
-  }
+  ];
+  const probe = $derived(karte("c-131"));
+  const probeBoard = $derived(board("b-prod"));
 </script>
 
 <div class="rollfeld">
@@ -44,7 +22,8 @@
       <h2 class="etikett">Thema</h2>
       <span class="stufen" role="radiogroup" aria-label="Thema">
         {#each THEMEN as [t, name, symbol] (t)}
-          <button role="radio" aria-checked={thema === t} class:an={thema === t} onclick={() => themaSetzen(t)}><i class="fa-solid {symbol}"></i> {name}</button>
+          <button role="radio" aria-checked={darstellung.thema === t} class:an={darstellung.thema === t} onclick={() => darstellungSetzen({ thema: t })}>
+            <i class="fa-solid {symbol}"></i> {name}</button>
         {/each}
       </span>
       <p class="pw-verwaltung-satz">Gilt auf diesem Gerät. Wie das System folgt der Einstellung des Rechners, auch wenn sie abends wechselt.</p>
@@ -55,11 +34,11 @@
       <p class="pw-verwaltung-satz">Ändert alle Schriften und Abstände zusammen, nie einzeln. Die Vorschau zeigt dieselbe Karte in jeder Stufe.</p>
       <div class="wahl pw-verwaltung-wahl pw-verwaltung-stufenwahl" role="radiogroup" aria-label="Schriftstufe">
         {#each STUFEN as [s, name, text] (s)}
-          <label class:an={schrift === s}>
-            <input type="radio" name="schriftstufe" value={s} checked={schrift === s} onchange={() => { schrift = s; wurzel.dataset.schrift = s; }} />
+          <label class:an={darstellung.schrift === s}>
+            <input type="radio" name="schriftstufe" value={s} checked={darstellung.schrift === s} onchange={() => darstellungSetzen({ schrift: s })} />
             <span class="kreis"></span>
             <div><b>{name}</b><span>{text}</span>
-              <div class="pw-verwaltung-probe" data-schrift={s} inert><Karte karte={probe} board={probeBoard} /></div></div>
+              {#if probe}<div class="pw-verwaltung-probe" data-schrift={s} inert><Karte karte={probe} board={probeBoard} /></div>{/if}</div>
           </label>
         {/each}
       </div>

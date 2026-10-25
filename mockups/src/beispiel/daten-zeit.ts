@@ -5,6 +5,7 @@
 import type { Abwesenheit, Bericht, Karte, Kennung, Zeiteintrag } from "../modell";
 import { dauerLesen } from "../regeln/eingabe";
 import { LEER } from "./daten";
+import type { Ausgangsstand } from "./stand.svelte";
 
 const h = (text: string): number => dauerLesen(text) ?? 0;
 
@@ -100,6 +101,17 @@ export const TAGESREST: Record<Kennung, Record<string, number>> = {
     ["2026-10-19", "5:30"], ["2026-10-21", "5:15"], ["2026-10-22", "8:40"], ["2026-10-23", "7:30"], ["2026-10-26", "7:15"], ["2026-10-27", "1:15"]]),
   "k-tim": tage([["2026-10-12", "3:50"], ["2026-10-14", "3:30"], ["2026-10-16", "3:50"], ["2026-10-19", "3:20"], ["2026-10-23", "2:15"]]),
 };
+
+/** Abwandlung für den vorgeführten Deckel: so stand es, bevor Max die Rückfrage beantwortet hat. Der Timer auf PROD-129
+ *  lief vom Do 22.10. 19:10 bis Fr 23.10. 07:40 ohne Stopp (12:30); der Server hat nach 12 Stunden angehalten, die ersten
+ *  12 an Mitternacht zerlegt gebucht und fragt nach dem echten Ende. Im Ausgangsstand ist die Frage beantwortet (00:25). */
+export function deckelOffen(d: Ausgangsstand): void {
+  const gedeckelt = { spanne: "von Do 22.10. 19:10 bis Fr 23.10. 07:40", sekunden: h("12:30") };
+  for (const e of d.zeiteintraege) {
+    if (e.id === "m13") e.gedeckelt = gedeckelt;
+    if (e.id === "m14") Object.assign(e, { bis: "07:10", sekunden: h("7:10"), gedeckelt });
+  }
+}
 
 /** Ordner der Pinnwand in der Kellerwolke, in dem erstellte Berichte liegen */
 export const BERICHTSORDNER = "Pinnwand/Berichte";

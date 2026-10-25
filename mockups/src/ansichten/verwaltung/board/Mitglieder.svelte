@@ -1,45 +1,40 @@
 <script lang="ts">
-  // Mitglieder: einladen per Name eines Kellerwolke-Kontos (Textfeld mit Vorschlägen), je Person die Rolle aus den
-  // Rollen des Boards und seit wann; entfernen mit Rückfrage, die sagt, was an Karten und Timern geschieht; Besitz
-  // übertragen. Ein Board hat immer mindestens einen Besitzer: der einzige kann weder gehen noch seine Rolle abgeben,
-  // bevor er den Besitz überträgt.
+  // Mitglieder: einladen per Name eines Kellerwolke-Kontos (Textfeld mit Vorschlägen; wer noch kein Konto in der
+  // Pinnwand hat, bekommt es dabei), je Person die Rolle aus den Rollen des Boards und seit wann; entfernen mit
+  // Rückfrage, die sagt, was an Karten und Timern geschieht; Besitz übertragen. Ein Board hat immer mindestens einen
+  // Besitzer. Alles über die Anwendungsfälle.
   import { untrack } from "svelte";
-  import { HEUTE, ICH } from "../../../beispiel/daten";
+  import { laufendAuf } from "../../../beispiel/abfragen";
+  import {
+    besitzUebertragen, einladen, kellerwolkePersonen, mitgliedEntfernen, rolleSetzen,
+  } from "../../../beispiel/anwendung/boards.svelte";
+  import { ICH } from "../../../beispiel/daten";
   import { datum } from "../../../beispiel/format";
   import { konto, stand } from "../../../beispiel/stand.svelte";
   import Person from "../../../board/Person.svelte";
-  import type { Board, Mitglied } from "../../../modell";
-  import { KENNUNGEN, MITGLIED_SEIT, type Vorschlag } from "../daten";
-  import Personenwahl from "../Personenwahl.svelte";
+  import type { Board, KellerwolkePerson, Mitglied } from "../../../modell";
+  import Personenwahl from "../../../teile/Personenwahl.svelte";
 
   let { board }: { board: Board; entwurf?: string } = $props();
 
   const mitJahr = (iso: string) => datum(iso) + iso.slice(0, 4);
-  const seit = (k: string) => MITGLIED_SEIT[board.id]?.[k] ?? HEUTE;
-  const rolleName = (id: string) => board.rollen.find((r) => r.id === id)?.name ?? "";
   const besitzer = $derived(board.mitglieder.filter((m) => m.rolle === "besitzer"));
   const einziger = (m: Mitglied) => m.rolle === "besitzer" && besitzer.length === 1;
   const offeneKarten = (k: string) => stand.karten.filter((x) => x.board === board.id && x.zustaendig.includes(k)
     && !board.spalten.find((s) => s.id === x.spalte)?.erledigt);
-  const timer = (k: string) => stand.karten.filter((x) => x.board === board.id && x.laeuft?.konto === k);
+  const timer = (k: string) => stand.karten.filter((x) => x.board === board.id && laufendAuf(x.id).some((t) => t.konto === k));
 
-  // einladen
+  // einladen: vorgeführt mit "ka" im Feld, damit die Vorschläge der Kellerwolke zu sehen sind
   let suche = $state("ka");
-  let gewaehlt = $state<Vorschlag | null>(null);
+  let gewaehlt = $state<KellerwolkePerson | null>(null);
   let rolle = $state("mitglied");
-  let neu = $state<(Vorschlag & { rolle: string })[]>([]);
-  let gemeldet = $state("");
-  $effect(() => { board.id; untrack(() => { suche = "ka"; gewaehlt = null; neu = []; gemeldet = ""; entfernen = null; uebertragen = false; }); });
+  $effect(() => { board.id; untrack(() => { suche = "ka"; gewaehlt = null; entfernen = null; uebertragen = false; }); });
 
-  function einladen(): void {
-    if (!gewaehlt) return;
-    if (gewaehlt.konto) board.mitglieder.push({ konto: gewaehlt.konto, rolle });
-    else neu = [...neu, { ...gewaehlt, rolle }];
-    gemeldet = `${gewaehlt.name} ist eingeladen und sieht das Board ab sofort in der Seitenleiste.`;
-    gewaehlt = null;
+  function einladenBestaetigen(): void {
+    if (gewaehlt && einladen(board.id, gewaehlt, rolle)) gewaehlt = null;
   }
 
-  // entfernen und Besitz übertragen
+  // entfernen und Besitz übertragen: Rückfragen in der Fläche
   let entfernen = $state<string | null>(null);
   let uebertragen = $state(false);
   let an = $state("");
@@ -49,13 +44,6 @@
     an = board.mitglieder.find((m) => m.konto !== ICH)?.konto ?? "";
     ichWerde = "mitglied";
   }
-  function uebertragenAusfuehren(): void {
-    const ziel = board.mitglieder.find((m) => m.konto === an);
-    const ich = board.mitglieder.find((m) => m.konto === ICH);
-    if (ziel) ziel.rolle = "besitzer";
-    if (ich) ich.rolle = ichWerde;
-    uebertragen = false;
-  }
 </script>
 
 <div class="rollfeld">
@@ -64,21 +52,21 @@
       <h2 class="etikett">Einladen</h2>
       <div class="pw-verwaltung-formular">
         {#if gewaehlt}
-          <span class="chip pw-verwaltung-gewaehlt">{#if gewaehlt.konto}<Person id={gewaehlt.konto} />{:else}<i class="fa-solid fa-user"></i>{/if}
+          <span class="chip pw-verwaltung-gewaehlt">{#if gewaehlt.konto}<Person id={gewaehlt.konto} />{:else}<span class="pw-personenwahl-neu"><i class="fa-solid fa-user"></i></span>{/if}
             {gewaehlt.name}<button class="knopf ohne symbol klein" title="Andere Person wählen" aria-label="Andere Person wählen"
                                    onclick={() => (gewaehlt = null)}><i class="fa-solid fa-xmark"></i></button></span>
         {:else}
-          <Personenwahl bind:text={suche} ausser={board.mitglieder.map((m) => m.konto)} waehlen={(p) => { gewaehlt = p; gemeldet = ""; }} />
+          <Personenwahl bind:text={suche} kandidaten={kellerwolkePersonen()} ausser={board.mitglieder.map((m) => m.konto)}
+                        waehlen={(p) => (gewaehlt = p)} />
         {/if}
         <span class="pw-verwaltung-mit">als</span>
         <select class="eingabe" bind:value={rolle} aria-label="Rolle der eingeladenen Person">
           {#each board.rollen as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
         </select>
-        <button class="knopf haupt" disabled={!gewaehlt} onclick={einladen}><i class="fa-solid fa-paper-plane"></i>Einladen</button>
+        <button class="knopf haupt" disabled={!gewaehlt} onclick={einladenBestaetigen}><i class="fa-solid fa-paper-plane"></i>Einladen</button>
       </div>
       <p class="pw-verwaltung-satz">Wer ein Kellerwolke-Konto hat, lässt sich per Name finden; die Person bekommt einen Hinweis und sieht das Board
         sofort. Wer noch kein Board hat, bekommt dabei Kürzel und Farbe.</p>
-      {#if gemeldet}<div class="hinweis erfolg"><i class="fa-solid fa-circle-check"></i><div>{gemeldet}</div></div>{/if}
     </section>
 
     <section class="bereich">
@@ -91,13 +79,14 @@
               {@const p = konto(m.konto)}
               <tr>
                 <td><span class="pw-verwaltung-person"><Person id={m.konto} gross />
-                  <span class="wer"><b>{p.name}{m.konto === ICH ? " (du)" : ""}</b><span class="pw-schluessel">{KENNUNGEN[m.konto]}</span></span></span></td>
+                  <span class="wer"><b>{p.name}{m.konto === ICH ? " (du)" : ""}</b><span class="pw-schluessel">{p.kellerwolke}</span></span></span></td>
                 <td data-titel="Rolle">
-                  <select class="eingabe" bind:value={m.rolle} disabled={einziger(m)} aria-label="Rolle von {p.name}"
-                          title={einziger(m) ? "Einziger Besitzer: erst den Besitz übertragen" : `Rolle von ${p.name}`}>
+                  <select class="eingabe" value={m.rolle} disabled={einziger(m)} aria-label="Rolle von {p.name}"
+                          title={einziger(m) ? "Einziger Besitzer: erst den Besitz übertragen" : `Rolle von ${p.name}`}
+                          onchange={(e) => { const f = e.currentTarget as HTMLSelectElement; if (!rolleSetzen(board.id, m.konto, f.value)) f.value = m.rolle; }}>
                     {#each board.rollen as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
                   </select></td>
-                <td data-titel="Seit" class="pw-verwaltung-datum">{mitJahr(seit(m.konto))}</td>
+                <td data-titel="Seit" class="pw-verwaltung-datum">{mitJahr(m.seit)}</td>
                 <td data-titel="Aktion" class="pw-verwaltung-aktion">
                   {#if einziger(m)}
                     <button class="knopf klein" disabled={uebertragen || board.mitglieder.length === 1} onclick={uebertragenStarten}
@@ -120,7 +109,7 @@
                       {#if laeuft.length}Der laufende Timer an {laeuft.map((k) => k.schluessel).join(", ")} hält an und bucht.{/if}
                       Gebuchte Zeiten bleiben an den Karten und im Zeitkonto.</div>
                     <span class="rechts"><button class="knopf klein" onclick={() => (entfernen = null)}>Abbrechen</button>
-                      <button class="knopf gefahr-voll klein" onclick={() => { board.mitglieder = board.mitglieder.filter((x) => x.konto !== m.konto); entfernen = null; }}>
+                      <button class="knopf gefahr-voll klein" onclick={() => { if (mitgliedEntfernen(board.id, m.konto)) entfernen = null; }}>
                         <i class="fa-solid fa-user-xmark"></i>Entfernen</button></span>
                   </div>
                 </td></tr>
@@ -137,19 +126,11 @@
                       </select>.
                       Ab dann verwaltet {konto(an).name.split(" ")[0]} Board, Rollen und Mitglieder.</div>
                     <span class="rechts"><button class="knopf klein" onclick={() => (uebertragen = false)}>Abbrechen</button>
-                      <button class="knopf klein" onclick={uebertragenAusfuehren}><i class="fa-solid fa-crown"></i>Übertragen</button></span>
+                      <button class="knopf klein" onclick={() => { if (besitzUebertragen(board.id, an, ichWerde)) uebertragen = false; }}>
+                        <i class="fa-solid fa-crown"></i>Übertragen</button></span>
                   </div>
                 </td></tr>
               {/if}
-            {/each}
-            {#each neu as p (p.kennung)}
-              <tr>
-                <td><span class="pw-verwaltung-person"><span class="pw-verwaltung-neuperson gross"><i class="fa-solid fa-user"></i></span>
-                  <span class="wer"><b>{p.name}</b><span class="pw-schluessel">{p.kennung}</span></span></span></td>
-                <td data-titel="Rolle">{rolleName(p.rolle)}</td>
-                <td data-titel="Seit" class="pw-verwaltung-datum">{mitJahr(HEUTE)}</td>
-                <td data-titel="Aktion" class="pw-verwaltung-aktion"><span class="zustand fertig"><i class="fa-solid fa-check"></i>neu dabei</span></td>
-              </tr>
             {/each}
           </tbody>
         </table>

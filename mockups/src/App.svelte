@@ -2,7 +2,7 @@
   // Entwürfe mit echten Pfaden wie in der App: / und /entwuerfe zeigen die Galerie, jeder andere Pfad die Ansicht aus
   // der Wegetabelle (routen.ts), in der Schale (Rechner) oder im Telefonrahmen (?geraet=telefon). Die Leiste unten
   // gehört nur zu den Entwürfen: Galerie, blättern, Thema, Schriftstufe (Vorgabe Klein).
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import Galerie from "./galerie/Galerie.svelte";
   import { zuruecksetzen } from "./beispiel/stand.svelte";
   import { finden } from "./routen";
@@ -15,7 +15,8 @@
   const galerie = $derived(weg.pfad === "/" || weg.pfad === "/entwuerfe");
   const geraet = $derived(wert("geraet") === "telefon" ? "telefon" : "rechner");
   const entwurf = $derived(wert("entwurf"));
-  const treffer = $derived(galerie ? null : finden(weg.pfad, geraet, entwurf));
+  // die Wegesuche liest Boards und Karten, hängt aber nur am Pfad: Änderungen am Zustand richten die Ansicht nicht neu ein
+  const treffer = $derived.by(() => { const p = weg.pfad, g = geraet, e = entwurf; return galerie ? null : untrack(() => finden(p, g, e)); });
   const hier = $derived(weg.pfad + weg.suche);
   const nr = $derived(ZUSTAENDE.findIndex((z) => adresse(z) === hier));
   const z = $derived(nr >= 0 ? ZUSTAENDE[nr] : undefined);

@@ -160,8 +160,13 @@ async def test_verknuepfte_ziehen_mit(pw: Pinnwand):
     gruppen = (await pw.stand("anna"))["gruppen"]
     assert len(gruppen) == 1 and gruppen[0]["board"] == b["id"]
 
+    await pw.karte("anna", b, "Schon dran", spalte=spalte(b, "Dran"))
     r = await pw.post("anna", f"/karten/{a['id']}/verschieben", {"nach": spalte(b, "Dran")})
     assert r.json()["meldung"] == "HAUS-1 nach Dran; 1 verknüpfte zieht mit"
+    # die bewegte ans Ende, die mitgezogene dahinter, jede mit eigener Reihe
+    assert await reihe(pw, "anna", b, "Dran") == ["HAUS-3", "HAUS-1", "HAUS-2"]
+    reihen = [k["reihe"] for k in (await pw.stand("anna"))["karten"] if k["spalte"] == spalte(b, "Dran")]
+    assert len(set(reihen)) == 3
     assert (await karte(pw, "anna", "HAUS-2"))["verlauf"][-1]["text"] == "mit verknüpfter Karte verschoben nach Dran"
 
     g = gruppen[0]["id"]

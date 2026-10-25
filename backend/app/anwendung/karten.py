@@ -98,13 +98,14 @@ def hinein(k: Kontext, b: Board, ids: list[Kennung], ziel: Spalte, platz: int | 
     mit = list({c.id: c for c in mit}.values())
     wechselnde = {c.id for c in karten if c.spalte != ziel.id}
     einreihen(k, ziel, karten, platz)
-    for c in mit:
-        einreihen(k, ziel, [c], None)
     for c in karten:
         if c.id in wechselnde:
             wechseln(k, c, ziel, b, False)
             hinweise.verschoben(k, b, c, ziel)
         speichern(k, c)
+    # erst jetzt, da die bewegten Karten in der Spalte stehen, reihen sich die mitgezogenen dahinter ein
+    if mit:
+        einreihen(k, ziel, mit, None)
     for c in mit:
         wechseln(k, c, ziel, b, True)
         hinweise.verschoben(k, b, c, ziel, mit=next(x for x in karten if x.gruppe == c.gruppe))

@@ -4,16 +4,16 @@
 // Ansichten merken davon nichts.
 
 import type {
-  Abwesenheit, Board, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Konto, Ordner, PersonEinstellungen, Serie, Termin, Timer,
-  Verbindung, Zeiteintrag, Zeitkonto,
+  Abwesenheit, Bericht, Board, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Konto, Ordner, PersonEinstellungen, Serie, Termin, Timer,
+  Verbindung, Vorlage, Zeiteintrag, Zeitkonto,
 } from "../modell";
 import {
-  ABWESENHEITEN, BOARDS, EINSTELLUNGEN_PERSON, GRUPPEN, HINWEISE, KARTEN, KONTEN, ORDNER, SERIEN, TERMINE, TIMER, ZEITEINTRAEGE,
+  ABWESENHEITEN, BOARDS, EINSTELLUNGEN_PERSON, GRUPPEN, HINWEISE, KARTEN, KONTEN, ORDNER, SERIEN, TERMINE, TIMER, VORLAGEN, ZEITEINTRAEGE,
   ZEITKONTEN,
 } from "./daten";
 import { KARTEN_PLANUNG, ZEITEINTRAEGE_PLANUNG } from "./daten-planung";
 import { KARTEN_ARCHIV, PAPIERKORB, ZEITEINTRAEGE_UEBERSICHT } from "./daten-uebersicht";
-import { ABWESENHEITEN_ZEIT, KARTEN_ZEIT, ZEITEINTRAEGE_ZEIT } from "./daten-zeit";
+import { ABWESENHEITEN_ZEIT, BERICHTE, KARTEN_ZEIT, ZEITEINTRAEGE_ZEIT } from "./daten-zeit";
 
 /** Meldung unten: was eben geschah, mit Rückgängig, solange sie steht */
 export interface Meldung {
@@ -39,6 +39,8 @@ export interface Ausgangsstand {
   einstellungen: PersonEinstellungen;
   papierkorb: Geloescht[];
   entfernt: Entfernt[];
+  vorlagen: Vorlage[];
+  berichte: Bericht[];
   verbindung: Verbindung;
   meldung: Meldung | null;
 }
@@ -73,6 +75,10 @@ function ausgangsstand(): Ausgangsstand {
     papierkorb: structuredClone(PAPIERKORB) as Geloescht[],
     /** endgültig entfernte Karten: ihr Name für die Zeiteinträge, die weiter gebucht sind */
     entfernt: [] as Entfernt[],
+    /** Vorlagen neuer Boards, mitgelieferte und eigene */
+    vorlagen: structuredClone(VORLAGEN) as Vorlage[],
+    /** erstellte Berichte (die Dateien liegen in der Kellerwolke) */
+    berichte: structuredClone(BERICHTE) as Bericht[],
     /** Verbindung zum Ereignisstrom; getrennt: letzter Stand sichtbar, Schreibendes gesperrt */
     verbindung: "verbunden" as Verbindung,
     meldung: null as Meldung | null,
@@ -93,7 +99,7 @@ export function zuruecksetzen(abwandlung?: (d: Ausgangsstand) => void): void {
 
 /** Die Teile des Zustands, die Rückgängig wiederherstellt (alles außer Meldung und Verbindung) */
 export const DATEN = ["konten", "boards", "karten", "gruppen", "reihen", "ordner", "timer", "zeiteintraege", "zeitkonten", "abwesenheiten",
-  "serien", "termine", "hinweise", "einstellungen", "papierkorb", "entfernt"] as const;
+  "serien", "termine", "hinweise", "einstellungen", "papierkorb", "entfernt", "vorlagen", "berichte"] as const;
 
 export function board(id: string): Board {
   return stand.boards.find((b) => b.id === id) ?? stand.boards[0];

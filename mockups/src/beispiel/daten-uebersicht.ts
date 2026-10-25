@@ -20,7 +20,7 @@ function archiviert(nr: number, titel: string, abgeschlossen: string, zustaendig
 /** Erste Seite des Archivs von Produktionsplanung, neueste zuerst (wie die Schnittstelle sie liefert) */
 export const KARTEN_ARCHIV: Karte[] = [
   archiviert(58, "Lieferschein Gehäuse G2, Los 4", "2025-10-20", ["k-max"], ["l-kunde"], 1200, "mittel", { "f-kunde": "Elektro Brandt", "f-stueck": "60" }),
-  archiviert(57, "Wochenwartung Kompressor", "2025-10-20", ["k-jonas"], ["l-wartung"], 2700, "keine", {}, "se-kompressor"),
+  archiviert(57, "06:00 Wochenwartung Kompressor", "2025-10-20", ["k-jonas"], ["l-wartung"], 2700, "keine", {}, "se-kompressor"),
   archiviert(55, "Biegewerkzeug 88 Grad nachschleifen lassen", "2025-10-14", ["k-jonas"], ["l-wartung"], 1800, "niedrig", { "f-maschine": "Kantbank" }),
   archiviert(54, "Angebot Konsolen Hoffmann", "2025-10-09", ["k-max"], ["l-angebot"], 3 * 3600, "hoch", { "f-kunde": "Hoffmann Antriebe" }),
   archiviert(52, "Erstmuster Deckel D4 vermessen", "2025-09-30", ["k-anna"], ["l-kunde"], 2 * 3600 + 1200, "hoch",

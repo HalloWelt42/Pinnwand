@@ -30,6 +30,8 @@ export const ZUSTAENDE: Zustand[] = [
     text: "Je Art ein Schalter für Pinnwand, Push und Assistent; Push aufs Telefon einrichten als Schritte." },
   { pfad: "/einstellungen/konto", stufe: 1, symbol: "fa-circle-user", titel: "Konto",
     text: "Angemeldet mit dem Kellerwolke-Konto: Name aus der Kellerwolke, Kürzel nur Anzeige, feste Kennung, Abmelden." },
+  { pfad: "/einstellungen/papierkorb", entwurf: "board", stufe: 1, symbol: "fa-trash-can", titel: "Papierkorb der App",
+    text: "Das gelöschte Board Ideen mit Karten, Serien und Ordner; wiederherstellen an die alte Stelle oder nach Rückfrage endgültig entfernen, die gebuchte Zeit bleibt." },
   { pfad: "/einstellungen/gestaltung", stufe: 1, symbol: "fa-palette", titel: "Gestaltung",
     text: "Die Seite Gestaltung des Appkerns: Marken und Bausteine des Leitstands, hell und dunkel nebeneinander." },
 ];

@@ -181,3 +181,8 @@
 .pw-verwaltung-konto { display: flex; align-items: center; gap: var(--a4); flex-wrap: wrap; }
 .pw-verwaltung-konto .wer { flex: 1 1 240px; }
 .pw-verwaltung-konto .wer b { font-size: var(--titel); }
+
+/* Papierkorb der App: gelöschte Boards */
+.pw-verwaltung-geloescht { display: flex; align-items: center; gap: var(--a3); flex-wrap: wrap; padding: var(--a2) 0; min-width: 0; }
+.pw-verwaltung-geloescht .wer { display: flex; flex-direction: column; min-width: 0; flex: 1 1 240px; line-height: 1.3; overflow-wrap: anywhere; }
+.pw-verwaltung-geloescht .rechts { margin-left: auto; display: flex; gap: var(--a2); flex-wrap: wrap; }

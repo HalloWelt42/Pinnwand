@@ -2,13 +2,13 @@
   // Verweis auf eine Karte in den Zeit-Ansichten: Farbe des Boards, Schlüssel, Titel, Verweis ins Kartendetail. Der Name
   // kommt aus kartenName() und steht damit auch für Karten im Papierkorb oder entfernte (ohne Verweis, mit Zustand).
   import { kartenName, kartenNummer } from "../../beispiel/abfragen";
-  import { board, karte } from "../../beispiel/stand.svelte";
+  import { karte, stand } from "../../beispiel/stand.svelte";
   import { boardPfad } from "../../weg.svelte";
 
   let { id, zeilen = 1 }: { id: string; zeilen?: 1 | 2 } = $props();
   const name = $derived(kartenName(id));
   const k = $derived(karte(id));
-  const b = $derived(k ? board(k.board) : undefined);
+  const b = $derived(stand.boards.find((x) => x.id === name.board));
   const erledigt = $derived(!!(k && b?.spalten.find((s) => s.id === k.spalte)?.erledigt));
   const ZUSTAND = { da: "", papierkorb: "im Papierkorb", entfernt: "entfernt" };
 </script>

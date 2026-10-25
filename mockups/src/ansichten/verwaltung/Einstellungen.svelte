@@ -8,10 +8,11 @@
   import Darstellung from "./person/Darstellung.svelte";
   import Hinweise from "./person/Hinweise.svelte";
   import Konto from "./person/Konto.svelte";
+  import Papierkorb from "./person/Papierkorb.svelte";
 
-  let { reiter = "darstellung" }: { reiter?: string; entwurf?: string } = $props();
+  let { reiter = "darstellung", entwurf = "" }: { reiter?: string; entwurf?: string } = $props();
 
-  const SEITEN: Record<string, Component<any>> = { darstellung: Darstellung, hinweise: Hinweise, konto: Konto };
+  const SEITEN: Record<string, Component<any>> = { darstellung: Darstellung, hinweise: Hinweise, konto: Konto, papierkorb: Papierkorb };
   const Seite = $derived(SEITEN[reiter]);
 </script>
 
@@ -29,7 +30,7 @@
   </nav>
 </div>
 {#if Seite}
-  <Seite />
+  <Seite {entwurf} />
 {:else}
   <div class="rollfeld"><Gestaltung familie="leitstand" /></div>
 {/if}

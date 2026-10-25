@@ -3,10 +3,10 @@
 // die Zeit einer Karte ist deren Summe (abfragen.ts), es gibt keinen zweiten Zähler.
 
 import type { Timer, Zeiteintrag } from "../../modell";
-import { minutenAus, uhrzeitAus } from "../../regeln/tage";
+import { minutenAus, plusTage, uhrzeitAus } from "../../regeln/tage";
 import { kartenName, zeitDerKarte } from "../abfragen";
 import { HEUTE, ICH, JETZT } from "../daten";
-import { datum, dauer, laufendSek } from "../format";
+import { datum, dauer, uhrzeit } from "../format";
 import { stand } from "../stand.svelte";
 import { aendern } from "./meldung.svelte";
 
@@ -20,22 +20,59 @@ function schluessel(karteId: string): string {
   return kartenName(karteId).schluessel;
 }
 
-/** Die laufende Sitzung eines Timers buchen: in den Timer-Eintrag der Karte an diesem Tag (je Karte, Person und Tag
- *  einer, die Sitzungen darin sichtbar). Ergebnis: gebuchte Sekunden. Der Timer selbst bleibt, wie er ist. */
-export function sitzungBuchen(t: Timer): number {
+/** Ein Timer bucht höchstens so lange am Stück; mehr deckelt der Server und fragt nach dem echten Ende */
+export const DECKEL_SEK = 12 * 3600;
+
+/** Ortszeit als ISO ohne Zone (wie JETZT) */
+function ortszeit(d: Date): string {
+  const z = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;
+}
+
+/** Die laufende Sitzung eines Timers buchen, bis jetzt (oder bis zum gegebenen Zeitpunkt). Eine Sitzung an einem Tag
+ *  geht in den Timer-Eintrag der Karte an diesem Tag (je Karte, Person und Tag einer, die Sitzungen darin sichtbar).
+ *  Über Mitternacht wird sie je Tag zerlegt; über 12 Stunden werden die ersten 12 gebucht und die Einträge tragen den
+ *  Vermerk gedeckelt mit der echten Spanne, bis die Person die Rückfrage beantwortet. Der Timer selbst hält an.
+ *  Ergebnis: gebuchte Sekunden. */
+export function sitzungBuchen(t: Timer, bis = JETZT): number {
   if (!t.seit) return 0;
-  const sek = Math.round(laufendSek(t.seit));
-  const tag = t.seit.slice(0, 10), von = t.seit.slice(11, 16), bis = JETZT.slice(11, 16);
-  const da = stand.zeiteintraege.find((e) => e.konto === t.konto && e.karte === t.karte && e.datum === tag && e.herkunft === "timer");
-  if (da) {
-    da.sitzungen = [...(da.sitzungen ?? (da.von && da.bis ? [{ von: da.von, bis: da.bis }] : [])), { von, bis }];
-    da.sekunden += sek;
-    da.bis = bis;
+  const start = new Date(t.seit).getTime();
+  const gesamt = Math.max(0, Math.round((new Date(bis).getTime() - start) / 1000));
+  const gebucht = Math.min(gesamt, DECKEL_SEK);
+  const deckel = gesamt > DECKEL_SEK
+    ? { spanne: `von ${datum(t.seit, true)} ${uhrzeit(t.seit)} bis ${datum(bis, true)} ${uhrzeit(bis)}`, sekunden: gesamt } : undefined;
+  // in Teile je Tag zerlegen, bis die gebuchte Zeit erreicht ist
+  const teile: { tag: string; von: string; bis: string; sek: number }[] = [];
+  let von = start, rest = gebucht;
+  while (rest > 0) {
+    const tag = ortszeit(new Date(von)).slice(0, 10);
+    const mitternacht = new Date(`${plusTage(tag, 1)}T00:00:00`).getTime();
+    const ende = Math.min(mitternacht, von + rest * 1000);
+    const sek = Math.round((ende - von) / 1000);
+    teile.push({ tag, von: ortszeit(new Date(von)).slice(11, 16), bis: ende === mitternacht ? "24:00" : ortszeit(new Date(ende)).slice(11, 16), sek });
+    rest -= sek;
+    von = ende;
+  }
+  if (teile.length === 1 && !deckel) {
+    const [teil] = teile;
+    const da = stand.zeiteintraege.find((e) => e.konto === t.konto && e.karte === t.karte && e.datum === teil.tag && e.herkunft === "timer");
+    if (da) {
+      da.sitzungen = [...(da.sitzungen ?? (da.von && da.bis ? [{ von: da.von, bis: da.bis }] : [])), { von: teil.von, bis: teil.bis }];
+      da.sekunden += teil.sek;
+      da.bis = teil.bis;
+    } else {
+      stand.zeiteintraege.push({ id: neueKennung("z"), karte: t.karte, konto: t.konto, datum: teil.tag, von: teil.von, bis: teil.bis,
+                                 sekunden: teil.sek, herkunft: "timer" });
+    }
   } else {
-    stand.zeiteintraege.push({ id: neueKennung("z"), karte: t.karte, konto: t.konto, datum: tag, von, bis, sekunden: sek, herkunft: "timer" });
+    teile.forEach((teil, i) => {
+      const nachbar = teile[i + 1] ?? teile[i - 1];
+      stand.zeiteintraege.push({ id: neueKennung("z"), karte: t.karte, konto: t.konto, datum: teil.tag, von: teil.von, bis: teil.bis,
+                                 sekunden: teil.sek, herkunft: "timer", zerlegt: teile.length > 1 ? nachbar.tag : undefined, gedeckelt: deckel });
+    });
   }
   t.seit = undefined;
-  return sek;
+  return gebucht;
 }
 
 /** Eintrag kürzen; bei einem Timer-Eintrag rückt das Ende mit, damit von, bis und Dauer zusammenpassen */

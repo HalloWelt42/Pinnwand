@@ -30,6 +30,10 @@
     erledigt: { vorbereiten: () => erledigen("c-131") },
   };
   const zustand = $derived(ENTWUERFE[entwurf] ?? {});
+  /** Suche der Werkzeugleiste: filtert Board, Liste, Kalender und Zeitachse; solange sie gilt, ist Ziehen gesperrt */
+  let suche = $state("");
+  $effect(() => { const z = zustand; untrack(() => { suche = z.filter ?? ""; }); });
+  const sucht = $derived(suche.trim() !== "");
   const b = $derived(board(boardId));
   const Andere = $derived(BOARDANSICHTEN[ansicht]);
   // ein vorgeführter Zustand richtet sich nach dem Ausgangsstand über die Anwendungsfälle ein (einmal je Entwurf)
@@ -76,11 +80,11 @@
   </div>
 </div>
 <div class="pw-werkzeuge">
-  <label class="suche"><i class="fa-solid fa-magnifying-glass"></i><input placeholder="Im Board suchen: Titel, Inhalt, Labels, Kommentare" value={zustand.filter ?? ""} /></label>
-  <button class="chip" class:aktiv={!!zustand.filter}><i class="fa-solid fa-filter"></i>Filter{#if zustand.filter}<span class="zaehler">1</span>{/if}</button>
+  <label class="suche"><i class="fa-solid fa-magnifying-glass"></i><input placeholder="Im Board suchen: Titel, Inhalt, Labels, Kommentare" bind:value={suche} onkeydown={(e) => { if (e.key === "Escape") suche = ""; }} /></label>
+  <button class="chip" class:aktiv={sucht}><i class="fa-solid fa-filter"></i>Filter{#if sucht}<span class="zaehler">1</span>{/if}</button>
   <button class="chip"><i class="fa-solid fa-user"></i>Alle Personen</button>
   <button class="chip"><i class="fa-solid fa-arrow-down-wide-short"></i>Manuell</button>
-  {#if zustand.filter}
+  {#if sucht}
     <span class="pausiert" title="Bei Suche und Filter ist Ziehen gesperrt; die Erledigten werden ohne Zeitfenster durchsucht"><i class="fa-solid fa-hand"></i>Verschieben pausiert</span>
   {/if}
   <div class="rechts">
@@ -90,11 +94,11 @@
 </div>
 <div class="pw-detail-raum">
   {#if Andere}
-    <Andere board={b} {entwurf} suche={zustand.filter ?? ""} ziehenGesperrt={!!zustand.filter} />
+    <Andere board={b} {entwurf} {suche} ziehenGesperrt={sucht} />
   {:else}
     <div class="pw-streifen">
       {#each b.spalten as s (s.id)}
-        <Spalte board={b} spalte={s} schnell={zustand.schnell === s.id} ziehenGesperrt={!!zustand.filter} {darstellung}
+        <Spalte board={b} spalte={s} schnell={zustand.schnell === s.id} {suche} ziehenGesperrt={sucht} {darstellung}
                 ziel={zustand.ziehen?.nach === s.id ? zustand.ziehen.karte : undefined} {oeffnen} />
       {/each}
       <div class="pw-neue-spalte">

@@ -16,12 +16,14 @@ export function eintragen(a: Omit<Abwesenheit, "id">): void {
   });
 }
 
-export function entfernen(id: Kennung): void {
-  const a = stand.abwesenheiten.find((x) => x.id === id);
-  if (!a) return;
+/** Eine oder mehrere Abwesenheiten entfernen, mit einem Rückgängig für alle */
+export function entfernen(ids: Kennung | Kennung[]): void {
+  const liste = Array.isArray(ids) ? ids : [ids];
+  const weg = stand.abwesenheiten.filter((x) => liste.includes(x.id));
+  if (!weg.length) return;
   aendern(() => {
-    stand.abwesenheiten = stand.abwesenheiten.filter((x) => x.id !== id);
-    return `${artName(a)} ${spanne(a.von, a.bis)} entfernt`;
+    stand.abwesenheiten = stand.abwesenheiten.filter((x) => !liste.includes(x.id));
+    return weg.length === 1 ? `${artName(weg[0])} ${spanne(weg[0].von, weg[0].bis)} entfernt` : `${weg.length} Abwesenheiten entfernt`;
   });
 }
 

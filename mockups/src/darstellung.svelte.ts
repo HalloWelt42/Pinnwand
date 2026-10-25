@@ -16,7 +16,13 @@ function gemerkt(): Partial<{ thema: Thema; schrift: Schrift }> {
 }
 
 const g = gemerkt();
-export const darstellung = $state<{ thema: Thema; schrift: Schrift }>({ thema: g.thema ?? "dunkel", schrift: g.schrift ?? "klein" });
+const THEMEN: Thema[] = ["hell", "dunkel", "system"];
+const STUFEN: Schrift[] = ["klein", "mittel", "gross"];
+/** nur bekannte Werte übernehmen (ein anderes Werkzeug kann unter demselben Schlüssel Fremdes gemerkt haben) */
+export const darstellung = $state<{ thema: Thema; schrift: Schrift }>({
+  thema: THEMEN.includes(g.thema as Thema) ? g.thema! : "dunkel",
+  schrift: STUFEN.includes(g.schrift as Schrift) ? g.schrift! : "klein",
+});
 
 function dunkel(): boolean {
   return darstellung.thema === "dunkel" || (darstellung.thema === "system" && matchMedia("(prefers-color-scheme: dark)").matches);

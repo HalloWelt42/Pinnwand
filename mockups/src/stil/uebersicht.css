@@ -119,13 +119,9 @@ a.pw-uebersicht-boardverweis:hover { color: var(--text); }
 .pw-uebersicht-sammel .anzahl .schwach { font-weight: 500; }
 .pw-uebersicht-sammel select.eingabe { height: 36px; font-size: var(--klein); }
 .pw-uebersicht-sammel .rechts { margin-left: auto; display: flex; flex-wrap: wrap; gap: var(--a2); align-items: center; }
-/* Zuweisen mit der gemeinsamen Personenwahl; die Vorschläge schweben über der Tabelle, statt die Leiste zu dehnen */
-.pw-uebersicht-person { position: relative; width: 250px; max-width: 100%; }
+/* Zuweisen mit der gemeinsamen Personenwahl (schwebend), schmal in der Leiste */
+.pw-uebersicht-person { width: 250px; max-width: 100%; }
 .pw-uebersicht-person .suche { height: 36px; font-size: var(--klein); }
-.pw-uebersicht-person .pw-personenwahl-vorschlaege {
-  position: absolute; top: calc(100% + 4px); left: 0; z-index: 10; min-width: 100%; width: max-content; max-width: 420px;
-  box-shadow: var(--schatten-schwebend);
-}
 
 .pw-uebersicht-tabelle { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; background: var(--bereich); border-radius: var(--r3); }
 .pw-uebersicht-liste td { background: var(--bereich); white-space: nowrap; }

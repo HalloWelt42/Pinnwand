@@ -10,17 +10,12 @@
   import { board, karte, konto, stand } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
   import { HINWEIS_ARTEN } from "../../anzeige";
-  import type { Farbe, Hinweis, HinweisArt } from "../../modell";
+  import type { Hinweis, HinweisArt } from "../../modell";
   import { tageZwischen } from "../../regeln/tage";
   import { boardPfad } from "../../weg.svelte";
   import BoardMarke from "./BoardMarke.svelte";
 
-  /** Farbe je Art (Wort und Farbe; Namen und Zeichen aus anzeige.ts) */
-  const FARBE: Record<HinweisArt, Farbe> = {
-    zugewiesen: "himmel", faellig: "koralle", erwaehnt: "violett", termin: "petrol", kommentar: "stahl", verschoben: "tuerkis",
-  };
-  const ARTEN = Object.fromEntries(HINWEIS_ARTEN.map((a) => [a.art, { ...a, farbe: FARBE[a.art] }])) as
-    Record<HinweisArt, (typeof HINWEIS_ARTEN)[number] & { farbe: Farbe }>;
+  const ARTEN = Object.fromEntries(HINWEIS_ARTEN.map((a) => [a.art, a])) as Record<HinweisArt, (typeof HINWEIS_ARTEN)[number]>;
   const ART_LISTE = HINWEIS_ARTEN.map((a) => a.art);
 
   let filter = $state<"alle" | "ungelesen" | HinweisArt>("alle");

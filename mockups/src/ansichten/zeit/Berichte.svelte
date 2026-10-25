@@ -4,14 +4,13 @@
   // Pinnwand ab; von dort herunterladen oder vorlesen. Personen außer dir nur mit dem Recht "Zeiten anderer sehen".
   import { untrack } from "svelte";
   import { darf } from "../../beispiel/abfragen";
-  import { melden } from "../../beispiel/anwendung/meldung.svelte";
-  import { neueKennung } from "../../beispiel/anwendung/zeiten.svelte";
+  import { berichtErstellen } from "../../beispiel/anwendung/berichte.svelte";
   import { HEUTE, ICH, JETZT } from "../../beispiel/daten";
-  import { BERICHTE, BERICHTSORDNER } from "../../beispiel/daten-zeit";
+  import { BERICHTSORDNER } from "../../beispiel/daten-zeit";
   import { datumJahr, monatText, spanne, wann, wocheText } from "../../beispiel/format";
   import { konto, stand } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
-  import type { Bericht, BerichtArt, BerichtFormat } from "../../modell";
+  import type { BerichtArt, BerichtFormat } from "../../modell";
   import { monatsende, montagVon, plusMonate, plusTage } from "../../regeln/tage";
   import DatumFeld from "../../teile/DatumFeld.svelte";
   import { alsMarkdown, ARTNAMEN, dateiname, inhalt, sichtbarePersonen, titelVon, type Auswahl } from "./bericht";
@@ -27,10 +26,8 @@
   let boards = $state<string[]>(["b-prod"]);
   let format = $state<BerichtFormat>("pdf");
   let suche = $state("");
-  /** in dieser Sitzung erstellte Berichte (die Ablage selbst liegt in der Kellerwolke) */
-  let erstellt = $state<Bericht[]>([]);
   let neu = $state("");
-  const liste = $derived([...erstellt, ...BERICHTE]);
+  const liste = $derived(stand.berichte);
 
   // vorgeführte Vorschau: Stundennachweis der letzten Woche für dich und Jonas, einmal je Entwurf
   $effect(() => {
@@ -87,12 +84,11 @@
   }
   function erstellen(): void {
     if (!bereit) return;
-    const b: Bericht = { id: neueKennung("r"), art, titel: titelVon(auswahl), zeitraum: zeitraumText(), format, datei: dateiname(auswahl),
-      erstellt: JETZT, groesse: format === "pdf" ? `${40 + zeilenZahl * 2} KB` : `${2 + Math.ceil(zeilenZahl / 8)} KB` };
-    erstellt = [b, ...erstellt];
-    neu = b.id;
+    const id = berichtErstellen({ art, titel: titelVon(auswahl), zeitraum: zeitraumText(), format, datei: dateiname(auswahl),
+      erstellt: JETZT, groesse: format === "pdf" ? `${40 + zeilenZahl * 2} KB` : `${2 + Math.ceil(zeilenZahl / 8)} KB` });
+    if (!id) return;
+    neu = id;
     rechts = "liste";
-    melden(`Abgelegt in ${BERICHTSORDNER}: ${b.datei}`);
   }
 </script>
 

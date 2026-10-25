@@ -79,7 +79,7 @@
         <a class="karte-zeile" href={pfadKarte(uhr)}><span class="pw-schluessel">{uhr.schluessel}</span> {uhr.titel}</a>
         {#if uhr.schaetzungMin}
           <div class="pw-fortschritt zeit" class:ueber={anteil > 1}><span style="width: {Math.min(100, anteil * 100)}%"></span></div>
-          <span class="schaetzung" class:warnung={anteil > 1}>{Math.round(anteil * 100)} % von <span class="zahl">{dauer(uhr.schaetzungMin * 60)}</span> Std{anteil > 1 ? ", überschritten" : ""}</span>
+          <span class="schaetzung" class:warnung={anteil > 1}>{Math.round(anteil * 100)} % von <span class="zahl">{dauer(uhr.schaetzungMin * 60)}</span> Stunden{anteil > 1 ? ", überschritten" : ""}</span>
         {/if}
         <div class="knoepfe">
           {#if timer.seit}

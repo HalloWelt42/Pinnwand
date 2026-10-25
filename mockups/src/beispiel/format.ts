@@ -36,9 +36,9 @@ export function spanne(von: string, bis: string): string {
   return `${datum(von, true)} bis ${datumJahr(bis, true)}`;
 }
 
-/** "KW 44, 26.10. bis 01.11.2026" */
+/** "Woche 44, 26.10. bis 01.11.2026" (Kalenderwoche nach ISO) */
 export function wocheText(montag: string): string {
-  return `KW ${kalenderwoche(montag)}, ${datum(montag)} bis ${datumJahr(plusTage(montag, 6))}`;
+  return `Woche ${kalenderwoche(montag)}, ${datum(montag)} bis ${datumJahr(plusTage(montag, 6))}`;
 }
 
 /** "Oktober 2026" */

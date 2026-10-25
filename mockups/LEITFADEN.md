@@ -43,26 +43,31 @@ Dinge und keine eigene Fassung einer Regel; was fehlt, kommt in die gemeinsame S
   und der nächste Tag einer Serie ergeben sich aus den Regeln (kein gespeicherter Urlaubsstand, kein gespeicherter nächster Tag).
 - `src/regeln/`: reine Regeln ohne Zustand. `tage.ts` (Kalendertage, Kalenderwoche, Monate), `feiertage.ts` (je
   Bundesland), `arbeitszeit.ts` (Wirkung der Abwesenheiten, Soll, Urlaubstage, Brückentage, Fassung des Zeitkontos),
-  `eingabe.ts` (Dauer und Datum lesen), `board.ts` (Rechte, Alterung, Zeitfenster, Archiv). Regeln eines Moduls ohne
-  Zustand (etwa die Tage einer Serie) gehören als eigene Datei hierher.
+  `eingabe.ts` (Dauer und Datum lesen), `board.ts` (Rechte, Alterung, Zeitfenster, Archiv), `serien.ts` (Tage einer
+  Serie und ihr Stand, Vorlauf, Nachtrag), `kuerzel.ts` (Kürzel eines Boards, Kürzel einer Person).
 - `src/beispiel/` steht für die Schnittstelle. `daten.ts` und `daten-<bereich>.ts`: eine Welt von Beispieldaten, jede
   Karte, jeder Schlüssel, jeder Eintrag genau einmal. `stand.svelte.ts`: der eine Zustand mit einfachen Lesehilfen
   (`board`, `karte`, `karteAusNummer`, `boardAusKuerzel`, `konto`, `kartenDerSpalte`, `ordnerVon`). `abfragen.ts`:
-  alles Gerechnete (`zeitDerKarte`, `timerVon`, `istAm`, `sollTag`, `saldo`, `urlaub`, `sichtbareKarten`, `archivVon`,
-  `papierkorbVon`, `darf`, `ungelesen`, `kartenName`).
-- `src/beispiel/anwendung/`: die Anwendungsfälle, der einzige Weg zu ändern. `karten` (verschieben, ablegen, erledigen,
-  anlegen, bearbeiten, artSetzen, kommentieren, Sammelaktionen, Gruppen), `timer` (starten, anhalten, fortsetzen,
-  stoppen), `zeiten` (buchen, Tageszeit und Ticketzeit setzen, Dauer und Notiz ändern, löschen, Deckel), `abwesenheiten`
-  (eintragen, entfernen, zeitkontoSpeichern), `papierkorb` (inPapierkorb, spalteInPapierkorb, wiederherstellen,
-  entfernen), `hinweise` (gelesen, alleGelesen). Jede Änderung läuft über die eine Hilfe in `meldung.svelte.ts`: die
-  Meldung kommt mit Rückgängig, bei getrennter Verbindung ist Schreibendes gesperrt. Ansichten ändern `stand` nie direkt.
-- `src/anzeige.ts`: Namen für Menschen (Farben, Zeitfenster, Prioritäten, Herkunft, Hinweisarten und -wege, Module).
-- `src/teile/`: gemeinsame Bausteine. `Meldung.svelte` (die eine Meldung; die Schale zeigt sie, am Telefon die Schale des
-  Telefons mit `ort="telefon"`), `DatumFeld`, `DauerFeld`, `Farbwahl`, `Personenwahl` (Kandidaten gibt der Aufrufer).
+  alles Gerechnete (`zeitDerKarte`, `timerVon`, `istAm`, `sollTag`, `saldo`, `urlaub`, `eintraegeVon`, `meinTag`,
+  `sichtbareKarten`, `passt` als Volltextsuche, `archivVon`, `papierkorbVon`, `boardsImPapierkorb`, `darf`,
+  `ungelesen`, `kartenName`, `serienUmfeld`, `nachtrag`, `kuerzelPruefen`, `kellerwolkePersonen`).
+- `src/beispiel/anwendung/`: die Anwendungsfälle, der einzige Weg zu ändern: `karten`, `timer`, `zeiten`,
+  `abwesenheiten`, `papierkorb`, `hinweise`, `boards`, `serien`, `termine`, `berichte`, `verbindung`. Jede Änderung
+  läuft über die eine Hilfe in `meldung.svelte.ts`: die Meldung kommt mit Rückgängig (bei Endgültigem ohne, bei Kleinem
+  ohne Meldung), bei getrennter Verbindung ist Schreibendes gesperrt. Ansichten ändern `stand` nie direkt.
+- `src/anzeige.ts`: Namen für Menschen (Farben, Zeitfenster, Prioritäten, Herkunft, Hinweisarten mit Farbe und Wegen,
+  Module).
+- `src/teile/`: gemeinsame Bausteine. `Meldung.svelte` (die eine Meldung, geht nach sechs Sekunden; die Schale zeigt sie,
+  am Telefon die Schale des Telefons mit `ort="telefon"`), `DatumFeld` (meldet mit `gueltig`, ob es lesbar ist),
+  `DauerFeld`, `Farbwahl`, `Personenwahl` (Kandidaten gibt der Aufrufer; `schwebend` in Leisten).
 - `src/darstellung.svelte.ts`: Thema und Schriftstufe, eine Wahrheit für die Einstellung Darstellung und die Leiste.
 - Ansichten eines Boards bekommen `board`, `entwurf`, `suche` und `ziehenGesperrt` (`board/ansichten.ts`).
-- Vorgeführte Zustände (`?entwurf=...`), die Daten brauchen, die es sonst nicht gibt, setzen sie beim Öffnen über einen
-  Anwendungsfall oder eine Lesehilfe der Ansicht, nie über eigene Kopien der Daten.
+- Der Weg wird nur bei einem neuen Pfad gesucht; die Werte einer Ansicht ändern sich nicht, wenn sich der Zustand ändert.
+- Vorgeführte Zustände (`?entwurf=...`): Beim Wechsel des Entwurfs setzt die App den Zustand zurück; die Ansicht richtet
+  ihn danach einmal ein (`$effect` mit `untrack`), über die Anwendungsfälle. Zeigt ein Entwurf einen Stand, den kein
+  Anwendungsfall herstellt (etwa einen vom Server gedeckelten Timer), gibt er `zuruecksetzen()` eine Abwandlung der
+  Beispieldaten mit (`daten-<bereich>.ts`), nie eine eigene Kopie und nie einen Sonderfall in der Ansicht.
+- Die Typprüfung läuft mit `noUnusedLocals`: nichts Unbenutztes bleibt liegen.
 
 ## Gestaltung
 

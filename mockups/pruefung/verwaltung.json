@@ -1,28 +1,129 @@
 {
   "anmeldung": false,
   "seiten": [
-    { "name": "allgemein", "pfad": "/board/prod/einstellungen/allgemein",
-      "wechsel": [{ "klick": ".knopf.gefahr", "fest": [".pw-verwaltung-reiter"] }] },
-    { "name": "ohne-reiter", "pfad": "/board/prod/einstellungen" },
-    { "name": "spalten", "pfad": "/board/prod/einstellungen/spalten",
-      "wechsel": [{ "klick": ".pw-farbwahl .chip", "fest": [".pw-verwaltung-reiter"] }] },
-    { "name": "spalten-rueckfrage", "pfad": "/board/prod/einstellungen/spalten?entwurf=rueckfrage" },
-    { "name": "labels", "pfad": "/board/prod/einstellungen/labels",
-      "wechsel": [{ "klick": "[aria-label='Label Fehler löschen']", "fest": [".pw-verwaltung-reiter"] }] },
-    { "name": "felder", "pfad": "/board/prod/einstellungen/felder",
-      "wechsel": [{ "klick": "[aria-label='Feld Maschine löschen']", "fest": [".pw-verwaltung-reiter"] }] },
-    { "name": "rollen", "pfad": "/board/prod/einstellungen/rollen",
-      "wechsel": [{ "klick": "[aria-label='Rolle Werkstatt löschen']", "fest": [".pw-verwaltung-reiter"] }] },
-    { "name": "rollen-ideen", "pfad": "/board/idee/einstellungen/rollen" },
-    { "name": "mitglieder", "pfad": "/board/prod/einstellungen/mitglieder",
-      "wechsel": [{ "klick": "Besitz übertragen", "fest": [".pw-verwaltung-reiter"] }] },
-    { "name": "module", "pfad": "/board/prod/einstellungen/module",
-      "wechsel": [{ "klick": "[aria-label='Modul Berichte abschalten']", "fest": [".pw-verwaltung-reiter"] }] },
-    { "name": "board-neu", "pfad": "/boards/neu" },
-    { "name": "kuerzel-vergeben", "pfad": "/boards/neu?entwurf=kuerzel-vergeben" },
-    { "name": "darstellung", "pfad": "/einstellungen/darstellung" },
-    { "name": "hinweise", "pfad": "/einstellungen/hinweise" },
-    { "name": "konto", "pfad": "/einstellungen/konto" },
-    { "name": "gestaltung", "pfad": "/einstellungen/gestaltung" }
+    {
+      "name": "allgemein",
+      "pfad": "/board/prod/einstellungen/allgemein",
+      "wechsel": [
+        {
+          "klick": ".knopf.gefahr",
+          "fest": [
+            ".pw-verwaltung-reiter"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ohne-reiter",
+      "pfad": "/board/prod/einstellungen"
+    },
+    {
+      "name": "spalten",
+      "pfad": "/board/prod/einstellungen/spalten",
+      "wechsel": [
+        {
+          "klick": ".pw-farbwahl .chip",
+          "fest": [
+            ".pw-verwaltung-reiter"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "spalten-rueckfrage",
+      "pfad": "/board/prod/einstellungen/spalten?entwurf=rueckfrage"
+    },
+    {
+      "name": "labels",
+      "pfad": "/board/prod/einstellungen/labels",
+      "wechsel": [
+        {
+          "klick": "[aria-label='Label Fehler löschen']",
+          "fest": [
+            ".pw-verwaltung-reiter"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "felder",
+      "pfad": "/board/prod/einstellungen/felder",
+      "wechsel": [
+        {
+          "klick": "[aria-label='Feld Maschine löschen']",
+          "fest": [
+            ".pw-verwaltung-reiter"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "rollen",
+      "pfad": "/board/prod/einstellungen/rollen",
+      "wechsel": [
+        {
+          "klick": "[aria-label='Rolle Werkstatt löschen']",
+          "fest": [
+            ".pw-verwaltung-reiter"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "rollen-ideen",
+      "pfad": "/board/idee/einstellungen/rollen"
+    },
+    {
+      "name": "mitglieder",
+      "pfad": "/board/prod/einstellungen/mitglieder",
+      "wechsel": [
+        {
+          "klick": "Besitz übertragen",
+          "fest": [
+            ".pw-verwaltung-reiter"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "module",
+      "pfad": "/board/prod/einstellungen/module",
+      "wechsel": [
+        {
+          "klick": "[aria-label='Modul Berichte abschalten']",
+          "fest": [
+            ".pw-verwaltung-reiter"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "board-neu",
+      "pfad": "/boards/neu"
+    },
+    {
+      "name": "kuerzel-vergeben",
+      "pfad": "/boards/neu?entwurf=kuerzel-vergeben"
+    },
+    {
+      "name": "darstellung",
+      "pfad": "/einstellungen/darstellung"
+    },
+    {
+      "name": "hinweise",
+      "pfad": "/einstellungen/hinweise"
+    },
+    {
+      "name": "konto",
+      "pfad": "/einstellungen/konto"
+    },
+    {
+      "name": "gestaltung",
+      "pfad": "/einstellungen/gestaltung"
+    },
+    {
+      "name": "papierkorb-app",
+      "pfad": "/einstellungen/papierkorb?entwurf=board"
+    }
   ]
 }

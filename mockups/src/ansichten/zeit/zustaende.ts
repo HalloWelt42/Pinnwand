@@ -9,7 +9,7 @@ export const ZUSTAENDE: Zustand[] = [
   { pfad: "/zeiten", entwurf: "nachtragen", stufe: 2, symbol: "fa-clock-rotate-left", titel: "Zeit nachtragen",
     text: "Karte in allen Boards suchen, Tag und Dauer (1,5 heißt 1:30); der Stundenzettel zeigt schon beim Tippen, wo die Zeit landet." },
   { pfad: "/zeiten", entwurf: "deckel", stufe: 2, symbol: "fa-hourglass-end", titel: "Vergessener Timer",
-    text: "Eine Sitzung lief 12:30 Std.: gebucht sind die ersten 12, an Mitternacht zerlegt, mit Rückfrage nach dem echten Ende." },
+    text: "Eine Sitzung lief 12:30 Stunden: gebucht sind die ersten 12, an Mitternacht zerlegt, mit Rückfrage nach dem echten Ende." },
   { pfad: "/arbeitszeit", stufe: 2, symbol: "fa-scale-balanced", titel: "Zeitkonto",
     text: "Soll und Ist heute, Woche, Monat und Jahr, Überstunden, Resturlaub; Monate mit Saldo; Wochenstunden, Arbeitstage, Bundesland, Urlaub, halbe Tage." },
   { pfad: "/arbeitszeit/kalender", stufe: 2, symbol: "fa-calendar-days", titel: "Jahreskalender",

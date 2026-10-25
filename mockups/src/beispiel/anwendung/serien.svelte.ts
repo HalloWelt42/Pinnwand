@@ -8,7 +8,7 @@
 
 import type { Karte, Kennung, Serie } from "../../modell";
 import { kartenTitel, vorkommen, vorkommenAm, type Nachtragposten } from "../../regeln/serien";
-import { karteDesTags, nachtrag, serie, serienUmfeld } from "../abfragen";
+import { nachtrag, serie, serienUmfeld } from "../abfragen";
 import { minutenAus, plusTage, uhrzeitAus } from "../../regeln/tage";
 import { HEUTE, ICH, JETZT } from "../daten";
 import { datum, dauer } from "../format";

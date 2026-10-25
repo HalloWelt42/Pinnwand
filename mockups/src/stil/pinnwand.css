@@ -356,6 +356,11 @@
 .pw-personenwahl-vorschlaege .wer { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; overflow-wrap: anywhere; }
 .pw-personenwahl-vorschlaege .woher { margin-left: auto; font-size: var(--marke); color: var(--text-3); text-align: right; }
 .pw-personenwahl-vorschlaege .leer-zeile { padding: var(--a2) var(--a3); font-size: var(--klein); color: var(--text-3); }
+.pw-personenwahl.schwebend { position: relative; }
+.pw-personenwahl.schwebend .pw-personenwahl-vorschlaege {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 40; min-width: 100%; width: max-content; max-width: 420px;
+  box-shadow: var(--schatten-schwebend);
+}
 .pw-personenwahl-neu { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; flex: none;
                        background: var(--karte-2); color: var(--text-3); font-size: 13px; box-shadow: 0 0 0 2px var(--karte); }
 

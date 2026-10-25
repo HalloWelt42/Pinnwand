@@ -354,17 +354,21 @@ export interface Abwesenheit {
   notiz?: string;
 }
 
-/** Was eine Löschung im Papierkorb festhält, damit Wiederherstellen alles an seine alte Stelle bringt */
+/** Was eine Löschung im Papierkorb festhält, damit Wiederherstellen alles an seine alte Stelle bringt. Karten und Spalten
+ *  liegen im Papierkorb ihres Boards, ganze Boards im Papierkorb der App (Einstellungen). */
 export interface Geloescht {
   id: Kennung;
   board: Kennung;
-  art: "karte" | "spalte";
+  art: "karte" | "spalte" | "board";
   /** die gelöschte Spalte (nur bei art "spalte") */
   spalte?: Spalte;
   /** die Karten des Eintrags: eine bei einer Karte, alle der Spalte bei einer Spalte; ihre Zeiteinträge bleiben gebucht */
   karten: Karte[];
-  /** alte Stelle: bei einer Karte Spalte und Platz darin, bei einer Spalte ihr Platz in der Spaltenfolge (ab 0) */
+  /** alte Stelle: bei einer Karte Spalte und Platz darin, bei einer Spalte ihr Platz in der Spaltenfolge, bei einem Board
+   *  sein Platz in der Liste der Boards (ab 0) */
   stelle: { spalte?: Kennung; platz: number };
+  /** bei einem Board: alles, was daran hängt (ohne die Karten, die stehen in karten) */
+  inhalt?: { board: Board; serien: Serie[]; termine: Termin[]; reihen: Record<Kennung, Kennung[]>; ordner?: Kennung };
   von: Kennung;
   am: string;
 }

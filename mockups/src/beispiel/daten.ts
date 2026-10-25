@@ -45,7 +45,8 @@ export const RECHTE: Recht[] = [
 
 const ALLE = RECHTE.map((r) => r.id);
 
-function rollen(): Rolle[] {
+/** Start-Rollen jedes Boards: Besitzer, Mitglied, Leser (umbenennbar, nicht löschbar) */
+export function startRollen(): Rolle[] {
   return [
     { id: "besitzer", name: "Besitzer", vorgabe: true, rechte: ALLE },
     { id: "mitglied", name: "Mitglied", vorgabe: true, rechte: ["karten.anlegen", "karten.bearbeiten", "karten.verschieben", "karten.loeschen",
@@ -80,7 +81,7 @@ export const BOARDS: Board[] = [
       { id: "f-stueck", name: "Stückzahl", art: "zahl", aufKarte: true },
       { id: "f-maschine", name: "Maschine", art: "auswahl", optionen: ["CNC 1", "CNC 2", "Laser", "Kantbank"], aufKarte: false },
     ],
-    rollen: [...rollen(), { id: "r-werkstatt", name: "Werkstatt", rechte: ["karten.verschieben", "kommentieren", "zeit.buchen"] }],
+    rollen: [...startRollen(), { id: "r-werkstatt", name: "Werkstatt", rechte: ["karten.verschieben", "kommentieren", "zeit.buchen"] }],
     mitglieder: [
       { konto: "k-max", rolle: "besitzer", seit: "2025-03-03" },
       { konto: "k-anna", rolle: "mitglied", seit: "2025-03-03" },
@@ -101,7 +102,7 @@ export const BOARDS: Board[] = [
     ],
     labels: [{ id: "l-produkt", name: "Produkt", farbe: "violett" }, { id: "l-ablauf", name: "Ablauf", farbe: "tuerkis" }],
     felder: [{ id: "f-nutzen", name: "Nutzen", art: "auswahl", optionen: ["klein", "mittel", "groß"], aufKarte: true }],
-    rollen: rollen(),
+    rollen: startRollen(),
     mitglieder: [{ konto: "k-max", rolle: "besitzer", seit: "2025-06-10" }, { konto: "k-anna", rolle: "mitglied", seit: "2025-06-12" }],
     module: { zeiterfassung: false, arbeitszeit: false, serien: false, berichte: false, transkripte: true, vorlesen: true, ki: true },
     einstellungen: { ...EINSTELLUNGEN_VORGABE, alterungWarnung: 14, alterungGefahr: 30 },
@@ -115,7 +116,7 @@ export const BOARDS: Board[] = [
     ],
     labels: [{ id: "l-einkauf", name: "Einkauf", farbe: "honig" }, { id: "l-garten", name: "Garten", farbe: "minze" }],
     felder: [],
-    rollen: rollen(),
+    rollen: startRollen(),
     mitglieder: [{ konto: "k-max", rolle: "besitzer", seit: "2025-01-05" }],
     module: { zeiterfassung: true, arbeitszeit: false, serien: true, berichte: false, transkripte: false, vorlesen: true, ki: false },
     einstellungen: { ...EINSTELLUNGEN_VORGABE },
@@ -184,7 +185,7 @@ export const KARTEN: Karte[] = [
     zustaendig: ["k-anna"], prioritaet: "hoch", labels: ["l-kunde"], faellig: "2026-10-26", bewegtAm: "2026-10-25T16:00:00", erstelltAm: "2026-10-12T09:00:00",
     felder: { "f-kunde": "Krause Gerätebau", "f-stueck": "3" } },
   // Erledigt (Zeitfenster: diese Woche)
-  { ...LEER, id: "c-112", board: "b-prod", schluessel: "PROD-112", spalte: "s-fertig", titel: "Wochenwartung Kompressor", art: "arbeit", zustaendig: ["k-jonas"],
+  { ...LEER, id: "c-112", board: "b-prod", schluessel: "PROD-112", spalte: "s-fertig", titel: "06:00 Wochenwartung Kompressor", art: "arbeit", zustaendig: ["k-jonas"],
     prioritaet: "keine", labels: ["l-wartung"], faellig: "2026-10-26", schaetzungMin: 45, bewegtAm: "2026-10-26T15:00:00", erstelltAm: "2026-10-12T06:00:00",
     abgeschlossen: "2026-10-26", serie: "se-kompressor" },
   { ...LEER, id: "c-110", board: "b-prod", schluessel: "PROD-110", spalte: "s-fertig", titel: "Lieferschein Serie K5 Los 1", art: "arbeit", zustaendig: ["k-max"],
@@ -199,7 +200,7 @@ export const KARTEN: Karte[] = [
     zustaendig: ["k-anna"], prioritaet: "keine", labels: ["l-produkt"], bewegtAm: "2026-10-20T10:00:00", erstelltAm: "2026-10-10T10:00:00",
     felder: { "f-nutzen": "mittel" } },
   // Haushalt
-  { ...LEER, id: "c-h61", board: "b-haus", schluessel: "HAUS-61", spalte: "s-offen", titel: "Englisch lernen", art: "arbeit", zustaendig: ["k-max"],
+  { ...LEER, id: "c-h61", board: "b-haus", schluessel: "HAUS-61", spalte: "s-offen", titel: "12:00 Englisch lernen", art: "arbeit", zustaendig: ["k-max"],
     prioritaet: "keine", faellig: "2026-10-27", schaetzungMin: 30, bewegtAm: "2026-10-27T00:00:00", erstelltAm: "2026-10-20T00:00:00", serie: "se-englisch" },
   { ...LEER, id: "c-h58", board: "b-haus", schluessel: "HAUS-58", spalte: "s-dran", titel: "Winterreifen aufziehen lassen", art: "arbeit", zustaendig: ["k-max"],
     prioritaet: "mittel", faellig: "2026-10-26", bewegtAm: "2026-10-24T19:00:00", erstelltAm: "2026-10-20T19:00:00" },

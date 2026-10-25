@@ -29,5 +29,6 @@ export const PERSON_REITER = [
   { id: "darstellung", name: "Darstellung", symbol: "fa-circle-half-stroke" },
   { id: "hinweise", name: "Hinweise", symbol: "fa-bell" },
   { id: "konto", name: "Konto", symbol: "fa-circle-user" },
+  { id: "papierkorb", name: "Papierkorb", symbol: "fa-trash-can" },
   { id: "gestaltung", name: "Gestaltung", symbol: "fa-palette" },
 ] as const;

@@ -3,11 +3,10 @@
   // zuerst, dazu leer anfangen), Name und Kürzel (Vorschlag aus dem Namen, sofort auf Eindeutigkeit über alle Boards
   // geprüft), Ordner, Mitglieder (freiwillig). "Board anlegen" ruft den Anwendungsfall; wer anlegt, ist Besitzer.
   import { untrack } from "svelte";
-  import {
-    boardAnlegen, kellerwolkePersonen, kuerzelPruefen, kuerzelSaeubern, kuerzelVorschlag, LEER_VORLAGE, neueBoardFarbe,
-    type Einladung,
-  } from "../../beispiel/anwendung/boards.svelte";
-  import { ICH, VORLAGEN } from "../../beispiel/daten";
+  import { kellerwolkePersonen, kuerzelPruefen, kuerzelVorschlag } from "../../beispiel/abfragen";
+  import { boardAnlegen, LEER_VORLAGE, neueBoardFarbe, type Einladung } from "../../beispiel/anwendung/boards.svelte";
+  import { kuerzelSaeubern } from "../../regeln/kuerzel";
+  import { ICH } from "../../beispiel/daten";
   import { konto, stand } from "../../beispiel/stand.svelte";
   import Person from "../../board/Person.svelte";
   import type { KellerwolkePerson } from "../../modell";
@@ -17,7 +16,7 @@
 
   let { entwurf = "" }: { entwurf?: string } = $props();
 
-  const vorlagen = [...[...VORLAGEN].sort((a, b) => Number(!!b.eigen) - Number(!!a.eigen)), LEER_VORLAGE];
+  const vorlagen = $derived([...[...stand.vorlagen].sort((a, b) => Number(!!b.eigen) - Number(!!a.eigen)), LEER_VORLAGE]);
   const person = (id: string): KellerwolkePerson => ({ kennung: konto(id).kellerwolke, name: konto(id).name, konto: id });
 
   let vorlageId = $state("v-werkstatt");

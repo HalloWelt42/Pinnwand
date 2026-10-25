@@ -5,12 +5,12 @@
 
 import { FARBEN, MODULE, ZEITFENSTER_VORGABE } from "../../anzeige";
 import type {
-  Board, BoardEinstellungen, Farbe, Feld, FeldArt, HinweisArt, HinweisWeg, KellerwolkePerson, Kennung, ModulKennung, Rolle,
+  Board, BoardEinstellungen, Farbe, Feld, FeldArt, HinweisArt, HinweisWeg, KellerwolkePerson, Kennung, ModulKennung,
   Spalte, Vorlage, Zeitfenster,
 } from "../../modell";
-import { darf } from "../abfragen";
-import { BOARDS, EINSTELLUNGEN_VORGABE, HEUTE, ICH, JETZT } from "../daten";
-import { KELLERWOLKE_NEU, KUERZEL_ANDERER } from "../daten-verwaltung";
+import { personKuerzel } from "../../regeln/kuerzel";
+import { darf, kuerzelPruefen } from "../abfragen";
+import { EINSTELLUNGEN_VORGABE, HEUTE, ICH, JETZT, startRollen } from "../daten";
 import { dauer } from "../format";
 import { board, karte, kartenDerSpalte, konto, stand } from "../stand.svelte";
 import { sammelVerschieben } from "./karten.svelte";
@@ -35,81 +35,6 @@ function abgelehnt(text: string): false {
   return false;
 }
 
-// ═══ Kürzel: Vorschlag und Prüfung (Schnittstelle: der Server kennt alle Boards, auch fremde) ═══════════════
-
-const UMLAUTE: Record<string, string> = { Ä: "AE", Ö: "OE", Ü: "UE" };
-const KUERZEL_LAENGE = 6;
-/** 2 bis 6 Zeichen, vorne ein Buchstabe, nur Großbuchstaben und Ziffern */
-export const KUERZEL_MUSTER = /^[A-Z][A-Z0-9]{1,5}$/;
-
-/** Großbuchstaben, Umlaute ausgeschrieben statt verworfen (ß wird beim Großschreiben zu SS; die alte App machte aus
- *  "Übersicht" das Kürzel "BER", M-02) */
-function ausschreiben(text: string): string {
-  return text.toUpperCase().replace(/[ÄÖÜ]/g, (z) => UMLAUTE[z]);
-}
-
-/** Eingabe im Kürzelfeld: nur, was ein Kürzel tragen darf */
-export function kuerzelSaeubern(eingabe: string): string {
-  return ausschreiben(eingabe).replace(/[^A-Z0-9]/g, "").slice(0, KUERZEL_LAENGE);
-}
-
-/** Grundform aus dem Namen: ein Wort gibt seine ersten vier Zeichen, mehrere ihre Anfänge (Zahlen ganz) */
-function grundform(name: string): string {
-  const w = ausschreiben(name).split(/[^A-Z0-9]+/).filter(Boolean);
-  if (!w.length) return "";
-  let k = w.length === 1 ? w[0].slice(0, 4) : w.slice(0, 4).map((x) => (/^\d+$/.test(x) ? x : x[0])).join("").slice(0, KUERZEL_LAENGE);
-  if (k.length < 2) k = w[0].slice(0, 4);
-  return /^\d/.test(k) ? ("B" + k).slice(0, KUERZEL_LAENGE) : k;
-}
-
-/** Wem ein Kürzel gehört: einem sichtbaren Board (Name), einem fremden ("") oder niemandem (undefined) */
-function inhaber(k: string): string | undefined {
-  const b = stand.boards.find((x) => x.kuerzel === k);
-  if (b) return b.name;
-  return KUERZEL_ANDERER.includes(k) ? "" : undefined;
-}
-
-function abwandlungen(k: string): string[] {
-  const frei: string[] = [];
-  for (let n = 2; n <= 9 && frei.length < 3; n++) {
-    const v = k.slice(0, KUERZEL_LAENGE - 1) + n;
-    if (inhaber(v) === undefined) frei.push(v);
-  }
-  return frei;
-}
-
-/** Vorschlag aus dem Namen, schon frei */
-export function kuerzelVorschlag(name: string): string {
-  const k = grundform(name);
-  if (!k || inhaber(k) === undefined) return k;
-  return abwandlungen(k)[0] ?? k;
-}
-
-export interface KuerzelPruefung {
-  stand: "leer" | "form" | "vergeben" | "frei";
-  text: string;
-  /** freie Kürzel zum Anklicken, wenn das gewählte vergeben ist */
-  frei: string[];
-}
-
-export function kuerzelPruefen(k: string, name: string): KuerzelPruefung {
-  if (!k) return { stand: "leer", text: "Ein Kürzel braucht jedes Board, es steht vor jeder Kartennummer.", frei: [] };
-  if (!KUERZEL_MUSTER.test(k)) return { stand: "form", text: "2 bis 6 Zeichen, vorne ein Buchstabe.", frei: [] };
-  const wer = inhaber(k);
-  if (wer === undefined) return { stand: "frei", text: `Frei. Karten heißen ${k}-1, ${k}-2 und so weiter.`, frei: [] };
-  const aus = kuerzelVorschlag(name);
-  const frei = [...new Set([...(aus && aus !== k ? [aus] : []), ...abwandlungen(k)])].slice(0, 3);
-  return { stand: "vergeben", frei,
-           text: wer ? `${k} ist schon vergeben, an das Board ${wer}.` : `${k} ist schon vergeben, an ein Board, das du nicht siehst.` };
-}
-
-/** Personen der Kellerwolke zum Einladen (Schnittstelle: Suche per Name): wer schon ein Konto in der Pinnwand hat, mit
- *  diesem, die anderen mit ihrer Kennung */
-export function kellerwolkePersonen(): KellerwolkePerson[] {
-  const bekannt = stand.konten.map((k) => ({ kennung: k.kellerwolke, name: k.name, konto: k.id }));
-  return [...bekannt, ...KELLERWOLKE_NEU.filter((p) => !bekannt.some((b) => b.kennung === p.kennung))];
-}
-
 // ═══ Board anlegen und als Vorlage speichern ════════════════════════════════════════════════════════════════
 
 /** Leer anfangen: drei Spalten wie in der alten App (Mechanik 3.2), die letzte ist die Erledigt-Spalte */
@@ -121,10 +46,6 @@ export const LEER_VORLAGE: Vorlage = {
   felder: [], labels: [], module: [],
 };
 
-/** Start-Rollen jedes Boards (Besitzer, Mitglied, Leser), wie sie die Beispieldaten anlegen */
-function startRollen(): Rolle[] {
-  return structuredClone(BOARDS[0].rollen.filter((r) => r.vorgabe));
-}
 
 /** Ein neues Board bekommt die erste Farbe, die noch kein Board trägt (unterscheidbar in der Seitenleiste) */
 const NEU_FARBEN: Farbe[] = ["tuerkis", "himmel", "honig", "violett", "rose", "sand", "stahl", "koralle", "petrol", "minze", "flieder"];
@@ -190,14 +111,14 @@ export function vorlageAus(b: Board, name: string): Vorlage {
   };
 }
 
-/** Als Vorlage speichern. Der Zustand trägt noch keine Liste eigener Vorlagen (Bedarf: stand.vorlagen); bis dahin
- *  entsteht die Vorlage und die Meldung, die Liste beim Anlegen bleibt die der Beispieldaten. */
+/** Als Vorlage speichern: Spalten, Felder, Labels und Module des Boards; sie steht danach beim Anlegen unter den eigenen */
 export function alsVorlageSpeichern(boardId: Kennung, name: string): boolean {
   const b = board(boardId);
   const n = name.trim();
   if (!n) return abgelehnt("Eine Vorlage braucht einen Namen");
   return mitRecht(b, "board.verwalten", () => {
     const v = vorlageAus(b, n);
+    stand.vorlagen.push(v);
     return `Vorlage ${v.name} gespeichert: ${anzahl(v.spalten.length, "Spalte", "Spalten")}, ${anzahl(v.felder.length, "Feld", "Felder")}, `
       + `${anzahl(v.labels.length, "Label", "Labels")}; sie steht beim Anlegen unter den eigenen Vorlagen`;
   });
@@ -211,9 +132,17 @@ export function boardInPapierkorb(boardId: Kennung): boolean {
     const karten = stand.karten.filter((k) => k.board === b.id);
     let gebucht = 0;
     for (const k of karten) gebucht += timerBeenden(k.id);
-    for (const s of b.spalten) delete stand.reihen[s.id];
+    const reihen = Object.fromEntries(b.spalten.map((sp) => [sp.id, stand.reihen[sp.id] ?? []]));
+    const ordner = stand.ordner.find((o) => o.boards.includes(b.id))?.id;
+    stand.papierkorb.unshift({
+      id: neueKennung("p"), board: b.id, art: "board", karten: karten.map((k) => $state.snapshot(k)),
+      stelle: { platz: stand.boards.findIndex((x) => x.id === b.id) }, von: ICH, am: JETZT,
+      inhalt: { board: $state.snapshot(b), serien: $state.snapshot(stand.serien.filter((x) => x.board === b.id)),
+                termine: $state.snapshot(stand.termine.filter((x) => x.board === b.id)), reihen, ordner },
+    });
+    for (const sp of b.spalten) delete stand.reihen[sp.id];
     stand.karten = stand.karten.filter((k) => k.board !== b.id);
-    stand.serien = stand.serien.filter((s) => s.board !== b.id);
+    stand.serien = stand.serien.filter((x) => x.board !== b.id);
     stand.termine = stand.termine.filter((t) => t.board !== b.id);
     for (const o of stand.ordner) o.boards = o.boards.filter((x) => x !== b.id);
     stand.boards = stand.boards.filter((x) => x.id !== b.id);
@@ -361,6 +290,8 @@ export function spalteLoeschen(boardId: Kennung, spalteId: Kennung, kartenNach?:
       sammelVerschieben(ids, ziel.id);
       verschoben = stand.meldung?.text ?? "";
     }
+    // Serien legen künftig dorthin, wohin die Karten gehen (sonst setzt der Papierkorb die erste offene Spalte)
+    if (ziel) for (const serie of stand.serien.filter((x) => x.board === b.id && x.zielspalte === s.id)) serie.zielspalte = ziel.id;
     spalteInPapierkorb(b.id, s.id);
     return `Spalte ${s.name} im Papierkorb` + (verschoben ? `; ${verschoben}` : ids.length ? ` mit ${anzahl(ids.length, "Karte", "Karten")}` : "");
   });
@@ -555,19 +486,13 @@ export function rolleLoeschen(boardId: Kennung, rolleId: Kennung, ersatz: Kennun
 
 // ═══ Mitglieder ═════════════════════════════════════════════════════════════════════════════════════════
 
-/** Kürzel aus dem Namen für ein neues Konto (nur Anzeige): Anfänge von Vor- und Nachname */
-function kuerzelAusName(name: string): string {
-  const w = ausschreiben(name).split(/[^A-Z]+/).filter(Boolean);
-  return (w.length > 1 ? w[0][0] + w[w.length - 1][0] : (w[0] ?? "?").slice(0, 2)) || "?";
-}
-
 /** Person ins Board: wer noch kein Konto in der Pinnwand hat, bekommt es jetzt (Kürzel und Farbe), aus der Kellerwolke */
 function mitgliedHinzu(b: Board, p: KellerwolkePerson, rolle: Kennung): string {
   let id = p.konto ?? stand.konten.find((k) => k.kellerwolke === p.kennung)?.id;
   if (!id) {
     id = neueKennung("k");
     const farbe = FARBEN.find((f) => !stand.konten.some((k) => k.farbe === f)) ?? "stahl";
-    stand.konten.push({ id, name: p.name, kuerzel: kuerzelAusName(p.name), farbe, kellerwolke: p.kennung });
+    stand.konten.push({ id, name: p.name, kuerzel: personKuerzel(p.name), farbe, kellerwolke: p.kennung });
   }
   if (!b.mitglieder.some((m) => m.konto === id)) b.mitglieder.push({ konto: id, rolle, seit: HEUTE });
   return id;

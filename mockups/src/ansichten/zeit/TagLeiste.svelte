@@ -77,13 +77,13 @@
     {#if gedeckelt.length}
       <div class="hinweis warnung pw-zeiten-rueckfrage">
         <i class="fa-solid fa-hourglass-end"></i>
-        <div><b>Timer lief {dauer(lief.sekunden)} Std.</b> Dein Timer auf {kartenName(gedeckelt[0].karte).schluessel} lief {lief.spanne}.
+        <div><b>Timer lief {dauer(lief.sekunden)} Stunden.</b> Dein Timer auf {kartenName(gedeckelt[0].karte).schluessel} lief {lief.spanne}.
           Gebucht sind die ersten 12 Stunden, an Mitternacht zerlegt: {gedeckelt.map((e) => `${datum(e.datum, true)} ${dauer(e.sekunden)}`).join(" und ")}.
           Wann hast du aufgehört?</div>
         <span class="rechts">
           <label class="pw-zeiten-ende">Ende <input class="eingabe zahl" bind:value={ende} placeholder="HH:MM" title="Uhrzeit, zu der du wirklich aufgehört hast (HH:MM)" /></label>
           <button class="knopf haupt klein" disabled={!/^\d{1,2}:\d{2}$/.test(ende.trim())} onclick={() => deckelKorrigieren(gedeckelt.map((e) => e.id), ende.trim().padStart(5, "0"))}>Übernehmen</button>
-          <button class="knopf klein" title="Die 12 Stunden stimmen so" onclick={() => deckelBestaetigen(gedeckelt.map((e) => e.id))}>12 Std. lassen</button>
+          <button class="knopf klein" title="Die 12 Stunden stimmen so" onclick={() => deckelBestaetigen(gedeckelt.map((e) => e.id))}>12 Stunden lassen</button>
         </span>
       </div>
     {/if}
@@ -108,7 +108,7 @@
               <button class="spur verweis" title="An Mitternacht taggenau zerlegt; zum anderen Teil" onclick={() => tagWechseln(e.zerlegt!)}>
                 <i class="fa-solid fa-moon"></i>über Mitternacht, Teil am {datum(e.zerlegt, true)}</button>
             {/if}
-            {#if istGedeckelt(e)}<span class="spur warn"><i class="fa-solid fa-hourglass-end"></i>nach 12 Std. gedeckelt</span>{/if}
+            {#if istGedeckelt(e)}<span class="spur warn"><i class="fa-solid fa-hourglass-end"></i>nach 12 Stunden gedeckelt</span>{/if}
           </div>
         </div>
       {/each}

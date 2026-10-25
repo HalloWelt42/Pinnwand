@@ -109,7 +109,7 @@
         {#each board.spalten as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
       </select>
       <div class="pw-uebersicht-person">
-        <Personenwahl kandidaten={mitglieder} bind:text={person} platzhalter="Zuweisen: Name tippen"
+        <Personenwahl schwebend kandidaten={mitglieder} bind:text={person} platzhalter="Zuweisen: Name tippen"
                       waehlen={(p) => { if (p.konto) sammelZuweisen(gewaehlt, p.konto); }} />
       </div>
       <select class="eingabe" aria-label="Label setzen" onchange={(e) => gewaehltWert(e, (w) => sammelLabel(gewaehlt, w))}>

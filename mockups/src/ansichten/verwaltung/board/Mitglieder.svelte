@@ -4,10 +4,8 @@
   // Rückfrage, die sagt, was an Karten und Timern geschieht; Besitz übertragen. Ein Board hat immer mindestens einen
   // Besitzer. Alles über die Anwendungsfälle.
   import { untrack } from "svelte";
-  import { laufendAuf } from "../../../beispiel/abfragen";
-  import {
-    besitzUebertragen, einladen, kellerwolkePersonen, mitgliedEntfernen, rolleSetzen,
-  } from "../../../beispiel/anwendung/boards.svelte";
+  import { kellerwolkePersonen, laufendAuf } from "../../../beispiel/abfragen";
+  import { besitzUebertragen, einladen, mitgliedEntfernen, rolleSetzen } from "../../../beispiel/anwendung/boards.svelte";
   import { ICH } from "../../../beispiel/daten";
   import { datum } from "../../../beispiel/format";
   import { konto, stand } from "../../../beispiel/stand.svelte";

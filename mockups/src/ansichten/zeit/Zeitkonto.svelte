@@ -121,12 +121,12 @@
       <div class="pw-arbeitszeit-fassungen" title="Jede Fassung gilt ab ihrem Tag bis zur nächsten">
         <span class="etikett">Fassungen</span>
         {#each fassungen as f (f.ab)}
-          <span class="zustand" class:fertig={f.ab === k.ab}>ab {datumJahr(f.ab)}: {String(f.wochenstunden).replace(".", ",")} Std. an {f.tage.length} Tagen{f.ab === k.ab ? ", gilt heute" : ""}</span>
+          <span class="zustand" class:fertig={f.ab === k.ab}>ab {datumJahr(f.ab)}: {String(f.wochenstunden).replace(".", ",")} Stunden an {f.tage.length} Tagen{f.ab === k.ab ? ", gilt heute" : ""}</span>
         {/each}
       </div>
       <div class="einstellung">
         <div><div class="name">Wochenstunden</div><div class="erklaerung">Soll der Woche, gleich verteilt auf die Arbeitstage</div></div>
-        <div class="wert"><input class="eingabe" class:falsch={Number.isNaN(zahl(entwurfFassung.wochenstunden))} bind:value={entwurfFassung.wochenstunden} inputmode="decimal" /><span class="einheit">Std.</span></div>
+        <div class="wert"><input class="eingabe" class:falsch={Number.isNaN(zahl(entwurfFassung.wochenstunden))} bind:value={entwurfFassung.wochenstunden} inputmode="decimal" /><span class="einheit">Stunden</span></div>
       </div>
       <div class="einstellung">
         <div><div class="name">Arbeitstage</div><div class="erklaerung">Je Tag {dauer(jeTag)} Soll; andere Tage sind frei</div></div>

@@ -128,7 +128,7 @@
     auswahl = null; notiz = ""; halb = false;
   }
   function leeren(): void {
-    for (const a of vorhanden) entfernen(a.id);
+    entfernen(vorhanden.map((a) => a.id));
     auswahl = null;
   }
 </script>

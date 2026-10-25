@@ -6,8 +6,10 @@
   import { datumJahr } from "../beispiel/format";
   import { datumLesen, datumText } from "../regeln/eingabe";
 
-  let { tag, ontag, titel = "", breite = "", leerErlaubt = false }: {
+  let { tag, ontag, titel = "", breite = "", leerErlaubt = false, gueltig = $bindable(true) }: {
     tag: string; ontag: (tag: string) => void; titel?: string; breite?: string;
+    /** steht im Feld gerade ein lesbares Datum (oder leer, wo leer erlaubt)? Für Knöpfe, die erst dann gehen */
+    gueltig?: boolean;
     /** leer übernehmen heißt: kein Datum (etwa Fälligkeit entfernen) */
     leerErlaubt?: boolean;
   } = $props();
@@ -20,6 +22,7 @@
   $effect(() => { const t = tag; untrack(() => { if (!fokus) text = zeigen(t); }); });
   const gelesen = $derived(datumLesen(text, Number(HEUTE.slice(0, 4))));
   const falsch = $derived(text.trim() !== "" && !gelesen);
+  $effect(() => { gueltig = !falsch && (leerErlaubt || text.trim() !== ""); });
 
   function uebernehmen(): void {
     if (leerErlaubt && !text.trim()) { if (tag) ontag(""); return; }

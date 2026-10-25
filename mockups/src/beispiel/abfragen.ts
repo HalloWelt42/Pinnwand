@@ -3,14 +3,16 @@
 // die Ansichten fragen nur hier, nie mit eigener Rechnung.
 
 import { ZEITFENSTER_VORGABE } from "../anzeige";
-import type { Board, Karte, Kennung, Prioritaet, Serie, Spalte, Termin, Timer, Zeitfenster } from "../modell";
+import type { Board, Karte, KellerwolkePerson, Kennung, Prioritaet, Serie, Spalte, Termin, Timer, Zeitfenster } from "../modell";
 import { abwesenheitAm, artName, fassungAm, sollAm, urlaubstage, type TagSoll } from "../regeln/arbeitszeit";
 import { feiertag } from "../regeln/feiertage";
 import { vorkommen, type Nachtragposten, type SerienUmfeld } from "../regeln/serien";
 import { hatRecht, imArchiv, imFenster, liegengeblieben } from "../regeln/board";
+import { kuerzelPruefen as regelKuerzelPruefen, kuerzelVorschlag as regelKuerzelVorschlag, type KuerzelPruefung } from "../regeln/kuerzel";
 import { minutenAus, plusTage, tageVon, tageZwischen } from "../regeln/tage";
 import { HEUTE, ICH, JETZT } from "./daten";
 import { BESTAETIGT_BIS } from "./daten-planung";
+import { KELLERWOLKE_NEU, KUERZEL_ANDERER } from "./daten-verwaltung";
 import { MONATSIST, TAGESREST } from "./daten-zeit";
 import { alterTage, laufendSek } from "./format";
 import { board, karte, kartenDerSpalte, konto, stand } from "./stand.svelte";
@@ -53,14 +55,19 @@ export function zeitDerGruppe(k: Karte): number {
   return ids.reduce((s, id) => s + zeitDerKarte(id), 0);
 }
 
-/** Name einer Karte für Zeiteinträge, auch wenn sie im Papierkorb liegt oder entfernt ist */
-export function kartenName(karteId: string): { schluessel: string; titel: string; zustand: "da" | "papierkorb" | "entfernt" } {
+/** Name und Board einer Karte für Zeiteinträge, auch wenn sie im Papierkorb liegt oder entfernt ist */
+export function kartenName(karteId: string): { schluessel: string; titel: string; board: string; zustand: "da" | "papierkorb" | "entfernt" } {
   const k = karte(karteId);
-  if (k) return { schluessel: k.schluessel, titel: k.titel, zustand: "da" };
+  if (k) return { schluessel: k.schluessel, titel: k.titel, board: k.board, zustand: "da" };
   const p = stand.papierkorb.flatMap((e) => e.karten).find((x) => x.id === karteId);
-  if (p) return { schluessel: p.schluessel, titel: p.titel, zustand: "papierkorb" };
+  if (p) return { schluessel: p.schluessel, titel: p.titel, board: p.board, zustand: "papierkorb" };
   const e = stand.entfernt.find((x) => x.karte === karteId);
-  return { schluessel: e?.schluessel ?? "", titel: e?.titel ?? "Entfernte Karte", zustand: "entfernt" };
+  return { schluessel: e?.schluessel ?? "", titel: e?.titel ?? "Entfernte Karte", board: e?.board ?? "", zustand: "entfernt" };
+}
+
+/** Zeiteinträge einer Person von bis (einschließlich) */
+export function eintraegeVon(kontoId: string, von: string, bis = von) {
+  return stand.zeiteintraege.filter((e) => e.konto === kontoId && e.datum >= von && e.datum <= bis);
 }
 
 // ═══ Ist und Soll einer Person ═══════════════════════════════════════════════════════════════════════════
@@ -130,8 +137,14 @@ export function archivVon(b: Board): Karte[] {
     .sort((x, y) => (y.abgeschlossen ?? "").localeCompare(x.abgeschlossen ?? ""));
 }
 
+/** Papierkorb eines Boards: gelöschte Karten und Spalten (gelöschte Boards liegen im Papierkorb der App) */
 export function papierkorbVon(boardId: string) {
-  return stand.papierkorb.filter((e) => e.board === boardId);
+  return stand.papierkorb.filter((e) => e.board === boardId && e.art !== "board");
+}
+
+/** Papierkorb der App: gelöschte Boards mit allem, was daran hing */
+export function boardsImPapierkorb() {
+  return stand.papierkorb.filter((e) => e.art === "board");
 }
 
 /** Rechte der angemeldeten Person in einem Board */
@@ -295,4 +308,28 @@ export function nachtrag(kontoId: Kennung = ICH): Nachtragposten[] {
                   geplantMin: minutenAus(t.bis) - minutenAus(t.von), bestaetigt: t.bestaetigt });
   }
   return posten.sort((a, b) => (a.tag + (a.von ?? "")).localeCompare(b.tag + (b.von ?? "")));
+}
+
+// ═══ Boards anlegen und einladen ═════════════════════════════════════════════════════════════════════════
+
+/** Wem ein Kürzel gehört (der Server kennt alle Boards, auch fremde) */
+export function kuerzelInhaber(k: string): string | undefined {
+  const b = stand.boards.find((x) => x.kuerzel === k);
+  if (b) return b.name;
+  return KUERZEL_ANDERER.includes(k) ? "" : undefined;
+}
+
+export function kuerzelVorschlag(name: string): string {
+  return regelKuerzelVorschlag(name, kuerzelInhaber);
+}
+
+export function kuerzelPruefen(k: string, name: string): KuerzelPruefung {
+  return regelKuerzelPruefen(k, name, kuerzelInhaber);
+}
+
+/** Personen der Kellerwolke zum Einladen (Suche per Name): wer schon ein Konto in der Pinnwand hat, mit diesem, die
+ *  anderen mit ihrer Kennung */
+export function kellerwolkePersonen(): KellerwolkePerson[] {
+  const bekannt = stand.konten.map((k) => ({ kennung: k.kellerwolke, name: k.name, konto: k.id }));
+  return [...bekannt, ...KELLERWOLKE_NEU.filter((p) => !bekannt.some((b) => b.kennung === p.kennung))];
 }

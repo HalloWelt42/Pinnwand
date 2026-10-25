@@ -5,8 +5,10 @@
   import Person from "../board/Person.svelte";
   import type { KellerwolkePerson, Kennung } from "../modell";
 
-  let { kandidaten, ausser = [], waehlen, text = $bindable(""), platzhalter = "Name einer Person mit Kellerwolke-Konto" }: {
+  let { kandidaten, ausser = [], waehlen, text = $bindable(""), platzhalter = "Name einer Person mit Kellerwolke-Konto", schwebend = false }: {
     kandidaten: KellerwolkePerson[];
+    /** Vorschläge schweben über dem Inhalt darunter (in Leisten), statt ihn zu schieben */
+    schwebend?: boolean;
     /** Konten, die schon dabei sind */
     ausser?: Kennung[];
     waehlen: (p: KellerwolkePerson) => void;
@@ -24,7 +26,7 @@
   }
 </script>
 
-<div class="pw-personenwahl">
+<div class="pw-personenwahl" class:schwebend>
   <label class="suche"><i class="fa-solid fa-user-plus"></i>
     <input bind:value={text} placeholder={platzhalter} aria-label="Person suchen" autocomplete="off"
            onkeydown={(e) => { if (e.key === "Enter" && treffer.length) nehmen(treffer[0]); if (e.key === "Escape") text = ""; }} /></label>

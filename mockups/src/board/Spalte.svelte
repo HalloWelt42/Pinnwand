@@ -3,7 +3,7 @@
   // (ältere Karten liegen im Archiv); Karten ziehen und ablegen über den einen Weg ablegen() (die Gruppe zieht mit,
   // Erledigt hält Timer an); unten Karte anlegen mit Schnelleingabe.
   import { dndzone, type DndEvent } from "svelte-dnd-action";
-  import { erledigteOhneArchiv, sichtbareKarten } from "../beispiel/abfragen";
+  import { erledigteOhneArchiv, passt, sichtbareKarten } from "../beispiel/abfragen";
   import { ablegen } from "../beispiel/anwendung/karten.svelte";
   import { gruppenmitglieder, karte, kartenDerSpalte } from "../beispiel/stand.svelte";
   import { ZEITFENSTER, ZEITFENSTER_VORGABE } from "../anzeige";
@@ -12,8 +12,11 @@
   import Schnelleingabe from "./Schnelleingabe.svelte";
   import { boardPfad } from "../weg.svelte";
 
-  let { board, spalte, schnell = false, ziehenGesperrt = false, darstellung = {}, ziel, oeffnen }: {
-    board: Board; spalte: Spalte; schnell?: boolean; ziehenGesperrt?: boolean;
+  let { board, spalte, schnell = false, suche = "", ziehenGesperrt = false, darstellung = {}, ziel, oeffnen }: {
+    board: Board; spalte: Spalte; schnell?: boolean;
+    /** Suche der Werkzeugleiste; Erledigte werden dabei ohne Zeitfenster durchsucht */
+    suche?: string;
+    ziehenGesperrt?: boolean;
     /** Darstellung einzelner Karten im Entwurf (gezogen, mitgezogen, offen, geaendert) */
     darstellung?: Record<string, "gezogen" | "mitgezogen" | "offen" | "geaendert">;
     /** Entwurf "Ziehen in Aktion": diese Karte wird gerade über dieser Spalte gehalten */
@@ -28,7 +31,10 @@
   $effect(() => { eingeklappt = spalte.eingeklappt ?? false; fenster = spalte.zeitfenster ?? ZEITFENSTER_VORGABE; });
   $effect(() => { neuOffen = schnell; });
   let items = $state<KarteT[]>([]);
-  $effect(() => { items = sichtbareKarten(board, spalte, fenster); });
+  $effect(() => {
+    items = suche.trim() ? (spalte.erledigt ? erledigteOhneArchiv(board, spalte) : sichtbareKarten(board, spalte)).filter((k) => passt(k, board, suche))
+      : sichtbareKarten(board, spalte, fenster);
+  });
 
   const offene = $derived(spalte.erledigt ? 0 : items.length);
   const ueber = $derived(spalte.grenze !== undefined && offene > spalte.grenze);

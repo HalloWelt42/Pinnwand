@@ -2,7 +2,7 @@
 // Urlaubstage und Brückentage. In der App dieselben Regeln im Modul auf dem Server; die Oberfläche rechnet mit ihnen nur
 // Vorschauen (Wirkung eines geplanten Urlaubs).
 
-import type { Abwesenheit, AbwesenheitArt, Halbtagsregel, Zeitkonto } from "../modell";
+import type { Abwesenheit, AbwesenheitArt, Zeitkonto } from "../modell";
 import { feiertag } from "./feiertage";
 import { plusTage, tageVon, wochentag } from "./tage";
 

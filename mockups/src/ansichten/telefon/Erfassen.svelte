@@ -25,6 +25,7 @@
   let spalteWunsch = $state(wert("spalte"));
   let titel = $state("");
   let beschreibung = $state("");
+  let datumGueltig = $state(true);
   let art = $state(artVon(vorgabe));
   /** Fälligkeit als ISO-Tag, leer: ohne */
   let faellig = $state("");
@@ -68,7 +69,7 @@
 {#snippet knoepfe()}
   <div class="pw-tel-aktionen">
     <button class="knopf" onclick={() => (sprache = true)} title="Per Sprache erfassen (Transkription)"><i class="fa-solid fa-microphone"></i>Sprechen</button>
-    <button class="knopf haupt" disabled={!titel.trim()} onclick={anlegenKlick}><i class="fa-solid fa-plus"></i>Anlegen</button>
+    <button class="knopf haupt" disabled={!titel.trim() || !datumGueltig} title={datumGueltig ? "" : "Das Datum ist nicht lesbar"} onclick={anlegenKlick}><i class="fa-solid fa-plus"></i>Anlegen</button>
   </div>
 {/snippet}
 
@@ -118,7 +119,7 @@
 
     <section class="pw-tel-abschnitt" aria-label="Fällig">
       <div class="etikett">Fällig</div>
-      <DatumFeld tag={faellig} ontag={(t) => (faellig = t)} leerErlaubt titel="Fällig wie 30.10.2026 oder 30.10.; leer: ohne" />
+      <DatumFeld tag={faellig} ontag={(t) => (faellig = t)} bind:gueltig={datumGueltig} leerErlaubt titel="Fällig wie 30.10.2026 oder 30.10.; leer: ohne" />
       <div class="pw-tel-chips">
         {#each FAELLIG as [name, iso] (iso)}
           <button class="chip" aria-pressed={faellig === iso} onclick={() => (faellig = iso)}>{name}</button>

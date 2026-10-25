@@ -52,8 +52,8 @@
     const e = entwurf;
     untrack(() => { if (e === "rueckfrage") fragen("s-geplant"); else loeschen = null; });
   });
-  function bestaetigen(): void {
-    if (loeschen && spalteLoeschen(board.id, loeschen, weg === "verschieben" ? ziel : undefined)) loeschen = null;
+  async function bestaetigen(): Promise<void> {
+    if (loeschen && await spalteLoeschen(board.id, loeschen, weg === "verschieben" ? ziel : undefined)) loeschen = null;
   }
 
   const fort = $derived(board.spalten.find((s) => s.id === loeschen));

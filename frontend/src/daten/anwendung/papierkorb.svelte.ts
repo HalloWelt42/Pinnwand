@@ -32,12 +32,12 @@ export function entfernen(ids: Kennung[]): void {
 }
 
 /** Board mit allem, was daran hängt, in den Papierkorb der App (Einstellungen, Papierkorb); laufende Timer buchen */
-export function boardInPapierkorb(boardId: Kennung): boolean {
+export async function boardInPapierkorb(boardId: Kennung): Promise<boolean> {
   return baustelle("Papierkorb");
 }
 
 /** Spalte löschen: die Karten vorher in eine andere Spalte (derselbe Weg wie Ziehen, die Gruppe zieht mit) oder mit
  *  der Spalte in den Papierkorb (Wiederherstellen an der alten Stelle). Die Erledigt-Spalte und die letzte bleiben. */
-export function spalteLoeschen(boardId: Kennung, spalteId: Kennung, kartenNach?: Kennung): boolean {
+export async function spalteLoeschen(boardId: Kennung, spalteId: Kennung, kartenNach?: Kennung): Promise<boolean> {
   return baustelle("Papierkorb");
 }

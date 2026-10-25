@@ -29,8 +29,8 @@
   function setzen(teil: Partial<BoardEinstellungen>): void {
     einstellungenSetzen(board.id, teil);
   }
-  function wegwerfen(): void {
-    if (boardInPapierkorb(board.id)) gehe("/heute");
+  async function wegwerfen(): Promise<void> {
+    if (await boardInPapierkorb(board.id)) gehe("/heute");
   }
 
   /** Beispiele der Sanduhr mit den eingestellten Stufen (Regel des Boards) */

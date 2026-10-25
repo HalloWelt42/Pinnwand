@@ -83,8 +83,8 @@
   const betroffen = $derived(kartenDerSpalte(spalte.id).length);
   const zielSpalte = $derived(board.spalten.find((s) => s.id === ziel));
   const danach = $derived(zielSpalte ? kartenDerSpalte(zielSpalte.id).length + betroffen : 0);
-  function loeschen(): void {
-    if (spalteLoeschen(board.id, spalte.id, weg === "verschieben" && betroffen ? ziel : undefined)) schliessen();
+  async function loeschen(): Promise<void> {
+    if (await spalteLoeschen(board.id, spalte.id, weg === "verschieben" && betroffen ? ziel : undefined)) schliessen();
   }
 </script>
 

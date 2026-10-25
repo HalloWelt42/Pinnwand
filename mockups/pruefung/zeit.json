@@ -1,0 +1,17 @@
+{
+  "anmeldung": false,
+  "seiten": [
+    {"name": "zeiten", "pfad": "/zeiten", "warten_ms": 3000},
+    {"name": "zeiten-tag", "pfad": "/zeiten?entwurf=tag", "warten_ms": 3000},
+    {"name": "zeiten-nachtragen", "pfad": "/zeiten?entwurf=nachtragen", "warten_ms": 3000},
+    {"name": "zeiten-deckel", "pfad": "/zeiten?entwurf=deckel", "warten_ms": 3000},
+    {"name": "zeitkonto", "pfad": "/arbeitszeit", "warten_ms": 3000},
+    {"name": "kalender", "pfad": "/arbeitszeit/kalender", "warten_ms": 3000},
+    {"name": "kalender-auswahl", "pfad": "/arbeitszeit/kalender?entwurf=auswahl", "warten_ms": 3000},
+    {"name": "urlaub", "pfad": "/arbeitszeit/urlaub", "warten_ms": 3000},
+    {"name": "team", "pfad": "/arbeitszeit/team", "warten_ms": 3000},
+    {"name": "team-ohne-recht", "pfad": "/arbeitszeit/team?entwurf=ohne-recht", "warten_ms": 3000},
+    {"name": "berichte", "pfad": "/berichte", "warten_ms": 3000},
+    {"name": "berichte-vorschau", "pfad": "/berichte?entwurf=vorschau", "warten_ms": 3000}
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "anmeldung": false,
+  "seiten": [
+    { "name": "heute", "pfad": "/heute" },
+    { "name": "heute-leer", "pfad": "/heute?entwurf=leer" },
+    { "name": "heute-getrennt", "pfad": "/heute?entwurf=getrennt" },
+    { "name": "hinweise", "pfad": "/hinweise" },
+    { "name": "liste", "pfad": "/board/prod/liste" },
+    { "name": "liste-auswahl", "pfad": "/board/prod/liste?entwurf=auswahl" },
+    { "name": "archiv", "pfad": "/board/prod/archiv" },
+    { "name": "papierkorb", "pfad": "/board/prod/papierkorb" },
+    { "name": "papierkorb-rueckfrage", "pfad": "/board/prod/papierkorb?entwurf=rueckfrage" }
+  ]
+}

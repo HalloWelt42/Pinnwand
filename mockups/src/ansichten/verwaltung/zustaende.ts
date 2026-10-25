@@ -1,4 +1,35 @@
 // Einträge dieses Bereichs in der Galerie der Entwürfe (siehe src/zustaende.ts).
 import type { Zustand } from "../../zustaende";
 
-export const ZUSTAENDE: Zustand[] = [];
+export const ZUSTAENDE: Zustand[] = [
+  { pfad: "/board/prod/einstellungen/allgemein", stufe: 1, symbol: "fa-sliders", titel: "Board-Einstellungen: Allgemein",
+    text: "Name, festes Kürzel mit nächster Kartennummer, Ordner, Farbe; Alterung und Erledigt-Grenzen je Board; als Vorlage speichern; in den Papierkorb." },
+  { pfad: "/board/prod/einstellungen/spalten", stufe: 1, symbol: "fa-grip-vertical", titel: "Spalten",
+    text: "Reihenfolge per Ziehen am Griff (geht echt), je Spalte Name, Farbe, Grenze, Erledigt-Spalte und Zeitfenster; neue Spalte ans Ende." },
+  { pfad: "/board/prod/einstellungen/spalten", entwurf: "rueckfrage", stufe: 1, symbol: "fa-circle-question", titel: "Spalte löschen",
+    text: "Rückfrage in der Fläche: Karten verschieben (Grenze warnt) oder mit der Spalte in den Papierkorb; die Serie bekommt ihre neue Zielspalte." },
+  { pfad: "/board/prod/einstellungen/labels", stufe: 1, symbol: "fa-tags", titel: "Labels",
+    text: "Name und Farbe, umbenennen gilt auf allen Karten, Dubletten ohne Groß und klein abgewiesen; Löschen sagt, an wie vielen Karten es hängt." },
+  { pfad: "/board/prod/einstellungen/felder", stufe: 1, symbol: "fa-rectangle-list", titel: "Eigene Felder",
+    text: "Text, Zahl, Datum, Auswahl mit Optionen, Verweis; auf der Karte zeigen; Reihenfolge per Ziehen; Felder der Module und Grundfelder darunter." },
+  { pfad: "/board/prod/einstellungen/rollen", stufe: 1, symbol: "fa-user-shield", titel: "Rollen und Rechte",
+    text: "Rollen anlegen als Kopie, umbenennen, Start-Rollen bleiben; Matrix nach Modul, ein Häkchen wirkt sofort für alle mit der Rolle." },
+  { pfad: "/board/idee/einstellungen/rollen", stufe: 1, symbol: "fa-power-off", titel: "Rechte abgeschalteter Module",
+    text: "Board Ideen ohne Zeiterfassung, Arbeitszeit, Serien und Berichte: deren Rechte ruhen ausgegraut, mit Weg zu den Modulen." },
+  { pfad: "/board/prod/einstellungen/mitglieder", stufe: 1, symbol: "fa-users", titel: "Mitglieder",
+    text: "Einladen per Name mit Vorschlägen aus der Kellerwolke, Rolle je Person, seit wann; Entfernen mit Folgen; einziger Besitzer überträgt erst." },
+  { pfad: "/board/prod/einstellungen/module", stufe: 1, symbol: "fa-puzzle-piece", titel: "Module",
+    text: "Je Modul ein Schalter und was es bringt (Ansichten, Felder, Rechte); abschalten blendet aus, die Daten bleiben." },
+  { pfad: "/boards/neu", stufe: 1, symbol: "fa-square-plus", titel: "Board anlegen",
+    text: "Schritte links, Vorschau rechts: eigene Vorlage Werkstattplanung, Kürzel WH2 aus dem Namen und frei, Ordner, Anna eingeladen." },
+  { pfad: "/boards/neu", entwurf: "kuerzel-vergeben", stufe: 1, symbol: "fa-triangle-exclamation", titel: "Kürzel vergeben",
+    text: "PROD von Hand eingetragen: schon an Produktionsplanung vergeben, freie Kürzel zum Anklicken; anlegen erst danach." },
+  { pfad: "/einstellungen/darstellung", stufe: 1, symbol: "fa-circle-half-stroke", titel: "Darstellung",
+    text: "Thema hell, dunkel oder wie das System; Schriftstufe Klein, Mittel, Groß mit derselben Karte als Vorschau in jeder Stufe." },
+  { pfad: "/einstellungen/hinweise", stufe: 1, symbol: "fa-bell", titel: "Hinweise",
+    text: "Je Art ein Schalter für Pinnwand, Push und Assistent; Push aufs Telefon einrichten als Schritte." },
+  { pfad: "/einstellungen/konto", stufe: 1, symbol: "fa-circle-user", titel: "Konto",
+    text: "Angemeldet mit dem Kellerwolke-Konto: Name aus der Kellerwolke, Kürzel nur Anzeige, feste Kennung, Abmelden." },
+  { pfad: "/einstellungen/gestaltung", stufe: 1, symbol: "fa-palette", titel: "Gestaltung",
+    text: "Die Seite Gestaltung des Appkerns: Marken und Bausteine des Leitstands, hell und dunkel nebeneinander." },
+];

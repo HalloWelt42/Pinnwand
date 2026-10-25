@@ -1,0 +1,363 @@
+/* Stil der Planung: Serien und Termine (pw-serien-), Kalender (pw-kalender-), Zeitachse (pw-zeitachse-) und was sie
+   teilen (pw-planung-). Nur Marken des Appkerns; Bausteine des Leitstands werden genutzt, nie umdefiniert. */
+
+/* ═══ Geteilt: Personen wählen, Leiste der Karten ohne Datum, Steuerleiste ═══════════════════════════════════ */
+
+.pw-planung-personen { display: flex; flex-direction: column; gap: var(--a2); min-width: 0; width: 100%; }
+.pw-planung-personen .gewaehlt { display: flex; flex-wrap: wrap; gap: var(--a2); }
+.pw-planung-personen .gewaehlt .chip { padding-right: 2px; cursor: default; }
+.pw-planung-personen .gewaehlt .chip .knopf.symbol.klein { width: 30px; height: 30px; }
+.pw-planung-personen .suche { max-width: none; height: 40px; }
+.pw-planung-personen .vorschlaege { display: flex; flex-direction: column; gap: 2px; padding: var(--a1); border-radius: var(--r2);
+                                    background: var(--karte); border: 1px solid var(--rand); }
+.pw-planung-personen .vorschlaege .zeile { width: 100%; border: 0; background: transparent; color: var(--text); cursor: pointer; text-align: left;
+                                           padding: 6px var(--a2); font-size: var(--klein); }
+.pw-planung-personen .vorschlaege .zeile:hover { background: var(--karte-2); }
+.pw-planung-personen .vorschlaege .zeile[disabled] { cursor: not-allowed; }
+.pw-planung-personen .vorschlaege .zeile[disabled] .name { color: var(--text-3); }
+.pw-planung-personen .vorschlaege .name { flex: 1; min-width: 0; }
+.pw-planung-personen .vorschlaege .grund { color: var(--text-3); font-size: var(--marke); }
+
+/* Raum einer Ansicht des Boards (Kalender, Zeitachse): links die Ansicht, rechts die Leiste ohne Datum */
+.pw-planung-raum { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--a3); padding: 0 var(--a6) var(--a4); }
+.pw-planung-haupt { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--a2); }
+.pw-planung-steuer { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; flex: none; }
+.pw-planung-steuer h2 { min-width: 0; margin: 0 var(--a2); font-family: var(--schrift); }
+.pw-planung-steuer .knopf.symbol.klein { width: 36px; }
+.pw-planung-steuer .rechts { margin-left: auto; display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; }
+.pw-planung-legende { display: inline-flex; align-items: center; gap: var(--a3); flex-wrap: wrap; font-size: var(--marke); color: var(--text-2); }
+.pw-planung-legende span { display: inline-flex; align-items: center; gap: 6px; }
+.pw-planung-legende .muster { width: 18px; height: 14px; border-radius: var(--r1); flex: none; }
+.pw-planung-legende .muster.wochenende { background: var(--pw-planung-wochenende); }
+.pw-planung-legende .muster.feiertag { background: var(--pw-planung-feiertag); }
+.pw-planung-legende .muster.abwesend { background: var(--pw-planung-abwesend); }
+.pw-planung-legende .muster.heute { width: 3px; background: var(--akzent-flaeche); }
+
+/* Flächen der Planung, aus Marken gemischt (Wochenende, Feiertag, Abwesenheit) */
+:root {
+  --pw-planung-wochenende: color-mix(in srgb, var(--mulde) 35%, var(--bereich));
+  --pw-planung-feiertag: repeating-linear-gradient(135deg, color-mix(in srgb, var(--honig) 13%, transparent) 0 5px, transparent 5px 10px);
+  --pw-planung-feiertag-flaeche: color-mix(in srgb, var(--honig) 9%, var(--bereich));
+  --pw-planung-abwesend: repeating-linear-gradient(135deg, color-mix(in srgb, var(--stahl) 30%, transparent) 0 5px, transparent 5px 10px);
+}
+
+/* Leiste der Karten ohne Datum: zum Hineinziehen; Ablegen darauf entfernt das Datum */
+.pw-planung-leiste { width: 280px; min-height: 0; display: flex; flex-direction: column; background: var(--bereich); border-radius: var(--r3);
+                     border: 1px solid transparent; }
+.pw-planung-leiste.eingeklappt { width: 52px; align-items: center; }
+.pw-planung-leiste.ziel { border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); border-style: dashed; }
+.pw-planung-leiste .leistenkopf { display: flex; align-items: center; gap: var(--a2); padding: var(--a3) var(--a3) var(--a2); }
+.pw-planung-leiste .leistenkopf b { font-size: var(--gross); min-width: 0; }
+.pw-planung-leiste .leistenkopf .knopf { margin-left: auto; }
+.pw-planung-leiste.eingeklappt .leistenkopf { flex-direction: column; padding: var(--a3) 0; }
+.pw-planung-leiste.eingeklappt .leistenkopf .knopf { margin: 0; }
+.pw-planung-leiste .senkrecht { writing-mode: vertical-rl; font-weight: 700; color: var(--text-2); padding: var(--a2) 0; }
+.pw-planung-leiste .erklaerung { padding: 0 var(--a3) var(--a2); font-size: var(--marke); color: var(--text-3); }
+.pw-planung-leiste .liste { flex: 1; min-height: 0; overflow-y: auto; overflow-x: clip; padding: 2px var(--a2) var(--a2); display: flex; flex-direction: column; gap: var(--a2); }
+.pw-planung-mini { display: flex; flex-direction: column; gap: 4px; padding: var(--a2) var(--a3); border-radius: var(--r2); background: var(--karte);
+                   color: var(--text); cursor: grab; box-shadow: 0 1px 0 var(--rand); border: 1px solid transparent; }
+.pw-planung-mini:hover { background: var(--karte-2); }
+.pw-planung-mini.gezogen { opacity: 0.55; }
+.pw-planung-mini .oben { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.pw-planung-mini .oben .rechts { margin-left: auto; }
+.pw-planung-mini .titel { font-size: var(--klein); font-weight: 600; line-height: 1.3; overflow-wrap: anywhere;
+                          display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pw-planung-mini .pw-person { width: 26px; height: 26px; }
+.pw-planung-leiste .leer { padding: var(--a5) var(--a3); font-size: var(--klein); }
+.pw-planung-leiste .leer i { font-size: 28px; }
+
+@media (max-width: 1240px) {
+  .pw-planung-leiste { width: 240px; }
+  .pw-planung-leiste.eingeklappt { width: 52px; }
+}
+
+/* ═══ Serien und Termine ══════════════════════════════════════════════════════════════════════════════════ */
+
+.pw-serien { display: flex; flex-direction: column; gap: var(--a5); }
+.pw-serien-abschnitt { display: flex; flex-direction: column; gap: var(--a2); min-width: 0; }
+.pw-serien-abschnitt > h2 { display: flex; align-items: center; gap: var(--a2); }
+.pw-serien-abschnitt > h2 .rechts { margin-left: auto; font-size: var(--klein); font-weight: 600; }
+.pw-serien-abschnitt .tabelle td { vertical-align: middle; }
+.pw-serien-name { display: inline-flex; align-items: center; gap: var(--a2); font-weight: 600; color: var(--text); font-size: var(--gross); }
+.pw-serien-name i { color: var(--text-3); font-size: 13px; }
+.pw-serien-name:hover { color: var(--akzent); }
+.pw-serien-ort { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; color: var(--text-2); }
+.pw-serien-ort i { font-size: 12px; margin: 0 2px; }
+.pw-serien-ort .paar { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.pw-serien-wann { white-space: nowrap; color: var(--text); font-weight: 600; }
+.pw-serien-termin { display: flex; flex-direction: column; gap: 2px; }
+.pw-serien-termin .schwach { display: inline-flex; align-items: center; gap: 6px; font-size: var(--marke); }
+.pw-serien-teilnehmer { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; }
+.pw-serien-person { position: relative; display: inline-flex; }
+.pw-serien-person > i { position: absolute; right: -5px; bottom: -4px; font-size: 12px; border-radius: 50%; background: var(--karte); padding: 1px; }
+.pw-serien-person.gut > i { color: var(--gut); }
+.pw-serien-person.warnung > i { color: var(--warn); }
+.pw-serien-person.offen > i { color: var(--text-3); }
+.pw-serien-mini { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; }
+.pw-serien-mini .pw-person { width: 24px; height: 24px; box-shadow: none; }
+
+.pw-serien-terminneu { display: flex; flex-direction: column; gap: var(--a3); }
+.pw-serien-knoepfe { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; }
+.pw-serien-fehler { display: inline-flex; align-items: center; gap: 6px; color: var(--gefahr); font-size: var(--klein); }
+
+/* Nachtrag am Folgetag: Bereich auf der Seite, die Hauptsache dieses Zustands */
+.pw-serien-nachtrag { display: flex; flex-direction: column; gap: var(--a3);
+                      border: 1px solid color-mix(in srgb, var(--akzent-flaeche) 45%, transparent); }
+.pw-serien-nachtrag .nachtragkopf { display: flex; align-items: flex-start; gap: var(--a3); }
+.pw-serien-nachtrag .nachtragkopf > i { color: var(--akzent); font-size: 20px; margin-top: 4px; }
+.pw-serien-nachtrag .nachtragkopf .text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pw-serien-nachtrag .liste { display: flex; flex-direction: column; gap: var(--a1); }
+.zeile-nachtrag { display: grid; grid-template-columns: 84px minmax(0, 1fr) auto auto auto; align-items: center; gap: var(--a3);
+                  padding: var(--a2) var(--a3); border-radius: var(--r2); background: var(--karte); }
+.zeile-nachtrag.fertig { background: transparent; }
+.zeile-nachtrag .wann { color: var(--text); font-size: var(--gross); }
+.zeile-nachtrag .was { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.zeile-nachtrag .was b { display: inline-flex; align-items: center; gap: var(--a2); overflow-wrap: anywhere; }
+.zeile-nachtrag .was b i { color: var(--text-3); font-size: 13px; }
+.zeile-nachtrag .was .schwach { font-size: var(--marke); display: flex; align-items: center; flex-wrap: wrap; gap: 2px 4px; }
+.zeile-nachtrag .dauer { display: inline-flex; align-items: center; gap: var(--a2); }
+.zeile-nachtrag .dauer .eingabe { width: 76px; height: 36px; text-align: right; font-family: var(--schrift-zahl); }
+.zeile-nachtrag .zustand { grid-column: span 2; justify-self: end; }
+.pw-serien-nachtrag .nachtragfuss { display: flex; align-items: center; gap: var(--a3); flex-wrap: wrap; }
+
+@container tabelle (max-width: 900px) {
+  .pw-serien-abschnitt .tabelle.karten td:first-child { font-size: var(--gross); }
+}
+/* schmal: Uhrzeit und Titel oben, darunter Dauer und Knöpfe */
+@media (max-width: 1100px) {
+  .zeile-nachtrag { grid-template-columns: 70px minmax(0, 1fr) auto auto; row-gap: var(--a2); }
+  .zeile-nachtrag .was { grid-column: 2 / -1; }
+  .zeile-nachtrag .dauer { grid-column: 2; }
+  .zeile-nachtrag .zustand { grid-column: 2 / 4; justify-self: start; }
+}
+
+/* Serie anlegen und bearbeiten: links das Formular, rechts die Tage */
+.pw-serien-zurueck { color: var(--text-2); }
+.pw-serien-zurueck:hover { color: var(--akzent); }
+.pw-serien-kopfsymbol { color: var(--text-3); font-size: 0.7em; margin-right: var(--a3); vertical-align: 0.1em; }
+.pw-serien-spalten { padding-bottom: 0; }
+.pw-serien-formular fieldset { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: var(--a3); }
+.pw-serien-formular .bereich { display: flex; flex-direction: column; gap: var(--a3); }
+.pw-serien-formular .bereich > h2 { font-size: var(--gross); }
+.pw-serien-formular .pw-felder .stufen button { display: inline-flex; align-items: center; gap: 6px; }
+.pw-serien-formular .einstellung { padding: var(--a2) 0; grid-template-columns: minmax(0, 1fr) 200px; }
+.pw-serien-formular .einstellung .wert .eingabe { width: 80px; }
+.pw-serien-formular textarea.eingabe { width: 100%; }
+.pw-serien-kurz { width: 96px; font-family: var(--schrift-zahl); }
+.pw-serien-tag { width: 136px; font-family: var(--schrift-zahl); }
+.pw-felder .wert .name-neben { display: inline-flex; align-items: center; gap: var(--a2); color: var(--text-2); font-size: var(--klein); margin-left: var(--a3); }
+.pw-felder .wert .name-neben i { color: var(--text-3); font-size: 13px; }
+.pw-serien-formular .pw-felder .eingabe.pw-serien-kurz { width: 96px; }
+.pw-serien-formular .pw-felder .eingabe.pw-serien-tag { width: 136px; }
+
+.pw-serien-tage { display: flex; flex-direction: column; gap: var(--a2); }
+.pw-serien-tage-kopf { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--a1); }
+.pw-serien-tage .etikett { display: flex; align-items: baseline; gap: var(--a2); margin-top: var(--a2); }
+.pw-serien-tage .etikett .zahl { letter-spacing: 0.02em; text-transform: none; min-width: 0; font-weight: 600; }
+.pw-serien-tagliste { display: flex; flex-direction: column; gap: 2px; }
+.pw-serien-tagzeile { display: grid; grid-template-columns: 140px minmax(0, 1fr); align-items: center; gap: 4px var(--a3);
+                      padding: 6px var(--a2); border-radius: var(--r2); background: var(--bereich); }
+.pw-serien-tagzeile > .zustand { justify-self: start; }
+.pw-serien-tagzeile > .notiz { grid-column: 2; }
+.pw-serien-tagzeile.heute { outline: 1px solid color-mix(in srgb, var(--akzent-flaeche) 55%, transparent); }
+.pw-serien-tagzeile .wann { display: flex; gap: var(--a2); align-items: baseline; }
+.pw-serien-tagzeile .wann b { color: var(--text); min-width: 0; }
+.pw-serien-tagzeile .wann .zahl { min-width: 0; font-size: var(--klein); }
+.pw-serien-tagzeile .notiz { display: flex; align-items: center; flex-wrap: wrap; gap: 2px var(--a1); font-size: var(--marke); min-width: 0; }
+.pw-serien-tagzeile.geloescht .wann b, .pw-serien-tagzeile.verworfen .wann b { text-decoration: line-through; color: var(--text-2); }
+.pw-serien-tagzeile.geplant, .pw-serien-tagzeile.pausiert { background: transparent; box-shadow: inset 0 0 0 1px var(--rand); }
+
+@media (max-width: 1440px) {
+  .pw-serien-tagzeile { grid-template-columns: 124px minmax(0, 1fr); }
+}
+@media (max-width: 1240px) {
+  .pw-serien-spalten > .pw-serien-tage { padding-bottom: var(--a5); }
+}
+
+/* ═══ Kalender eines Boards ═══════════════════════════════════════════════════════════════════════════════ */
+
+.pw-kalender-rollfeld { flex: 1; min-height: 0; overflow-y: auto; overflow-x: clip; }
+.pw-kalender-zeigen i.art { font-size: 12px; color: var(--text-3); }
+.pw-kalender-zeigen.aus { color: var(--text-3); }
+
+/* Monat: Kalenderwoche links, sieben Tage; Kopf bleibt beim Rollen stehen */
+.pw-kalender-monat { display: grid; grid-template-columns: 52px repeat(7, minmax(0, 1fr)); gap: 4px; container: kalender / inline-size; }
+.pw-kalender-monat .spaltenkopf { position: sticky; top: 0; z-index: 2; background: var(--hg); padding: 4px var(--a2); font-size: var(--marke); font-weight: 700;
+                           letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+.pw-kalender-monat .spaltenkopf.kw { padding-left: 0; padding-right: 0; text-align: center; letter-spacing: 0.04em; }
+.pw-kalender-monat .kw:not(.spaltenkopf) { padding-top: var(--a2); text-align: center; font-size: var(--marke); font-weight: 600; color: var(--text-3); }
+.pw-kalender-tag { min-height: 132px; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 6px; border-radius: var(--r2);
+                   background-color: var(--bereich); border: 1px solid transparent; }
+.pw-kalender-tag.wochenende { background-color: var(--pw-planung-wochenende); }
+.pw-kalender-tag.feiertag { background-color: var(--pw-planung-feiertag-flaeche); }
+.pw-kalender-tag.anderer { background-color: color-mix(in srgb, var(--bereich) 45%, var(--hg)); }
+.pw-kalender-tag.anderer .nummer { color: var(--text-3); }
+.pw-kalender-tag.heute { border-color: color-mix(in srgb, var(--akzent-flaeche) 65%, transparent); }
+.pw-kalender-tag.ziel { border-color: color-mix(in srgb, var(--akzent-flaeche) 70%, transparent); border-style: dashed;
+                        background-color: color-mix(in srgb, var(--akzent-flaeche) 8%, var(--bereich)); }
+.pw-kalender-tag .tagkopf { display: flex; align-items: center; gap: 6px; min-width: 0; flex-wrap: wrap; min-height: 22px; }
+.pw-kalender-tag .nummer { font-weight: 700; font-size: var(--klein); color: var(--text); }
+.pw-kalender .heute-wort { font-size: var(--marke); font-weight: 700; color: var(--auf-akzent); background: var(--akzent-flaeche); padding: 0 6px; border-radius: var(--r1); }
+.pw-kalender .feiertag-name { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; font-size: var(--marke); font-weight: 600;
+                              color: var(--honig); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-kalender .feiertag-name i { font-size: 11px; flex: none; }
+.pw-kalender-tag .abwesend { display: flex; flex-wrap: wrap; gap: 3px; }
+.pw-kalender-tag .serienmarken { display: flex; flex-wrap: wrap; gap: 3px; min-width: 0; }
+.pw-kalender-serienmarke { display: inline-flex; align-items: center; gap: 4px; height: 22px; max-width: 100%; min-width: 0; padding: 0 6px; overflow: hidden;
+                           border-radius: var(--r1); border: 1px solid var(--rand-stark); color: var(--text-2); font-family: var(--schrift-zahl);
+                           font-size: var(--marke); font-weight: 600; white-space: nowrap; }
+.pw-kalender-serienmarke span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pw-kalender-serienmarke i { font-size: 10px; color: var(--text-3); flex: none; }
+.pw-kalender-serienmarke:hover { background: var(--karte); color: var(--text); }
+.pw-kalender-serienmarke.geplant { border-style: dashed; }
+
+/* Einträge: Karte (Spaltenfarbe, Schlüssel, Titel), Termin, Serientag; nie Farbe allein */
+.pw-kalender-eintrag { display: flex; align-items: center; gap: 5px; flex: none; min-width: 0; height: 26px; padding: 0 6px; border-radius: var(--r1);
+                       background: var(--karte); color: var(--text); font-size: var(--marke); font-weight: 500; white-space: nowrap; overflow: hidden;
+                       border: 1px solid transparent; }
+.pw-kalender-eintrag .schluessel { font-family: var(--schrift-zahl); font-weight: 600; color: var(--text-2); flex: none; }
+.pw-kalender-eintrag .titel { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pw-kalender-eintrag .zeichen { font-size: 11px; flex: none; color: var(--text-3); }
+.pw-kalender-eintrag .pw-farbpunkt { width: 8px; height: 8px; }
+.pw-kalender-eintrag.ist-karte { cursor: grab; }
+.pw-kalender-eintrag.ist-karte:hover { background: var(--karte-2); }
+.pw-kalender-eintrag.erledigt .titel { text-decoration: line-through; color: var(--text-2); }
+.pw-kalender-eintrag.erledigt .zeichen { color: var(--gut); }
+.pw-kalender-eintrag.ueberfaellig { border-color: color-mix(in srgb, var(--gefahr) 55%, transparent); }
+.pw-kalender-eintrag.ueberfaellig .zeichen { color: var(--gefahr); }
+.pw-kalender-eintrag.termin { background: color-mix(in srgb, var(--info) 14%, var(--karte)); }
+.pw-kalender-eintrag.termin .zeichen { color: var(--info); }
+.pw-kalender-eintrag.serie { background: transparent; border-color: var(--rand-stark); }
+.pw-kalender-eintrag.serie:hover { background: var(--karte); }
+.pw-kalender-eintrag.serie.geplant { border-style: dashed; }
+.pw-kalender-eintrag.serie.gezaehlt .titel, .pw-kalender-eintrag.serie.wartet .titel { color: var(--text-2); }
+.pw-kalender-mehr { align-self: flex-start; border: 0; background: transparent; color: var(--text-2); font-size: var(--marke); font-weight: 600; cursor: pointer;
+                    padding: 2px 6px; border-radius: var(--r1); }
+.pw-kalender-mehr:hover { background: var(--karte); color: var(--text); }
+.pw-kalender-abwesend { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 6px; border-radius: var(--r1); min-width: 0;
+                        font-family: var(--schrift-zahl); font-size: var(--marke); font-weight: 700; white-space: nowrap; overflow: hidden;
+                        background: color-mix(in srgb, var(--f, var(--stahl)) var(--toenung), transparent); color: var(--f, var(--stahl)); }
+.pw-kalender-abwesend i { font-size: 11px; flex: none; }
+.pw-kalender-abwesend.lang { font-family: var(--schrift); align-self: stretch; }
+/* schmale Tage: der Titel trägt die Karte, ihr Schlüssel steht im Hinweis */
+@container kalender (max-width: 860px) {
+  .pw-kalender-eintrag.ist-karte .schluessel { display: none; }
+  .pw-kalender-tag { padding: 4px; }
+}
+
+/* Woche: ganztägig oben, darunter das Stundenraster */
+.pw-kalender-woche { display: grid; grid-template-columns: 56px repeat(7, minmax(0, 1fr)); gap: 0 4px; }
+.pw-kalender-woche .spaltenkopf { position: sticky; top: 0; z-index: 3; background: var(--hg); padding: 4px 4px 6px; }
+.pw-kalender-woche .tagname { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; font-size: var(--klein); }
+.pw-kalender-woche .tagname b { color: var(--text); }
+.pw-kalender-woche .tagname.wochenende b { color: var(--text-2); }
+.pw-kalender-woche .ganztags-name { font-size: var(--marke); color: var(--text-3); text-align: right; padding: 8px 6px 0 0; }
+.pw-kalender-woche .ganztags { min-height: 72px; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 4px;
+                               background-color: var(--bereich); border-radius: var(--r2) var(--r2) 0 0; border: 1px solid transparent; }
+.pw-kalender-woche .ganztags.wochenende { background-color: var(--pw-planung-wochenende); }
+.pw-kalender-woche .ganztags.feiertag, .pw-kalender-woche .raster.feiertag { background-color: var(--pw-planung-feiertag-flaeche); }
+.pw-kalender-woche .stunden { display: flex; flex-direction: column; padding-top: 2px; }
+.pw-kalender-woche .stunden span { height: var(--stunde); font-size: var(--marke); color: var(--text-3); text-align: right; padding-right: 6px; transform: translateY(-0.55em); }
+.pw-kalender-woche .raster { position: relative; margin-top: 2px; min-width: 0; border-radius: 0 0 var(--r2) var(--r2); border: 1px solid transparent;
+                             background-color: var(--bereich);
+                             background-image: repeating-linear-gradient(to bottom, var(--diagrammlinie) 0 1px, transparent 1px var(--stunde)); }
+.pw-kalender-woche .raster.wochenende { background-color: var(--pw-planung-wochenende); }
+.pw-kalender-woche .ziel { border-color: color-mix(in srgb, var(--akzent-flaeche) 70%, transparent); border-style: dashed; }
+.pw-kalender-block { position: absolute; z-index: 1; display: flex; flex-direction: column; padding: 3px 6px; border-radius: var(--r1); overflow: hidden;
+                     font-size: var(--marke); line-height: 1.25; color: var(--text); }
+.pw-kalender-block.termin { background: color-mix(in srgb, var(--info) 20%, var(--karte)); border: 1px solid color-mix(in srgb, var(--info) 50%, transparent); }
+.pw-kalender-block.serie { background: var(--karte); border: 1px solid var(--rand-stark); }
+.pw-kalender-block.serie:hover { background: var(--karte-2); }
+.pw-kalender-block.serie.geplant { border-style: dashed; }
+.pw-kalender-block .zahl { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: var(--text-2); white-space: nowrap; }
+.pw-kalender-block .zahl i { font-size: 10px; }
+.pw-kalender-block .titel { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-kalender-block .ort { display: inline-flex; align-items: center; gap: 4px; color: var(--text-2); white-space: nowrap; }
+.pw-kalender-block.kurz { flex-direction: row; align-items: center; gap: 6px; padding-top: 0; padding-bottom: 0; }
+.pw-kalender-block.kurz .ort { display: none; }
+/* Karten und Termine tragen ihren Titel auf bis zu zwei Zeilen */
+.pw-kalender-eintrag.ist-karte, .pw-kalender-tag .pw-kalender-eintrag.termin { height: auto; min-height: 26px; align-items: flex-start;
+                                                                            padding: 4px 6px; white-space: normal; line-height: 1.3; }
+.pw-kalender-eintrag.ist-karte .titel, .pw-kalender-tag .pw-kalender-eintrag.termin .titel {
+  flex: 1 1 0; overflow-wrap: break-word; hyphens: auto; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; }
+.pw-kalender-tag .pw-kalender-eintrag.termin { flex-wrap: wrap; }
+.pw-kalender-tag .pw-kalender-eintrag.termin .titel { flex-basis: 100%; -webkit-line-clamp: 1; line-clamp: 1; }
+.pw-kalender-eintrag.ist-karte .pw-farbpunkt { margin-top: 5px; }
+.pw-kalender-eintrag.ist-karte .zeichen, .pw-kalender-tag .pw-kalender-eintrag.termin .zeichen { margin-top: 3px; }
+.pw-kalender-woche .jetzt { position: absolute; left: -3px; right: -3px; height: 2px; background: var(--akzent-flaeche); z-index: 2; }
+.pw-kalender-woche .jetzt::before { content: ""; position: absolute; left: -4px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--akzent-flaeche); }
+
+/* ═══ Zeitachse eines Boards ══════════════════════════════════════════════════════════════════════════════ */
+
+/* eigene Fläche, rollt in beide Richtungen; Kopf oben und Namen links bleiben stehen */
+.pw-zeitachse-raum { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; border-radius: var(--r3); background: var(--bereich); }
+.pw-zeitachse-flaeche { position: relative; min-height: 100%; }
+.pw-zeitachse-kopf { position: sticky; top: 0; z-index: 4; display: flex; background: var(--bereich); box-shadow: 0 1px 0 var(--rand); }
+.pw-zeitachse-kopf .ecke { position: sticky; left: 0; z-index: 5; width: var(--name); flex: none; display: flex; align-items: flex-end;
+                           padding: var(--a2) var(--a3); background: var(--bereich); font-size: var(--marke); font-weight: 700; letter-spacing: 0.08em;
+                           text-transform: uppercase; color: var(--text-3); }
+.pw-zeitachse-kopf .skala { flex: none; }
+.pw-zeitachse-kopf .reihe { position: relative; height: 26px; }
+.pw-zeitachse-kopf .reihe span { position: absolute; top: 0; height: 100%; display: flex; align-items: center; padding: 0 6px; overflow: hidden; white-space: nowrap;
+                                 font-size: var(--marke); color: var(--text-2);
+                                 background-image: linear-gradient(to right, var(--diagrammlinie) 0 1px, transparent 1px); }
+.pw-zeitachse-kopf .reihe:first-child span { font-weight: 700; color: var(--text); }
+.pw-zeitachse-kopf .reihe.tage span { justify-content: center; padding: 0; background-image: none; }
+.pw-zeitachse-kopf .reihe.tage span.wochenende { background-color: var(--pw-planung-wochenende); color: var(--text-2); }
+.pw-zeitachse-kopf .reihe.tage span.feiertag { background-image: var(--pw-planung-feiertag); color: var(--honig); font-weight: 700; }
+.pw-zeitachse-kopf .reihe.tage span.heute { background: var(--akzent-flaeche); color: var(--auf-akzent); font-weight: 700; border-radius: var(--r1); }
+
+.pw-zeitachse-koerper { position: relative; padding-bottom: var(--a4); outline: 0; }
+.pw-zeitachse-koerper .streifen { position: absolute; top: 0; bottom: 0; left: var(--name); right: 0; z-index: 0; }
+.pw-zeitachse-koerper .streifen span { position: absolute; top: 0; bottom: 0; background-color: var(--pw-planung-wochenende); }
+.pw-zeitachse-koerper .streifen span.feiertag { background-image: var(--pw-planung-feiertag); }
+.pw-zeitachse-koerper .streifen span.ziel { background: color-mix(in srgb, var(--akzent-flaeche) 22%, transparent); }
+.pw-zeitachse-koerper .streifen .heute-linie { width: 2px; background: var(--akzent-flaeche); z-index: 1; }
+
+.pw-zeitachse-gruppe, .pw-zeitachse-zeile { position: relative; display: flex; min-height: 40px; }
+.pw-zeitachse-gruppe { margin-top: var(--a2); }
+.pw-zeitachse-gruppe > .name, .pw-zeitachse-zeile > .name { position: sticky; left: 0; z-index: 2; width: var(--name); flex: none; min-width: 0;
+                                                            display: flex; align-items: center; gap: var(--a2); padding: 0 var(--a3); background: var(--bereich); }
+.pw-zeitachse-gruppe > .name b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-zeitachse-zeile > .name { color: var(--text); font-size: var(--klein); padding-left: calc(var(--a3) + 8px); }
+.pw-zeitachse-zeile > .name:hover { background: var(--karte); }
+.pw-zeitachse-zeile > .name .titel { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-zeitachse-zeile > .name .pw-person { width: 24px; height: 24px; box-shadow: none; }
+.pw-zeitachse-zeile.ohne-karten > .name { font-size: var(--marke); color: var(--text-3); }
+.pw-zeitachse-gruppe > .spur, .pw-zeitachse-zeile > .spur { position: relative; flex: 1; min-width: 0; }
+.pw-zeitachse-gruppe .abwesend { position: absolute; top: 6px; height: 28px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: var(--r2);
+                                 background: var(--pw-planung-abwesend); color: var(--text-2); font-size: var(--marke); font-weight: 700; overflow: hidden; white-space: nowrap; }
+.pw-zeitachse-zeile .abwesend.leise { position: absolute; top: 0; bottom: 0; background: var(--pw-planung-abwesend); opacity: 0.6; z-index: 0; }
+.pw-zeitachse-beschriftung { position: absolute; top: 11px; z-index: 1; font-size: var(--marke); font-weight: 600; color: var(--text-2); white-space: nowrap; pointer-events: none; }
+.pw-zeitachse-beschriftung.ueberfaellig { color: var(--gefahr); }
+.pw-zeitachse-zeile .ausserhalb { position: absolute; top: 9px; left: 6px; display: inline-flex; align-items: center; gap: 6px; font-size: var(--marke); color: var(--text-2); }
+.pw-zeitachse-zeile .ausserhalb.rechts { left: auto; right: 6px; }
+
+/* Balken von Start bis Fällig in der Farbe der Spalte; Ränder ändern Start und Fällig */
+.pw-zeitachse-balken { position: absolute; top: 6px; height: 28px; z-index: 1; display: flex; align-items: center; gap: 5px; padding: 0 10px; overflow: hidden;
+                       border-radius: var(--r2); font-size: var(--marke); color: var(--text); cursor: grab; touch-action: none; user-select: none;
+                       background: color-mix(in srgb, var(--f, var(--stahl)) 28%, var(--karte));
+                       border: 1px solid color-mix(in srgb, var(--f, var(--stahl)) 65%, transparent); }
+.pw-zeitachse-balken:hover { border-color: var(--f, var(--stahl)); }
+.pw-zeitachse-balken.gesperrt { cursor: pointer; }
+.pw-zeitachse-balken.gezogen { cursor: grabbing; z-index: 3; box-shadow: var(--schatten-schwebend); }
+.pw-zeitachse-balken.nur-faellig { border-style: dashed; background: color-mix(in srgb, var(--f, var(--stahl)) 14%, var(--karte)); }
+.pw-zeitachse-balken.erledigt { background: var(--karte-2); border-color: var(--rand-stark); color: var(--text-2); }
+.pw-zeitachse-balken.erledigt .zeichen { color: var(--gut); }
+.pw-zeitachse-balken.ueberfaellig { border-color: var(--gefahr); }
+.pw-zeitachse-balken.ueberfaellig .zeichen, .pw-zeitachse-balken.ueberfaellig .text { color: var(--gefahr); }
+.pw-zeitachse-balken.abgeschnitten-links { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.pw-zeitachse-balken.abgeschnitten-rechts { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.pw-zeitachse-balken .zeichen { font-size: 11px; flex: none; }
+.pw-zeitachse-balken .warnzeichen { font-size: 12px; flex: none; color: var(--warn); }
+.pw-zeitachse-balken .text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.pw-zeitachse-balken .rand { position: absolute; top: 0; bottom: 0; width: 9px; cursor: ew-resize; }
+.pw-zeitachse-balken .rand.start { left: 0; }
+.pw-zeitachse-balken .rand.ende { right: 0; }
+.pw-zeitachse-balken .rand::after { content: ""; position: absolute; top: 7px; bottom: 7px; left: 3px; width: 3px; border-radius: 2px;
+                                    background: var(--f, var(--stahl)); opacity: 0; transition: opacity var(--schnell); }
+.pw-zeitachse-balken:hover .rand::after, .pw-zeitachse-balken:focus-visible .rand::after { opacity: 1; }
+.pw-zeitachse-flaeche.monat .pw-zeitachse-balken { padding: 0 6px; }
+@media (max-width: 1240px) {
+  .pw-zeitachse-zeile > .name .pw-personen { display: none; }
+}

@@ -1,0 +1,338 @@
+/* Telefonansicht der Pinnwand: eigener, reduzierter Aufbau (Heute, Boards, Zeit, Erfassen), keine verkleinerte
+   Rechneransicht. Nur Marken des Appkerns; Klassen mit pw-tel vorne. Berührflächen ab 44 Pixeln, Folgenreiches per
+   Halten mit füllendem Ring, nichts braucht Überfahren mit der Maus. */
+
+/* ═══ Schale: Kopf, Leiste, Rollfeld, Meldung, Laufleiste, Fußleiste ═════════════════════════════════════════ */
+
+/* Sichere Ränder: am Gerät aus env() (Statusleiste oben, Wischleiste unten; ohne Angabe des Geräts 0). Im Rahmen der
+   Entwürfe (breites Fenster) gelten die eines gängigen Telefons mit 390 x 844 Punkten, damit der Entwurf zeigt, was frei bleibt. */
+.pw-tel {
+  --pw-tel-oben: env(safe-area-inset-top, 0px);
+  --pw-tel-unten: env(safe-area-inset-bottom, 0px);
+  flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; overflow: hidden;
+  background: var(--hg); color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+@media (min-width: 601px) {
+  .pw-tel { --pw-tel-oben: 47px; --pw-tel-unten: 34px; }
+}
+
+/* Berührflächen am Telefon: Knöpfe, Chips und Eingaben des Leitstands in Telefonhöhe */
+.pw-tel .knopf { height: 48px; }
+.pw-tel .knopf.symbol { width: 48px; }
+.pw-tel .chip { height: 44px; }
+.pw-tel .eingabe { height: 48px; width: 100%; }
+.pw-tel textarea.eingabe { height: auto; min-height: 48px; }
+
+.pw-tel-kopf {
+  flex: none; display: flex; align-items: center; gap: var(--a1);
+  min-height: calc(var(--kopf-hoehe) + var(--pw-tel-oben)); padding: var(--pw-tel-oben) var(--a1) 0 var(--a4);
+  background: var(--leiste); border-bottom: 1px solid var(--rand);
+}
+.pw-tel-kopf .titel { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+.pw-tel-kopf.mit-zurueck { padding-left: var(--a1); }
+.pw-tel-kopf h1 { font-size: var(--titel); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-tel-kopf .unter { font-size: var(--klein); color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-tel-knopf {
+  position: relative; width: 48px; height: 48px; flex: none; display: grid; place-items: center; border-radius: var(--r2);
+  color: var(--text-2); font-size: var(--titel);
+}
+.pw-tel-knopf:active { background: var(--karte-2); }
+.pw-tel-glocke .zaehler { position: absolute; top: 3px; right: 0; }
+
+.pw-tel-leiste { flex: none; background: var(--hg); border-bottom: 1px solid var(--rand); }
+
+.pw-tel-inhalt {
+  flex: 1; min-height: 0; overflow-y: auto; overflow-x: clip; overscroll-behavior: contain;
+  padding: var(--a4) var(--a4) var(--a5); display: flex; flex-direction: column; gap: var(--a5);
+}
+/* im Rollfeld behält jeder Teil seine Höhe, nur das Rollfeld selbst rollt */
+.pw-tel-inhalt > *, .pw-tel-abschnitt > *, .pw-tel-wischfeld > *, .pw-tel-liste > * { flex-shrink: 0; }
+
+.pw-tel-unten { flex: none; padding: var(--a2) var(--a4); background: var(--hg); border-top: 1px solid var(--rand); }
+.pw-tel-aktionen { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: var(--a2); }
+.pw-tel-aktionen .knopf { height: 52px; font-size: var(--gross); }
+
+.pw-tel-meldung {
+  flex: none; display: flex; align-items: center; gap: var(--a2); margin: 0 var(--a2) var(--a2); padding: var(--a1) var(--a1) var(--a1) var(--a3);
+  border-radius: var(--r3); background: var(--karte-2); border: 1px solid var(--rand-stark); box-shadow: var(--schatten-schwebend);
+  font-size: var(--klein);
+}
+.pw-tel-meldung > i { color: var(--info); }
+.pw-tel-meldung > span { flex: 1; min-width: 0; padding: var(--a1) 0; }
+.pw-tel-meldung .knopf.ohne { padding: 0 var(--a3); color: var(--text); }
+
+/* Laufleiste des eigenen Timers (wie die Leiste oben am Rechner, M-82): immer erreichbar, ein Tippen führt zu Zeit */
+.pw-tel-laufleiste {
+  flex: none; display: flex; align-items: center; gap: var(--a2); margin: 0 var(--a2) var(--a2); padding: var(--a1) var(--a1) var(--a1) var(--a3);
+  border-radius: var(--r3); background: color-mix(in srgb, var(--akzent-flaeche) 14%, var(--hg));
+  border: 1px solid color-mix(in srgb, var(--akzent-flaeche) 45%, transparent);
+}
+.pw-tel-laufleiste.pausiert { background: var(--bereich); border-color: var(--rand-stark); }
+.pw-tel-laufleiste .was { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; color: var(--text); padding: 2px 0; }
+.pw-tel-laufleiste .stand { display: flex; align-items: center; gap: var(--a2); }
+.pw-tel-laufleiste .stand .zahl { font-weight: 700; }
+.pw-tel-laufleiste .laufzeit { color: var(--akzent); }
+.pw-tel-laufleiste .karte-titel { font-size: var(--klein); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Fußleiste mit vier Reitern; die Leiste reicht bis an den unteren Rand, die Reiter stehen über der Wischleiste */
+.pw-tel-fuss {
+  flex: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: var(--a1) var(--a1) var(--pw-tel-unten);
+  background: var(--leiste); border-top: 1px solid var(--rand);
+}
+.pw-tel-fuss a {
+  min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  color: var(--text-2); font-size: var(--marke); font-weight: 600; border-radius: var(--r2);
+}
+.pw-tel-fuss .symbol { width: 52px; height: 30px; display: grid; place-items: center; border-radius: var(--r3); font-size: var(--titel); color: var(--text-3); }
+.pw-tel-fuss a.aktiv { color: var(--text); }
+.pw-tel-fuss a.aktiv .symbol { background: var(--karte-2); color: var(--akzent); }
+.pw-tel-fuss a:active .symbol { background: var(--karte-3); }
+
+/* ═══ Gemeinsame Teile der Ansichten ════════════════════════════════════════════════════════════════════════ */
+
+.pw-tel-abschnitt { display: flex; flex-direction: column; gap: var(--a2); min-width: 0; }
+.pw-tel-abschnitt > .etikett { display: flex; align-items: center; gap: var(--a2); }
+.pw-tel-abschnitt > .etikett .zaehler { height: 22px; min-width: 24px; }
+.pw-tel-breit { width: 100%; }
+.pw-tel-notiz { font-size: var(--klein); color: var(--text-3); }
+.pw-tel .leer { padding: var(--a6) var(--a4); }
+
+/* Karte in Listen */
+.pw-tel-karte {
+  display: flex; align-items: center; gap: var(--a3); min-height: 72px; padding: var(--a2) var(--a2) var(--a2) var(--a3);
+  background: var(--karte); border-radius: var(--r3); border: 1px solid transparent; box-shadow: 0 1px 0 var(--rand);
+  transition: background var(--schnell), border-color var(--schnell);
+}
+.pw-tel-karte.idee { background: color-mix(in srgb, var(--flieder) 7%, var(--karte)); }
+.pw-tel-karte.haelt { background: color-mix(in srgb, var(--gut) 9%, var(--karte)); border-color: color-mix(in srgb, var(--gut) 45%, transparent); }
+.pw-tel-karte .inhalt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; color: var(--text); padding: var(--a1) 0; }
+.pw-tel-karte .inhalt:active { opacity: 0.8; }
+.pw-tel-karte .ort { display: flex; align-items: center; gap: var(--a2); min-width: 0; font-size: var(--marke); color: var(--text-3); }
+.pw-tel-karte .ort .spalte { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-tel-karte .titel { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.pw-tel-karte .angaben { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.pw-tel-karte .angaben .pw-personen { margin-left: auto; }
+.pw-tel-karte .haltetext { display: flex; align-items: center; gap: var(--a2); font-size: var(--klein); font-weight: 600; color: var(--gut); min-height: 26px; }
+.pw-tel-idee, .pw-tel-idee i { color: var(--flieder); }
+.pw-tel-erledigt {
+  width: 48px; height: 48px; flex: none; display: grid; place-items: center; border-radius: 50%; font-size: var(--titel);
+  background: color-mix(in srgb, var(--gut) var(--toenung), transparent); color: var(--gut);
+}
+
+/* Timer an der Karte: Abspielen; läuft er, Bernstein mit Zeit */
+.pw-tel-timer {
+  min-width: 48px; height: 48px; flex: none; padding: 0 var(--a2); display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border-radius: var(--r2); border: 1px solid var(--rand-stark); background: var(--karte-2); color: var(--text-2); cursor: pointer;
+  font-size: var(--klein); font-weight: 600;
+}
+.pw-tel-timer:active { background: var(--karte-3); }
+.pw-tel-timer.laeuft { background: var(--akzent-flaeche); color: var(--auf-akzent); border-color: transparent; }
+.pw-tel-timer.fremd { background: color-mix(in srgb, var(--akzent-flaeche) var(--toenung), transparent); color: var(--akzent); border-color: transparent; cursor: default; }
+
+/* Ring zum Halten: füllt sich in Grün, erst voll gilt es */
+.pw-tel-halten {
+  position: relative; width: 48px; height: 48px; flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: var(--karte-2); color: var(--text-3); font-size: var(--gross); cursor: pointer;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+.pw-tel-halten svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); pointer-events: none; }
+.pw-tel-halten circle { fill: none; stroke-width: 3.5; }
+.pw-tel-halten .spur { stroke: var(--rand-stark); }
+.pw-tel-halten .fuellung { stroke: var(--gut); stroke-linecap: round; }
+.pw-tel-halten i { position: relative; }
+.pw-tel-halten.haelt, .pw-tel-halten.voll { color: var(--gut); background: color-mix(in srgb, var(--gut) 12%, var(--karte)); }
+
+/* Zeilen mit Text und Knopf (Zuletzt genutzt) */
+.pw-tel-zeile { display: flex; align-items: center; gap: var(--a3); min-height: 64px; padding: var(--a2); background: var(--karte); border-radius: var(--r3); }
+.pw-tel-zeile .text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; color: var(--text); }
+.pw-tel-zeile .titel { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.pw-tel-zeile .angaben { display: flex; align-items: center; gap: var(--a1); flex-wrap: wrap; font-size: var(--klein); color: var(--text-3); }
+
+/* Auswahl aus wenigen (Board beim Erfassen), Umschalter Arbeit oder Idee, Schnellwahl-Chips */
+.pw-tel-wahl { display: flex; flex-wrap: wrap; gap: var(--a2); }
+.pw-tel-wahl button, .pw-tel-umschalter button {
+  min-height: 48px; padding: 0 var(--a3); display: inline-flex; align-items: center; justify-content: center; gap: var(--a2);
+  border-radius: var(--r2); border: 1px solid var(--rand); background: var(--bereich); color: var(--text-2);
+  font-size: var(--klein); font-weight: 600; cursor: pointer;
+}
+.pw-tel-wahl button.an, .pw-tel-umschalter button.an { background: var(--karte); border-color: var(--rand-stark); color: var(--text); box-shadow: 0 1px 2px var(--schattenfarbe); }
+.pw-tel-wahl button.an i { color: var(--gut); }
+.pw-tel-umschalter { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--a2); }
+.pw-tel-umschalter button.an.idee, .pw-tel-umschalter button.an.idee i { color: var(--flieder); }
+.pw-tel-chips { display: flex; flex-wrap: wrap; gap: var(--a2); }
+.pw-tel-chips .chip[aria-pressed="true"] { background: var(--karte-3); border-color: var(--rand-stark); color: var(--text); }
+
+/* ═══ Heute ═════════════════════════════════════════════════════════════════════════════════════════════════ */
+
+.pw-tel-termin { display: flex; align-items: flex-start; gap: var(--a3); min-height: 64px; padding: var(--a3); background: var(--karte); border-radius: var(--r3); }
+.pw-tel-termin .wann { width: 72px; flex: none; display: flex; flex-direction: column; line-height: 1.25; }
+.pw-tel-termin .wann .tag { font-size: var(--marke); font-weight: 600; color: var(--text-3); }
+.pw-tel-termin .wann .zahl { font-weight: 700; }
+.pw-tel-termin .was { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.pw-tel-termin .titel { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.pw-tel-termin .angaben { font-size: var(--klein); color: var(--text-3); overflow-wrap: anywhere; }
+.pw-tel-termin .angaben .pw-farbpunkt { margin-right: 6px; vertical-align: 1px; }
+
+/* ═══ Boards und Board ══════════════════════════════════════════════════════════════════════════════════════ */
+
+.pw-tel-boardzeile { display: flex; align-items: center; gap: var(--a3); min-height: 68px; padding: var(--a2) var(--a3); background: var(--karte); border-radius: var(--r3); color: var(--text); }
+.pw-tel-boardzeile .kuerzel {
+  min-width: 52px; height: 36px; padding: 0 6px; display: grid; place-items: center; border-radius: var(--r2); flex: none;
+  font-family: var(--schrift-zahl); font-size: var(--marke); font-weight: 700; letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--f, var(--stahl)) var(--toenung), transparent); color: var(--f, var(--stahl));
+}
+.pw-tel-boardzeile .text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pw-tel-boardzeile .text b { font-weight: 600; overflow-wrap: anywhere; }
+.pw-tel-boardzeile .angaben { font-size: var(--klein); color: var(--text-3); }
+.pw-tel-boardzeile > i, .pw-tel-hinweis > i { color: var(--text-3); }
+
+/* Spalten als Reiter: eigenes waagerechtes Rollfeld, die Seite rollt nie seitlich */
+.pw-tel-spalten {
+  display: flex; gap: var(--a1); overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: none;
+  padding: var(--a2) var(--a3);
+}
+.pw-tel-spalten::-webkit-scrollbar { display: none; }
+.pw-tel-spalten button {
+  flex: none; min-height: 44px; padding: 0 var(--a3); display: inline-flex; align-items: center; gap: var(--a2);
+  border-radius: var(--r2); border: 1px solid transparent; background: transparent; color: var(--text-2);
+  font-size: var(--klein); font-weight: 600; white-space: nowrap; cursor: pointer;
+}
+.pw-tel-spalten button.aktiv { background: var(--bereich); border-color: var(--rand-stark); color: var(--text); }
+.pw-tel-spalten .zaehler { height: 22px; min-width: 26px; }
+.pw-tel-wischfeld { flex: 1 0 auto; display: flex; flex-direction: column; gap: var(--a2); touch-action: pan-y; }
+.pw-tel-fenster { display: flex; align-items: center; gap: var(--a2); font-size: var(--klein); }
+.pw-tel-fenster i { color: var(--gut); }
+.pw-tel-wischfeld > .knopf { margin-top: var(--a2); }
+
+/* ═══ Karte im Detail ═══════════════════════════════════════════════════════════════════════════════════════ */
+
+.pw-tel-kopfblock { display: flex; flex-direction: column; gap: var(--a2); align-items: flex-start; }
+.pw-tel-kopfblock .labels { display: flex; flex-wrap: wrap; gap: 4px; }
+.pw-tel-kopfblock .hinweis { align-self: stretch; }
+.pw-tel-kartentitel { font-size: var(--titel); line-height: 1.25; overflow-wrap: anywhere; }
+.pw-tel-status { display: flex; align-items: center; gap: var(--a3); flex-wrap: wrap; font-size: var(--klein); }
+.pw-tel-status .zustand { height: 32px; font-size: var(--klein); }
+.pw-tel-angaben {
+  display: grid; grid-template-columns: minmax(0, 7.5em) minmax(0, 1fr); gap: var(--a2) var(--a3); align-items: center;
+  padding: var(--a3); background: var(--karte); border-radius: var(--r3);
+}
+.pw-tel-angaben .name { display: flex; align-items: center; gap: var(--a2); font-size: var(--klein); color: var(--text-2); }
+.pw-tel-angaben .name i { width: 16px; text-align: center; color: var(--text-3); }
+.pw-tel-angaben .wert { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; min-width: 0; min-height: 32px; overflow-wrap: anywhere; }
+.pw-tel-angaben .personen .person { display: inline-flex; align-items: center; gap: var(--a2); }
+
+/* Zeitblock: Karte im Detail und groß auf Zeit */
+.pw-tel-uhr { display: flex; flex-direction: column; gap: var(--a2); padding: var(--a3) var(--a4) var(--a4); background: var(--karte); border-radius: var(--r3); border: 1px solid transparent; }
+.pw-tel-uhr.laeuft { border-color: color-mix(in srgb, var(--akzent-flaeche) 45%, transparent); }
+.pw-tel-uhr .oben { display: flex; align-items: center; gap: var(--a3); flex-wrap: wrap; }
+.pw-tel-uhr .stand { font-size: var(--kennzahl); font-weight: 700; letter-spacing: 0.01em; margin-left: auto; }
+.pw-tel-uhr.gross .stand { margin-left: 0; font-size: var(--seitentitel); line-height: 1.1; }
+.pw-tel-uhr.laeuft .stand { color: var(--akzent); }
+.pw-tel-uhr .sitzung { margin-left: auto; font-size: var(--klein); color: var(--text-3); }
+.pw-tel-uhr .karte-zeile { color: var(--text); font-weight: 600; overflow-wrap: anywhere; }
+.pw-tel-uhr .schaetzung { font-size: var(--klein); color: var(--text-2); }
+.pw-tel-uhr .schaetzung.warnung { color: var(--warn); }
+.pw-tel-uhr .knoepfe { display: flex; flex-wrap: wrap; gap: var(--a2); margin-top: var(--a1); }
+.pw-tel-uhr .knoepfe .knopf:not(.ohne) { flex: 1 1 0; min-width: 0; }
+
+.pw-tel-punkt { display: flex; align-items: center; gap: var(--a3); min-height: 48px; padding: var(--a1) var(--a3); background: var(--karte); border-radius: var(--r2); cursor: pointer; }
+.pw-tel-punkt input[type="checkbox"] { width: 24px; height: 24px; flex: none; accent-color: var(--gut); margin: 0; }
+.pw-tel-punkt span { overflow-wrap: anywhere; }
+.pw-tel-punkt.erledigt span { color: var(--text-3); text-decoration: line-through; }
+
+.pw-tel-text { background: var(--karte); border-radius: var(--r3); padding: var(--a3) var(--a4); line-height: 1.55; overflow-wrap: anywhere; }
+.pw-tel-text p { margin: 0 0 var(--a2); }
+.pw-tel-text p:last-child { margin-bottom: 0; }
+.pw-tel-text ul { margin: 0 0 var(--a2); padding-left: 1.2em; }
+
+.pw-tel-kommentar { display: flex; gap: var(--a3); align-items: flex-start; }
+.pw-tel-kommentar .blase { flex: 1; min-width: 0; background: var(--karte); border-radius: var(--r3); padding: var(--a2) var(--a3); overflow-wrap: anywhere; }
+.pw-tel-kommentar .kopfzeile { display: flex; gap: var(--a2); align-items: baseline; flex-wrap: wrap; font-size: var(--klein); }
+.pw-tel-kommentar .kopfzeile span { color: var(--text-3); font-size: var(--marke); }
+.pw-tel-kommentar .erwaehnt { color: var(--akzent); font-weight: 600; }
+.pw-tel-schreiben { display: flex; flex-direction: column; gap: var(--a2); }
+.pw-tel-schreiben .knopf { align-self: flex-end; }
+
+/* Verschieben nach: Blatt von unten über einem Schleier */
+.pw-tel-schleier { position: absolute; inset: 0; z-index: 20; border: 0; padding: 0; background: var(--schleier); cursor: default; }
+.pw-tel-blatt {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 21; max-height: 82%; display: flex; flex-direction: column; gap: var(--a2);
+  padding: var(--a3) var(--a4) calc(var(--a4) + var(--pw-tel-unten)); background: var(--leiste);
+  border-radius: var(--r3) var(--r3) 0 0; box-shadow: var(--schatten-schwebend);
+}
+.pw-tel-blatt .kopfzeile { display: flex; align-items: center; gap: var(--a2); }
+.pw-tel-blatt .kopfzeile h2 { flex: 1; min-width: 0; }
+.pw-tel-blatt .karte-zeile { font-size: var(--klein); color: var(--text-2); overflow-wrap: anywhere; }
+.pw-tel-ziele { display: flex; flex-direction: column; gap: var(--a2); overflow-y: auto; min-height: 0; padding-bottom: var(--a1); }
+.pw-tel-ziel {
+  display: flex; align-items: center; gap: var(--a3); min-height: 60px; padding: var(--a2) var(--a3); width: 100%; text-align: left;
+  background: var(--karte); border: 1px solid transparent; border-radius: var(--r3); color: var(--text); font-weight: 600; cursor: pointer;
+}
+button.pw-tel-ziel:active { background: var(--karte-2); }
+.pw-tel-ziel .text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pw-tel-ziel .name { overflow-wrap: anywhere; }
+.pw-tel-ziel .erklaerung { display: flex; align-items: center; gap: 6px; font-size: var(--klein); font-weight: 500; color: var(--text-3); }
+.pw-tel-ziel .erklaerung.warnung, .pw-tel-ziel .erklaerung.warnung i { color: var(--warn); }
+.pw-tel-ziel > .fa-chevron-right { color: var(--text-3); }
+.pw-tel-ziel.jetzt { background: transparent; border-color: var(--rand-stark); cursor: default; }
+.pw-tel-ziel.jetzt .name { flex: 1; }
+.pw-tel-ziel.erledigen { border-color: color-mix(in srgb, var(--gut) 35%, transparent); }
+
+/* ═══ Zeit ══════════════════════════════════════════════════════════════════════════════════════════════════ */
+
+.pw-tel-formular { display: flex; flex-direction: column; gap: var(--a2); padding: var(--a3); background: var(--bereich); border-radius: var(--r3); }
+.pw-tel-formular .feld { display: grid; grid-template-columns: minmax(0, 4.5em) minmax(0, 1fr); align-items: center; gap: var(--a3); }
+.pw-tel-formular .feld .name { font-size: var(--klein); font-weight: 600; color: var(--text-2); }
+.pw-tel-formular .pw-tel-chips { padding-left: calc(4.5em + var(--a3)); }
+.pw-tel-formular .knopf { margin-top: var(--a1); }
+.pw-tel-vorschlaege { display: flex; flex-direction: column; gap: 2px; padding-left: calc(4.5em + var(--a3)); }
+.pw-tel-vorschlaege button {
+  min-height: 44px; padding: var(--a1) var(--a3); text-align: left; border: 1px solid var(--rand); border-radius: var(--r2);
+  background: var(--karte); color: var(--text); cursor: pointer; overflow-wrap: anywhere;
+}
+.pw-tel-stand { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--a2); }
+.pw-tel-stand .kennzahl { min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: var(--a2) var(--a3) var(--a3); }
+.pw-tel-stand .kennzahl small { font-family: var(--schrift-zahl); margin-top: 0; }
+.pw-tel-stand .balken { margin-top: var(--a1); }
+.pw-tel-tage { display: flex; flex-direction: column; gap: 2px; }
+.pw-tel-tage .tag { display: grid; grid-template-columns: minmax(0, 1fr) auto 4.5em; gap: var(--a3); align-items: center; min-height: 40px; padding: 0 var(--a3); background: var(--karte); border-radius: var(--r2); font-size: var(--klein); }
+.pw-tel-tage .tag > :last-child { text-align: right; }
+.pw-tel-tage .gut { color: var(--gut); }
+.pw-tel-tage .warnung { color: var(--warn); }
+
+/* ═══ Erfassen und Sprache ══════════════════════════════════════════════════════════════════════════════════ */
+
+.pw-tel-sprache { display: flex; flex-direction: column; gap: var(--a3); padding: var(--a4); background: var(--karte); border-radius: var(--r3);
+                  border: 1px solid color-mix(in srgb, var(--akzent-flaeche) 45%, transparent); }
+.pw-tel-sprache .kopfzeile { display: flex; align-items: center; gap: var(--a3); }
+.pw-tel-sprache .kopfzeile .zustand { height: 32px; font-size: var(--klein); }
+.pw-tel-sprache .dauer { margin-left: auto; font-size: var(--titel); font-weight: 700; color: var(--akzent); }
+.pw-tel-sprache .pegel { height: 64px; display: flex; align-items: center; gap: 3px; padding: 0 var(--a1); border-radius: var(--r2); background: var(--mulde); }
+.pw-tel-sprache .pegel span {
+  flex: 1 1 0; min-width: 0; height: calc(var(--h) * 80%); border-radius: 2px; background: var(--akzent-flaeche);
+  animation: pw-tel-pegel 0.9s ease-in-out infinite alternate; animation-delay: calc(var(--v) * -110ms);
+}
+@keyframes pw-tel-pegel { from { transform: scaleY(1); } to { transform: scaleY(0.35); } }
+.pw-tel-sprache .mitschrift { min-height: 132px; padding: var(--a3); border-radius: var(--r2); background: var(--bereich); font-size: var(--gross); line-height: 1.55; overflow-wrap: anywhere; }
+.pw-tel-sprache .vorlaeufig { color: var(--text-3); font-style: italic; }
+.pw-tel-sprache .quelle { display: flex; align-items: flex-start; gap: var(--a2); font-size: var(--klein); color: var(--text-3); }
+.pw-tel-sprache .quelle i { margin-top: 4px; }
+.pw-tel-sprache .knoepfe { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: var(--a2); }
+.pw-tel-sprache .knoepfe .knopf { height: 52px; }
+@media (prefers-reduced-motion: reduce) { .pw-tel-sprache .pegel span { animation: none; } }
+:root[data-bewegung="reduziert"] .pw-tel-sprache .pegel span { animation: none; }
+
+/* ═══ Hinweise ══════════════════════════════════════════════════════════════════════════════════════════════ */
+
+.pw-tel-alle { align-self: flex-end; margin-bottom: calc(-1 * var(--a3)); }
+.pw-tel-liste { display: flex; flex-direction: column; gap: var(--a2); }
+.pw-tel-hinweis { display: flex; align-items: center; gap: var(--a3); min-height: 68px; padding: var(--a2) var(--a3); background: var(--karte); border-radius: var(--r3); color: var(--text); border: 1px solid transparent; }
+.pw-tel-hinweis.neu { border-color: color-mix(in srgb, var(--info) 40%, transparent); }
+.pw-tel-hinweis .zeichen { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--karte-2); color: var(--text-2); }
+.pw-tel-hinweis.neu .zeichen { background: color-mix(in srgb, var(--info) var(--toenung), transparent); color: var(--info); }
+.pw-tel-hinweis .text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pw-tel-hinweis .kopfzeile { display: flex; align-items: center; gap: var(--a2); font-size: var(--klein); }
+.pw-tel-hinweis .kopfzeile .zeit { min-width: 0; font-size: var(--marke); }
+.pw-tel-hinweis .kopfzeile .zaehler { margin-left: auto; }
+.pw-tel-hinweis .was { overflow-wrap: anywhere; line-height: 1.35; }

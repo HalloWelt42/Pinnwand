@@ -1,0 +1,19 @@
+{
+  "anmeldung": false,
+  "seiten": [
+    { "name": "tel-heute", "pfad": "/heute?geraet=telefon" },
+    { "name": "tel-halten", "pfad": "/heute?entwurf=halten&geraet=telefon" },
+    { "name": "tel-boards", "pfad": "/boards?geraet=telefon" },
+    { "name": "tel-board", "pfad": "/board/prod?geraet=telefon",
+      "wechsel": [ { "klick": "[data-spalte=s-fertig]", "fest": [".pw-tel-kopf", ".pw-tel-spalten", ".pw-tel-fuss"] } ] },
+    { "name": "tel-karte", "pfad": "/board/prod/131?geraet=telefon" },
+    { "name": "tel-verschieben", "pfad": "/board/prod/131?entwurf=verschieben&geraet=telefon" },
+    { "name": "tel-karte-haus", "pfad": "/board/haus/61?geraet=telefon" },
+    { "name": "tel-zeiten", "pfad": "/zeiten?geraet=telefon",
+      "wechsel": [ { "klick": "Anhalten", "fest": [".pw-tel-kopf", ".pw-tel-fuss"] } ] },
+    { "name": "tel-erfassen", "pfad": "/erfassen?geraet=telefon",
+      "wechsel": [ { "klick": "Sprechen", "fest": [".pw-tel-kopf", ".pw-tel-fuss"] } ] },
+    { "name": "tel-sprache", "pfad": "/erfassen?entwurf=sprache&geraet=telefon" },
+    { "name": "tel-hinweise", "pfad": "/hinweise?geraet=telefon" }
+  ]
+}

@@ -292,7 +292,7 @@
 .pw-entwurfsleiste .knopf { height: calc(var(--fuss-hoehe) - 10px); }
 .pw-entwurfsleiste .knopf.symbol { width: calc(var(--fuss-hoehe) - 10px); }
 
-/* Telefonrahmen der Entwürfe: 390 x 844 wie ein iPhone; der Inhalt ist die eigene Telefonansicht */
+/* Telefonrahmen der Entwürfe: 390 x 844 wie ein gängiges Telefon; der Inhalt ist die eigene Telefonansicht */
 .pw-buehne { height: 100vh; overflow: auto; display: flex; gap: var(--a6); align-items: flex-start; justify-content: center; padding: var(--a6) var(--a4) 90px; flex-wrap: wrap; background: var(--mulde, var(--hg)); }
 .pw-telefon { width: 390px; height: 844px; flex: none; border-radius: 46px; overflow: hidden; position: relative; background: var(--hg);
               box-shadow: 0 0 0 10px var(--karte-3), var(--schatten-schwebend); display: flex; flex-direction: column; }

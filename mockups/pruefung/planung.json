@@ -1,0 +1,18 @@
+{
+  "anmeldung": false,
+  "seiten": [
+    { "name": "serien", "pfad": "/serien" },
+    { "name": "nachtrag", "pfad": "/serien?entwurf=nachtrag" },
+    { "name": "neu", "pfad": "/serien?entwurf=neu" },
+    { "name": "serie", "pfad": "/serien/se-runde" },
+    { "name": "aendern", "pfad": "/serien/se-runde?entwurf=aendern" },
+    { "name": "loeschen", "pfad": "/serien/se-runde?entwurf=loeschen" },
+    { "name": "pausiert", "pfad": "/serien/se-reinigung" },
+    { "name": "kalender", "pfad": "/board/prod/kalender" },
+    { "name": "woche", "pfad": "/board/prod/kalender?entwurf=woche" },
+    { "name": "zeitachse", "pfad": "/board/prod/zeitachse" },
+    { "name": "personen", "pfad": "/board/prod/zeitachse?entwurf=personen" },
+    { "name": "kalender-haus", "pfad": "/board/haus/kalender" },
+    { "name": "zeitachse-idee", "pfad": "/board/idee/zeitachse" }
+  ]
+}

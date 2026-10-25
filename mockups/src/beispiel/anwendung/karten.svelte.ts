@@ -5,10 +5,11 @@
 // eine Warnung, nie ein harter Halt. Was zählt, steht im Verlauf der Karte (verlauf.ts).
 
 import type { Karte, Kennung, Prioritaet, Spalte } from "../../modell";
+import { darf, verknuepfbar } from "../abfragen";
 import { HEUTE, ICH, JETZT } from "../daten";
 import { dauer } from "../format";
 import { board, gruppenmitglieder, karte, kartenDerSpalte, konto, stand } from "../stand.svelte";
-import { aendern } from "./meldung.svelte";
+import { aendern, melden } from "./meldung.svelte";
 import { timerBeenden } from "./timer.svelte";
 import { vermerken } from "./verlauf";
 
@@ -67,11 +68,19 @@ function hinein(ids: Kennung[], ziel: Spalte, platz?: number): string {
   return teile.join("; ");
 }
 
+/** Darf die angemeldete Person Karten dieses Boards verschieben? Sonst lehnt der Anwendungsfall mit Grund ab (wie der
+ *  Server; die Oberfläche sperrt das Ziehen schon vorher) */
+function verschiebenErlaubt(boardId: Kennung): boolean {
+  if (darf(board(boardId), "karten.verschieben")) return true;
+  melden("Verschieben abgelehnt: dir fehlt in diesem Board das Recht Karten verschieben");
+  return false;
+}
+
 /** Ergebnis des Ziehens in eine Spalte: ihre neue Reihenfolge (mit den neu hineingezogenen Karten) */
 export function ablegen(spalteId: Kennung, ids: Kennung[]): void {
   const k0 = karte(ids[0] ?? "");
   const ziel = k0 && board(k0.board).spalten.find((s) => s.id === spalteId);
-  if (!ziel) { stand.reihen[spalteId] = ids; return; }
+  if (!ziel || !verschiebenErlaubt(k0.board)) return;
   const neu = ids.filter((id) => karte(id)?.spalte !== spalteId);
   aendern(() => {
     if (!neu.length) {
@@ -86,7 +95,7 @@ export function ablegen(spalteId: Kennung, ids: Kennung[]): void {
 export function verschieben(id: Kennung, nach: Kennung): void {
   const k = karte(id);
   const ziel = k && board(k.board).spalten.find((s) => s.id === nach);
-  if (!k || !ziel || k.spalte === nach) return;
+  if (!k || !ziel || k.spalte === nach || !verschiebenErlaubt(k.board)) return;
   aendern(() => hinein([id], ziel));
 }
 
@@ -95,7 +104,7 @@ export function sammelVerschieben(ids: Kennung[], nach: Kennung): void {
   const k = karte(ids[0] ?? "");
   const ziel = k && board(k.board).spalten.find((s) => s.id === nach);
   const weg = ids.filter((id) => karte(id)?.spalte !== nach);
-  if (!ziel || !weg.length) return;
+  if (!ziel || !weg.length || !verschiebenErlaubt(k.board)) return;
   aendern(() => hinein(weg, ziel));
 }
 
@@ -242,8 +251,7 @@ export function zeitTeilen(gruppeId: Kennung, an: boolean): void {
  *  eine eine Gruppe, tritt die andere bei, haben beide verschiedene, geht die zweite in der ersten auf */
 export function verknuepfen(aId: Kennung, bId: Kennung): void {
   const a = karte(aId), b = karte(bId);
-  if (!a || !b || a.id === b.id || a.board !== b.board || a.art !== "arbeit" || b.art !== "arbeit") return;
-  if (a.gruppe && a.gruppe === b.gruppe) return;
+  if (!a || !b || !verknuepfbar(a, b)) return;
   aendern(() => {
     if (!a.gruppe && !b.gruppe) {
       const id = `g-${a.id}-${b.id}`;

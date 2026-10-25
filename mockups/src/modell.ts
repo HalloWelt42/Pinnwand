@@ -25,6 +25,14 @@ export interface KellerwolkePerson {
   konto?: Kennung;
 }
 
+/** Eine Datei in deiner Kellerwolke, wie die Dateiwahl sie zeigt (zum Verknüpfen an einer Karte) */
+export interface KellerwolkeDatei {
+  pfad: string;
+  name: string;
+  groesse: string;
+  art: Anhang["art"];
+}
+
 /** Persönlicher Ordner in der Seitenleiste: ordnet nur, trägt keine Rechte; jede Person ordnet ihre Boards selbst */
 export interface Ordner {
   id: Kennung;

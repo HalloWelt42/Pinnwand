@@ -19,7 +19,7 @@
   import OhneDatum from "./OhneDatum.svelte";
   import { abwesenheitenSichtbar, abwesenheitSymbol, artName, farbeDerSpalte, feiertageAm, feiertagTitel, istErledigt, kartenDesBoards, kartenPfad } from "./lesen";
 
-  let { board, entwurf = "", suche = "", ziehenGesperrt = false }: BoardAnsichtWerte = $props();
+  let { board, entwurf = "", filter, ziehenGesperrt = false }: BoardAnsichtWerte = $props();
 
   let gruppierung = $state<"spalte" | "person">("spalte");
   let massstab = $state<"woche" | "monat">("woche");
@@ -44,7 +44,7 @@
   const tage = $derived(tageVon(anfang, ende));
   const pos = (tag: string): number => tageZwischen(anfang, tag);
 
-  const karten = $derived(kartenDesBoards(board, suche));
+  const karten = $derived(kartenDesBoards(board, filter));
   const mitDatum = $derived(karten.filter((k) => k.start || k.faellig));
   const ohneDatum = $derived(karten.filter((k) => !k.start && !k.faellig && !istErledigt(board, k)));
   const mitglieder = $derived(board.mitglieder.map((m) => m.konto));

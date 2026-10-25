@@ -3,7 +3,9 @@
   // stehen als solche da. Die Dateien bleiben, wo sie sind; Mitglieder sehen sie über die Rechte des Boards. Eine Fläche im
   // Detail, kein Browser-Dialog; Escape oder Abbrechen schließt sie.
   import { onMount } from "svelte";
-  import { ausKellerwolke, KELLERWOLKE, type KellerwolkeDatei } from "../beispiel/anwendung/anhaenge.svelte";
+  import { kellerwolkeDateien } from "../beispiel/abfragen";
+  import { ausKellerwolke } from "../beispiel/anwendung/anhaenge.svelte";
+  import type { KellerwolkeDatei } from "../modell";
   import type { Karte } from "../modell";
   import { verlassen, verwerfbar } from "../teile/verwerfen";
   import { SYMBOL } from "./anhang";
@@ -18,7 +20,7 @@
   const da = (d: KellerwolkeDatei): boolean => karte.anhaenge.some((a) => a.verknuepft && a.name === d.name);
   // beim Öffnen ganz in Sicht, auch wenn der Abschnitt unten im Detail steht
   onMount(() => inSicht(flaeche));
-  const liste = $derived(KELLERWOLKE.filter((d) => kennung(d).toLowerCase().includes(suche.trim().toLowerCase())));
+  const liste = $derived(kellerwolkeDateien().filter((d) => kennung(d).toLowerCase().includes(suche.trim().toLowerCase())));
 
   function umschalten(d: KellerwolkeDatei): void {
     const k = kennung(d);
@@ -26,7 +28,7 @@
   }
 
   function verknuepfen(): void {
-    ausKellerwolke(karte.id, KELLERWOLKE.filter((d) => gewaehlt.includes(kennung(d))));
+    ausKellerwolke(karte.id, kellerwolkeDateien().filter((d) => gewaehlt.includes(kennung(d))));
     zu();
   }
 

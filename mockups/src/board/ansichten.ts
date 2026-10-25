@@ -12,8 +12,6 @@ import Zeitachse from "../ansichten/planung/Zeitachse.svelte";
 export interface BoardAnsichtWerte {
   board: Board;
   entwurf: string;
-  /** Suche der Werkzeugleiste (dieselbe wie filter.suche) */
-  suche: string;
   /** Suche und Filter der Werkzeugleiste (Personen, Prioritäten, Labels, eigene Felder): jede Ansicht wendet sie mit
    *  kartePasst(karte, board, filter) aus beispiel/abfragen.ts an, derselben Abfrage wie das Board */
   filter: Kartenfilter;

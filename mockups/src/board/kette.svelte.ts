@@ -3,16 +3,12 @@
 // daneben loslassen oder Escape bricht ab. Während der Geste ist die Quelle halbtransparent gestrichelt, eine Marke folgt
 // dem Zeiger, eine passende Zielkarte ist hervorgehoben. Nur sichtbare Karten sind Ziel (nicht in eingeklappten Spalten).
 
+import { verknuepfbar } from "../beispiel/abfragen";
 import { karte } from "../beispiel/stand.svelte";
-import type { Karte, Kennung } from "../modell";
+import type { Kennung } from "../modell";
 
 export const kette = $state<{ quelle: Kennung | null; ziel: Kennung | null; x: number; y: number }>({ quelle: null, ziel: null, x: 0, y: 0 });
 
-/** Kann b das Ziel der Kette von a sein? Eine andere Arbeitskarte desselben Boards, noch nicht in derselben Gruppe
- *  (dieselbe Bedingung, unter der verknuepfen() wirkt) */
-export function verknuepfbar(a: Karte | undefined, b: Karte | undefined): boolean {
-  return !!a && !!b && a.id !== b.id && a.board === b.board && a.art === "arbeit" && b.art === "arbeit" && !(a.gruppe && a.gruppe === b.gruppe);
-}
 
 export function ketteStarten(quelle: Kennung, x: number, y: number): void {
   Object.assign(kette, { quelle, ziel: null, x, y });

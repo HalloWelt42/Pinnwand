@@ -247,3 +247,15 @@
 .pw-md :is(th, td).mitte { text-align: center; }
 .pw-md :is(th, td).rechts { text-align: right; }
 .pw-md .pw-erwaehnt { color: var(--akzent); font-weight: 600; }
+
+/* Ganze Zahl in Grenzen (teile/Zahlfeld): Zahlenschrift, rechtsbündig, der Grund steht darunter */
+.pw-zahlfeld { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--a2); flex-wrap: wrap; min-width: 0; }
+.pw-zahlfeld .eingabe { width: 90px; height: 36px; text-align: right; font-family: var(--schrift-zahl); }
+.pw-zahlfeld .einheit { font-size: var(--klein); color: var(--text-3); }
+.pw-zahlfeld .fehler { flex-basis: 100%; font-size: var(--klein); color: var(--gefahr); }
+
+/* Farbe je Priorität, eine Zuordnung für Board, Liste und Detail (immer mit Wort oder Hinweis, nie Farbe allein) */
+[data-prioritaet] { --prio: var(--stahl); }
+[data-prioritaet="dringend"] { --prio: var(--gefahr); }
+[data-prioritaet="hoch"] { --prio: var(--warn); }
+[data-prioritaet="mittel"] { --prio: var(--honig); }

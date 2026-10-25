@@ -5,7 +5,8 @@
   // Richtung; Status sortiert nach der Spaltenfolge des Boards. Kopf und die ersten Spalten bleiben beim Rollen stehen.
   // Kästchen wählen Karten für Sammelaktionen (verschieben, zuweisen, Label, Priorität, Papierkorb); ein Klick auf eine
   // Zeile öffnet die Karte über ihren Pfad.
-  import { kartenNummer, laufendAuf, passt, sichtbareKarten, woerter, zeitDerKarte } from "../../beispiel/abfragen";
+  import { kartenNummer, laufendAuf, leererFilter, spalteninhalt, zeitDerKarte, type Kartenfilter } from "../../beispiel/abfragen";
+  import { ZEITFENSTER_VORGABE } from "../../anzeige";
   import { sammelLabel, sammelPrioritaet, sammelVerschieben, sammelZuweisen } from "../../beispiel/anwendung/karten.svelte";
   import { inPapierkorb } from "../../beispiel/anwendung/papierkorb.svelte";
   import { dauer, datum, faelligText } from "../../beispiel/format";
@@ -16,7 +17,8 @@
   import Personenwahl from "../../teile/Personenwahl.svelte";
   import { boardPfad, gehe } from "../../weg.svelte";
 
-  let { board, entwurf = "", suche = "" }: { board: Board; entwurf?: string; suche?: string } = $props();
+  let { board, entwurf = "", filter = leererFilter() }: { board: Board; entwurf?: string; filter?: Kartenfilter } = $props();
+  const suche = $derived(filter.suche.trim());
 
   /** vorgeführter Zustand "auswahl": drei Karten gewählt, die Sammelleiste zeigt ihre Aktionen */
   const VORGABE_AUSWAHL = ["c-148", "c-139", "c-122"];
@@ -25,12 +27,10 @@
     Record<Prioritaet, { name: string; rang: number }>;
 
   interface Zeile { karte: Karte; spalte: Spalte; rang: number }
-  // dieselben Karten wie die Spalten: offene alle, erledigte im Zeitfenster der Spalte; die Suche der Werkzeugleiste filtert
-  const zeilen = $derived.by(() => {
-    const w = woerter(suche);
-    return board.spalten.flatMap((s, si) => sichtbareKarten(board, s).map((karte, i) => ({ karte, spalte: s, rang: si * 10000 + i })))
-      .filter((z) => passt(z.karte, board, w));
-  });
+  // dieselben Karten wie die Spalten des Boards (dieselbe Abfrage): offene alle, erledigte im Zeitfenster der Spalte;
+  // Suche und Filter der Werkzeugleiste wirken wie im Board
+  const zeilen = $derived(board.spalten.flatMap((s, si) => spalteninhalt(board, s, filter, "manuell", s.zeitfenster ?? ZEITFENSTER_VORGABE)
+    .karten.map((karte, i) => ({ karte, spalte: s, rang: si * 10000 + i }))));
   const erledigtSpalte = $derived(board.spalten.find((s) => s.erledigt));
   const fertigZahl = $derived(zeilen.filter((z) => z.spalte.erledigt).length);
   const mitZeit = $derived(board.module.zeiterfassung);
@@ -168,7 +168,7 @@
             <td>{#if k.zustaendig.length}<span class="pw-personen" title={k.zustaendig.map((p) => konto(p).name).join(", ")}>
               {#each k.zustaendig as p (p)}<Person id={p} />{/each}</span>{:else}<span class="schwach">niemand</span>{/if}</td>
             <td>{#if k.prioritaet === "keine"}<span class="schwach">keine</span>
-              {:else}<span class="pw-uebersicht-prio {k.prioritaet}"><i class="fa-solid fa-flag"></i>{PRIO[k.prioritaet].name}</span>{/if}</td>
+              {:else}<span class="pw-uebersicht-prio" data-prioritaet={k.prioritaet}><i class="fa-solid fa-flag"></i>{PRIO[k.prioritaet].name}</span>{/if}</td>
             <td>
               {#if z.spalte.erledigt && k.abgeschlossen}<span class="pw-angabe gut" title="Abgeschlossen"><i class="fa-solid fa-check"></i>{datum(k.abgeschlossen, true)}</span>
               {:else if faellig}<span class="pw-angabe {faellig.klasse}"><i class="fa-regular fa-calendar"></i>{faellig.text}</span>{/if}

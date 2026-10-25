@@ -13,7 +13,7 @@
   import { abwesenheitenSichtbar, istErledigt, kartenDesBoards, tageInhalt, type Zeigen } from "./lesen";
   import OhneDatum from "./OhneDatum.svelte";
 
-  let { board, entwurf = "", suche = "", ziehenGesperrt = false }: BoardAnsichtWerte = $props();
+  let { board, entwurf = "", filter, ziehenGesperrt = false }: BoardAnsichtWerte = $props();
 
   let ansicht = $state<"monat" | "woche">("monat");
   let bezug = $state(HEUTE);
@@ -21,7 +21,7 @@
   let zeigen = $state<Zeigen>({ karten: true, termine: true, serien: true, abwesenheiten: true });
   let gezogen = $state<string | null>(null);
 
-  const karten = $derived(kartenDesBoards(board, suche));
+  const karten = $derived(kartenDesBoards(board, filter));
   const ohneFaelligkeit = $derived(karten.filter((k) => !k.faellig && !istErledigt(board, k)));
   const erster = $derived(ansicht === "monat" ? montagVon(monatsanfang(bezug)) : montagVon(bezug));
   const letzter = $derived(ansicht === "monat" ? plusTage(montagVon(monatsende(bezug)), 6) : plusTage(erster, 6));

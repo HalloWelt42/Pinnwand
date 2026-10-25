@@ -3,7 +3,7 @@
 // die Ansichten fragen nur hier, nie mit eigener Rechnung.
 
 import { ZEITFENSTER_VORGABE } from "../anzeige";
-import type { Board, Karte, KellerwolkePerson, Kennung, Prioritaet, Serie, Spalte, Termin, Timer, Zeitfenster } from "../modell";
+import type { Board, Karte, KellerwolkeDatei, KellerwolkePerson, Kennung, Prioritaet, Serie, Spalte, Termin, Timer, Zeitfenster } from "../modell";
 import { abwesenheitAm, artName, fassungAm, sollAm, urlaubstage, type TagSoll } from "../regeln/arbeitszeit";
 import { feiertag } from "../regeln/feiertage";
 import { vorkommen, type Nachtragposten, type SerienUmfeld } from "../regeln/serien";
@@ -12,7 +12,7 @@ import { kuerzelPruefen as regelKuerzelPruefen, kuerzelVorschlag as regelKuerzel
 import { minutenAus, plusTage, tageVon, tageZwischen } from "../regeln/tage";
 import { HEUTE, ICH, JETZT } from "./daten";
 import { BESTAETIGT_BIS } from "./daten-planung";
-import { KELLERWOLKE_NEU, KUERZEL_ANDERER } from "./daten-verwaltung";
+import { KELLERWOLKE_DATEIEN, KELLERWOLKE_NEU, KUERZEL_ANDERER } from "./daten-verwaltung";
 import { MONATSIST, TAGESREST } from "./daten-zeit";
 import { alterTage, laufendSek } from "./format";
 import { board, karte, kartenDerSpalte, konto, stand } from "./stand.svelte";
@@ -403,4 +403,27 @@ export function kuerzelPruefen(k: string, name: string): KuerzelPruefung {
 export function kellerwolkePersonen(): KellerwolkePerson[] {
   const bekannt = stand.konten.map((k) => ({ kennung: k.kellerwolke, name: k.name, konto: k.id }));
   return [...bekannt, ...KELLERWOLKE_NEU.filter((p) => !bekannt.some((b) => b.kennung === p.kennung))];
+}
+
+// ═══ Verknüpfen ══════════════════════════════════════════════════════════════════════════════════════════
+
+/** Können zwei Karten verknüpft werden? Eine andere Arbeitskarte desselben Boards, noch nicht in derselben Gruppe (M-74) */
+export function verknuepfbar(a: Karte | undefined, b: Karte | undefined): boolean {
+  return !!a && !!b && a.id !== b.id && a.board === b.board && a.art === "arbeit" && b.art === "arbeit" && !(a.gruppe && a.gruppe === b.gruppe);
+}
+
+/** Treffer zum Verknüpfen im Detail: offene Arbeitskarten desselben Boards nach Titel oder Schlüssel, ohne bisherige
+ *  Mitglieder, höchstens acht (M-73) */
+export function verknuepfTreffer(k: Karte, suche: string, hoechstens = 8): Karte[] {
+  const s = suche.trim().toLowerCase();
+  if (!s) return [];
+  const b = board(k.board);
+  const offen = new Set(b.spalten.filter((x) => !x.erledigt).map((x) => x.id));
+  return stand.karten.filter((x) => offen.has(x.spalte) && verknuepfbar(k, x)
+    && (x.titel.toLowerCase().includes(s) || x.schluessel.toLowerCase().includes(s))).slice(0, hoechstens);
+}
+
+/** Deine Dateien in der Kellerwolke (die Kellerwolke liefert sie; in den Entwürfen eine kleine Auswahl) */
+export function kellerwolkeDateien(): KellerwolkeDatei[] {
+  return KELLERWOLKE_DATEIEN;
 }

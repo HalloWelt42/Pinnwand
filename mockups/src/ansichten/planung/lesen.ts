@@ -3,7 +3,7 @@
 // Gerechnet wird mit den Regeln (regeln/) und dem einen Zustand (beispiel/stand.svelte.ts); geändert wird nur über die
 // Anwendungsfälle.
 
-import { darf, kartenNummer, passt } from "../../beispiel/abfragen";
+import { darf, kartenNummer, kartePasst, leererFilter, type Kartenfilter } from "../../beispiel/abfragen";
 import { serienUmfeld } from "../../beispiel/abfragen";
 import { HEUTE, ICH } from "../../beispiel/daten";
 import { konto, stand } from "../../beispiel/stand.svelte";
@@ -24,9 +24,9 @@ export function boardVon(id: Kennung): Board | undefined {
   return stand.boards.find((b) => b.id === id);
 }
 
-/** Karten eines Boards, bei einer Suche nur die passenden (dieselbe Volltextsuche wie Board und Liste) */
-export function kartenDesBoards(b: Board, suche = ""): Karte[] {
-  return stand.karten.filter((k) => k.board === b.id && passt(k, b, suche));
+/** Karten eines Boards, bei Suche und Filter nur die passenden (dieselbe Abfrage wie Board und Liste) */
+export function kartenDesBoards(b: Board, filter: Kartenfilter = leererFilter()): Karte[] {
+  return stand.karten.filter((k) => k.board === b.id && kartePasst(k, b, filter));
 }
 
 export function istErledigt(b: Board, k: Karte): boolean {

@@ -3,6 +3,8 @@
 // in der App vom Server käme: die abgelehnte Änderung beim Konflikt und ein Vorschlag der Leitstelle.
 
 export interface DetailZustand {
+  /** Speichern auf veralteter Fassung wurde abgelehnt (Rückfrage offen) */
+  konflikt?: boolean;
   beschreibung?: "ort" | "vollbild";
   notizen?: "vollbild";
   reiter?: "verlauf";
@@ -13,6 +15,8 @@ export interface DetailZustand {
 }
 
 export const DETAIL_ENTWUERFE: Record<string, DetailZustand> = {
+  bearbeiten: { beschreibung: "ort" },
+  konflikt: { konflikt: true },
   notizen: { notizen: "vollbild" },
   verlauf: { reiter: "verlauf" },
   verknuepfen: { verknuepfen: "Serie" },

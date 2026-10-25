@@ -43,10 +43,6 @@
 .pw-verwaltung-formular > .pw-verwaltung-satz { flex: 1 1 320px; }
 
 /* Ganze Zahl mit Einheit */
-.pw-verwaltung-zahl { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--a2); flex-wrap: wrap; min-width: 0; }
-.pw-verwaltung-zahl .eingabe { width: 90px; height: 36px; text-align: right; font-family: var(--schrift-zahl); }
-.pw-verwaltung-zahl .einheit { font-size: var(--klein); color: var(--text-3); }
-.pw-verwaltung-zahl .fehler { flex-basis: 100%; font-size: var(--klein); color: var(--gefahr); }
 
 /* ═══ Listen: Spalten, Labels, Felder, Rollen ════════════════════════════════════════════════════════════ */
 

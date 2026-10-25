@@ -29,7 +29,7 @@
   }
 </script>
 
-<span class="pw-verwaltung-zahl">
+<span class="pw-zahlfeld">
   <input class="eingabe" inputmode="numeric" value={wert ?? ""} placeholder={leer ?? ""} aria-label={name} aria-invalid={!!fehler}
          onchange={uebernehmen} />
   {#if einheit}<span class="einheit">{einheit}</span>{/if}

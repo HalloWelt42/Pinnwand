@@ -7,32 +7,13 @@
 // eine kleine Ablage im Speicher: Hochgeladenes lässt sich öffnen, solange die Seite steht, für die Beispieldateien
 // entsteht beim Öffnen ein schlichter Ersatz.
 
-import type { Anhang, Board, Karte, Kennung } from "../../modell";
+import type { Anhang, Board, Karte, KellerwolkeDatei, Kennung } from "../../modell";
 import { board, karte } from "../stand.svelte";
 import { aendern, melden } from "./meldung.svelte";
 import { vermerken } from "./verlauf";
 
 /** höchstens so groß darf eine Datei sein (wie in der alten App) */
 export const GRENZE_MB = 25;
-
-/** Eine Datei in deiner Kellerwolke, wie die Dateiwahl sie zeigt */
-export interface KellerwolkeDatei {
-  pfad: string;
-  name: string;
-  groesse: string;
-  art: Anhang["art"];
-}
-
-/** Deine Kellerwolke (Max Paulsen): eine kleine Auswahl erfundener Dateien */
-export const KELLERWOLKE: KellerwolkeDatei[] = [
-  { pfad: "Dokumente/Angebote", name: "Kalkulation 2026.ods", groesse: "88 KB", art: "tabelle" },
-  { pfad: "Dokumente/Angebote", name: "Angebotsvorlage Gehäuse.odt", groesse: "46 KB", art: "text" },
-  { pfad: "Dokumente/Lieferanten", name: "Preisliste Pulverbeschichtung.pdf", groesse: "204 KB", art: "pdf" },
-  { pfad: "Dokumente/Prüfung", name: "Prüfplan Biegeteile.pdf", groesse: "1,1 MB", art: "pdf" },
-  { pfad: "Bilder/Werkstatt", name: "Musterteil K5 Oberfläche.jpg", groesse: "2,3 MB", art: "bild" },
-  { pfad: "Bilder/Werkstatt", name: "Laser Düsenwechsel.png", groesse: "940 KB", art: "bild" },
-  { pfad: "Aufnahmen", name: "Telefonat Kunde Brandt.m4a", groesse: "6,1 MB", art: "ton" },
-];
 
 /** Ort einer hochgeladenen Datei in der Kellerwolke: Ablage der Pinnwand, ein Ordner je Board */
 export function ablageOrt(b: Board): string {

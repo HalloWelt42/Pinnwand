@@ -6,7 +6,6 @@ export interface BoardZustand {
   /** Karte im Detail geöffnet */
   detail?: string;
   detailVoll?: boolean;
-  bearbeiten?: "beschreibung";
   /** Schnelleingabe in dieser Spalte offen */
   schnell?: string;
   /** Ansichtszustand zum Beginn (Suche, Filter, Sortierung, eingeklappte Spalten, Zeitfenster); gemerkt wird er nicht */
@@ -24,8 +23,6 @@ export interface BoardZustand {
   ziehen?: { karte: string; nach: string };
   /** Jemand anderes hat gerade diese Karte geändert */
   fremd?: string;
-  /** Speichern auf veralteter Fassung abgelehnt */
-  konflikt?: boolean;
   /** richtet den Zustand nach dem Ausgangsstand ein, über die Anwendungsfälle (etwa: eine Karte erledigen) */
   vorbereiten?: () => void;
 }

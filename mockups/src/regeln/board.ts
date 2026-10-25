@@ -47,3 +47,11 @@ export function imFenster(k: Karte, f: Zeitfenster, e: BoardEinstellungen, heute
 export function imArchiv(k: Karte, e: BoardEinstellungen, heute: string): boolean {
   return !!k.abgeschlossen && tageZwischen(k.abgeschlossen, heute) > e.archivTage;
 }
+
+/** Erlaubte Werte der Einstellungen eines Boards und der Grenze einer Spalte (ganze Zahlen, einschließlich) */
+export const EINSTELLUNG_GRENZEN = {
+  alterung: [0, 365],
+  ladeschritt: [1, 500],
+  archivTage: [1, 100000],
+  grenze: [1, 999],
+} as const;

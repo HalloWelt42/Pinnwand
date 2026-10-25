@@ -154,11 +154,8 @@ a.pw-uebersicht-boardverweis:hover { color: var(--text); }
 .pw-uebersicht-liste td.sp-text { white-space: normal; min-width: 110px; }
 .pw-uebersicht-liste .pw-uebersicht-labels { flex-wrap: nowrap; }
 .pw-uebersicht-prio { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.pw-uebersicht-prio { color: var(--prio, var(--stahl)); }
 .pw-uebersicht-prio i { font-size: 12px; }
-.pw-uebersicht-prio.dringend { color: var(--gefahr); }
-.pw-uebersicht-prio.hoch { color: var(--warn); }
-.pw-uebersicht-prio.mittel { color: var(--honig); }
-.pw-uebersicht-prio.niedrig { color: var(--stahl); }
 .pw-uebersicht-zeit { display: inline-flex; align-items: center; gap: 6px; font-family: var(--schrift-zahl); font-weight: 600; }
 .pw-uebersicht-zeit .soll { color: var(--text-3); font-weight: 500; }
 .pw-uebersicht-zeit i { font-size: 12px; }

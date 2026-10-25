@@ -6,8 +6,8 @@
   // blieb es offen). Alles über die Anwendungsfälle mit Rückgängig.
   import { untrack } from "svelte";
   import { ZEITFENSTER, ZEITFENSTER_VORGABE } from "../anzeige";
-  import { GRENZEN } from "../ansichten/verwaltung/daten";
-  import Zahlfeld from "../ansichten/verwaltung/Zahlfeld.svelte";
+  import { EINSTELLUNG_GRENZEN as GRENZEN } from "../regeln/board";
+  import Zahlfeld from "../teile/Zahlfeld.svelte";
   import { spalteAendern, spalteLoeschen, spaltenOrdnen, zurErledigtSpalte } from "../beispiel/anwendung/boards.svelte";
   import { kartenDerSpalte } from "../beispiel/stand.svelte";
   import type { Board, Spalte, Zeitfenster } from "../modell";

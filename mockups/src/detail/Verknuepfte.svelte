@@ -4,7 +4,7 @@
   // Titel oder Schlüssel, ohne die bisherigen Mitglieder, höchstens 8 Treffer; Pfeile wählen, Enter oder Klick
   // verknüpft über verknuepfen (hat der Treffer schon eine Gruppe, tritt diese Karte bei).
   import { tick, untrack } from "svelte";
-  import { kartenNummer } from "../beispiel/abfragen";
+  import { kartenNummer, verknuepfTreffer } from "../beispiel/abfragen";
   import { gruppeLoesen, verknuepfen, zeitTeilen } from "../beispiel/anwendung/karten.svelte";
   import { board as boardVon, gruppenmitglieder, stand } from "../beispiel/stand.svelte";
   import type { Board, Karte } from "../modell";
@@ -31,15 +31,8 @@
     });
   });
 
-  /** Treffer der Suche (in der App eine Abfrage der Schnittstelle) */
-  const treffer = $derived.by(() => {
-    const s = suche.trim().toLowerCase();
-    if (!s) return [];
-    const offen = new Set(board.spalten.filter((x) => !x.erledigt).map((x) => x.id));
-    return stand.karten.filter((x) => x.board === karte.board && x.id !== karte.id && x.art === "arbeit" && offen.has(x.spalte)
-      && !(karte.gruppe && x.gruppe === karte.gruppe)
-      && (x.titel.toLowerCase().includes(s) || x.schluessel.toLowerCase().includes(s))).slice(0, HOECHSTENS);
-  });
+  /** Treffer der Suche (eine Abfrage, in der App der Schnittstelle) */
+  const treffer = $derived(verknuepfTreffer(karte, suche, HOECHSTENS));
   $effect(() => { void treffer; gewaehlt = 0; });
 
   function spalteVon(x: Karte): string {

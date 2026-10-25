@@ -8,18 +8,19 @@
   import { karte as holeKarte } from "../beispiel/stand.svelte";
   import type { Board } from "../modell";
   import { verlassen } from "../teile/verwerfen";
-  import { wert } from "../weg.svelte";
   import { DETAIL_ENTWUERFE, type DetailZustand } from "./entwuerfe";
   import Karteninhalt from "./Karteninhalt.svelte";
 
-  let { kartenId, board, voll = false, bearbeiten, konflikt = false, schliessen }: {
-    kartenId: string; board: Board; voll?: boolean; bearbeiten?: "beschreibung"; konflikt?: boolean; schliessen: () => void;
+  let { kartenId, board, voll = false, entwurf = "", schliessen }: {
+    kartenId: string; board: Board; voll?: boolean;
+    /** Entwurfszusatz des Weges (?entwurf=...), vom Board durchgereicht */
+    entwurf?: string;
+    schliessen: () => void;
   } = $props();
 
   const k = $derived(holeKarte(kartenId));
-  /** vorgeführter Zustand: aus dem Board (Beschreibung bearbeiten) oder aus dem Entwurfszusatz des Weges */
-  const entwurf = $derived(wert("entwurf"));
-  const vorgefuehrt = $derived<DetailZustand>({ ...(DETAIL_ENTWUERFE[entwurf] ?? {}), ...(bearbeiten ? { beschreibung: "ort" } : {}) });
+  /** vorgeführter Zustand des Details zum Entwurfszusatz */
+  const vorgefuehrt = $derived<DetailZustand>(DETAIL_ENTWUERFE[entwurf] ?? {});
   let vollbild = $state(false);
   $effect(() => { vollbild = voll; });
   let flaeche = $state<HTMLElement>();
@@ -61,6 +62,6 @@
 <aside class="pw-detail" class:voll={vollbild} tabindex="-1" bind:this={flaeche} aria-label="Karte {k?.schluessel ?? ''}">
   {#key `${kartenId} ${entwurf}`}
     <!-- fehlt die Karte (Anlegen rückgängig gemacht, in den Papierkorb gelegt), schließt das Board das Detail -->
-    {#if k}<Karteninhalt karte={k} {board} {vorgefuehrt} {konflikt} bind:vollbild {schliessen} />{/if}
+    {#if k}<Karteninhalt karte={k} {board} {vorgefuehrt} konflikt={!!vorgefuehrt.konflikt} bind:vollbild {schliessen} />{/if}
   {/key}
 </aside>

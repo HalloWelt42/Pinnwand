@@ -36,14 +36,12 @@
 
   /** vorgeführte Zustände der Entwürfe (?entwurf=...) */
   const ENTWUERFE: Record<string, BoardZustand> = {
-    bearbeiten: { bearbeiten: "beschreibung" },
     ziehen: { ziehen: { karte: "c-137", nach: "s-arbeit" } },
     schnell: { schnell: "s-eingang" },
     suche: { ansicht: { filter: { suche: "Gehäuse" } } },
     filter: { tafel: true, ansicht: { filter: { prioritaeten: ["dringend", "hoch"], labels: ["l-kunde"] } } },
     personen: { ansicht: { filter: { personen: ["k-anna"] }, sortierung: "faellig" } },
     live: { fremd: "c-115", vorbereiten: () => melden("Anna Berger hat PROD-115 geändert: fällig Mi 28.10.") },
-    konflikt: { konflikt: true },
     erledigt: { vorbereiten: () => erledigen("c-131") },
     /** Geplant steht genau an seiner Grenze (Bernstein), In Arbeit darüber (rot); das Menü von Geplant ist offen */
     spaltenmenue: { menue: "s-geplant", vorbereiten: () => { spalteAendern("b-prod", "s-geplant", { grenze: 9 }); meldungSchliessen(); } },
@@ -206,7 +204,7 @@
 {/if}
 <div class="pw-detail-raum">
   {#if Andere}
-    <Andere board={b} {entwurf} suche={filter.suche} {filter} ziehenGesperrt={gefiltert} />
+    <Andere board={b} {entwurf} {filter} ziehenGesperrt={gefiltert} />
   {:else}
     <div class="pw-streifen">
       <div class="pw-spaltenreihe" use:dragHandleZone={{ items: spalten, type: "spalte", flipDurationMs: 160, dragDisabled: !verwalten, useCursorForDetection: true, dropTargetStyle: {},
@@ -244,7 +242,7 @@
     </div>
   {/if}
   {#if detail && karte(detail)}
-    <Kartendetail kartenId={detail} board={b} bearbeiten={zustand.bearbeiten} konflikt={zustand.konflikt} schliessen={zurueck} />
+    <Kartendetail kartenId={detail} board={b} {entwurf} schliessen={zurueck} />
   {/if}
 </div>
 {#if kette.quelle}

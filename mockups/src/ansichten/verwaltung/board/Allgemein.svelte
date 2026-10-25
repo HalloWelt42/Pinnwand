@@ -10,8 +10,8 @@
   import { alterung } from "../../../regeln/board";
   import Farbwahl from "../../../teile/Farbwahl.svelte";
   import { gehe } from "../../../weg.svelte";
-  import { GRENZEN } from "../daten";
-  import Zahlfeld from "../Zahlfeld.svelte";
+  import { EINSTELLUNG_GRENZEN as GRENZEN } from "../../../regeln/board";
+  import Zahlfeld from "../../../teile/Zahlfeld.svelte";
 
   let { board }: { board: Board; entwurf?: string } = $props();
 

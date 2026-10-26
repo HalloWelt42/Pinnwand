@@ -4,6 +4,7 @@
   // nach dem Ladeschritt des Boards (Rollen ans Ende oder "Mehr laden" holt die nächste Seite; der Kopf nennt die Zahl
   // des Servers), durchsuchbar über die Werte der geladenen Karten. Ein Klick öffnet die Karte über ihren Pfad;
   // zurückholen geht dort über den Status.
+  import { Suchfeld } from "appkern-oberflaeche";
   import { untrack } from "svelte";
   import { kartenNummer, passt, woerter, zeitDerKarte } from "../../daten/abfragen";
   import { Archivseiten } from "../../daten/archiv.svelte";
@@ -52,12 +53,11 @@
 
 <div class="pw-uebersicht-seite">
   <div class="rahmen-kopf">
-    <NebenKopf board={b} titel="Archiv" symbol="fa-box-archive"
+    <NebenKopf board={b} hilfe={["board", "archiv"]} titel="Archiv" symbol="fa-box-archive"
                angabe="{seiten.geladen ? `${anzahl(seiten.gesamt)}, ` : ''}abgeschlossen vor dem {datumJahr(grenze)}"
                erklaerung="Erledigte Karten, deren Abschluss älter als {tage} Tage ist. Das Board lädt sie nicht mehr; eine größere Grenze holt sie zurück. Zurückholen geht in der Karte über den Status." />
     <div class="pw-uebersicht-suchzeile">
-      <label class="suche"><i class="fa-solid fa-magnifying-glass"></i>
-        <input placeholder="Im Archiv suchen: Titel, Schlüssel, Labels, Felder, Kommentare" aria-label="Archiv durchsuchen" bind:value={suche} /></label>
+      <Suchfeld placeholder="Im Archiv suchen: Titel, Schlüssel, Labels, Felder, Kommentare" aria-label="Archiv durchsuchen" bind:wert={suche} />
       <a class="chip" href={boardPfad(b.kuerzel, "einstellungen")} title="Archivgrenze in den Einstellungen des Boards">
         <i class="fa-solid fa-sliders"></i>Grenze {tage} Tage</a>
     </div>

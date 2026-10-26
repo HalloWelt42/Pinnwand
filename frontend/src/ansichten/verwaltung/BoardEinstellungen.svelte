@@ -3,6 +3,7 @@
   // mit eigener Adresse und je Reiter ein eigenes Rollfeld. Jede Änderung läuft über einen Anwendungsfall, gilt sofort
   // für alle Mitglieder und kommt mit Rückgängig; einen Speichern-Knopf gibt es nicht. Wer das Recht des Reiters nicht
   // hat (Rollen und Mitglieder: "Mitglieder verwalten", sonst "Board verwalten"), sieht ihn nur; der Server prüft dasselbe.
+  import { Hilfepunkt } from "appkern-oberflaeche";
   import type { Component } from "svelte";
   import { darf } from "../../daten/abfragen";
   import { RECHTE } from "../../daten/konstanten";
@@ -34,7 +35,8 @@
 
 <div class="rahmen-kopf">
   <div class="seitenkopf pw-boardkopf">
-    <h1><span class="pw-farbpunkt" data-farbe={b.farbe}></span>{b.name}</h1>
+    <h1><span class="pw-farbpunkt" data-farbe={b.farbe}></span>{b.name}<Hilfepunkt thema={reiter === "module" ? "module" : "boardeinstellungen"}
+      abschnitt={reiter === "module" ? "einschalten" : reiter} titel="Hilfe zu diesem Reiter" /></h1>
     <div class="rechts">
       <a class="knopf klein" href={boardPfad(b.kuerzel)}><i class="fa-solid fa-table-columns"></i>Zum Board</a>
     </div>

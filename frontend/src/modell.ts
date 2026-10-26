@@ -15,6 +15,8 @@ export interface Konto {
   farbe: Farbe;
   /** Kennung im Kellerwolke-Konto (Anmeldung, Einladen per Name) */
   kellerwolke: string;
+  /** Kennung dieser Anlage, neu bei jedem Zurücksetzen (die Oberfläche vergisst dann ihre Merker) */
+  anlage?: string;
 }
 
 /** Eine Person aus den Konten der Kellerwolke, gefunden per Name beim Einladen */

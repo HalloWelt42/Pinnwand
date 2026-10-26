@@ -47,6 +47,8 @@ class Stand(Modell):
     hinweiswege: Hinweiswege
     #: ob die Vorschläge der KI gehen (Leitstelle eingerichtet); sonst zeigt die Oberfläche keine
     ki_bereit: bool
+    #: du bist Besitzer der App (dir gehört ihr App-Schlüssel): du kannst alle Konten zurücksetzen und löschen
+    app_besitzer: bool = False
     #: wo die Transkription liegt (leer: nicht eingerichtet, die Oberfläche zeigt keine Transkripte)
     transkription_adresse: str
     #: wo die Vertonung liegt (leer: nicht eingerichtet, die Oberfläche zeigt kein Vorlesen)
@@ -69,8 +71,10 @@ class Team(Modell):
 
 class Abfragen:
     def __init__(self, anwendung: Anwendung, ki_bereit: Callable[[], bool] = lambda: False,
-                 transkription_adresse: Callable[[], str] = lambda: "", vertonung_adresse: Callable[[], str] = lambda: "") -> None:
+                 transkription_adresse: Callable[[], str] = lambda: "", vertonung_adresse: Callable[[], str] = lambda: "",
+                 besitzer: Callable[[], str | None] = lambda: None) -> None:
         self.a = anwendung
+        self.besitzer = besitzer
         self.ki_bereit = ki_bereit
         self.transkription_adresse = transkription_adresse
         self.vertonung_adresse = vertonung_adresse
@@ -129,6 +133,7 @@ class Abfragen:
             berichte=await self.a.v.alle("berichte", "konto=?", (konto.id,), "erstellt DESC"),
             hinweiswege=Hinweiswege(da=list(WEGE_DA), vorgabe={a: {w: vorgabe(a, w) for w in WEGE_DA} for a in ARTEN_DA}),
             ki_bereit=self.ki_bereit(),
+            app_besitzer=bool(self.besitzer()) and konto.kellerwolke == self.besitzer(),
             transkription_adresse=self.transkription_adresse(),
             vertonung_adresse=self.vertonung_adresse(),
             terminnamen=await self._terminnamen({d["termin"] for d in zeiteintraege if d.get("termin")}

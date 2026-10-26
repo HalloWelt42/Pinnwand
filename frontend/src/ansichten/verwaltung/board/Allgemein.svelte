@@ -1,12 +1,15 @@
 <script lang="ts">
-  // Allgemein: Name, festes Kürzel, Ordner (persönlich), Farbe, Art neuer Karten; Alterung und Erledigt-Grenzen je Board;
-  // als Vorlage speichern; das Board in den Papierkorb (Rückfrage in der Fläche). Alles über die Anwendungsfälle.
+  // Allgemein: Name, festes Kürzel, Farbe, Art neuer Karten; Alterung und Erledigt-Grenzen je Board; als Vorlage
+  // speichern; das Board in den Papierkorb (Rückfrage in der Fläche) oder gleich endgültig löschen (bestätigt mit dem
+  // Kürzel). Den Ordner wählt jede Person für sich in der Seitenleiste. Alles über die Anwendungsfälle.
   import { laufendAuf } from "../../../daten/abfragen";
   import {
-    alsVorlageSpeichern, boardFarbeSetzen, boardUmbenennen, einstellungenSetzen, kartenartSetzen, ordnerSetzen,
+    alsVorlageSpeichern, boardFarbeSetzen, boardUmbenennen, einstellungenSetzen, kartenartSetzen,
   } from "../../../daten/anwendung/boards.svelte";
-  import { boardInPapierkorb } from "../../../daten/anwendung/papierkorb.svelte";
-  import { laufnummer, ordnerVon, stand } from "../../../daten/stand.svelte";
+  import { boardEndgueltig, boardInPapierkorb } from "../../../daten/anwendung/papierkorb.svelte";
+  import { darf } from "../../../daten/abfragen";
+  import Endgueltig from "../../../teile/Endgueltig.svelte";
+  import { laufnummer, stand } from "../../../daten/stand.svelte";
   import type { Board, BoardEinstellungen } from "../../../modell";
   import { alterung, EINSTELLUNG_GRENZEN as GRENZEN } from "../../../regeln/board";
   import Farbwahl from "../../../teile/Farbwahl.svelte";
@@ -36,8 +39,17 @@
   async function vorlageSpeichern(): Promise<void> {
     if (await alsVorlageSpeichern(board.id, vorlageName)) vorlageOffen = false;
   }
+  let endgueltig = $state(false);
+  // erst zu Heute (wie beim Papierkorb), sonst meldet der Weg das verschwundene Board statt des Löschens
+  function endgueltigLoeschen(bestaetigung: string): Promise<boolean> {
+    const id = board.id;
+    gehe("/heute");
+    return boardEndgueltig(id, bestaetigung);
+  }
   async function wegwerfen(): Promise<void> {
-    if (await boardInPapierkorb(board.id)) gehe("/heute");
+    const id = board.id;
+    gehe("/heute");
+    await boardInPapierkorb(id);
   }
 
   /** Beispiele der Sanduhr mit den eingestellten Stufen (Regel des Boards) */
@@ -60,17 +72,6 @@
         <div class="wert pw-verwaltung-wert-spalte">
           <span class="pw-verwaltung-kuerzel">{board.kuerzel}</span>
           <span class="pw-schluessel">nächste Karte {board.kuerzel}-{laufnummer(board.id) + 1}</span>
-        </div>
-      </div>
-      <div class="einstellung">
-        <div><div class="name">Ordner</div><div class="erklaerung">Ordnet nur deine Seitenleiste; ein Ordner trägt keine Rechte.
-          Anlegen und ordnen unter <a href="/einstellungen/ordner">Einstellungen, Ordner</a>.</div></div>
-        <div class="wert">
-          <select class="eingabe" value={ordnerVon(board.id)?.id ?? ""} aria-label="Ordner"
-                  onchange={(ev) => ordnerSetzen(board.id, (ev.currentTarget as HTMLSelectElement).value)}>
-            {#each stand.ordner as o (o.id)}<option value={o.id}>{o.name}</option>{/each}
-            <option value="">Ohne Ordner</option>
-          </select>
         </div>
       </div>
       <div class="einstellung">
@@ -179,6 +180,24 @@
           <span class="rechts"><button class="knopf klein" onclick={() => (papierkorb = false)}>Abbrechen</button>
             <button class="knopf gefahr-voll klein" onclick={wegwerfen}><i class="fa-solid fa-trash-can"></i>In den Papierkorb</button></span>
         </div>
+      {/if}
+      {#if darf(board, "papierkorb.leeren")}
+        <div class="einstellung">
+          <div><div class="name">Endgültig löschen</div>
+            <div class="erklaerung">Ohne Papierkorb und ohne Rückweg, mit allen Karten, Serien und Terminen; gebuchte Zeiten bleiben, das Kürzel
+              wird frei.</div></div>
+          <div class="wert"><button class="knopf gefahr" disabled={endgueltig} onclick={() => (endgueltig = true)}><i class="fa-solid fa-ban"></i>Endgültig löschen</button></div>
+        </div>
+        {#if endgueltig}
+          <Endgueltig frage="{board.name} endgültig löschen?" wort={board.kuerzel} knopf="Board endgültig löschen" bestaetigen={endgueltigLoeschen}
+                      abbrechen={() => (endgueltig = false)}>
+            {anzahl(karten.length, "Karte geht", "Karten gehen")} mit, samt Kommentaren, Anhängen, Serien und Terminen.
+            {#if board.mitglieder.length > 1}Die {anzahl(board.mitglieder.length - 1, "andere Person verliert", "anderen Mitglieder verlieren")} das
+              Board ebenfalls.{/if}
+            {#if laufend.length}Laufende Timer ({laufend.map((k) => k.schluessel).join(", ")}) halten an und buchen.{/if}
+            Gebuchte Zeiten bleiben unter dem Namen ihrer Karte stehen. Das lässt sich nicht rückgängig machen.
+          </Endgueltig>
+        {/if}
       {/if}
     </section>
   </div>

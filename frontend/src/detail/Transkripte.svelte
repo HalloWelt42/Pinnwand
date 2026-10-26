@@ -4,13 +4,14 @@
   // öffnen", eine Notiz (speichert beim Verlassen, Escape verwirft) und mit KI an der Karte ein Vorschlag dafür; lösen
   // mit Rückgängig. Das Suchfeld sucht wie die Transkription (kurz nach der letzten Taste) und verknüpft eine
   // Fundstelle oder das ganze Transkript. Hören und suchen kann nur, wer die Transkription selbst nutzen darf.
+  import { Hilfepunkt, Suchfeld } from "appkern-oberflaeche";
   import { notizHolen, Vorschlagslauf } from "../daten/anwendung/ki.svelte";
   import { melden } from "../daten/anwendung/meldung.svelte";
   import {
     inTranskription, loesen, notizSetzen, stelleText, suchen, tonAdresse, verknuepfen, type Trefferseite,
   } from "../daten/anwendung/transkripte.svelte";
   import type { Karte, TranskriptMarke } from "../modell";
-  import { verlassen, verwerfbar } from "../teile/verwerfen";
+  import { verlassen, verwerfbar, verwerfen } from "../teile/verwerfen";
   import Vorschlag from "./Vorschlag.svelte";
 
   let { karte, schreiben, ki = false }: {
@@ -135,7 +136,7 @@
 </script>
 
 <section class="pw-abschnitt" aria-label="Transkripte">
-  <div class="etikett">Transkripte {#if karte.transkripte.length}<span class="zaehler">{karte.transkripte.length}</span>{/if}</div>
+  <div class="etikett">Transkripte<Hilfepunkt thema="transkripte" abschnitt="verknuepfen" /> {#if karte.transkripte.length}<span class="zaehler">{karte.transkripte.length}</span>{/if}</div>
   <audio bind:this={spieler} preload="none" onended={() => (spielt = null)} onerror={() => spielt && void tonFehler()}></audio>
   {#each karte.transkripte as m (m.id)}
     <div class="pw-transkript" class:spielt={spielt === m.id}>
@@ -175,9 +176,8 @@
   {/each}
 
   {#if schreiben}
-    <label class="suche pw-detail-suche"><i class="fa-solid {sucht ? 'fa-spinner fa-spin-pulse' : 'fa-wave-square'}"></i>
-      <input placeholder="In Transkripten suchen und eine Stelle verknüpfen" aria-label="In Transkripten suchen" bind:value={text}
-             oninput={eingabe} use:verwerfbar /></label>
+    <Suchfeld klasse="pw-detail-suche" symbol={sucht ? "fa-spinner fa-spin-pulse" : "fa-wave-square"} placeholder="In Transkripten suchen und eine Stelle verknüpfen"
+              aria-label="In Transkripten suchen" bind:wert={text} oninput={eingabe} {@attach verwerfen} />
     {#if suchFehler}
       <div class="hinweis warnung"><i class="fa-solid fa-triangle-exclamation"></i><div>{suchFehler}</div></div>
     {:else if seite}

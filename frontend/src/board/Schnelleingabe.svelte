@@ -4,6 +4,7 @@
   // sonst gilt die Kartenart des Boards. Das Feld leert sich sofort; lehnt der Server ab, steht der Titel wieder da.
   // Mit dem Modul KI an der Karte macht "Aus Text" aus einem Text (Notiz, Nachricht, Liste) einen Vorschlag mehrerer
   // Karten; angehakt und mit dem Titel, wie er im Feld steht, entstehen sie in einer Änderung (ein Rückgängig).
+  import { Hilfepunkt } from "appkern-oberflaeche";
   import { kartenAusTextHolen, kiDa, Vorschlagslauf } from "../daten/anwendung/ki.svelte";
   import { anlegen, mehrereAnlegen } from "../daten/anwendung/karten.svelte";
   import { ICH } from "../daten/ich";
@@ -85,6 +86,7 @@
       </span>
     {/if}
     <span title="Zuständig: du"><Person id={ICH} /></span>
+    <Hilfepunkt thema={ausText ? "ki" : "karten"} abschnitt={ausText ? "aus-text" : "anlegen"} titel="Hilfe zum Anlegen" />
   </div>
   {#if ausText && vorschlag.offen}
     <Vorschlag titel="Vorschlag: Karten aus dem Text" lauf={vorschlag} nochmal={vorschlagen}>

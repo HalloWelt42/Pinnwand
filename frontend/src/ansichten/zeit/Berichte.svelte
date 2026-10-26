@@ -3,6 +3,7 @@
   // oder die Vorschau genau dessen, was die Datei enthält (vom Server gerechnet). Erstellen legt die Datei in der
   // Kellerwolke im Ordner Berichte der Pinnwand ab; von dort lädst du sie herunter. Im Stundennachweis stehen außer dir
   // nur Personen, deren Abwesenheiten du siehst; in Board-Berichten zählt die Zeit anderer nur mit "Zeiten anderer sehen".
+  import { Hilfepunkt, Suchfeld } from "appkern-oberflaeche";
   import { darf } from "../../daten/abfragen";
   import { berichtAdresse, berichtErstellen, berichtVorschau } from "../../daten/anwendung/berichte.svelte";
   import { berichtText, berichtVorlesen, liest, vorlesen, vorlesenDa } from "../../daten/anwendung/vorlesen.svelte";
@@ -105,7 +106,7 @@
 
 <div class="rahmen-kopf">
   <div class="seitenkopf">
-    <h1>Berichte</h1>
+    <h1>Berichte<Hilfepunkt thema="berichte" abschnitt="aufruf" /></h1>
     <div class="unterzeile">Auswertungen aus deinem Zeitkonto und den Boards, abgelegt in der Kellerwolke im Ordner Berichte der Pinnwand.</div>
   </div>
   <div class="kette pw-berichte-kette" aria-label="Schritte">
@@ -165,7 +166,7 @@
             <span class="chip"><Person id={p} />{konto(p).name}
               <button class="knopf ohne symbol klein" title="Entfernen" onclick={() => (personen = personen.filter((x) => x !== p))}><i class="fa-solid fa-xmark"></i></button></span>
           {/each}
-          <label class="suche"><i class="fa-solid fa-user-plus"></i><input bind:value={suche} placeholder="Person hinzufügen" /></label>
+          <Suchfeld symbol="fa-user-plus" bind:wert={suche} placeholder="Person hinzufügen" aria-label="Person hinzufügen" />
         </div>
         {#if vorschlaege.length}
           <div class="pw-berichte-vorschlaege">

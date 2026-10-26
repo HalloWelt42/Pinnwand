@@ -3,6 +3,7 @@
   // zuerst, dazu leer anfangen), Name und Kürzel (Vorschlag aus dem Namen; beim Tippen sofort gegen deine Boards geprüft
   // und nach einer kurzen Pause am Server gegen alle, auch die, die du nicht siehst), Ordner, Mitglieder (freiwillig,
   // per Kontoname der Kellerwolke). "Board anlegen" ruft den Anwendungsfall; wer anlegt, ist Besitzer.
+  import { Hilfepunkt } from "appkern-oberflaeche";
   import { kellerwolkePersonen, kuerzelPruefen, kuerzelVorschlag } from "../../daten/abfragen";
   import {
     boardAnlegen, kontonameOk, kuerzelAmServer, neueBoardFarbe, personAusText, type Einladung, type KuerzelAntwort,
@@ -89,7 +90,7 @@
 
 <div class="rahmen-kopf">
   <div class="seitenkopf">
-    <h1>Board anlegen</h1>
+    <h1>Board anlegen<Hilfepunkt thema="uebersicht" abschnitt="board-anlegen" /></h1>
     <div class="unterzeile">Links wählen, rechts entsteht das Board. Alles außer dem Kürzel änderst du später in den Einstellungen des Boards.</div>
   </div>
 </div>

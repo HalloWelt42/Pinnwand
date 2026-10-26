@@ -183,6 +183,10 @@ class Schreiber:
         bild.nachher = neu
         return neu
 
+    def journal_vergessen(self, konto: str) -> None:
+        """Das Rückgängig eines Kontos verwerfen (beim Zurücksetzen und Löschen des Kontos)."""
+        self.v.execute("DELETE FROM journal WHERE konto=?", (konto,))
+
     def loesch(self, tabelle: str, id: str) -> None:
         bild = self._merken(tabelle, id)
         self.v.execute(f"DELETE FROM {tabelle} WHERE id=?", (id,))

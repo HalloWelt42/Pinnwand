@@ -1,19 +1,24 @@
 <script lang="ts">
   // Die Pinnwand nach der Anmeldung: Zustand aus dem Server und Ereignisstrom, Uhr, Weg, Verbindungen des Gerüsts,
   // Mitteilungen dieses Geräts (ein Tippen führt an ihr Ziel). Jeder Pfad zeigt die Ansicht aus
-  // der Wegetabelle (routen.ts), am Rechner in der Schale, am Telefon in der eigenen Ansicht. "/" führt zu Heute.
-  import { geraet, pushStarten, verbindungenVerfolgen, vorleser } from "appkern-oberflaeche";
+  // der Wegetabelle (routen.ts), am Rechner in der Schale, am Telefon in der eigenen Ansicht. "/" führt zu Heute. Über
+  // allem schwebt die Hilfe (Themen unter hilfe/); die Seitenleiste klappt nach der Wahl dieses Geräts ein.
+  import { geraet, Hilfe, hilfeThemen, pushStarten, seitenleisteStarten, verbindungenVerfolgen, vorleser } from "appkern-oberflaeche";
   import { onMount, untrack } from "svelte";
   import { timerVon } from "./daten/abfragen";
   import { melden } from "./daten/anwendung/meldung.svelte";
   import { stand, verbinden } from "./daten/stand.svelte";
   import { sekundentakt, uhrStarten } from "./daten/uhr.svelte";
+  import { HILFE_FOLGE } from "./hilfe/folge";
   import { finden } from "./routen";
   import Schale from "./schale/Schale.svelte";
   import { gehe, weg, wegStarten } from "./weg.svelte";
 
+  hilfeThemen(import.meta.glob<string>("./hilfe/*.md", { query: "?raw", import: "default", eager: true }), HILFE_FOLGE);
+
   onMount(() => {
     void pushStarten();
+    seitenleisteStarten();
     const enden = [verbinden(), uhrStarten(), wegStarten(), verbindungenVerfolgen()];
     return () => enden.forEach((ende) => ende());
   });
@@ -63,3 +68,4 @@
   <Schale aktiv=""><div class="rollfeld"><div class="hinweis warnung"><i class="fa-solid fa-triangle-exclamation"></i>
     <div>Diesen Weg gibt es nicht: {weg.pfad}. <a href="/heute">Zu Heute</a></div></div></div></Schale>
 {/if}
+<Hilfe />

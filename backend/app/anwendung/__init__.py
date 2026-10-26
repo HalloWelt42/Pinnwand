@@ -68,11 +68,11 @@ class Dienste:
               vertonung: Vertonung | None = None) -> Dienste:
         ereignisse = Ereignisse()
         a = Anwendung(Verzeichnis(db), ereignisse, uhr)
-        konten = Konten(a)
+        konten = Konten(a, zugang, push)
         transkription = transkription or KeineTranskription()
         vertonung = vertonung or KeineVertonung()
         ki = Ki(a, sprachmodell or KeinModell(), transkription)
-        return cls(anwendung=a, ereignisse=ereignisse, konten=konten, abfragen=Abfragen(a, ki.bereit, transkription.adresse, vertonung.adresse),
+        return cls(anwendung=a, ereignisse=ereignisse, konten=konten, abfragen=Abfragen(a, ki.bereit, transkription.adresse, vertonung.adresse, zugang.besitzer),
                    boards=Boards(a, zugang),
                    karten=Karten(a), inhalte=Inhalte(a), hinweise=Hinweise(a), papierkorb=Papierkorb(a), aufbau=Aufbau(a),
                    mitglieder=Mitglieder(a), persoenlich=Persoenliches(a), anhaenge=Anhaenge(a, ablage),

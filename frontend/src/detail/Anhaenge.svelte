@@ -3,6 +3,7 @@
   // Kellerwolke verknüpfen, öffnen in einem neuen Reiter und entfernen mit Rückgängig. Hochgeladenes liegt in der
   // Kellerwolke im Ordner des Boards und öffnet sich für jedes Mitglied; Verknüpftes öffnet sich in der Kellerwolke der
   // Person, die es verknüpft hat. Ändern nur mit dem Recht, die Karte zu bearbeiten.
+  import { Hilfepunkt } from "appkern-oberflaeche";
   import { ablageOrt, dateiAdresse, entfernen, GRENZE_MB, hochladen } from "../daten/anwendung/anhaenge.svelte";
   import { ICH } from "../daten/ich";
   import { konto } from "../daten/stand.svelte";
@@ -54,7 +55,7 @@
 </script>
 
 <section class="pw-abschnitt pw-anhaenge" class:darueber aria-label="Anhänge" ondragover={ueber} ondragleave={weg} ondrop={ablegen}>
-  <div class="etikett">Anhänge {#if karte.anhaenge.length}<span class="zaehler">{karte.anhaenge.length}</span>{/if}
+  <div class="etikett">Anhänge<Hilfepunkt thema="kartendetail" abschnitt="anhaenge" /> {#if karte.anhaenge.length}<span class="zaehler">{karte.anhaenge.length}</span>{/if}
     {#if schreiben}
       <span class="rechts">
         <button class="knopf ohne klein" title="Dateien von diesem Gerät, bis {GRENZE_MB} MB je Datei" onclick={() => wahl?.click()}><i class="fa-solid fa-upload"></i>Hochladen</button>

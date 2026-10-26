@@ -384,6 +384,13 @@ async def test_ordner(pw: Pinnwand):
     assert a["meldung"] == "Werkstatt liegt jetzt im Ordner Firma"
     assert [(o["name"], o["boards"]) for o in (await pw.stand("anna"))["ordner"]] == [("Privat", [haus["id"]]), ("Firma", [werk["id"]])]
     assert (await ok(pw, "anna", f"/boards/{werk['id']}/ordner", {"ordner": firma["id"]}))["geaendert"] == []
+    # an eine Stelle (Ziehen in der Seitenleiste): hinein vor ein anderes Board, im selben Ordner umsortieren, zurück
+    await ok(pw, "anna", f"/boards/{haus['id']}/ordner", {"ordner": firma["id"], "stelle": 0})
+    assert [o["boards"] for o in (await pw.stand("anna"))["ordner"]] == [[], [haus["id"], werk["id"]]]
+    assert (await ok(pw, "anna", f"/boards/{werk['id']}/ordner", {"ordner": firma["id"], "stelle": 0}))["meldung"] == "Werkstatt umsortiert"
+    assert [o["boards"] for o in (await pw.stand("anna"))["ordner"]] == [[], [werk["id"], haus["id"]]]
+    assert (await ok(pw, "anna", f"/boards/{werk['id']}/ordner", {"ordner": firma["id"], "stelle": 0}))["geaendert"] == []
+    await ok(pw, "anna", f"/boards/{haus['id']}/ordner", {"ordner": privat["id"]})
 
     assert (await ok(pw, "anna", "/ordner/ordnen", {"ids": [firma["id"], privat["id"]]}))["meldung"] == "Ordner neu geordnet"
     assert [o["name"] for o in (await pw.stand("anna"))["ordner"]] == ["Firma", "Privat"]

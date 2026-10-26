@@ -3,6 +3,7 @@
   // Zeitkonto hängt an deiner Person, nicht an einem Board; gebuchte Zeit aus allen Boards fließt hinein. Team zeigt die
   // Mitglieder eines Boards, nur mit dem Recht "Abwesenheiten sehen" in diesem Board. Kalender und Urlaub rechnen mit
   // Bundesland und Arbeitstagen des Zeitkontos; ohne Zeitkonto führen sie erst zu seiner Einstellung.
+  import { Hilfepunkt } from "appkern-oberflaeche";
   import type { Component } from "svelte";
   import { ICH } from "../../daten/ich";
   import { stand } from "../../daten/stand.svelte";
@@ -27,7 +28,7 @@
 
 <div class="rahmen-kopf pw-arbeitszeit-rahmen">
   <div class="seitenkopf pw-arbeitszeit-kopf">
-    <h1>Arbeitszeit</h1>
+    <h1>Arbeitszeit<Hilfepunkt thema="arbeitszeit" abschnitt="aufruf" /></h1>
     <nav class="reiter" aria-label="Bereiche der Arbeitszeit">
       {#each REITER as [id, name, symbol, titel] (id)}
         <a class="knopf ohne" class:aktiv={aktiv[0] === id} href="/arbeitszeit{id ? '/' + id : ''}" title={titel}><i class="fa-solid {symbol}"></i>{name}</a>

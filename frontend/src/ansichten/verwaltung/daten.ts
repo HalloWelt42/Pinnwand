@@ -22,12 +22,15 @@ export function boardReiter(moduleDa: readonly string[]) {
   return BOARD_REITER.filter((r) => r.id !== "module" || moduleDa.length > 0);
 }
 
-/** Reiter der persönlichen Einstellungen, je mit eigener Adresse /einstellungen/<reiter> */
+/** Reiter der Einstellungen, je mit eigener Adresse /einstellungen/<reiter>: deine eigenen und unter "app" die der ganzen
+ *  Pinnwand */
 export const PERSON_REITER = [
   { id: "darstellung", name: "Darstellung", symbol: "fa-circle-half-stroke" },
   { id: "hinweise", name: "Hinweise", symbol: "fa-bell" },
   { id: "konto", name: "Konto", symbol: "fa-circle-user" },
   { id: "ordner", name: "Ordner", symbol: "fa-folder" },
   { id: "papierkorb", name: "Papierkorb", symbol: "fa-trash-can" },
+  { id: "app", name: "App und Verbindungen", symbol: "fa-plug" },
+  { id: "konten", name: "Konten", symbol: "fa-users-gear" },
   { id: "gestaltung", name: "Gestaltung", symbol: "fa-palette" },
 ] as const;

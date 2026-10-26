@@ -2,6 +2,7 @@
   // Hinweise: was dich in deinen Boards betrifft (zugewiesen, fällig, erwähnt, Termin, Kommentar, verschoben), neueste
   // zuerst und nach Tagen. Ungelesene stehen hervorgehoben mit dem Wort "Neu"; ein Klick springt zur Karte und gilt als gelesen. Der
   // Gelesen-Stand gehört dem Konto, nicht dem Browser. Welche Arten kommen, steht in den Einstellungen.
+  import { Hilfepunkt } from "appkern-oberflaeche";
   import { kartenNummer, ungelesen as ungeleseneZahl } from "../../daten/abfragen";
   import { alleGelesen, artenDa, gelesen } from "../../daten/anwendung/hinweise.svelte";
   import { uhr } from "../../daten/uhr.svelte";
@@ -53,7 +54,7 @@
 <div class="pw-uebersicht-seite">
   <div class="rahmen-kopf">
     <div class="seitenkopf">
-      <h1>Hinweise</h1>
+      <h1>Hinweise<Hilfepunkt thema="hinweise" abschnitt="seite" /></h1>
       <span class="zahl">{ungelesen} ungelesen</span>
       <div class="aktionen">
         <button class="knopf" disabled={!ungelesen} onclick={alleGelesen}><i class="fa-solid fa-check-double"></i>Alle gelesen</button>

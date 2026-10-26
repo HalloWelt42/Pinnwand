@@ -354,6 +354,34 @@ Stimmen aus dem Katalog der Vertonung und private, die sie der Pinnwand freigibt
 |---|---|
 | `POST /vorlesen` | `{text, board}`; Antwort: Strom der Sätze |
 
+### Endgültig löschen und Konten
+
+Nachträge vom 26.10.2026 (Wünsche des Nutzers): Karten und Boards lassen sich ohne Papierkorb endgültig löschen, Konten
+zurücksetzen und löschen. Alles ohne Rückweg; zur Sicherheit tippt die Person ein Wort ein, das der Server prüft
+(Schlüssel der Karte, Kürzel des Boards, Name des Kontos; Groß und klein egal).
+
+- Karte: Rechte "Karten löschen" und "Papierkorb leeren"; sie geht wie über den Papierkorb (Timer bucht, Serientag
+  ausgelassen) und gleich weiter wie beim Leeren (ihr Name bleibt in `entfernt`, gebuchte Zeiten bleiben).
+- Board: Rechte "Board verwalten" und "Papierkorb leeren"; mit Karten, Gruppen, Laufnummer, Serien und Terminen, das
+  Kürzel wird frei, gebuchte Zeiten bleiben. Auch das Leeren eines Board-Eintrags im Papierkorb nimmt jetzt Serien und
+  Termine mit.
+- Konto: selbst oder als Besitzer der App (Kontoname des App-Schlüssels, Anschluss `Zugang.besitzer`; der Stand meldet
+  `app_besitzer`). Boards, in denen das Konto allein angemeldet ist, gehen endgültig; aus geteilten wird es ausgetragen
+  (`mitglieder.austragen`: Timer bucht, Zuständigkeit offener Karten, Serien, Termine, Ordner), als einziger Besitzer
+  geht der Besitz an das nächste angemeldete Mitglied. Ganz weg: Zeiteinträge, Timer, Zeitkonten, Abwesenheiten,
+  Hinweise, Ordner, Vorlagen, Berichte, persönliche Einstellungen, sein Journal (Rückgängig) und seine Geräte für
+  Mitteilungen. Zurücksetzen legt das Konto gleich neu an, mit neuer `anlage`; die Oberfläche vergisst dann ihre
+  Merker je Board und Telefon und lädt neu. Löschen nimmt die Zeile heraus; die Oberfläche des Kontos meldet sich ab,
+  und eine neue Anmeldung legt es neu an.
+
+| Weg | Inhalt |
+|---|---|
+| `POST /karten/{id}/endgueltig` | `{bestaetigung}` (Schlüssel) |
+| `POST /boards/{id}/endgueltig` | `{bestaetigung}` (Kürzel) |
+| `POST /konten/{id}/zuruecksetzen` | `{bestaetigung}` (Name des Kontos) |
+| `POST /konten/{id}/entfernen` | `{bestaetigung}` (Name des Kontos) |
+| `POST /boards/{id}/ordner` | `{ordner, stelle}`: Stelle im Ordner ab 0 (Ziehen in der Seitenleiste), ohne ans Ende |
+
 ## 10. Prüfen
 
 - Tests je Anwendungsfall (Recht, Regel, Fassung, Journal, Rückgängig, Ereignis) gegen eine Datenbank im Speicher; der

@@ -202,3 +202,12 @@ Entschieden vom Nutzer (25.10.2026):
 - Anhänge aus der eigenen Kellerwolke bleiben verknüpft, ohne Kopie: alle Mitglieder sehen Name und Größe, öffnen kann sie,
   wer verknüpft hat. Was alle öffnen sollen, lädt man an der Karte hoch (es liegt dann im Ordner des Boards).
 
+- Konten zurücksetzen und löschen (Nutzer 26.10.2026: "einzelne Konten müssen resetbar, löschbar sein"): Zurücksetzen
+  wirkt wie eine neue erste Anmeldung (Nutzer: "Wie neu angemeldet"), Löschen ebenso, und das Konto verschwindet;
+  selbst unter Einstellungen, Konto und als Besitzer der App für jedes Konto (Nutzer: "Selbst und Besitzer").
+- Karten und Boards endgültig löschen (Nutzer: "kards komplett löschbar auch boards, natürlich mit sicherheit"): direkt,
+  bestätigt durch Eintippen von Schlüssel oder Kürzel (Nutzer: "Direkt, mit Eintippen"); gebuchte Zeiten bleiben
+  (Nutzer: "Bleiben gebucht"). Der Papierkorb bleibt für das Löschen mit Rückweg.
+- Seitenleiste ein- und ausklappbar je Gerät; Ordner werden dort bearbeitet und Boards per Ziehen einsortiert (Nutzer:
+  "hier dragndrop ermöglichen", "ordner nachträglich bearbeitbar machen"); die Einstellungen der App stehen unter
+  Einstellungen, App und Verbindungen; Hilfe als schwebendes Fenster mit Tiefenlinks.

@@ -5,6 +5,7 @@
   // Ansichtszustand je Board an diesem Gerät (ansicht.svelte.ts). Solange gefiltert oder sortiert wird, ist Ziehen
   // gesperrt; ein Klick auf "Verschieben pausiert" setzt alles zurück. Spalten ordnen sich am Griff, neue entstehen am
   // Ende des Streifens. Das Kartendetail fährt rechts über das Board und hat seinen eigenen Pfad (/board/prod/131).
+  import { Hilfepunkt, Suchfeld } from "appkern-oberflaeche";
   import { untrack } from "svelte";
   import { dragHandleZone, type DndEvent } from "svelte-dnd-action";
   import { FARBEN } from "../anzeige";
@@ -115,7 +116,8 @@
 
 <div class="rahmen-kopf">
   <div class="seitenkopf pw-boardkopf">
-    <h1><span class="pw-farbpunkt" data-farbe={b.farbe}></span>{b.name}</h1>
+    <h1><span class="pw-farbpunkt" data-farbe={b.farbe}></span>{b.name}<Hilfepunkt thema={ansicht === "board" ? "board" : "ansichten"}
+      abschnitt={ansicht === "board" ? "kopf" : ansicht} titel="Hilfe zu dieser Ansicht" /></h1>
     <nav class="reiter" aria-label="Ansichten des Boards">
       {#each ANSICHTEN as [id, name, symbol] (id)}
         <a class:aktiv={ansicht === id} href={boardPfad(b.kuerzel, id === "board" ? "" : id)}><i class="fa-solid {symbol}"></i>{name}</a>
@@ -131,9 +133,9 @@
   </div>
 </div>
 <div class="pw-werkzeuge">
-  <label class="suche"><i class="fa-solid fa-magnifying-glass"></i>
-    <input placeholder="Im Board suchen: Titel, Inhalt, Labels, Kommentare" value={a.filter.suche} aria-label="Im Board suchen"
-           oninput={(e) => sucheSetzen(schluessel, e.currentTarget.value)} onkeydown={(e) => { if (e.key === "Escape") sucheSetzen(schluessel, ""); }} /></label>
+  <Suchfeld placeholder="Im Board suchen: Titel, Inhalt, Labels, Kommentare" wert={a.filter.suche} aria-label="Im Board suchen"
+            oninput={(e) => sucheSetzen(schluessel, e.currentTarget.value)} onkeydown={(e) => { if (e.key === "Escape") sucheSetzen(schluessel, ""); }} />
+  <Hilfepunkt thema="filter" abschnitt="suche" titel="Hilfe zu Suchen und Filtern" />
   <button class="chip" class:aktiv={filterZahl > 0} aria-expanded={tafel} onclick={() => (tafel = !tafel)}
           title="Filter nach Priorität, Labels und eigenen Feldern; gilt in Board, Liste, Kalender und Zeitachse">
     <i class="fa-solid fa-filter"></i>Filter{#if filterZahl}<span class="zaehler">{filterZahl}</span>{/if}</button>

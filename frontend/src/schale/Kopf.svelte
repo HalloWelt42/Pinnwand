@@ -1,8 +1,9 @@
 <script lang="ts">
   // Kopf: Marke, Suche über alle Boards (Sprung zur Karte über ihren Pfad), deine Stunden von heute und der Woche (aus
-  // deinen Zeiteinträgen und deinem Zeitkonto) und dein Timer, wenn eines deiner Boards Zeit erfasst, Hinweise und das
-  // Konto.
+  // deinen Zeiteinträgen und deinem Zeitkonto) und dein Timer, wenn eines deiner Boards Zeit erfasst, die Hilfe, Hinweise
+  // und das Konto.
   import { istAm, kartenNummer, modulIrgendwo, passt, sitzungSek, sollTag, timerVon, ungelesen, zeitDerKarte } from "../daten/abfragen";
+  import { hilfe, Suchfeld } from "appkern-oberflaeche";
   import { anhalten, fortsetzen, stoppen } from "../daten/anwendung/timer.svelte";
   import { uhr } from "../daten/uhr.svelte";
   import { ICH } from "../daten/ich";
@@ -42,9 +43,8 @@
 
 <div class="marke"><span class="pw-marke-symbol"><i class="fa-solid fa-thumbtack"></i></span><span class="marke-name">Pinnwand</span></div>
 <div class="pw-kopfsuche">
-  <label class="suche"><i class="fa-solid fa-magnifying-glass"></i><input placeholder="Karten in allen Boards suchen" bind:value={suche}
-    aria-label="Karten in allen Boards suchen" autocomplete="off"
-    onkeydown={(e) => { if (e.key === "Enter") oeffnen(); if (e.key === "Escape") suche = ""; }} /></label>
+  <Suchfeld bind:wert={suche} placeholder="Karten in allen Boards suchen" aria-label="Karten in allen Boards suchen" autocomplete="off"
+    onkeydown={(e) => { if (e.key === "Enter") oeffnen(); if (e.key === "Escape") suche = ""; }} />
   {#if suche.trim().length >= 2}
     <div class="pw-kopfsuche-treffer" role="listbox" aria-label="Treffer">
       {#each treffer as t, i (t.k.id)}
@@ -77,6 +77,8 @@
       <button class="pw-timer" title="Stoppen und buchen{timer.seit ? ` (${dauer(sitzungSek(timer))})` : ''}" onclick={stoppen}><i class="fa-solid fa-stop"></i></button>
     </div>
   {/if}
+  <button class="knopf symbol" class:aktiv={hilfe.offen} title="Hilfe: schwebendes Fenster, durchsuchbar" aria-label="Hilfe" onclick={() => hilfe.umschalten()}>
+    <i class="fa-solid fa-circle-question"></i></button>
   <a class="knopf symbol pw-glocke" href="/hinweise" title="Hinweise"><i class="fa-solid fa-bell"></i>
     {#if zahl}<span class="zaehler pille gefahr">{zahl}</span>{/if}</a>
   <a class="knopf ohne" href="/einstellungen/konto" title="{konto(ICH).name}, angemeldet mit dem Kellerwolke-Konto"><Person id={ICH} /></a>

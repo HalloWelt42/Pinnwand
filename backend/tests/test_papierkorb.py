@@ -333,6 +333,49 @@ async def test_board_endgueltig_entfernen(pw: Pinnwand):
     assert neu["id"] != b["id"]
 
 
+async def test_karte_sofort_endgueltig(pw: Pinnwand):
+    """Ohne Papierkorb, ohne Rückweg, bestätigt mit dem Schlüssel; braucht dazu das Recht "Papierkorb leeren"."""
+    from test_planung import mit_bert
+    b = await mit_bert(pw)
+    c = await pw.karte("anna", b, "Fenster")
+    weg = f"/karten/{c['id']}/endgueltig"
+    r = await pw.post("anna", weg, {"bestaetigung": "HAUS-2"})
+    assert (r.status_code, r.json()["detail"]) == (400, "Zur Sicherheit den Schlüssel HAUS-1 eintippen")
+    r = await pw.post("bert", weg, {"bestaetigung": "HAUS-1"})
+    assert (r.status_code, r.json()["detail"]) == (403, "Dir fehlt im Board Haushalt das Recht Papierkorb leeren")
+    r = await pw.post("anna", weg, {"bestaetigung": " haus-1 "})
+    assert (r.json()["meldung"], r.json()["rueckgaengig"]) == ("HAUS-1 endgültig gelöscht", None)
+    s = await pw.stand("anna")
+    assert not [x for x in s["karten"] if x["id"] == c["id"]] and s["papierkorb"] == []
+    assert [x["schluessel"] for x in s["entfernt"]] == ["HAUS-1"]
+    assert (await pw.post("anna", weg, {"bestaetigung": "HAUS-1"})).status_code == 404
+
+
+async def test_board_sofort_endgueltig(pw: Pinnwand):
+    """Mit allem, auch Serien und Terminen; bestätigt mit dem Kürzel; gebuchte Zeiten bleiben, das Kürzel ist frei."""
+    from test_planung import mit_bert, runde
+    b = await mit_bert(pw)
+    await pw.karte("anna", b, "Fenster")
+    await runde(pw, b)
+    await pw.post("anna", "/termine", {"board": b["id"], "titel": "Abstimmung", "datum": "2026-10-28", "von": "14:00",
+                                       "bis": "15:30", "teilnehmer": ["1"]})
+    await direkt(pw, "zeiteintraege", {"id": "z-1", "konto": "1", "karte": "x", "board": b["id"], "datum": "2026-10-26",
+                                       "sekunden": 600, "herkunft": "nachgetragen"})
+    weg = f"/boards/{b['id']}/endgueltig"
+    r = await pw.post("anna", weg, {"bestaetigung": "Haushalt"})
+    assert (r.status_code, r.json()["detail"]) == (400, "Zur Sicherheit das Kürzel HAUS eintippen")
+    r = await pw.post("bert", weg, {"bestaetigung": "HAUS"})
+    assert (r.status_code, r.json()["detail"]) == (403, "Dir fehlt im Board Haushalt das Recht Board verwalten")
+    r = await pw.post("anna", weg, {"bestaetigung": "haus"})
+    assert r.json()["meldung"].startswith("Haushalt mit ") and r.json()["meldung"].endswith("endgültig gelöscht; das Kürzel HAUS ist frei")
+    assert r.json()["rueckgaengig"] is None
+    for tabelle in ("boards", "karten", "papierkorb", "laufnummern", "serien", "termine"):
+        assert await zeilen(pw, tabelle) == [], tabelle
+    assert [z["id"] for z in await zeilen(pw, "zeiteintraege")] == ["z-1"]
+    assert "HAUS-1" in {x["schluessel"] for x in await zeilen(pw, "entfernt")}
+    assert (await pw.board("anna", "Haus neu", "HAUS"))["id"] != b["id"]
+
+
 # --- Archiv ------------------------------------------------------------------------------------------------------
 
 async def test_archiv_seitenweise(pw: Pinnwand):

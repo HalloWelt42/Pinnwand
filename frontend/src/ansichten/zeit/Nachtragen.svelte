@@ -3,6 +3,7 @@
   // und die Zeiterfassung an ist; keine Ideen), Tag, Dauer, Notiz. Links im Stundenzettel steht schon beim Tippen, wo die
   // Zeit landet; unten die Wirkung neben Buchen. Buchen lässt die Leiste offen für die nächste Buchung; Dauer und Notiz
   // leeren sich, sobald der Server gebucht hat.
+  import { Suchfeld } from "appkern-oberflaeche";
   import { darf, istAm, sollTag } from "../../daten/abfragen";
   import { buchen } from "../../daten/anwendung/zeiten.svelte";
   import { datum, datumJahr, dauer } from "../../daten/format";
@@ -71,9 +72,8 @@
   <div class="inhalt pw-zeiten-nachtragen">
     <section>
       <div class="etikett"><span class="zaehler">1</span>Karte</div>
-      <label class="suche"><i class="fa-solid fa-magnifying-glass"></i>
-        <input bind:value={suche} oninput={() => (karteId = "")} placeholder="Schlüssel oder Titel, in allen Boards"
-               title="Jedes Wort muss vorkommen; Ideen und Boards ohne Zeiterfassung fehlen" /></label>
+      <Suchfeld bind:wert={suche} oninput={() => (karteId = "")} placeholder="Schlüssel oder Titel, in allen Boards"
+                title="Jedes Wort muss vorkommen; Ideen und Boards ohne Zeiterfassung fehlen" />
       {#if gewaehlt}
         <div class="pw-zeiten-gewaehlt"><KartenName id={gewaehlt.id} /><span class="schwach klein">{board(gewaehlt.board).name}</span>
           <button class="knopf ohne symbol klein" title="Andere Karte wählen" onclick={() => (karteId = "")}><i class="fa-solid fa-xmark"></i></button></div>

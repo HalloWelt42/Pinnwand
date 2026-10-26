@@ -4,6 +4,7 @@
   // Enter) speichert über den Anwendungsfall, "Verwerfen" und Escape stellen den Stand vom Öffnen wieder her. Schließt
   // jemand das Detail oder wechselt die Karte, während der Editor offen ist, wird gespeichert: nichts geht still verloren
   // (die alte App verlor so die letzten 600 ms). Gespeichert wird immer an der Karte, an der das Bearbeiten begann.
+  import { Hilfepunkt } from "appkern-oberflaeche";
   import { onDestroy, tick } from "svelte";
   import { markdownHtml, type MarkdownOptionen } from "../teile/markdown";
   import { verlassen } from "../teile/verwerfen";
@@ -88,7 +89,7 @@
 {/snippet}
 
 <section class="pw-abschnitt" bind:this={abschnitt}>
-  <div class="etikett">{name}
+  <div class="etikett">{name}<Hilfepunkt thema="kartendetail" abschnitt="texte" />
     <span class="rechts">
       {#if vorlesen && text.trim()}
         <button class="knopf ohne symbol klein" title={liest ? "Vorlesen anhalten" : "Vorlesen"} aria-pressed={liest} onclick={vorlesen}>

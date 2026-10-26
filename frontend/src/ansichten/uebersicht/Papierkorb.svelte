@@ -125,7 +125,7 @@
 
 <div class="pw-uebersicht-seite">
   <div class="rahmen-kopf">
-    <NebenKopf board={b} titel="Papierkorb" symbol="fa-trash-can" angabe="{eintraege.length} {eintraege.length === 1 ? 'Eintrag' : 'Einträge'}"
+    <NebenKopf board={b} hilfe={["board", "papierkorb"]} titel="Papierkorb" symbol="fa-trash-can" angabe="{eintraege.length} {eintraege.length === 1 ? 'Eintrag' : 'Einträge'}"
                erklaerung="Gelöschte Karten und Spalten mit allem, was dranhängt. Wiederherstellen bringt sie mit demselben Schlüssel an die alte Stelle zurück. Endgültig entfernen darf nur, wer das Recht Papierkorb leeren hat{rolle ? ` (deine Rolle: ${rolle.name})` : ''}.">
       {#snippet aktionen()}
         {#if darfLeeren && eintraege.length}

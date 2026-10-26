@@ -2,7 +2,7 @@
 // die Antworten der Änderungen und den Ereignisstrom. Ändern nur über die Anwendungsfälle in daten/anwendung/, lesen
 // über die Hilfen hier und in daten/abfragen.ts. Jede Zeile trägt ihre Fassung; eine ältere überschreibt nie eine neuere.
 
-import { ereignisse, hole } from "appkern-oberflaeche";
+import { abmelden, ereignisse, hole } from "appkern-oberflaeche";
 import type {
   Abwesenheit, Bericht, Board, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Kartenname, Konto, Laufnummer, Hinweiswege, Mitglied, ModulKennung, Ordner, PersonEinstellungen, Terminname,
   Serie, Termin, Timer, Verbindung, Vorlage, Zeiteintrag, Zeitkonto,
@@ -51,6 +51,8 @@ export interface Zustand {
   transkriptionAdresse: string;
   /** wo die Vertonung liegt (leer: nicht eingerichtet, kein Vorlesen) */
   vertonungAdresse: string;
+  /** du bist Besitzer der App: du kannst alle Konten zurücksetzen und löschen */
+  appBesitzer: boolean;
   /** Verbindung zum Ereignisstrom; getrennt: letzter Stand sichtbar, Schreibendes gesperrt */
   verbindung: Verbindung;
   meldung: Meldung | null;
@@ -59,7 +61,7 @@ export interface Zustand {
 export const stand = $state<Zustand>({
   geladen: false, moduleDa: [], konten: [], boards: [], karten: [], gruppen: [], laufnummern: [], ordner: [], timer: [], zeiteintraege: [],
   zeitkonten: [], abwesenheiten: [], serien: [], termine: [], hinweise: [], hinweiswege: { da: ["pinnwand"], vorgabe: {} }, einstellungen: { hinweise: {} } as PersonEinstellungen, papierkorb: [],
-  entfernt: [], kartennamen: [], terminnamen: [], vorlagen: [], berichte: [], kiBereit: false, transkriptionAdresse: "", vertonungAdresse: "", verbindung: "getrennt", meldung: null,
+  entfernt: [], kartennamen: [], terminnamen: [], vorlagen: [], berichte: [], kiBereit: false, transkriptionAdresse: "", vertonungAdresse: "", appBesitzer: false, verbindung: "getrennt", meldung: null,
 });
 
 /** Antwort von /stand: die Teile, die der Server schon kennt (die übrigen kommen mit ihren Stufen) */
@@ -90,6 +92,7 @@ interface Serverstand {
   kiBereit: boolean;
   transkriptionAdresse: string;
   vertonungAdresse: string;
+  appBesitzer: boolean;
   einstellungen: PersonEinstellungen;
 }
 
@@ -130,8 +133,10 @@ export async function laden(): Promise<void> {
     moduleDa: s.moduleDa, konten: s.konten, boards: s.boards, karten: s.karten, gruppen: s.gruppen, laufnummern: s.laufnummern, ordner: s.ordner,
     timer: s.timer, zeiteintraege: s.zeiteintraege, zeitkonten: s.zeitkonten, abwesenheiten: s.abwesenheiten,
     serien: s.serien, termine: s.termine, hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, kartennamen: s.kartennamen, terminnamen: s.terminnamen, berichte: s.berichte, hinweiswege: s.hinweiswege,
-    kiBereit: s.kiBereit, transkriptionAdresse: s.transkriptionAdresse, vertonungAdresse: s.vertonungAdresse, einstellungen: s.einstellungen, geladen: true,
+    kiBereit: s.kiBereit, transkriptionAdresse: s.transkriptionAdresse, vertonungAdresse: s.vertonungAdresse, appBesitzer: s.appBesitzer,
+    einstellungen: s.einstellungen, geladen: true,
   });
+  eigenesKontoPruefen();
 }
 
 function fassung(z: unknown): number {
@@ -202,7 +207,39 @@ function fremdGeaendert(n: Neuigkeit): void {
 export function uebernehmen(geaendert: Geaendert[]): void {
   let neu = false;
   for (const g of geaendert) neu = einspielen(g) || neu;
+  if (!eigenesKontoPruefen()) return;
   if (neu) void laden();
+}
+
+/** Merker dieser Oberfläche, die an Boards und Konto hängen (Ansicht je Board, Telefon); Thema, Schrift und Seitenleiste
+ *  gehören dem Gerät und bleiben */
+const MERKER = /^pinnwand_(ansicht_|telefon$)/;
+const ANLAGE = "pinnwand_anlage";
+
+/** Das eigene Konto im Stand: gelöscht, dann abmelden; neu angelegt (zurückgesetzt), dann die Merker vergessen und neu
+ *  laden, wie bei der ersten Anmeldung. Ergebnis: ob die Oberfläche so weiterläuft. */
+function eigenesKontoPruefen(): boolean {
+  const ich = stand.konten.find((k) => k.id === ICH);
+  if (!ich) {
+    void abmelden();
+    return false;
+  }
+  try {
+    // gemerkt wird auch "ohne Kennung" (Konten von vor der Kennung), damit schon das erste Zurücksetzen erkannt wird
+    const jetzt = ich.anlage ?? "";
+    const gemerkt = localStorage.getItem(ANLAGE);
+    if (gemerkt !== jetzt) {
+      localStorage.setItem(ANLAGE, jetzt);
+      if (gemerkt !== null) {
+        for (const schluessel of Object.keys(localStorage)) if (MERKER.test(schluessel)) localStorage.removeItem(schluessel);
+        location.reload();
+        return false;
+      }
+    }
+  } catch {
+    // ohne Speicher gibt es auch nichts zu vergessen
+  }
+  return true;
 }
 
 /** Hält den Zustand über den Ereignisstrom aktuell; nach einem Abbruch neu verbinden und den ganzen Stand holen.

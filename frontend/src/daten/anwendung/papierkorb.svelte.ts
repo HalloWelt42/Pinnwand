@@ -1,6 +1,7 @@
 // Anwendungsfälle des Papierkorbs über den Server: Karten, Spalten und Boards hineinlegen, an die alte Stelle
 // wiederherstellen (mit demselben Recht wie das Hineinlegen), endgültig entfernen (nur mit dem Recht "Papierkorb
-// leeren", ohne Rückgängig). Karten und Spalten liegen im Papierkorb ihres Boards, ganze Boards im Papierkorb der App.
+// leeren", ohne Rückgängig), Karte oder Board auch gleich endgültig. Karten und Spalten liegen im Papierkorb ihres
+// Boards, ganze Boards im Papierkorb der App.
 // Rechte und Regeln prüft der Server; die Oberfläche blendet nur aus, und eine Ablehnung steht mit Grund in der Meldung.
 
 import type { Geloescht, Kennung } from "../../modell";
@@ -25,6 +26,16 @@ export function inPapierkorb(ids: Kennung[]): void {
  *  die erste des Boards), Board mit allem; Schlüssel, Kommentare, Anhänge und Verknüpfung bleiben, wie sie waren */
 export function wiederherstellen(id: Kennung): void {
   void aendern(() => senden(`/papierkorb/${id}/wiederherstellen`));
+}
+
+/** Eine Karte sofort endgültig löschen, ohne Papierkorb und ohne Rückweg; bestätigt mit ihrem Schlüssel */
+export async function karteEndgueltig(karteId: Kennung, bestaetigung: string): Promise<boolean> {
+  return (await aendern(() => senden(`/karten/${karteId}/endgueltig`, { bestaetigung }))) !== null;
+}
+
+/** Ein Board mit allem sofort endgültig löschen, ohne Papierkorb und ohne Rückweg; bestätigt mit seinem Kürzel */
+export async function boardEndgueltig(boardId: Kennung, bestaetigung: string): Promise<boolean> {
+  return (await aendern(() => senden(`/boards/${boardId}/endgueltig`, { bestaetigung }))) !== null;
 }
 
 /** Gewählte Einträge endgültig entfernen (die Rückfrage steht vorher in der Fläche) */

@@ -119,25 +119,44 @@
 
 /* ═══ Seitenleiste: Ordner und Boards ═════════════════════════════════════════════════════════════════════ */
 
-.pw-ordner { display: flex; align-items: center; gap: var(--a2); padding: var(--a2) var(--a3) 2px; color: var(--text-3);
+.pw-ordner { display: flex; align-items: center; gap: var(--a2); min-height: 32px; padding: var(--a2) var(--a1) 2px var(--a3); color: var(--text-3);
              font-size: var(--marke); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
-.pw-ordner i { font-size: 12px; }
+.pw-ordner > i { font-size: 12px; }
+.pw-ordner-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-ordner-knopf { flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; border: 0; border-radius: var(--r2);
+                   background: none; color: var(--text-3); font-size: var(--marke); cursor: pointer; }
+.pw-ordner-knopf:hover { background: var(--bereich); color: var(--text); }
+.pw-ordner-feld { flex: 1; min-width: 0; height: 30px; padding: 0 var(--a2); font-size: var(--klein); text-transform: none; letter-spacing: 0; font-weight: 500; }
+.pw-ordner-rueckfrage { display: flex; flex-direction: column; gap: var(--a2); margin: 2px 0 var(--a1); padding: var(--a2) var(--a3); border-radius: var(--r2);
+                        background: color-mix(in srgb, var(--gefahr) 12%, transparent); font-size: var(--klein); color: var(--text-2); }
+.pw-ordner-rueckfrage .knoepfe { display: flex; gap: var(--a2); justify-content: flex-end; }
+.pw-ordnerzone { display: flex; flex-direction: column; gap: 2px; min-height: 2px; }
+/* ein leerer Ordner nimmt Boards auf: eine ruhige Fläche mit Hinweis */
+.pw-ordnerzone.leer { min-height: 34px; margin: 0 var(--a1); border-radius: var(--r2); background: color-mix(in srgb, var(--text-3) 8%, transparent); }
+.pw-ordnerzone.leer::before { content: "Leer: Board hierher ziehen"; padding: 8px var(--a3); font-size: var(--klein); color: var(--text-3); }
+.pw-ordner-neu { display: flex; gap: var(--a2); align-items: center; padding: 2px var(--a1); }
+.pw-ordner-neu .eingabe { flex: 1; min-width: 0; height: 36px; }
+.pw-boards-etikett { display: flex; align-items: center; gap: var(--a1); }
+/* Einträge der Seitenleiste, die etwas tun statt zu führen (Ordner anlegen, Hilfe, Einklappen), sehen aus wie Wege */
+button.navi { width: 100%; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
 .navi.pw-boardnavi { padding-left: calc(var(--a3) + 6px); }
 .navi.pw-boardnavi .pw-farbpunkt { margin: 0 6px; }
 .pw-boardkuerzel { display: none; }
 .pw-angabe.pw-idee, .pw-angabe.pw-idee i { color: var(--flieder); }
 .pw-akzent { color: var(--akzent); }
-/* schmale Seitenleiste (Symbolleiste des Leitstands unter 1240 px): Ordner als Trennstrich, Boards mit ihrem Kürzel */
-@media (max-width: 1240px) {
-  .pw-ordner { font-size: 0; justify-content: center; padding: var(--a3) 0 var(--a1); border-top: 1px solid var(--rand); margin-top: var(--a2); }
-  .pw-ordner i { font-size: 13px; }
-  .navi.pw-boardnavi { padding: 8px 0; }
-  .navi.pw-boardnavi .pw-farbpunkt { display: none; }
-  .navi.pw-boardnavi .pw-boardkuerzel {
-    display: inline-grid; place-items: center; height: 26px; padding: 0 5px; border-radius: var(--r1); letter-spacing: 0.02em;
-    font-family: var(--schrift-zahl); font-size: var(--marke); font-weight: 700;
-    background: color-mix(in srgb, var(--f, var(--stahl)) var(--toenung), transparent); color: var(--f, var(--stahl));
-  }
+/* schmale Seitenleiste (Symbolleiste des Leitstands, eingeklappt oder von selbst im schmalen Fenster): Ordner als
+   Trennstrich, Boards mit ihrem Kürzel; Bearbeiten der Ordner nur ausgeklappt */
+:root[data-seitenleiste="schmal"] .pw-ordner { font-size: 0; justify-content: center; padding: var(--a3) 0 var(--a1); border-top: 1px solid var(--rand); margin-top: var(--a2); }
+:root[data-seitenleiste="schmal"] .pw-ordner > i { font-size: 13px; }
+:root[data-seitenleiste="schmal"] :is(.pw-ordner-name, .pw-ordner-knopf, .pw-ordner-feld, .pw-ordner-rueckfrage, .pw-ordner-neu) { display: none; }
+:root[data-seitenleiste="schmal"] .pw-ordnerzone.leer { margin: 0; min-height: 26px; }
+:root[data-seitenleiste="schmal"] .pw-ordnerzone.leer::before { content: none; }
+:root[data-seitenleiste="schmal"] .navi.pw-boardnavi { padding: 8px 0; }
+:root[data-seitenleiste="schmal"] .navi.pw-boardnavi .pw-farbpunkt { display: none; }
+:root[data-seitenleiste="schmal"] .navi.pw-boardnavi .pw-boardkuerzel {
+  display: inline-grid; place-items: center; height: 26px; padding: 0 5px; border-radius: var(--r1); letter-spacing: 0.02em;
+  font-family: var(--schrift-zahl); font-size: var(--marke); font-weight: 700;
+  background: color-mix(in srgb, var(--f, var(--stahl)) var(--toenung), transparent); color: var(--f, var(--stahl));
 }
 .pw-seite-fuss { margin-top: auto; padding-top: var(--a3); display: flex; flex-direction: column; gap: 2px; }
 
@@ -236,3 +255,13 @@
 [data-prioritaet="dringend"] { --prio: var(--gefahr); }
 [data-prioritaet="hoch"] { --prio: var(--warn); }
 [data-prioritaet="mittel"] { --prio: var(--honig); }
+
+/* ═══ Rückfrage ohne Rückweg (teile/Endgueltig.svelte): Folgen, Wort zum Eintippen, Knöpfe ═══════════════════════ */
+
+.pw-endgueltig { margin: var(--a2) 0; }
+.pw-endgueltig-inhalt { display: flex; flex-direction: column; gap: var(--a2); min-width: 0; flex: 1; }
+.pw-endgueltig-feld { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; }
+.pw-endgueltig-feld .eingabe { flex: 1; min-width: 160px; max-width: 280px; }
+.pw-endgueltig-knoepfe { display: flex; gap: var(--a2); justify-content: flex-end; flex-wrap: wrap; }
+.pw-konten-wer { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.pw-konten-wer b { display: flex; align-items: center; gap: var(--a2); }

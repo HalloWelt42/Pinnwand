@@ -5,6 +5,7 @@
   // Eintrag. Darunter Summe, Soll aus dem Zeitkonto und Differenz.
   // Ein Klick auf einen Tag öffnet seine Einträge rechts als Leiste (wie das Kartendetail über dem Board); "Zeit
   // nachtragen" öffnet dort die Buchung. Gelesen wird über die Abfragen, geändert nur über die Anwendungsfälle.
+  import { Hilfepunkt } from "appkern-oberflaeche";
   import { istAm, modulIrgendwo, saldo, sitzungAm, sitzungSek, sollTag, timerErlaubt, timerVon } from "../../daten/abfragen";
   import { anhalten, fortsetzen, starten } from "../../daten/anwendung/timer.svelte";
   import { setzeTageszeit } from "../../daten/anwendung/zeiten.svelte";
@@ -112,7 +113,7 @@
 
 <div class="rahmen-kopf">
   <div class="seitenkopf pw-zeiten-kopf">
-    <h1>Zeiten</h1>
+    <h1>Zeiten<Hilfepunkt thema="zeiterfassung" abschnitt="stundenzettel" /></h1>
     <div class="pw-zeiten-woche" aria-label="Woche wählen">
       <button class="knopf symbol klein" title="Vorige Woche" onclick={() => woche(-1)}><i class="fa-solid fa-chevron-left"></i></button>
       <span class="text"><b>{wocheText(montag).split(",")[0]}</b><span>{wocheText(montag).split(", ")[1]}</span></span>

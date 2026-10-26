@@ -4,6 +4,7 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import "appkern-oberflaeche/leitstand.css";
 import "appkern-oberflaeche/anmeldung.css";
 import "appkern-oberflaeche/auswahl.css";
+import "appkern-oberflaeche/hilfe.css";
 import "./stil/pinnwand.css";
 import "./stil/board.css";
 import "./stil/detail.css";

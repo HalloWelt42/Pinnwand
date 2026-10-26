@@ -9,7 +9,7 @@ sicherung:
   - "Datenbank: jede Nacht ab 3 Uhr und vor jedem Ausrollen eine Kopie nach {{wurzel}}/sicherungen (die jüngsten zehn bleiben); das Werkzeug Sicherungen holt sie auf den Mac"
   - "Anhänge: liegen in der Kellerwolke und sind mit ihr gesichert"
 schluessel_orte:
-  - "Pi: Einstellungen in {{wurzel}}/daten/pinnwand.sqlite: App-Schlüssel der Kellerwolke und Schlüssel der Leitstelle (in der Oberfläche unter Einstellungen, Verbindungen, verdeckt)"
+  - "Pi: Einstellungen in {{wurzel}}/daten/pinnwand.sqlite: App-Schlüssel der Kellerwolke und Schlüssel der Leitstelle (in der Oberfläche unter Einstellungen, App und Verbindungen, verdeckt)"
   - "Pi: {{wurzel}}/daten/pinnwand.sqlite, Tabelle appkern_push_schluessel: privater Schlüssel für Mitteilungen aufs Telefon (entsteht von selbst; geht er verloren, richtet jedes Telefon Mitteilungen neu ein)"
   - "Pi: {{wurzel}}/zertifikate/, Blattzertifikat mit Schlüssel aus der Hausstelle"
   - "Mac: backend/.env.test im Klon, Modus 0600, Testzugang zur Kellerwolke der Entwicklung (nur für den Verbundtest)"
@@ -29,6 +29,9 @@ allen, die das Board sehen, und lassen sich in der Meldung rückgängig machen.
 Angemeldet wird mit dem Konto der [[Kellerwolke]]; wer zu einem Board eingeladen wird, darf die App ab dann nutzen.
 Anhänge liegen in der Kellerwolke. Die Oberfläche läuft am Rechner und als eigene Ansicht am Telefon unter {{adresse}};
 am Telefon lassen sich Karten erfassen, verschieben und Titel, Beschreibung, Fällig und Zuständig bearbeiten.
+Die Hilfe öffnet sich über "Hilfe" in der Seitenleiste oder das Fragezeichen im Kopf als schwebendes, durchsuchbares
+Fenster; die kleinen i-Knöpfe an Bedienelementen springen zum passenden Abschnitt. Die Seitenleiste klappt unten ein und
+aus (je Gerät gemerkt); Ordner werden dort angelegt, umbenannt und gelöscht, Boards per Ziehen einsortiert.
 
 Zeiterfassung (Timer je Person, Stundenzettel), Arbeitszeit (Zeitkonto, Urlaub, Team), Serien und Termine, Berichte
 (PDF, Tabelle, Markdown in der Kellerwolke) und KI an der Karte sind Module, die man je Board in seinen Einstellungen
@@ -54,14 +57,14 @@ Was eine Stufe noch nicht hat, zeigt die Oberfläche nicht.
 - [[Kellerwolke]]: Anmeldung mit dem eigenen Konto und ein App-Schlüssel für die Pinnwand (Kellerwolke, Einstellungen,
   Zugänge).
 - [[Leitstelle]] für KI an der Karte: dort unter Anwendungen einen Schlüssel für die Pinnwand erzeugen, in der Pinnwand
-  unter Einstellungen, Verbindungen Adresse und Schlüssel eintragen; das Modell steht unter Einstellungen, KI an der
-  Karte (leer: die Leitstelle wählt). Ohne Leitstelle läuft alles andere wie gewohnt, nur ohne Vorschläge.
-- [[Transkription]] für das Modul Transkripte: in der Pinnwand unter Einstellungen, Verbindungen ihre Adresse eintragen
+  unter Einstellungen, App und Verbindungen in der Gruppe Verbindungen Adresse und Schlüssel eintragen; das Modell steht
+  dort in der Gruppe KI an der Karte (leer: die Leitstelle wählt). Ohne Leitstelle läuft alles andere wie gewohnt, nur ohne Vorschläge.
+- [[Transkription]] für das Modul Transkripte: in der Pinnwand unter Einstellungen, App und Verbindungen ihre Adresse eintragen
   (die Auswahl bietet gefundene an). Angemeldet wird mit dem App-Schlüssel der Pinnwand im Auftrag der Person; die
   Transkription muss die Konten zulassen, die sie über die Pinnwand nutzen sollen. Ohne Adresse läuft alles andere wie
   gewohnt.
-- [[Vertonung]] für das Modul Vorlesen: in der Pinnwand unter Einstellungen, Verbindungen ihre Adresse eintragen; Stimme
-  und Tempo stehen unter Einstellungen, Vorlesen (zur Wahl: Katalog der Vertonung und private Stimmen, die sie der
+- [[Vertonung]] für das Modul Vorlesen: in der Pinnwand unter Einstellungen, App und Verbindungen ihre Adresse eintragen;
+  Stimme und Tempo stehen dort in der Gruppe Vorlesen (zur Wahl: Katalog der Vertonung und private Stimmen, die sie der
   Pinnwand freigibt). Ohne Adresse läuft alles andere wie gewohnt, nur ohne Vorlesen.
 - [[Appkern]]: Gerüst, Anmeldung und Oberfläche; Oberfläche und Backend sind auf denselben Commit festgelegt.
 
@@ -113,7 +116,7 @@ Besitzer; nach der Anmeldung zeigt die Pinnwand Heute und "Live verbunden" im Fu
 ### 4. Weitere Personen
 
 Andere Personen kommen über ein Board dazu: in den Einstellungen des Boards unter Mitglieder per Kontoname der
-Kellerwolke einladen. Die Einladung trägt den Namen unter Einstellungen, Weitere Konten ein; ab dann darf die Person
+Kellerwolke einladen. Die Einladung trägt den Namen unter Einstellungen, App und Verbindungen, Weitere Konten ein; ab dann darf die Person
 sich anmelden und sieht das Board. Entzogen wird der Zugang dort nur von Hand.
 
 Probe: die eingeladene Person meldet sich an und sieht das Board in der Seitenleiste.
@@ -134,7 +137,7 @@ Karte hängt.
 ## Wenn etwas klemmt
 
 - Die Anmeldung meldet "Das Konto darf diese App nicht nutzen": die Person ist zu keinem Board eingeladen und steht
-  nicht unter Einstellungen, Weitere Konten. Einladen oder den Namen dort eintragen.
+  nicht unter Einstellungen, App und Verbindungen, Weitere Konten. Einladen oder den Namen dort eintragen.
 - Im Fuß steht "Getrennt, verbinde neu": der Ereignisstrom ist abgerissen (Neustart, Netz). Die Pinnwand verbindet sich
   von selbst neu und holt den ganzen Stand; Änderungen sind solange gesperrt, damit nichts scheinbar gespeichert wird.
 - Eine Änderung wird mit "inzwischen geändert" abgelehnt: jemand anders hat dasselbe Feld kurz vorher geändert. Das
@@ -146,8 +149,8 @@ Karte hängt.
   Module des Boards sagt es). "Die Leitstelle kann gerade nicht" nennt den Grund aus der Leitstelle (etwa ein schlafender
   Rechner); später "Noch einmal". Gewartet wird nicht still, die Karte bleibt unverändert.
 - Transkripte: "Die Transkription lässt dich nicht zu" heißt, das Konto darf die Transkription nicht nutzen (dort unter
-  Einstellungen, Weitere Konten eintragen). Steht die Transkription in der Fußleiste als nicht verbunden, stimmt die
-  Adresse nicht oder sie läuft nicht. Spracheingabe braucht die Pinnwand vom Home-Bildschirm über HTTPS und die
+  Einstellungen, Weitere Konten eintragen). Meldet die Suche in Transkripten, die Transkription sei nicht erreichbar,
+  stimmt die Adresse nicht oder sie läuft nicht. Spracheingabe braucht die Pinnwand vom Home-Bildschirm über HTTPS und die
   Erlaubnis fürs Mikrofon.
 - Vorlesen bleibt stumm: am iPhone die Pinnwand vom Home-Bildschirm öffnen und den Knopf selbst antippen (Ton startet
   nur aus einer Berührung). "Die Vertonung lässt das nicht zu" heißt, das Konto oder die gewählte Stimme ist dort nicht

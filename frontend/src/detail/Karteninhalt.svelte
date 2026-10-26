@@ -3,11 +3,13 @@
   // der Module nur, wenn das Modul im Board an ist. Jede Änderung läuft über einen Anwendungsfall mit Rückgängig; der
   // Status über denselben Weg wie das Ziehen (Gruppe zieht mit, Abschluss, Timer). Felder, die beim Verlassen speichern,
   // verwerfen mit Escape (M-125). Im Kopf: Arbeit oder Idee, Duplizieren, Verweis kopieren, Vollbild, Schließen.
+  import { Hilfepunkt } from "appkern-oberflaeche";
   import { darf, kartenNummer, umzugsziele, zeitDerGruppe, zeitDerKarte } from "../daten/abfragen";
   import { artSetzen, bearbeiten, duplizieren, verschieben, type Kartenaenderung } from "../daten/anwendung/karten.svelte";
   import { melden } from "../daten/anwendung/meldung.svelte";
   import { kiDa, labelsHolen, Vorschlagslauf, zusammenfassungHolen } from "../daten/anwendung/ki.svelte";
-  import { inPapierkorb } from "../daten/anwendung/papierkorb.svelte";
+  import { inPapierkorb, karteEndgueltig } from "../daten/anwendung/papierkorb.svelte";
+  import Endgueltig from "../teile/Endgueltig.svelte";
   import { transkripteDa } from "../daten/anwendung/transkripte.svelte";
   import { karteText, liest, vorlesen, vorlesenDa } from "../daten/anwendung/vorlesen.svelte";
   import { uhr } from "../daten/uhr.svelte";
@@ -91,6 +93,15 @@
   function wegwerfen(): void {
     inPapierkorb([k.id]);
     schliessen();
+  }
+
+  // Endgültig löschen ohne Papierkorb (Rechte "Karten löschen" und "Papierkorb leeren"), bestätigt mit dem Schlüssel
+  let endgueltig = $state(false);
+  // das Detail schließt vorher (wie beim Papierkorb), sonst meldet der Weg die verschwundene Karte statt des Löschens
+  function endgueltigLoeschen(bestaetigung: string): Promise<boolean> {
+    const id = k.id;
+    schliessen();
+    return karteEndgueltig(id, bestaetigung);
   }
 
   // ═══ Konflikt (M-55): der Server hat eine Änderung abgelehnt, weil jemand anders dasselbe Feld inzwischen geändert hat ══
@@ -206,7 +217,7 @@
             speichern={(t) => setzen({ notizen: t || undefined }, "Notizen gespeichert")} />
 
   <section class="pw-abschnitt">
-    <div class="etikett">Angaben</div>
+    <div class="etikett">Angaben<Hilfepunkt thema="kartendetail" abschnitt="angaben" /></div>
     <div class="pw-felder">
       <span class="name"><i class="fa-solid fa-table-columns"></i>Status</span>
       <span class="wert"><select class="eingabe" value={k.spalte} disabled={!darf(board, "karten.verschieben")} aria-label="Status"
@@ -320,9 +331,20 @@
   <Aktivitaet karte={k} {board} {optionen} />
 </div>
 
+{#if endgueltig}
+  <Endgueltig frage="{k.schluessel} endgültig löschen?" wort={k.schluessel} knopf="Endgültig löschen" bestaetigen={endgueltigLoeschen}
+              abbrechen={() => (endgueltig = false)}>
+    Die Karte geht ohne Papierkorb, mit Checkliste, Kommentaren, Anhängen und Verlauf; ein laufender Timer bucht vorher.
+    Gebuchte Zeiten bleiben unter ihrem Namen stehen. Das lässt sich nicht rückgängig machen.
+  </Endgueltig>
+{/if}
 <div class="pw-detail-fuss">
   {#if darf(board, "karten.loeschen")}
     <button class="knopf ohne gefahr klein" onclick={wegwerfen}><i class="fa-solid fa-trash-can"></i>In den Papierkorb</button>
+    {#if darf(board, "papierkorb.leeren")}
+      <button class="knopf ohne gefahr klein" disabled={endgueltig} onclick={() => (endgueltig = true)}
+              title="Ohne Papierkorb und ohne Rückweg; zur Sicherheit tippst du den Schlüssel ein"><i class="fa-solid fa-ban"></i>Endgültig löschen</button>
+    {/if}
   {/if}
   <span class="schwach pw-detail-hinweis">Jedes Feld speichert für sich; jede Änderung lässt sich in der Meldung rückgängig machen.</span>
 </div>

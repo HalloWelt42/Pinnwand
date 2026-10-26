@@ -56,6 +56,35 @@ def einziger_besitzer(b: Board, m: Mitglied) -> bool:
     return m.rolle == BESITZER and len(besitzer(b)) == 1
 
 
+def austragen(k: Kontext, b: Board, m: Mitglied) -> int:
+    """Nimmt ein angemeldetes Mitglied aus dem Board (das Board speichert der Aufrufer): sein Timer dort bucht, an offenen
+    Karten fällt seine Zuständigkeit weg, aus Serien und Terminen des Boards und aus seinen Ordnern geht es heraus.
+    Ergebnis: an wie vielen Karten die Zuständigkeit frei wurde."""
+    assert m.konto
+    name = mitglied_name(k, m)
+    b.mitglieder = [x for x in b.mitglieder if x.kellerwolke != m.kellerwolke]
+    zeiterfassung.timer_im_board_beenden(k, b.id, m.konto)
+    frei = 0
+    for c in karten_des_boards(k, b):
+        spalte = spalte_von(b, c.spalte)
+        if m.konto in c.zustaendig and not (spalte and spalte.erledigt):
+            c.zustaendig = [x for x in c.zustaendig if x != m.konto]
+            vermerken(k, c, f"hat {name} als zuständig entfernt")
+            speichern(k, c)
+            frei += 1
+    for d in k.s.alle("serien", "board=?", (b.id,)):
+        if m.konto in d.get("teilnehmer", []):
+            k.s.schreib("serien", {**d, "teilnehmer": [x for x in d["teilnehmer"] if x != m.konto]})
+    for d in k.s.alle("termine", "board=?", (b.id,)):
+        if any(m.konto in d.get(feld, []) for feld in ("teilnehmer", "zugesagt", "bestaetigt")):
+            k.s.schreib("termine", {**d, **{feld: [x for x in d.get(feld, []) if x != m.konto]
+                                            for feld in ("teilnehmer", "zugesagt", "bestaetigt")}})
+    for d in k.s.alle("ordner", "konto=?", (m.konto,)):
+        if b.id in d.get("boards", []):
+            k.s.schreib("ordner", {**d, "boards": [x for x in d["boards"] if x != b.id]})
+    return frei
+
+
 class Mitglieder:
     def __init__(self, anwendung: Anwendung) -> None:
         self.a = anwendung
@@ -158,24 +187,10 @@ class Mitglieder:
             if einziger_besitzer(b, m):
                 raise Abgelehnt("Der einzige Besitzer bleibt, bis er den Besitz überträgt")
             name = mitglied_name(k, m)
-            b.mitglieder = [x for x in b.mitglieder if x.kellerwolke != m.kellerwolke]
             if not m.konto:
+                b.mitglieder = [x for x in b.mitglieder if x.kellerwolke != m.kellerwolke]
                 return f"Die Einladung an {name} ist zurückgenommen"
-            zeiterfassung.timer_im_board_beenden(k, b.id, m.konto)
-            frei = 0
-            for c in karten_des_boards(k, b):
-                spalte = spalte_von(b, c.spalte)
-                if m.konto in c.zustaendig and not (spalte and spalte.erledigt):
-                    c.zustaendig = [x for x in c.zustaendig if x != m.konto]
-                    vermerken(k, c, f"hat {name} als zuständig entfernt")
-                    speichern(k, c)
-                    frei += 1
-            for d in k.s.alle("serien", "board=?", (b.id,)):        # aus den Serien des Boards
-                if m.konto in d.get("teilnehmer", []):
-                    k.s.schreib("serien", {**d, "teilnehmer": [x for x in d["teilnehmer"] if x != m.konto]})
-            for d in k.s.alle("ordner", "konto=?", (m.konto,)):
-                if b.id in d.get("boards", []):
-                    k.s.schreib("ordner", {**d, "boards": [x for x in d["boards"] if x != b.id]})
+            frei = austragen(k, b, m)
             return f"{name} aus {b.name} entfernt" + (f"; Zuständigkeit an {anzahl(frei, 'Karte', 'Karten')} frei" if frei else "")
 
         return await self._am_board(konto, board_id, tun)

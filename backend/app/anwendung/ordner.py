@@ -93,8 +93,10 @@ class Persoenliches:
 
         return await self.a.aendern(konto, arbeit)
 
-    async def ordner_setzen(self, konto: Konto, board_id: Kennung, ordner_id: Kennung | None) -> Antwort:
-        """Board in einen deiner Ordner (ans Ende) oder ohne Ordner; es hängt nur in deiner Seitenleiste um."""
+    async def ordner_setzen(self, konto: Konto, board_id: Kennung, ordner_id: Kennung | None,
+                            stelle: int | None = None) -> Antwort:
+        """Board in einen deiner Ordner (an die Stelle, ohne Angabe ans Ende) oder ohne Ordner; es hängt nur in deiner
+        Seitenleiste um. Im selben Ordner ordnet die Stelle es um."""
 
         def arbeit(k: Kontext) -> str | None:
             b = k.board(board_id)
@@ -103,15 +105,19 @@ class Persoenliches:
             alle = meine_ordner(k)
             ziel = ordner_von(alle, ordner_id) if ordner_id else None
             bisher = [o.id for o in alle if b.id in o.boards]
-            if bisher == ([ziel.id] if ziel else []):
+            schon_da = bisher == ([ziel.id] if ziel else [])
+            if schon_da and (ziel is None or stelle is None or ziel.boards.index(b.id) == min(stelle, len(ziel.boards) - 1)):
                 return None
             for o in alle:
-                if b.id in o.boards and o is not ziel:
+                if b.id in o.boards:
                     o.boards = [x for x in o.boards if x != b.id]
-                    speichern(k, o)
-            if ziel and b.id not in ziel.boards:
-                ziel.boards.append(b.id)
+                    if o is not ziel:
+                        speichern(k, o)
+            if ziel:
+                ziel.boards.insert(len(ziel.boards) if stelle is None else max(0, stelle), b.id)
                 speichern(k, ziel)
+            if schon_da:
+                return f"{b.name} umsortiert"
             return f"{b.name} liegt jetzt im Ordner {ziel.name}" if ziel else f"{b.name} liegt jetzt ohne Ordner"
 
         return await self.a.aendern(konto, arbeit)

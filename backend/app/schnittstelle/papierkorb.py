@@ -1,5 +1,6 @@
 """Wege des Papierkorbs: Karten, eine Spalte oder ein Board hineinlegen, einen Eintrag wiederherstellen, gewählte
-Einträge oder den ganzen Papierkorb eines Boards endgültig entfernen (ohne Rückweg)."""
+Einträge oder den ganzen Papierkorb eines Boards endgültig entfernen (ohne Rückweg); eine Karte oder ein Board gleich
+endgültig löschen, bestätigt mit Schlüssel oder Kürzel."""
 
 from __future__ import annotations
 
@@ -9,6 +10,11 @@ from ..anwendung.rahmen import Antwort
 from ..modell import Kennung, Konto, Modell
 from .karten import Sammel
 from .zugriff import Zugriff
+
+
+class Bestaetigung(Modell):
+    #: zur Sicherheit eingetippt: Schlüssel der Karte oder Kürzel des Boards
+    bestaetigung: str
 
 
 class SpalteLoeschen(Modell):
@@ -23,6 +29,14 @@ def router(z: Zugriff) -> APIRouter:
     @r.post("/karten/in-papierkorb", response_model=Antwort)
     async def in_papierkorb(e: Sammel, konto: Konto = Depends(ich)) -> Antwort:
         return await tun(d.papierkorb.in_papierkorb(konto, e.ids))
+
+    @r.post("/karten/{karte_id}/endgueltig", response_model=Antwort)
+    async def karte_endgueltig(karte_id: Kennung, e: Bestaetigung, konto: Konto = Depends(ich)) -> Antwort:
+        return await tun(d.papierkorb.karte_endgueltig(konto, karte_id, e.bestaetigung))
+
+    @r.post("/boards/{board_id}/endgueltig", response_model=Antwort)
+    async def board_endgueltig(board_id: Kennung, e: Bestaetigung, konto: Konto = Depends(ich)) -> Antwort:
+        return await tun(d.papierkorb.board_endgueltig(konto, board_id, e.bestaetigung))
 
     @r.post("/boards/{board_id}/in-papierkorb", response_model=Antwort)
     async def board_in_papierkorb(board_id: Kennung, konto: Konto = Depends(ich)) -> Antwort:

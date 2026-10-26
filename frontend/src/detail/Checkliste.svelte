@@ -3,6 +3,7 @@
   // verwirft, leer wird abgewiesen), X entfernt mit Rückgängig, Enter im Feld darunter fügt an. Oben "n/m" und der
   // Fortschrittsbalken, grün wie auf der Karte. Jede Änderung über bearbeiten. Mit dem Modul KI an der Karte schlägt
   // "Vorschlagen" neue Punkte vor; übernommen werden nur die angehakten, ans Ende der Liste.
+  import { Hilfepunkt } from "appkern-oberflaeche";
   import { tick } from "svelte";
   import { punkteHolen, Vorschlagslauf } from "../daten/anwendung/ki.svelte";
   import { bearbeiten } from "../daten/anwendung/karten.svelte";
@@ -73,7 +74,7 @@
 </script>
 
 <section class="pw-abschnitt">
-  <div class="etikett">Checkliste {#if karte.checkliste.length}<span class="zaehler" class:erfolg={anteil === 1}>{erledigt}/{karte.checkliste.length}</span>{/if}
+  <div class="etikett">Checkliste<Hilfepunkt thema="kartendetail" abschnitt="checkliste" /> {#if karte.checkliste.length}<span class="zaehler" class:erfolg={anteil === 1}>{erledigt}/{karte.checkliste.length}</span>{/if}
     {#if ki && schreiben}
       <span class="rechts"><button class="knopf ohne klein" title="Neue Punkte vorschlagen (über die Leitstelle)" aria-pressed={vorschlag.offen}
                                    onclick={() => (vorschlag.offen ? vorschlag.schliessen() : vorschlagen())}><i class="fa-solid fa-wand-magic-sparkles"></i>Vorschlagen</button></span>

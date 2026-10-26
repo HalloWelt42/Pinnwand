@@ -41,6 +41,10 @@ class Zugang(Protocol):
 
     async def freischalten(self, namen: Iterable[str]) -> None: ...
 
+    def besitzer(self) -> str | None:
+        """Der Kontoname, dem der App-Schlüssel gehört (Besitzer der App); None, solange die App nicht eingerichtet ist."""
+        ...
+
 
 class Einladung(Modell):
     kellerwolke: str

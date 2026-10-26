@@ -2,6 +2,7 @@
   // Person per Name finden: Textfeld mit Vorschlägen (ab zwei Buchstaben, höchstens sechs), keine lange Auswahlliste.
   // Die Kandidaten gibt der Aufrufer: Mitglieder eines Boards (zuweisen) oder Konten der Kellerwolke (einladen). Wer
   // schon in der Pinnwand ist, erscheint mit Kürzel und Farbe, wer noch kein Board hat, mit Name und Kennung.
+  import { Suchfeld } from "appkern-oberflaeche";
   import Person from "../board/Person.svelte";
   import type { KellerwolkePerson, Kennung } from "../modell";
 
@@ -27,9 +28,8 @@
 </script>
 
 <div class="pw-personenwahl" class:schwebend>
-  <label class="suche"><i class="fa-solid fa-user-plus"></i>
-    <input bind:value={text} placeholder={platzhalter} aria-label="Person suchen" autocomplete="off"
-           onkeydown={(e) => { if (e.key === "Enter" && treffer.length) nehmen(treffer[0]); if (e.key === "Escape") text = ""; }} /></label>
+  <Suchfeld symbol="fa-user-plus" bind:wert={text} placeholder={platzhalter} aria-label="Person suchen" autocomplete="off"
+            onkeydown={(e) => { if (e.key === "Enter" && treffer.length) nehmen(treffer[0]); if (e.key === "Escape") text = ""; }} />
   {#if suche.length >= 2}
     <div class="pw-personenwahl-vorschlaege" role="listbox" aria-label="Vorschläge">
       {#each treffer as p (p.kennung)}

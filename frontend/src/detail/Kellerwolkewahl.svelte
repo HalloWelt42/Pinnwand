@@ -3,12 +3,13 @@
   // Ordner suchen, mehrere wählen (auch aus verschiedenen Ordnern), verknüpfen. Schon angehängte stehen als solche da. Die
   // Pinnwand sieht dabei mit deiner Anmeldung nur Namen und Größen; die Dateien bleiben, wo sie sind. Eine Fläche im
   // Detail, kein Browser-Dialog; Escape oder Abbrechen schließt sie.
+  import { Suchfeld } from "appkern-oberflaeche";
   import { seitenFehler } from "appkern-oberflaeche";
   import { onMount, tick } from "svelte";
   import { kellerwolkeDateien } from "../daten/abfragen";
   import { AUF_EINMAL, ausKellerwolke } from "../daten/anwendung/anhaenge.svelte";
   import type { Karte, KellerwolkeDatei, KellerwolkeOrdner } from "../modell";
-  import { verlassen, verwerfbar } from "../teile/verwerfen";
+  import { verlassen, verwerfen } from "../teile/verwerfen";
   import { SYMBOL } from "./anhang";
   import { inSicht } from "./sicht";
 
@@ -78,8 +79,7 @@
 <div class="pw-wolkenwahl" role="group" aria-label="Aus der Kellerwolke wählen" tabindex="-1" bind:this={flaeche} onkeydown={taste}>
   <div class="pw-wolkenwahl-kopf">
     <i class="fa-solid fa-cloud"></i><b>Deine Kellerwolke</b>
-    <label class="suche"><i class="fa-solid fa-magnifying-glass"></i>
-      <input bind:value={suche} use:verwerfbar placeholder="Datei oder Ordner suchen" aria-label="In diesem Ordner suchen" autocomplete="off" /></label>
+    <Suchfeld bind:wert={suche} {@attach verwerfen} placeholder="Datei oder Ordner suchen" aria-label="In diesem Ordner suchen" autocomplete="off" />
   </div>
   {#if weg.length}
     <nav class="pw-wolkenwahl-kopf" aria-label="Weg in deiner Kellerwolke">

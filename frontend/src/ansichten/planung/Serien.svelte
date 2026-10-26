@@ -3,6 +3,7 @@
   // Uhrzeit, Dauer, nächster Tag, Teilnehmer, Board und Zielspalte, Zustand; die kommenden Termine mit der Zusage je
   // Person. Oben der Nachtrag deiner vorgebuchten Zeiten vergangener Tage, als Bereich auf der Seite. Neue Serien und
   // Termine legt an, wer in einem Board das Recht "Serien und Termine verwalten" hat.
+  import { Hilfepunkt } from "appkern-oberflaeche";
   import { darf, nachtrag, serienUmfeld } from "../../daten/abfragen";
   import { terminAnlegen, zusagen } from "../../daten/anwendung/termine.svelte";
   import { datum, dauer } from "../../daten/format";
@@ -75,7 +76,7 @@
 
 <div class="rahmen-kopf">
   <div class="seitenkopf">
-    <h1>Serien und Termine</h1>
+    <h1>Serien und Termine<Hilfepunkt thema="serien" abschnitt="uebersicht" /></h1>
     {#if verwaltbar.length}
       <div class="aktionen">
         <a class="knopf" class:haupt={!(nachtragOffen && offen.length)} href="/serien/neu" title="Wiederkehrende Karten mit vorgebuchter Zeit"><i class="fa-solid fa-plus"></i>Neue Serie</a>

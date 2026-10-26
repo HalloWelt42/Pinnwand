@@ -4,6 +4,7 @@
   // Karten der Tage legt der Server an. Ändern zieht nur unberührte Vorbuchungen nach; angefasste Karten, vergangene und
   // bewusst gelöschte Tage bleiben (M-108, M-109). Pause nimmt unberührte Zukunftskarten zurück, Löschen löst Karten mit
   // Zeit von der Serie (M-110). Rückfragen stehen in der Fläche, jede Änderung meldet sich unten mit Rückgängig.
+  import { Hilfepunkt } from "appkern-oberflaeche";
   import { untrack } from "svelte";
   import { angefasstWeil, darf as darfIm, serienUmfeld } from "../../daten/abfragen";
   import { fortsetzen, pausieren, serieAendern, serieAnlegen, serieLoeschen, tagAuslassen, type SerienFelder } from "../../daten/anwendung/serien.svelte";
@@ -187,7 +188,7 @@
 {:else}
 <div class="rahmen-kopf">
   <div class="seitenkopf">
-    <h1><i class="fa-solid fa-repeat pw-serien-kopfsymbol"></i>{neu ? "Neue Serie" : original?.titel}</h1>
+    <h1><i class="fa-solid fa-repeat pw-serien-kopfsymbol"></i>{neu ? "Neue Serie" : original?.titel}<Hilfepunkt thema="serien" abschnitt="anlegen" /></h1>
     {#if !neu}
       {#if pausiert}<span class="zustand pausiert"><i class="fa-solid fa-circle-pause"></i>pausiert seit {datum(vorschau.pausiertSeit ?? heute, true)}</span>
       {:else}<span class="zustand fertig"><i class="fa-solid fa-circle-play"></i>aktiv</span>{/if}

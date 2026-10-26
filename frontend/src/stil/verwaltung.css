@@ -190,3 +190,13 @@ fieldset.pw-verwaltung-gesperrt { display: contents; border: 0; margin: 0; paddi
 .pw-verwaltung-geloescht { display: flex; align-items: center; gap: var(--a3); flex-wrap: wrap; padding: var(--a2) 0; min-width: 0; }
 .pw-verwaltung-geloescht .wer { display: flex; flex-direction: column; min-width: 0; flex: 1 1 240px; line-height: 1.3; overflow-wrap: anywhere; }
 .pw-verwaltung-geloescht .rechts { margin-left: auto; display: flex; gap: var(--a2); flex-wrap: wrap; }
+
+/* ═══ App und Verbindungen: Gruppen mit Symbol, Leiste zum Speichern unten im Rollfeld ═══════════════════════════ */
+
+.pw-app-gruppe { display: flex; align-items: center; gap: var(--a2); }
+.pw-app-leiste {
+  position: sticky; bottom: 0; z-index: 2; display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap;
+  margin-top: var(--a4); padding: var(--a3) var(--a4); background: var(--karte-2); border-radius: var(--r3);
+  box-shadow: 0 -8px 24px color-mix(in srgb, var(--schattenfarbe) 25%, transparent);
+}
+.pw-app-leiste > span { flex: 1; min-width: 0; }

@@ -3,11 +3,12 @@
   // Schalter "Zeit teilen" und die Suche zum Verknüpfen. Gesucht wird in den offenen Arbeitskarten dieses Boards nach
   // Titel oder Schlüssel, ohne die bisherigen Mitglieder, höchstens 8 Treffer; Pfeile wählen, Enter oder Klick
   // verknüpft über verknuepfen (hat der Treffer schon eine Gruppe, tritt diese Karte bei).
+  import { Hilfepunkt, Suchfeld } from "appkern-oberflaeche";
   import { kartenNummer, verknuepfTreffer } from "../daten/abfragen";
   import { gruppeLoesen, verknuepfen, zeitTeilen } from "../daten/anwendung/karten.svelte";
   import { board as boardVon, gruppenmitglieder, stand } from "../daten/stand.svelte";
   import type { Board, Karte } from "../modell";
-  import { verwerfbar } from "../teile/verwerfen";
+  import { verwerfen } from "../teile/verwerfen";
   import { boardPfad } from "../weg.svelte";
 
   let { karte, board, schreiben }: { karte: Karte; board: Board; schreiben: boolean } = $props();
@@ -41,7 +42,7 @@
 </script>
 
 <section class="pw-abschnitt">
-  <div class="etikett">Verknüpfte Aufgaben {#if gruppe.length}<span class="zaehler">{gruppe.length + 1}</span>{/if}
+  <div class="etikett">Verknüpfte Aufgaben<Hilfepunkt thema="kartendetail" abschnitt="verknuepft" /> {#if gruppe.length}<span class="zaehler">{gruppe.length + 1}</span>{/if}
     {#if gruppe.length && karte.gruppe}{@const g = karte.gruppe}<span class="rechts"><button class="knopf ohne klein" disabled={!schreiben}
       title="Die Gruppe zeigt ihre gemeinsame Zeit; gebucht wird je Karte" onclick={() => zeitTeilen(g, !teilen)}><span class="schalter" class:an={teilen}></span>Zeit teilen</button></span>{/if}
   </div>
@@ -57,9 +58,8 @@
   {/each}
   {#if schreiben}
     <div class="pw-detail-suchfeld">
-      <label class="suche pw-detail-suche"><i class="fa-solid fa-link"></i>
-        <input bind:value={suche} use:verwerfbar onkeydown={taste} autocomplete="off" aria-label="Karte suchen und verknüpfen"
-               placeholder="Karte suchen und verknüpfen (zieht mit, Zeit geteilt)" /></label>
+      <Suchfeld klasse="pw-detail-suche" symbol="fa-link" bind:wert={suche} {@attach verwerfen} onkeydown={taste} autocomplete="off"
+                aria-label="Karte suchen und verknüpfen" placeholder="Karte suchen und verknüpfen (zieht mit, Zeit geteilt)" />
       {#if suche.trim()}
         <div class="pw-detail-treffer" role="listbox" aria-label="Treffer">
           {#each treffer as x, n (x.id)}

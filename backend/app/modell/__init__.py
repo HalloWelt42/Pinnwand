@@ -40,6 +40,8 @@ class Konto(Modell):
     kuerzel: str
     farbe: Farbe = "stahl"
     kellerwolke: str
+    #: Kennung dieser Anlage des Kontos, neu bei jedem Zurücksetzen; ändert sie sich, vergisst die Oberfläche ihre Merker
+    anlage: Kennung | None = None
 
 
 class Ordner(Modell):

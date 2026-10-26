@@ -5,6 +5,7 @@
   // einer Zeile ändert ein Klick auf den Tag das Datum, die Dauer ist direkt änderbar, X löscht; das gilt für eigene
   // Einträge, für fremde nur mit dem Recht "Zeiten anderer bearbeiten". Gebucht und geändert wird nur über die
   // Anwendungsfälle, jede Änderung mit Rückgängig.
+  import { Hilfepunkt } from "appkern-oberflaeche";
   import { tick } from "svelte";
   import { darf, laufendAuf, timerErlaubt, timerVon, zeitDerKarte } from "../daten/abfragen";
   import { bearbeiten } from "../daten/anwendung/karten.svelte";
@@ -57,7 +58,7 @@
 </script>
 
 <section class="pw-abschnitt">
-  <div class="etikett">Zeiterfassung</div>
+  <div class="etikett">Zeiterfassung<Hilfepunkt thema="zeiterfassung" abschnitt="timer" /></div>
   <div class="pw-zeitblock">
     <div class="oben">
       {#if meiner?.seit}

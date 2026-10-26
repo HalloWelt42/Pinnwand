@@ -4,6 +4,7 @@
   // (nur mit Zeiterfassung). Abhaken, Timer und Zusagen
   // laufen über die Anwendungsfälle; jede Karte öffnet über ihren Pfad. Ohne Verbindung bleibt der letzte Stand sichtbar
   // und alles Schreibende ist gesperrt, damit nichts scheinbar gespeichert wird.
+  import { Hilfepunkt } from "appkern-oberflaeche";
   import { meinTag, modulIrgendwo, timerVon, type MeinTag, type TagEintrag } from "../../daten/abfragen";
   import { liest, tagesplanText, vorlesen, vorlesenDa } from "../../daten/anwendung/vorlesen.svelte";
   import { uhr } from "../../daten/uhr.svelte";
@@ -61,7 +62,7 @@
 <div class="pw-uebersicht-seite">
   <div class="rahmen-kopf">
     <div class="seitenkopf">
-      <h1>Heute</h1>
+      <h1>Heute<Hilfepunkt thema="heute" abschnitt="aufbau" /></h1>
       {#if vorlesbar}
         <div class="aktionen">
           <button class="knopf" class:aktiv={plan} aria-pressed={plan} title="Tagesplan vorlesen: Überfälliges, Heute, Termine und Serien"

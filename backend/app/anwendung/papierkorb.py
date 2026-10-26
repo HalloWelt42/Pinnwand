@@ -61,11 +61,45 @@ def mit_recht(k: Kontext, b: Board, recht: str) -> Board:
 
 
 def ablegen(k: Kontext, board_id: Kennung, art: Literal["karte", "spalte", "board"], karten: list[Karte], stelle: Stelle,
-            spalte: Spalte | None = None, inhalt: dict | None = None) -> None:
+            spalte: Spalte | None = None, inhalt: dict | None = None) -> Geloescht:
     """Ein neuer Eintrag im Papierkorb; er hält fest, wer wann gelöscht hat."""
     e = Geloescht(id=neue_kennung("p"), board=board_id, art=art, spalte=spalte, karten=karten, stelle=stelle,
                   von=k.konto.id, am=k.jetzt, inhalt=inhalt)
     k.s.schreib("papierkorb", e.json_daten())
+    return e
+
+
+def karten_ablegen(k: Kontext, b: Board, karten: list[Karte]) -> tuple[list[Geloescht], int]:
+    """Karten eines Boards in seinen Papierkorb, jede mit ihrer Stelle; gibt die Einträge und die gebuchten Sekunden
+    der beendeten Timer zurück."""
+    gebucht = zeiterfassung.timer_beenden(k, karten)
+    eintraege = []
+    for c in karten:
+        serientag_auslassen(k, c)
+        platz = [x.id for x in karten_der_spalte(k, c.spalte)].index(c.id)
+        k.s.loesch("karten", c.id)
+        vermerken(k, c, "hat sie in den Papierkorb gelegt")
+        eintraege.append(ablegen(k, b.id, "karte", [c], Stelle(spalte=c.spalte, platz=platz)))
+    gruppen_aufraeumen(k, b.id, {c.gruppe for c in karten if c.gruppe})
+    return eintraege, gebucht
+
+
+def board_ablegen(k: Kontext, b: Board) -> tuple[Geloescht, int, int]:
+    """Das Board mit allem (Karten, Gruppen, Ordner) als ein Eintrag in den Papierkorb der App; gibt den Eintrag, die
+    Zahl der Karten und die gebuchten Sekunden der beendeten Timer zurück."""
+    karten = [Karte.model_validate(d) for d in k.s.alle("karten", "board=?", (b.id,), "spalte, reihe")]
+    gebucht = zeiterfassung.timer_beenden(k, karten)
+    gruppen = [Gruppe.model_validate(d) for d in k.s.alle("gruppen", "board=?", (b.id,))]
+    ordner = [d for d in k.s.alle("ordner") if b.id in d.get("boards", [])]
+    for c in karten:
+        k.s.loesch("karten", c.id)
+    for g in gruppen:
+        k.s.loesch("gruppen", g.id)
+    for d in ordner:
+        k.s.schreib("ordner", {**d, "boards": [x for x in d["boards"] if x != b.id]})
+    k.s.loesch("boards", b.id)
+    inhalt = BoardInhalt(board=b, gruppen=gruppen, ordner=[d["id"] for d in ordner])
+    return ablegen(k, b.id, "board", karten, Stelle(), inhalt=inhalt.json_daten()), len(karten), gebucht
 
 
 def neue_zielspalte(k: Kontext, b: Board, alt: Kennung, ziel: Spalte | None) -> None:
@@ -92,14 +126,18 @@ def gruppen_zurueck(k: Kontext, board_id: Kennung, karten: list[Karte]) -> None:
 
 
 def endgueltig(k: Kontext, e: Geloescht) -> None:
-    """Einen Eintrag endgültig entfernen; je Karte bleibt ihr Name. Mit einem Board gehen auch die Einträge seines
-    eigenen Papierkorbs und seine Laufnummer; das Kürzel ist danach frei."""
+    """Einen Eintrag endgültig entfernen; je Karte bleibt ihr Name (für Zeiten, die weiter gebucht sind). Mit einem
+    Board gehen auch die Einträge seines eigenen Papierkorbs, seine Laufnummer, Serien und Termine; das Kürzel ist danach
+    frei."""
     karten = list(e.karten)
     if e.art == "board":
         for d in k.s.alle("papierkorb", "board=? AND id<>?", (e.board, e.id)):
             karten += Geloescht.model_validate(d).karten
             k.s.loesch("papierkorb", d["id"])
         k.s.loesch("laufnummern", e.board)
+        for tabelle in ("serien", "termine"):
+            for d in k.s.alle(tabelle, "board=?", (e.board,)):
+                k.s.loesch(tabelle, d["id"])
     for c in karten:
         name = Entfernt(karte=c.id, board=c.board, schluessel=c.schluessel, titel=c.titel, am=k.jetzt)
         k.s.schreib("entfernt", {"id": c.id, **name.json_daten()})
@@ -192,14 +230,7 @@ class Papierkorb:
 
         def arbeit(k: Kontext) -> str:
             b, karten = gleiche_karten(k, ids, "karten.loeschen")
-            gebucht = zeiterfassung.timer_beenden(k, karten)
-            for c in karten:
-                serientag_auslassen(k, c)
-                platz = [x.id for x in karten_der_spalte(k, c.spalte)].index(c.id)
-                k.s.loesch("karten", c.id)
-                vermerken(k, c, "hat sie in den Papierkorb gelegt")
-                ablegen(k, b.id, "karte", [c], Stelle(spalte=c.spalte, platz=platz))
-            gruppen_aufraeumen(k, b.id, {c.gruppe for c in karten if c.gruppe})
+            _, gebucht = karten_ablegen(k, b, karten)
             return (f"{anzahl(len(karten))} im Papierkorb, mit Kommentaren und Anhängen wiederherstellbar"
                     + zeiterfassung.gestoppt(gebucht))
 
@@ -247,20 +278,8 @@ class Papierkorb:
 
         def arbeit(k: Kontext) -> str:
             b = k.board_mit_recht(board_id, "board.verwalten")
-            karten = [Karte.model_validate(d) for d in k.s.alle("karten", "board=?", (b.id,), "spalte, reihe")]
-            gebucht = zeiterfassung.timer_beenden(k, karten)
-            gruppen = [Gruppe.model_validate(d) for d in k.s.alle("gruppen", "board=?", (b.id,))]
-            ordner = [d for d in k.s.alle("ordner") if b.id in d.get("boards", [])]
-            for c in karten:
-                k.s.loesch("karten", c.id)
-            for g in gruppen:
-                k.s.loesch("gruppen", g.id)
-            for d in ordner:
-                k.s.schreib("ordner", {**d, "boards": [x for x in d["boards"] if x != b.id]})
-            k.s.loesch("boards", b.id)
-            inhalt = BoardInhalt(board=b, gruppen=gruppen, ordner=[d["id"] for d in ordner])
-            ablegen(k, b.id, "board", karten, Stelle(), inhalt=inhalt.json_daten())
-            return (f"{b.name} mit {anzahl(len(karten))} im Papierkorb; wiederherstellen unter Einstellungen, Papierkorb"
+            _, n, gebucht = board_ablegen(k, b)
+            return (f"{b.name} mit {anzahl(n)} im Papierkorb; wiederherstellen unter Einstellungen, Papierkorb"
                     + zeiterfassung.gestoppt(gebucht))
 
         return await self.a.aendern(konto, arbeit)
@@ -289,6 +308,38 @@ class Papierkorb:
             for e in eintraege:
                 endgueltig(k, e)
             return entfernt_text(eintraege)
+
+        return await self.a.aendern(konto, arbeit, rueckgaengig=False)
+
+    async def karte_endgueltig(self, konto: Konto, karte_id: Kennung, bestaetigung: str) -> Antwort:
+        """Eine Karte sofort endgültig löschen, ohne Papierkorb und ohne Rückweg (Rechte "Karten löschen" und "Papierkorb
+        leeren"); zur Sicherheit nennt die Bestätigung ihren Schlüssel. Ihre gebuchten Zeiten bleiben."""
+
+        def arbeit(k: Kontext) -> str:
+            b, karten = gleiche_karten(k, [karte_id], "karten.loeschen")
+            mit_recht(k, b, "papierkorb.leeren")
+            c = karten[0]
+            if bestaetigung.strip().upper() != c.schluessel:
+                raise Abgelehnt(f"Zur Sicherheit den Schlüssel {c.schluessel} eintippen")
+            eintraege, gebucht = karten_ablegen(k, b, karten)
+            for e in eintraege:
+                endgueltig(k, e)
+            return f"{c.schluessel} endgültig gelöscht" + zeiterfassung.gestoppt(gebucht)
+
+        return await self.a.aendern(konto, arbeit, rueckgaengig=False)
+
+    async def board_endgueltig(self, konto: Konto, board_id: Kennung, bestaetigung: str) -> Antwort:
+        """Ein Board mit allem sofort endgültig löschen, ohne Papierkorb und ohne Rückweg (Rechte "Board verwalten" und
+        "Papierkorb leeren"); zur Sicherheit nennt die Bestätigung sein Kürzel. Gebuchte Zeiten bleiben, das Kürzel ist
+        danach frei."""
+
+        def arbeit(k: Kontext) -> str:
+            b = mit_recht(k, k.board_mit_recht(board_id, "board.verwalten"), "papierkorb.leeren")
+            if bestaetigung.strip().upper() != b.kuerzel:
+                raise Abgelehnt(f"Zur Sicherheit das Kürzel {b.kuerzel} eintippen")
+            e, n, gebucht = board_ablegen(k, b)
+            endgueltig(k, e)
+            return f"{b.name} mit {anzahl(n)} endgültig gelöscht; das Kürzel {b.kuerzel} ist frei" + zeiterfassung.gestoppt(gebucht)
 
         return await self.a.aendern(konto, arbeit, rueckgaengig=False)
 

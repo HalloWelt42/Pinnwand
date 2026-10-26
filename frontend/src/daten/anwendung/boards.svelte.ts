@@ -305,9 +305,10 @@ export async function ordnerOrdnen(ids: Kennung[]): Promise<boolean> {
   return ok;
 }
 
-/** Ordner sind persönlich: das Board hängt nur in deiner Seitenleiste um, Rechte ändern sich nicht. Leer: ohne Ordner */
-export function ordnerSetzen(boardId: Kennung, ordnerId: Kennung): Promise<boolean> {
-  return schicken(`/boards/${boardId}/ordner`, { ordner: ordnerId || null });
+/** Ordner sind persönlich: das Board hängt nur in deiner Seitenleiste um, Rechte ändern sich nicht. Leer: ohne Ordner;
+ *  die Stelle im Ordner ab 0, ohne Angabe ans Ende */
+export function ordnerSetzen(boardId: Kennung, ordnerId: Kennung, stelle?: number): Promise<boolean> {
+  return schicken(`/boards/${boardId}/ordner`, { ordner: ordnerId || null, stelle: ordnerId ? stelle ?? null : null });
 }
 
 /** Eigenes Kürzel (nur Anzeige auf Karten; Zeiten, Kommentare und Rechte hängen am Konto) */

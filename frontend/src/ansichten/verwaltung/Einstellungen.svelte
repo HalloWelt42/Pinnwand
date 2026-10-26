@@ -1,8 +1,9 @@
 <script lang="ts">
   // Persönliche Einstellungen (/einstellungen/<reiter>): Darstellung auf diesem Gerät, Hinweise je Art und Weg, das
   // Konto aus der Kellerwolke, deine Ordner, der Papierkorb der App und die Gestaltung aus dem Appkern. Einstellungen
-  // eines Boards stehen im Board; hier steht nur, was dir allein gehört.
-  import { modulIrgendwo } from "../../daten/abfragen";
+  // eines Boards stehen im Board; hier steht nur, was dir allein gehört, dazu je Board der Weg zu seinen Einstellungen.
+  import { boardGruppen, modulIrgendwo } from "../../daten/abfragen";
+  import { boardPfad } from "../../weg.svelte";
   import type { Component } from "svelte";
   import Gestaltung from "appkern-oberflaeche/gestaltung";
   import { PERSON_REITER } from "./daten";
@@ -18,13 +19,20 @@
   const Seite = $derived(SEITEN[reiter]);
   /** Das Zeitkonto gibt es, sobald eines deiner Boards Arbeitszeit eingeschaltet hat */
   const arbeitszeit = $derived(modulIrgendwo("arbeitszeit"));
+  const boards = $derived(boardGruppen().flatMap((g) => g.boards));
 </script>
 
 <div class="rahmen-kopf">
   <div class="seitenkopf">
     <h1>Einstellungen</h1>
-    <div class="unterzeile">Was nur dich betrifft. Einstellungen eines Boards findest du im Board{#if arbeitszeit}, dein Zeitkonto unter
-      <a href="/arbeitszeit">Arbeitszeit</a>{/if}.</div>
+    <div class="unterzeile">Was nur dich betrifft{#if arbeitszeit}; dein Zeitkonto steht unter <a href="/arbeitszeit">Arbeitszeit</a>{/if}.</div>
+    {#if boards.length}
+      <div class="pw-boardwege"><span>Einstellungen eines Boards (Module, Spalten, Mitglieder):</span>
+        {#each boards as b (b.id)}
+          <a class="knopf klein" href={boardPfad(b.kuerzel, "einstellungen")}><span class="pw-farbpunkt" data-farbe={b.farbe}></span>{b.name}</a>
+        {/each}
+      </div>
+    {/if}
   </div>
   <nav class="reiter pw-verwaltung-reiter" aria-label="Persönliche Einstellungen">
     {#each PERSON_REITER as r (r.id)}

@@ -124,7 +124,7 @@
     <div class="rechts">
       <span class="pw-personen" title="Mitglieder">{#each mitKonto(b) as m (m.konto)}<Person id={m.konto} />{/each}</span>
       {#if darf(b, "mitglieder.verwalten")}<a class="knopf klein" href={boardPfad(b.kuerzel, "einstellungen/mitglieder")}><i class="fa-solid fa-user-plus"></i>Einladen</a>{/if}
-      <a class="knopf symbol klein" href={boardPfad(b.kuerzel, "einstellungen")} title="Board-Einstellungen: Spalten, Felder, Labels, Rollen, Module"><i class="fa-solid fa-sliders"></i></a>
+      <a class="knopf klein" href={boardPfad(b.kuerzel, "einstellungen")} title="Einstellungen des Boards: Module, Spalten, Labels, Felder, Rollen, Mitglieder"><i class="fa-solid fa-sliders"></i>Einstellungen</a>
     </div>
     <div class="pfad"><i class="fa-solid fa-folder"></i>{ordner}<span class="pw-schluessel">Kürzel {b.kuerzel}</span>
       <span>· {b.mitglieder.length} {b.mitglieder.length === 1 ? "Mitglied" : "Mitglieder"} · du bist {eigeneRolle}</span></div>

@@ -8,6 +8,10 @@
   .pw-verwaltung-reiter a i { display: none; }
 }
 
+/* Wege zu den Einstellungen jedes Boards im Kopf der persönlichen Einstellungen */
+.pw-boardwege { display: flex; flex-wrap: wrap; align-items: center; gap: var(--a2); margin-top: var(--a2); color: var(--text-3); }
+.pw-boardwege .knopf { min-width: 0; }
+
 /* ═══ Fläche einer Einstellungsseite ═══════════════════════════════════════════════════════════════════════ */
 
 /* Hülle der Seite eines Reiters ohne eigene Gestalt; ohne das Recht sperrt sie alle Eingaben darin */
@@ -94,7 +98,9 @@ fieldset.pw-verwaltung-gesperrt { display: contents; border: 0; margin: 0; paddi
 
 .pw-verwaltung-tabelle select.eingabe { height: 36px; max-width: 220px; }
 .pw-verwaltung-tabelle td.haken input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--gut); vertical-align: middle; }
-/* das Schloss steht neben dem Häkchen, ohne es aus der Mitte zu schieben */
+/* das Schloss steht neben dem Häkchen, ohne es aus der Mitte zu schieben; die Zelle ist sein Anker, sonst hinge es am
+   Rahmen außerhalb des Rollfelds und rollte nicht mit */
+.pw-verwaltung-tabelle td.haken { position: relative; }
 .pw-verwaltung-tabelle td.haken .fa-lock { position: absolute; margin: 4px 0 0 var(--a2); font-size: 12px; }
 .pw-verwaltung-matrix tr.gruppe td { background: var(--karte); }
 .pw-verwaltung-matrix tr.gruppe td > * + * { margin-left: var(--a2); }

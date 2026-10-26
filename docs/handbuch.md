@@ -32,7 +32,8 @@ am Telefon lassen sich Karten erfassen, verschieben und Titel, Beschreibung, Fä
 
 Zeiterfassung (Timer je Person, Stundenzettel), Arbeitszeit (Zeitkonto, Urlaub, Team), Serien und Termine, Berichte
 (PDF, Tabelle, Markdown in der Kellerwolke) und KI an der Karte sind Module, die man je Board in seinen Einstellungen
-unter Module einschaltet; die Karten der Serien legt die Pinnwand jeden Tag selbst an. KI an der Karte schlägt über die
+unter Module einschaltet (Knopf "Einstellungen" im Kopf des Boards; unter Einstellungen in der Seitenleiste steht je
+Board ein Weg dorthin); die Karten der Serien legt die Pinnwand jeden Tag selbst an. KI an der Karte schlägt über die
 [[Leitstelle]] vor: eine Zusammenfassung (Knopf mit dem Zauberstab im Kopf des Kartendetails), neue Punkte der
 Checkliste, Labels und, in der Schnelleingabe einer Spalte unter "Aus Text", mehrere Karten aus einem Text. Übernommen
 wird nur, was man in der Vorschau bestätigt, mit Rückgängig. Das Modul Transkripte hängt Stellen aus der

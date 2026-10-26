@@ -9,12 +9,12 @@ export const GRUNDFELDER = ["Titel", "Beschreibung", "Notizen", "Arbeit oder Ide
  *  Fassung welche anbietet (boardReiter) */
 export const BOARD_REITER = [
   { id: "allgemein", name: "Allgemein", symbol: "fa-sliders" },
+  { id: "module", name: "Module", symbol: "fa-puzzle-piece" },
   { id: "spalten", name: "Spalten", symbol: "fa-grip-vertical" },
   { id: "labels", name: "Labels", symbol: "fa-tags" },
   { id: "felder", name: "Felder", symbol: "fa-rectangle-list" },
   { id: "rollen", name: "Rollen und Rechte", symbol: "fa-user-shield" },
   { id: "mitglieder", name: "Mitglieder", symbol: "fa-users" },
-  { id: "module", name: "Module", symbol: "fa-puzzle-piece" },
 ] as const;
 
 /** Die Reiter, die es gibt: Module nur, wenn diese Fassung welche anbietet */

@@ -1,10 +1,11 @@
 <script lang="ts">
   // Karte am Telefon, reduziert auf das, was man unterwegs tut: lesen (Titel, Beschreibung, Angaben), verschieben mit
-  // großem Knopf, Timer starten oder anhalten, Checkliste abhaken, Kommentare lesen und schreiben. Bearbeiten der Felder
-  // bleibt am Rechner. Der Status ändert sich über denselben Weg wie das Ziehen im Board.
+  // großem Knopf, Timer starten oder anhalten, Checkliste abhaken, Kommentare lesen und schreiben; Titel, Beschreibung,
+  // Fällig und Zuständig über "Bearbeiten" (eigener Weg), alles Weitere am Rechner. Der Status ändert sich über denselben
+  // Weg wie das Ziehen im Board.
   import { PRIORITAETEN } from "../../anzeige";
   import { markdownHtml } from "../../teile/markdown";
-  import { kartenName, timerErlaubt, timerVon, zeitDerKarte } from "../../daten/abfragen";
+  import { darf, kartenName, kartenNummer, timerErlaubt, timerVon, zeitDerKarte } from "../../daten/abfragen";
   import { bearbeiten, kommentieren } from "../../daten/anwendung/karten.svelte";
   import { anhalten, fortsetzen, starten, stoppen } from "../../daten/anwendung/timer.svelte";
   import { ICH } from "../../daten/ich";
@@ -66,6 +67,10 @@
       <h2 class="pw-tel-kartentitel">{k.titel}</h2>
       {#if k.art === "idee"}<span class="pw-angabe pw-tel-idee"><i class="fa-solid fa-lightbulb"></i>Idee</span>{/if}
       {#if k.blockiert}<div class="hinweis gefahr"><i class="fa-solid fa-ban"></i><div><b>Blockiert:</b> {k.blockiert}</div></div>{/if}
+      {#if darf(b, "karten.bearbeiten")}
+        <a class="knopf pw-tel-breit" href={telPfad(boardPfad(b.kuerzel, `${kartenNummer(k)}/bearbeiten`), von ? { von } : {})}>
+          <i class="fa-solid fa-pen"></i>Bearbeiten</a>
+      {/if}
     </section>
 
     <section class="pw-tel-abschnitt" aria-label="Status">

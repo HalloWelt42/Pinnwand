@@ -27,7 +27,8 @@ Rechten, eigene Felder und Labels; jede Person ordnet ihre Boards in eigenen Ord
 allen, die das Board sehen, und lassen sich in der Meldung rückgängig machen.
 
 Angemeldet wird mit dem Konto der [[Kellerwolke]]; wer zu einem Board eingeladen wird, darf die App ab dann nutzen.
-Anhänge liegen in der Kellerwolke. Die Oberfläche läuft am Rechner und als eigene Ansicht am Telefon unter {{adresse}}.
+Anhänge liegen in der Kellerwolke. Die Oberfläche läuft am Rechner und als eigene Ansicht am Telefon unter {{adresse}};
+am Telefon lassen sich Karten erfassen, verschieben und Titel, Beschreibung, Fällig und Zuständig bearbeiten.
 
 Zeiterfassung (Timer je Person, Stundenzettel), Arbeitszeit (Zeitkonto, Urlaub, Team), Serien und Termine, Berichte
 (PDF, Tabelle, Markdown in der Kellerwolke) und KI an der Karte sind Module, die man je Board in seinen Einstellungen

@@ -8,11 +8,10 @@
   import { anlegen } from "../../daten/anwendung/karten.svelte";
   import { transkripteDa } from "../../daten/anwendung/transkripte.svelte";
   import { uhr } from "../../daten/uhr.svelte";
-  import { datum } from "../../daten/format";
   import { board, karte, stand } from "../../daten/stand.svelte";
-  import { plusTage, wochentag } from "../../regeln/tage";
   import DatumFeld from "../../teile/DatumFeld.svelte";
   import { boardPfad, wert } from "../../weg.svelte";
+  import { faelligWahl } from "./faellig";
   import { geraet, geraetMerken } from "./geraet.svelte";
   import Spracheingabe, { sprechenStarten } from "./Spracheingabe.svelte";
   import TelefonSchale from "./TelefonSchale.svelte";
@@ -43,8 +42,7 @@
   const art = $derived(mitZeit ? gewaehlt ?? b.kartenart : b.kartenart);
   /** wohin die Karte kommt: die Spalte, aus der man kam, sonst die erste offene (wie anlegen) */
   const spalte = $derived(b.spalten.find((s) => s.id === spalteWunsch) ?? b.spalten.find((s) => !s.erledigt) ?? b.spalten[0]);
-  const freitag = plusTage(uhr.heute, ((5 - wochentag(uhr.heute) + 6) % 7) + 1);
-  const FAELLIG: [string, string][] = [["Heute", uhr.heute], ["Morgen", plusTage(uhr.heute, 1)], [datum(freitag, true), freitag]];
+  const FAELLIG = faelligWahl(uhr.heute);
 
   function boardWaehlen(id: string): void {
     boardId = id;

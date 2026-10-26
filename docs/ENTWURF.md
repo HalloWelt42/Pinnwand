@@ -186,6 +186,10 @@ Entschieden vom Nutzer (25.10.2026):
   Auftrag der Person über den Baustein `appkern.verbund`. Die Spracheingabe beim Erfassen schreibt stückweise mit
   (Nutzer zuerst "Nach dem Stopp", nach der Korrektur, dass der Aufnahme-Baustein des Appkerns an Sprechpausen
   schneidet: "Ja, stückweise live"); Wort für Wort wie im Entwurf geht mit der Transkription heute nicht.
+- Am Telefon lassen sich Titel, Beschreibung, Fällig und Zuständig einer Karte bearbeiten (Nutzer, 26.10.: "ich kann
+  das ticket nicht bearbeiten wie beschreibung", gewählt "Titel, Beschreibung, Fällig, Zuständig"); eigener Weg
+  `/board/<kürzel>/<nr>/bearbeiten`, derselbe Anwendungsfall wie am Rechner, ein Konflikt wird gefragt statt still
+  überschrieben. Notizen, Labels, Priorität und eigene Felder bleiben am Rechner (E-10 im Übrigen unverändert).
 - Die Zeit eines Termins ohne Karte zählt nach der Bestätigung ins Ist und in den Stundenzettel (Nutzer: "Ja, nach
   Bestätigung"); vorher steht der Termin nur in Heute, Kalender und Zeitachse.
 - Karten ziehen zwischen Boards um (Nutzer: "vom ideenboard muss ich auch sachen auf das arbeitsboard schieben

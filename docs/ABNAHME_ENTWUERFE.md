@@ -82,6 +82,11 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
 - Spracheingabe beim Erfassen am Telefon: der Text wächst stückweise beim Sprechen (an Sprechpausen, Nutzer: "Ja,
   stückweise live"), nicht Wort für Wort wie im Entwurf; erster Satz Titel, alles Beschreibung, mit Hinweis zum Prüfen.
 
+## In der App erweitert (Telefon, 26.10.2026)
+
+- Karte am Telefon bearbeiten: Titel, Beschreibung, Fällig und Zuständig über "Bearbeiten" in der Karte (Nutzerwunsch);
+  im Entwurf war das Bearbeiten am Telefon nicht vorgesehen.
+
 ## Nachbesserungen in der App (25.10.2026)
 
 - M-74: Beim Zusammenführen zweier Verknüpfungen nennt die Meldung, ob die Zeit geteilt wird und welche Einstellung

@@ -100,16 +100,19 @@ export interface Bearbeiten {
   beiKonflikt?: () => void;
   /** bewusst über den jetzigen Stand schreiben (nach "Meine übernehmen") */
   ueberschreiben?: boolean;
+  /** wie die Oberfläche die geänderten Felder kannte, als die Bearbeitung begann (ein Formular, das erst später
+   *  speichert); ohne: der jetzige Stand */
+  gekannt?: Kartenaenderung;
 }
 
 /** Felder einer Karte ändern (Titel, Beschreibung, Fällig, Priorität, Checkliste und weitere Grundfelder). Mit dabei,
  *  wie die Oberfläche die Felder kannte: hat sie inzwischen jemand anders geändert, lehnt der Server ab (M-55). */
 export async function bearbeiten(id: Kennung, aenderung: Kartenaenderung, text = "Gespeichert",
-                                 { beiKonflikt, ueberschreiben = false }: Bearbeiten = {}): Promise<boolean> {
+                                 { beiKonflikt, ueberschreiben = false, gekannt }: Bearbeiten = {}): Promise<boolean> {
   const k = karte(id);
   if (!k) return false;
   const vorher = ueberschreiben ? undefined
-    : mitNull(Object.fromEntries(Object.keys(aenderung).map((f) => [f, $state.snapshot(k[f as keyof Karte])])));
+    : mitNull(gekannt ?? Object.fromEntries(Object.keys(aenderung).map((f) => [f, $state.snapshot(k[f as keyof Karte])])));
   return (await aendern(() => senden(`/karten/${id}/bearbeiten`, { felder: mitNull(aenderung), vorher, text }), { beiKonflikt })) !== null;
 }
 

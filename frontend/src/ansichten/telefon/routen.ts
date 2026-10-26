@@ -8,6 +8,7 @@ import Erfassen from "./Erfassen.svelte";
 import Heute from "./Heute.svelte";
 import Hinweise from "./Hinweise.svelte";
 import TelBoard from "./TelBoard.svelte";
+import TelKarteBearbeiten from "./TelKarteBearbeiten.svelte";
 import TelKartendetail from "./TelKartendetail.svelte";
 import TelKarteHolen from "./TelKarteHolen.svelte";
 import Zeiten from "./Zeiten.svelte";
@@ -33,6 +34,15 @@ export const ROUTEN: Route[] = [
       // nicht im Zustand (archiviert, umgezogen): erst holen, dann zeigt derselbe Weg das Detail
       return k ? { navi: b.id, komponente: TelKartendetail, werte: { kartenId: k.id } }
         : { navi: b.id, komponente: TelKarteHolen, werte: { boardId: b.id, schluessel: `${b.kuerzel}-${m[2]}` } };
+    },
+  },
+  {
+    geraet: "telefon",
+    muster: /^\/board\/([a-z0-9]+)\/(\d+)\/bearbeiten$/,
+    ansicht: (m) => {
+      const b = boardAusKuerzel(m[1]);
+      const k = b && karteAusNummer(b, m[2]);
+      return b && k ? { navi: b.id, komponente: TelKarteBearbeiten, werte: { kartenId: k.id } } : null;
     },
   },
   {

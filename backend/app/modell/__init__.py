@@ -19,7 +19,7 @@ HinweisArt = Literal["zugewiesen", "faellig", "erwaehnt", "termin", "kommentar",
 HinweisWeg = Literal["pinnwand", "push", "assistent"]
 MODULE: tuple[str, ...] = ("zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte", "vorlesen", "ki")
 #: Module, die diese Fassung der Pinnwand anbietet; die übrigen lassen sich in keinem Board einschalten
-MODULE_DA: tuple[str, ...] = ("zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte", "ki")
+MODULE_DA: tuple[str, ...] = ("zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte", "vorlesen", "ki")
 Kartenart = Literal["arbeit", "idee"]
 
 

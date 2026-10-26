@@ -33,6 +33,7 @@ from .serien import Serien
 from .stand import Abfragen
 from .termine import Termine
 from .transkripte import KeineTranskription, Transkription, Transkripte
+from .vorlesen import KeineVertonung, Vertonung, Vorlesen
 from .zeiterfassung import Zeiterfassung
 
 
@@ -59,22 +60,25 @@ class Dienste:
     mitteilungen: Mitteilungen
     ki: Ki
     transkripte: Transkripte
+    vorlesen: Vorlesen
 
     @classmethod
     def bauen(cls, db: Datenbank, zugang: Zugang, ablage: Ablage, uhr: Uhr | None = None, push: Push | None = None,
-              sprachmodell: Sprachmodell | None = None, transkription: Transkription | None = None) -> Dienste:
+              sprachmodell: Sprachmodell | None = None, transkription: Transkription | None = None,
+              vertonung: Vertonung | None = None) -> Dienste:
         ereignisse = Ereignisse()
         a = Anwendung(Verzeichnis(db), ereignisse, uhr)
         konten = Konten(a)
         transkription = transkription or KeineTranskription()
+        vertonung = vertonung or KeineVertonung()
         ki = Ki(a, sprachmodell or KeinModell(), transkription)
-        return cls(anwendung=a, ereignisse=ereignisse, konten=konten, abfragen=Abfragen(a, ki.bereit, transkription.adresse),
+        return cls(anwendung=a, ereignisse=ereignisse, konten=konten, abfragen=Abfragen(a, ki.bereit, transkription.adresse, vertonung.adresse),
                    boards=Boards(a, zugang),
                    karten=Karten(a), inhalte=Inhalte(a), hinweise=Hinweise(a), papierkorb=Papierkorb(a), aufbau=Aufbau(a),
                    mitglieder=Mitglieder(a), persoenlich=Persoenliches(a), anhaenge=Anhaenge(a, ablage),
                    zeiterfassung=Zeiterfassung(a), arbeitszeit=Arbeitszeit(a), serien=Serien(a), termine=Termine(a),
                    berichte=Berichte(a, ablage), mitteilungen=Mitteilungen(a, push), ki=ki,
-                   transkripte=Transkripte(a, transkription))
+                   transkripte=Transkripte(a, transkription), vorlesen=Vorlesen(a, vertonung))
 
 
 class Start(Begleiter):

@@ -7,7 +7,6 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query, Request, UploadFile
 from fastapi.responses import Response
 
-from appkern.anmeldung.api import COOKIE, KOPF
 from appkern.anmeldung.dienst import Konto as Anmeldekonto
 from appkern.app import Geruest
 
@@ -17,7 +16,7 @@ from ..anwendung.rahmen import Antwort
 from ..anwendung.transkripte import SPRACHE_HOECHSTENS, Gehoert, Trefferseite
 from ..modell import Kennung, Konto, Modell
 from .transkription import VerbundTranskription
-from .zugriff import Zugriff
+from .zugriff import Zugriff, sitzung
 
 
 class Verknuepfen(Modell):
@@ -28,12 +27,6 @@ class Verknuepfen(Modell):
 
 class Notiz(Modell):
     notiz: str
-
-
-def sitzung(request: Request) -> str:
-    """Die Anmeldung der Person (Kopf, bei Inhaltsadressen auch das Inhalts-Cookie): mit ihr fragt die Pinnwand die
-    Transkription in ihrem Auftrag."""
-    return request.headers.get(KOPF) or request.cookies.get(COOKIE, "")
 
 
 def router(z: Zugriff) -> APIRouter:

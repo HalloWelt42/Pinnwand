@@ -1,14 +1,16 @@
-"""Was jeder Router der Schnittstelle braucht: das Konto der Pinnwand zur Anmeldung (als Abhängigkeit) und die
-Übersetzung einer abgelehnten Änderung in einen HTTP-Status mit dem Grund in `detail`."""
+"""Was jeder Router der Schnittstelle braucht: das Konto der Pinnwand zur Anmeldung (als Abhängigkeit), die Sitzung der
+Person für Aufrufe in ihrem Auftrag und die Übersetzung einer abgelehnten Änderung in einen HTTP-Status mit dem Grund in
+`detail`."""
 
 from __future__ import annotations
 
 from collections.abc import Awaitable
 from typing import TypeVar
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 
 from appkern.app import Geruest
+from appkern.anmeldung.api import COOKIE, KOPF
 from appkern.anmeldung.dienst import Konto as Anmeldekonto
 
 from ..anwendung import Dienste
@@ -16,6 +18,12 @@ from ..anwendung.rahmen import Abgelehnt
 from ..modell import Konto
 
 T = TypeVar("T")
+
+
+def sitzung(request: Request) -> str:
+    """Die Anmeldung der Person an dieser App (Kopf, bei Inhaltsadressen auch das Inhalts-Cookie): mit ihr fragt die
+    Pinnwand die Kellerwolke und andere Apps in ihrem Auftrag."""
+    return request.headers.get(KOPF) or request.cookies.get(COOKIE, "")
 
 
 class Zugriff:

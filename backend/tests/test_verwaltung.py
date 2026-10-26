@@ -8,6 +8,7 @@ import asyncio
 
 import pytest
 
+from app.modell import MODULE_DA
 from conftest import Pinnwand
 
 
@@ -80,14 +81,17 @@ async def test_einstellungen_in_grenzen(pw: Pinnwand):
 
 
 async def test_module_bietet_diese_fassung_nicht_an(pw: Pinnwand, monkeypatch: pytest.MonkeyPatch):
-    b = await pw.board("anna")
+    # diese Fassung bietet alle Module an; ein Modul, das sie (noch) nicht anbietet, stellt der Test nach
+    ohne_vorlesen = tuple(m for m in MODULE_DA if m != "vorlesen")
+    monkeypatch.setattr("app.anwendung.boards.MODULE_DA", ohne_vorlesen)
+    b = await pw.board("anna", vorlage="v-leer")
     await abgelehnt(pw, "anna", f"/boards/{b['id']}/module/vorlesen", {"an": True}, 400,
                     "Dieses Modul bietet diese Pinnwand nicht an")
     await abgelehnt(pw, "anna", f"/boards/{b['id']}/module/gibt-es-nicht", {"an": False}, 400,
                     "Dieses Modul bietet diese Pinnwand nicht an")
     assert not (await board(pw))["module"]["vorlesen"]
     # bietet eine spätere Fassung ein Modul an, schaltet derselbe Weg es
-    monkeypatch.setattr("app.anwendung.boards.MODULE_DA", ("zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte", "ki", "vorlesen"))
+    monkeypatch.setattr("app.anwendung.boards.MODULE_DA", MODULE_DA)
     a = await ok(pw, "anna", f"/boards/{b['id']}/module/vorlesen", {"an": True})
     assert a["meldung"] == "Vorlesen in Haushalt eingeschaltet" and (await board(pw))["module"]["vorlesen"]
 

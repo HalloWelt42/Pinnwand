@@ -18,7 +18,6 @@ from fastapi.responses import Response
 from pydantic import Field, ValidationError
 from starlette.requests import ClientDisconnect
 
-from appkern.anmeldung.api import KOPF
 from appkern.anmeldung.dienst import Konto as Anmeldekonto
 from appkern.app import Geruest
 
@@ -27,7 +26,7 @@ from ..anwendung.anhaenge import Eingang, Gewaehlt, KellerwolkeOrdner
 from ..anwendung.rahmen import Abgelehnt, Antwort
 from ..modell import Kennung, Konto, Modell
 from .ablage import KellerwolkeAblage
-from .zugriff import Zugriff
+from .zugriff import Zugriff, sitzung
 
 #: längste Kopfzeile beim Hochladen (Bytes)
 KOPF_GRENZE = 64 * 1024
@@ -51,11 +50,6 @@ class AusKellerwolke(Modell):
 
 class Entfernen(Modell):
     name: str
-
-
-def sitzung(request: Request) -> str:
-    """Die Anmeldung der Person an dieser App: mit ihr zeigt die Kellerwolke der Pinnwand die Dateien der Person."""
-    return request.headers.get(KOPF, "")
 
 
 class Koerper:

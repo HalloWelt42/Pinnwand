@@ -49,6 +49,8 @@ class Stand(Modell):
     ki_bereit: bool
     #: wo die Transkription liegt (leer: nicht eingerichtet, die Oberfläche zeigt keine Transkripte)
     transkription_adresse: str
+    #: wo die Vertonung liegt (leer: nicht eingerichtet, die Oberfläche zeigt kein Vorlesen)
+    vertonung_adresse: str
 
 
 class Hinweiswege(Modell):
@@ -67,10 +69,11 @@ class Team(Modell):
 
 class Abfragen:
     def __init__(self, anwendung: Anwendung, ki_bereit: Callable[[], bool] = lambda: False,
-                 transkription_adresse: Callable[[], str] = lambda: "") -> None:
+                 transkription_adresse: Callable[[], str] = lambda: "", vertonung_adresse: Callable[[], str] = lambda: "") -> None:
         self.a = anwendung
         self.ki_bereit = ki_bereit
         self.transkription_adresse = transkription_adresse
+        self.vertonung_adresse = vertonung_adresse
 
     async def alle_boards(self) -> list[Board]:
         return [Board.model_validate(d) for d in await self.a.v.alle("boards")]
@@ -127,6 +130,7 @@ class Abfragen:
             hinweiswege=Hinweiswege(da=list(WEGE_DA), vorgabe={a: {w: vorgabe(a, w) for w in WEGE_DA} for a in ARTEN_DA}),
             ki_bereit=self.ki_bereit(),
             transkription_adresse=self.transkription_adresse(),
+            vertonung_adresse=self.vertonung_adresse(),
             terminnamen=await self._terminnamen({d["termin"] for d in zeiteintraege if d.get("termin")}
                                                 - {d["id"] for d in termine}),
         )

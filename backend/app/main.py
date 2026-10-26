@@ -21,6 +21,7 @@ from .schnittstelle.ablage import KellerwolkeAblage
 from .schnittstelle.rest import router
 from .schnittstelle.sprachmodell import LeitstellenModell
 from .schnittstelle.transkription import VerbundTranskription
+from .schnittstelle.vertonung import VerbundVertonung
 from .schnittstelle.zugang import GeruestZugang
 from .sicherung import Nachtsicherung
 from .uhr import Uhr
@@ -35,11 +36,16 @@ def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None, uh
                       push=True, transport=transport)
     ablage = KellerwolkeAblage(geruest)
     transkription = VerbundTranskription(geruest)
+    vertonung = VerbundVertonung(geruest)
     dienste = Dienste.bauen(geruest.db, GeruestZugang(geruest), ablage, uhr, push=geruest.push,
-                            sprachmodell=LeitstellenModell(geruest), transkription=transkription)
+                            sprachmodell=LeitstellenModell(geruest), transkription=transkription,
+                            vertonung=vertonung)
     geruest.einstellungen.anbieten("ki_modell", geruest.leitstelle_angebot("text", leer="Kette der App"))
     geruest.einstellungen.anbieten("transkription_adresse", geruest.verbund.angebot("Transkription", "transkription", transkription.adresse))
     geruest.verbund.anmelden("Transkription", transkription.adresse)
+    geruest.einstellungen.anbieten("vertonung_adresse", geruest.verbund.angebot("Vertonung", "vertonung", vertonung.adresse))
+    geruest.einstellungen.anbieten("vorlesen_stimme", vertonung.stimmen_angebot())
+    geruest.verbund.anmelden("Vertonung", vertonung.adresse)
     geruest.begleiter_anmelden(Start(geruest.db), Vorbuchung(dienste.serien), Faelligkeit(dienste.hinweise), dienste.mitteilungen,
                                Nachtsicherung(Path(geruest.db.pfad), sicherungen or daten.parent / "sicherungen", "pinnwand",
                                               dienste.anwendung.uhr))

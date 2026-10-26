@@ -154,6 +154,7 @@ button.pw-punkt-text { cursor: text; }
 .pw-kommentar .blase { flex: 1; min-width: 0; background: var(--karte); border-radius: var(--r2); padding: var(--a2) var(--a3); }
 .pw-kommentar .blase .kopf-zeile { display: flex; gap: var(--a2); align-items: baseline; font-size: var(--klein); }
 .pw-kommentar .blase .kopf-zeile b { font-weight: 600; }
+.pw-kommentar .blase .kopf-zeile .pw-kommentar-vorlesen { margin-left: auto; align-self: center; }
 .pw-kommentar .blase .kopf-zeile span { color: var(--text-3); font-size: var(--marke); }
 .pw-kommentar .blase .pw-md { overflow-wrap: anywhere; }
 .pw-verlauf { display: flex; flex-direction: column; gap: 4px; font-size: var(--klein); color: var(--text-2); }

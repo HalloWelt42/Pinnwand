@@ -15,6 +15,13 @@ export function markdownHtml(text: string, optionen: MarkdownOptionen = {}): str
   return bereinigen(bloecke(text.replace(/\r\n?/g, "\n").split("\n"), optionen));
 }
 
+/** Markdown als Klartext, ohne Zeichen des Markdowns (zum Vorlesen und für Auszüge): je Block und Listenpunkt eine Zeile */
+export function markdownText(text: string): string {
+  const html = markdownHtml(text).replace(/<\/(p|li|h[1-6]|blockquote|tr|pre)>|<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, " ");
+  const klar = new DOMParser().parseFromString(html, "text/html").documentElement.textContent ?? "";
+  return klar.split("\n").map((z) => z.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
+}
+
 export function maskieren(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }

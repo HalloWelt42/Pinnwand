@@ -8,7 +8,7 @@
   import { markdownHtml, type MarkdownOptionen } from "../teile/markdown";
   import { verlassen } from "../teile/verwerfen";
 
-  let { name, text = "", leer, schreiben, nurVollbild = false, vorlesen = false, speichern, optionen = {} }: {
+  let { name, text = "", leer, schreiben, nurVollbild = false, vorlesen, liest = false, speichern, optionen = {} }: {
     name: string;
     /** der gespeicherte Text der Karte (Markdown) */
     text?: string;
@@ -18,7 +18,10 @@
     schreiben: boolean;
     /** bearbeitet wird nur im Vollbild (Notizen) */
     nurVollbild?: boolean;
-    vorlesen?: boolean;
+    /** liest den Text vor (Modul Vorlesen); ohne: kein Knopf */
+    vorlesen?: () => void;
+    /** liest gerade (der Knopf hält dann an) */
+    liest?: boolean;
     /** speichert den Text; Ergebnis: ob es wirkte (sonst bleibt der Editor offen) */
     speichern: (text: string) => Promise<boolean>;
     optionen?: MarkdownOptionen;
@@ -87,7 +90,10 @@
 <section class="pw-abschnitt" bind:this={abschnitt}>
   <div class="etikett">{name}
     <span class="rechts">
-      {#if vorlesen && text}<button class="knopf ohne symbol klein" title="Vorlesen"><i class="fa-solid fa-volume-high"></i></button>{/if}
+      {#if vorlesen && text.trim()}
+        <button class="knopf ohne symbol klein" title={liest ? "Vorlesen anhalten" : "Vorlesen"} aria-pressed={liest} onclick={vorlesen}>
+          <i class="fa-solid {liest ? 'fa-stop' : 'fa-volume-high'}"></i></button>
+      {/if}
       {#if schreiben && !nurVollbild && modus === "lesen"}
         <button class="knopf ohne symbol klein" title="Bearbeiten" onclick={() => oeffnen("ort")}><i class="fa-solid fa-pen"></i></button>
       {/if}

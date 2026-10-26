@@ -2,7 +2,7 @@
   // Die Pinnwand nach der Anmeldung: Zustand aus dem Server und Ereignisstrom, Uhr, Weg, Verbindungen des Gerüsts,
   // Mitteilungen dieses Geräts (ein Tippen führt an ihr Ziel). Jeder Pfad zeigt die Ansicht aus
   // der Wegetabelle (routen.ts), am Rechner in der Schale, am Telefon in der eigenen Ansicht. "/" führt zu Heute.
-  import { geraet, pushStarten, verbindungenVerfolgen } from "appkern-oberflaeche";
+  import { geraet, pushStarten, verbindungenVerfolgen, vorleser } from "appkern-oberflaeche";
   import { onMount, untrack } from "svelte";
   import { timerVon } from "./daten/abfragen";
   import { melden } from "./daten/anwendung/meldung.svelte";
@@ -16,6 +16,11 @@
     void pushStarten();
     const enden = [verbinden(), uhrStarten(), wegStarten(), verbindungenVerfolgen()];
     return () => enden.forEach((ende) => ende());
+  });
+
+  // ging das Vorlesen nicht oder brach es ab, sagt es die eine Meldung
+  $effect(() => {
+    if (vorleser.fehler) untrack(() => melden(`Vorlesen: ${vorleser.fehler}`));
   });
 
   // solange dein Timer läuft, zählt die Uhr sekundengenau (M-85)

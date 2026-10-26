@@ -6,7 +6,7 @@
   import { modulSchalten } from "../../../daten/anwendung/boards.svelte";
   import { RECHTE } from "../../../daten/konstanten";
   import { stand } from "../../../daten/stand.svelte";
-  import type { Board } from "../../../modell";
+  import type { Board, ModulKennung } from "../../../modell";
   import { boardPfad } from "../../../weg.svelte";
 
   let { board }: { board: Board } = $props();
@@ -14,6 +14,14 @@
   const GRUPPEN = [["fach", "Fachmodule"], ["anbindung", "Anbindungen an andere Apps"]] as const;
   const angeboten = (art: string) => MODULE.filter((m) => m.art === art && stand.moduleDa.includes(m.id));
   const rechte = (id: string) => RECHTE.filter((r) => r.modul === id);
+
+  /** Was einer Anbindung fehlt, damit sie wirkt (die Verbindung trägt man in den Einstellungen der App ein) */
+  function fehlt(id: ModulKennung): string {
+    if (id === "ki" && !stand.kiBereit) return "Die Leitstelle ist in den Einstellungen der App noch nicht eingerichtet; bis dahin erscheinen keine Vorschläge.";
+    if (id === "transkripte" && !stand.transkriptionAdresse) return "Die Adresse der Transkription fehlt in den Einstellungen der App; bis dahin gibt es keine Transkripte.";
+    if (id === "vorlesen" && !stand.vertonungAdresse) return "Die Adresse der Vertonung fehlt in den Einstellungen der App; bis dahin wird nichts vorgelesen.";
+    return "";
+  }
 </script>
 
 <div class="rollfeld">
@@ -44,9 +52,8 @@
                   {:else}keine eigenen{/each}</dd>
               </dl>
               {#if !an}<p class="pw-verwaltung-satz"><i class="fa-solid fa-eye-slash"></i>Ausgeblendet; die Daten bleiben.</p>{/if}
-              {#if m.id === "ki" && !stand.kiBereit}
-                <p class="pw-verwaltung-satz"><i class="fa-solid fa-plug-circle-xmark"></i>Die Leitstelle ist in den Einstellungen der App noch
-                  nicht eingerichtet; bis dahin erscheinen keine Vorschläge.</p>
+              {#if fehlt(m.id)}
+                <p class="pw-verwaltung-satz"><i class="fa-solid fa-plug-circle-xmark"></i>{fehlt(m.id)}</p>
               {/if}
             </article>
           </div>

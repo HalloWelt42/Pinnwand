@@ -9,6 +9,7 @@
   import { kiDa, labelsHolen, Vorschlagslauf, zusammenfassungHolen } from "../daten/anwendung/ki.svelte";
   import { inPapierkorb } from "../daten/anwendung/papierkorb.svelte";
   import { transkripteDa } from "../daten/anwendung/transkripte.svelte";
+  import { karteText, liest, vorlesen, vorlesenDa } from "../daten/anwendung/vorlesen.svelte";
   import { uhr } from "../daten/uhr.svelte";
   import { alterTage, datumJahr } from "../daten/format";
   import { konto, mitKonto, stand } from "../daten/stand.svelte";
@@ -19,7 +20,7 @@
   import Person from "../board/Person.svelte";
   import DatumFeld from "../teile/DatumFeld.svelte";
   import Farbwahl from "../teile/Farbwahl.svelte";
-  import type { MarkdownOptionen } from "../teile/markdown";
+  import { markdownText, type MarkdownOptionen } from "../teile/markdown";
   import Personenwahl from "../teile/Personenwahl.svelte";
   import { verlassen, verwerfbar } from "../teile/verwerfen";
   import { kopieren } from "../teile/zwischenablage";
@@ -160,7 +161,11 @@
       <button class="knopf ohne symbol klein" title="Zusammenfassen: Vorschlag aus Beschreibung, Notizen, Checkliste und Kommentaren"
               aria-pressed={zusammenfassung.offen} onclick={() => (zusammenfassung.offen ? zusammenfassung.schliessen() : zusammenfassen())}><i class="fa-solid fa-wand-magic-sparkles"></i></button>
     {/if}
-    {#if board.module.vorlesen}<button class="knopf ohne symbol klein" title="Karte vorlesen"><i class="fa-solid fa-volume-high"></i></button>{/if}
+    {#if vorlesenDa(board)}
+      <button class="knopf ohne symbol klein" title={liest(`karte-${k.id}`) ? "Vorlesen anhalten" : "Karte vorlesen: Titel, Beschreibung, offene Punkte"}
+              aria-pressed={liest(`karte-${k.id}`)} onclick={() => vorlesen(`karte-${k.id}`, karteText(k), board.id)}>
+        <i class="fa-solid {liest(`karte-${k.id}`) ? 'fa-stop' : 'fa-volume-high'}"></i></button>
+    {/if}
     {#if darf(board, "karten.anlegen")}
       <button class="knopf ohne symbol klein" title="Duplizieren: Kopie in derselben Spalte, ohne Zeiten, Kommentare und Anhänge" onclick={kopieAnlegen}><i class="fa-regular fa-copy"></i></button>
     {/if}
@@ -194,7 +199,8 @@
   {/if}
   <input class="pw-detail-titel" value={k.titel} disabled={!schreiben} aria-label="Titel" use:verwerfbar onchange={titelAendern} onkeydown={enterVerlaesst} />
 
-  <Textfeld name="Beschreibung" text={k.beschreibung} leer="Keine Beschreibung." {schreiben} vorlesen={board.module.vorlesen} {optionen}
+  <Textfeld name="Beschreibung" text={k.beschreibung} leer="Keine Beschreibung." {schreiben} vorlesen={vorlesenDa(board) ? () => vorlesen(`beschreibung-${k.id}`, markdownText(k.beschreibung ?? ""), board.id) : undefined}
+            liest={liest(`beschreibung-${k.id}`)} {optionen}
             speichern={(t) => setzen({ beschreibung: t || undefined }, "Beschreibung gespeichert")} />
   <Textfeld name="Notizen" text={k.notizen} leer="Keine Notizen." {schreiben} nurVollbild {optionen}
             speichern={(t) => setzen({ notizen: t || undefined }, "Notizen gespeichert")} />

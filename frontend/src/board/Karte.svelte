@@ -14,7 +14,7 @@
   import { frisch, gruppenmitglieder, konto, stand } from "../daten/stand.svelte";
   import type { Board, Karte } from "../modell";
   import { alterung } from "../regeln/board";
-  import { markdownHtml } from "../teile/markdown";
+  import { markdownText } from "../teile/markdown";
   import { kette, ketteBeenden, ketteBewegen, ketteStarten } from "./kette.svelte";
   import Person from "./Person.svelte";
 
@@ -35,7 +35,7 @@
   const alterKlasse = $derived(alterung(alter, board.einstellungen));
   const faellig = $derived(karte.faellig && !erledigt ? faelligText(karte.faellig) : null);
   const prioritaet = $derived(karte.prioritaet === "keine" ? "" : PRIORITAETEN.find(([p]) => p === karte.prioritaet)?.[1] ?? "");
-  const auszug = $derived(karte.beschreibung ? alsText(markdownHtml(karte.beschreibung)) : "");
+  const auszug = $derived(karte.beschreibung ? markdownText(karte.beschreibung).replace(/\n/g, " ") : "");
 
   // Gruppe verknüpfter Karten: bei geteilter Zeit zeigt der Zeitknopf die Zeit der ganzen Gruppe (jede Sekunde einmal)
   const andere = $derived(gruppenmitglieder(karte));
@@ -54,12 +54,6 @@
 
   const kettbar = $derived(aktionen && karte.art === "arbeit" && darf(board, "karten.bearbeiten"));
   const loeschbar = $derived(aktionen && darf(board, "karten.loeschen"));
-
-  /** Die gezeichnete Beschreibung als Klartext für den Auszug (ohne Sternchen und Rauten des Markdowns) */
-  function alsText(html: string): string {
-    const ohneZeichen = html.replace(/<[^>]+>/g, " ");
-    return (new DOMParser().parseFromString(ohneZeichen, "text/html").documentElement.textContent ?? "").replace(/\s+/g, " ").trim();
-  }
 
   function timer(e: MouseEvent): void {
     e.stopPropagation();

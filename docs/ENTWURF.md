@@ -190,6 +190,8 @@ Entschieden vom Nutzer (25.10.2026):
   das ticket nicht bearbeiten wie beschreibung", gewählt "Titel, Beschreibung, Fällig, Zuständig"); eigener Weg
   `/board/<kürzel>/<nr>/bearbeiten`, derselbe Anwendungsfall wie am Rechner, ein Konflikt wird gefragt statt still
   überschrieben. Notizen, Labels, Priorität und eigene Felder bleiben am Rechner (E-10 im Übrigen unverändert).
+- Vorlesen kommt nach den Transkripten (Nutzer: "Vorlesen"): über die Vertonung, gespielt mit dem Vorleser des Appkerns;
+  Stimme und Tempo als Einstellung der App, nur Katalog und für die Pinnwand freigegebene private Stimmen.
 - Die Zeit eines Termins ohne Karte zählt nach der Bestätigung ins Ist und in den Stundenzettel (Nutzer: "Ja, nach
   Bestätigung"); vorher steht der Termin nur in Heute, Kalender und Zeitachse.
 - Karten ziehen zwischen Boards um (Nutzer: "vom ideenboard muss ich auch sachen auf das arbeitsboard schieben

@@ -4,12 +4,13 @@
   // Kommentar gespeichert ist. Der Verlauf zeigt, was die Anwendungsfälle vermerkt haben, neueste zuerst.
   import { darf } from "../daten/abfragen";
   import { kommentieren } from "../daten/anwendung/karten.svelte";
+  import { liest, vorlesen, vorlesenDa } from "../daten/anwendung/vorlesen.svelte";
   import { ICH } from "../daten/ich";
   import { wann } from "../daten/format";
   import { konto } from "../daten/stand.svelte";
   import type { Board, Karte } from "../modell";
   import Person from "../board/Person.svelte";
-  import { markdownHtml, type MarkdownOptionen } from "../teile/markdown";
+  import { markdownHtml, markdownText, type MarkdownOptionen } from "../teile/markdown";
   import { verwerfbar } from "../teile/verwerfen";
 
   let { karte, board, optionen }: { karte: Karte; board: Board; optionen: MarkdownOptionen } = $props();
@@ -42,7 +43,13 @@
   {#if reiter === "kommentare"}
     {#each karte.kommentare as c, i (i)}
       <div class="pw-kommentar"><Person id={c.von} />
-        <div class="blase"><div class="kopf-zeile"><b>{konto(c.von).name}</b><span>{wann(c.zeit)}</span></div>
+        <div class="blase"><div class="kopf-zeile"><b>{konto(c.von).name}</b><span>{wann(c.zeit)}</span>
+          {#if vorlesenDa(board)}
+            {@const kennung = `kommentar-${karte.id}-${i}`}
+            <button class="knopf ohne symbol klein pw-kommentar-vorlesen" title={liest(kennung) ? "Vorlesen anhalten" : "Kommentar vorlesen"}
+                    aria-pressed={liest(kennung)} onclick={() => vorlesen(kennung, `${konto(c.von).name} schrieb: ${markdownText(c.text)}`, board.id)}>
+              <i class="fa-solid {liest(kennung) ? 'fa-stop' : 'fa-volume-high'}"></i></button>
+          {/if}</div>
           <div class="pw-md">{@html markdownHtml(c.text, optionen)}</div></div></div>
     {:else}
       <div class="schwach pw-detail-leer">Noch keine Kommentare.</div>

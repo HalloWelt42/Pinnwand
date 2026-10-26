@@ -5,6 +5,7 @@
   // laufen über die Anwendungsfälle; jede Karte öffnet über ihren Pfad. Ohne Verbindung bleibt der letzte Stand sichtbar
   // und alles Schreibende ist gesperrt, damit nichts scheinbar gespeichert wird.
   import { meinTag, modulIrgendwo, timerVon, type MeinTag, type TagEintrag } from "../../daten/abfragen";
+  import { liest, tagesplanText, vorlesen, vorlesenDa } from "../../daten/anwendung/vorlesen.svelte";
   import { uhr } from "../../daten/uhr.svelte";
   import { ICH } from "../../daten/ich";
   import { datumJahr } from "../../daten/format";
@@ -20,7 +21,7 @@
 
   const getrennt = $derived(stand.verbindung === "getrennt");
   const serien = $derived(modulIrgendwo("serien"));
-  const vorlesbar = $derived(modulIrgendwo("vorlesen"));
+  const vorlesbar = $derived(vorlesenDa());
   const g = $derived(meinTag());
   const nichtsFaellig = $derived(faellige(g).length === 0);
   const termine = $derived(g.termine);
@@ -32,7 +33,7 @@
   const timer = $derived(timerVon(ICH));
   const timerKarte = $derived(timer ? karte(timer.karte) : undefined);
   const boardZahl = $derived(stand.boards.filter((b) => b.mitglieder.some((m) => m.konto === ICH)).length);
-  let vorlesen = $state(false);
+  const plan = $derived(liest("tagesplan"));
 
   const gruppen = $derived([
     { name: "Überfällig", symbol: "fa-triangle-exclamation", gefahr: true, liste: g.ueberfaellig, ruhig: "Nichts überfällig.", titel: "" },
@@ -63,8 +64,9 @@
       <h1>Heute</h1>
       {#if vorlesbar}
         <div class="aktionen">
-          <button class="knopf" class:aktiv={vorlesen} title="Tagesplan vorlesen: Überfälliges, Heute, Termine und Serien"
-                  onclick={() => (vorlesen = !vorlesen)}><i class="fa-solid {vorlesen ? 'fa-stop' : 'fa-volume-high'}"></i>{vorlesen ? "Stopp" : "Vorlesen"}</button>
+          <button class="knopf" class:aktiv={plan} aria-pressed={plan} title="Tagesplan vorlesen: Überfälliges, Heute, Termine und Serien"
+                  onclick={() => vorlesen("tagesplan", tagesplanText(g, uhr.heute, serienzeit))}>
+            <i class="fa-solid {plan ? 'fa-stop' : 'fa-volume-high'}"></i>{plan ? "Stopp" : "Vorlesen"}</button>
         </div>
       {/if}
       <div class="unterzeile">{datumJahr(uhr.heute, true)} · deine Karten{serien ? ", Termine und Serien" : ""} aus {boardZahl}

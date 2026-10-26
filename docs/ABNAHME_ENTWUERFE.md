@@ -82,6 +82,13 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
 - Spracheingabe beim Erfassen am Telefon: der Text wächst stückweise beim Sprechen (an Sprechpausen, Nutzer: "Ja,
   stückweise live"), nicht Wort für Wort wie im Entwurf; erster Satz Titel, alles Beschreibung, mit Hinweis zum Prüfen.
 
+## In der App gebaut (Stufe 4, Vorlesen, 26.10.2026)
+
+- Vorlesen über die Vertonung (M-114): Beschreibung, ganze Karte (Kopf des Details), Kommentar, Tagesplan in Heute,
+  Bericht in der Vorschau und erstellte Markdown-Berichte; Satz für Satz, der erste Satz klingt, sobald er gesprochen
+  ist; ein zweites Tippen hält an. Stimme und Tempo stehen in den Einstellungen der App statt im Browser (alte App);
+  zur Wahl nur Katalog und freigegebene private Stimmen.
+
 ## In der App erweitert (Telefon, 26.10.2026)
 
 - Karte am Telefon bearbeiten: Titel, Beschreibung, Fällig und Zuständig über "Bearbeiten" in der Karte (Nutzerwunsch);
@@ -107,10 +114,10 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
 
 | Stand | Zahl |
 |---|---|
-| abgebildet | 108 |
+| abgebildet | 109 |
 | teilweise | 1 |
 | fehlt | 3 |
-| später | 7 |
+| später | 6 |
 | bewusst anders | 3 |
 | Fehler behoben | 4 |
 | **Summe** | **126** |
@@ -249,7 +256,7 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
 | M-111 | Nachtrag ignorierter Serienkarten | abgebildet | `ansichten/planung/Nachtrag.svelte`, Anwendungsfälle des Nachtrags in `beispiel/anwendung/serien.svelte.ts`, `/serien?entwurf=nachtrag` | Bestätigen mit anpassbarer Dauer auf den Termintag, Karte nach Erledigt mit dem Termintag, Verwerfen, alle bestätigen, später; Termine dazu. Fehler behoben: nur eigene Posten; Verwerfen nimmt bei mehreren Teilnehmern nur dich heraus. |
 | M-112 | Ein verknüpftes Transkript | abgebildet | `detail/Transkripte.svelte`, `backend/app/anwendung/transkripte.py` | In der App (Stufe 4, Transkripte): das ganze Transkript als Stelle ohne Zeit; Suche nach der letzten Taste, Öffnen in der Transkription, Lösen mit Rückgängig. |
 | M-113 | Transkript-Verweise (Marken) | abgebildet | `detail/Transkripte.svelte`, `detail/Vorschlag.svelte`, `backend/app/anwendung/transkripte.py` | In der App: bis zu 100 Stellen je Karte mit Name, Zeit, Sprecher und Text (vom Server aus dem Transkript), Notiz speichert beim Verlassen, Vorschlag der Notiz mit Vorschau, Abspielen ab der Stelle, Lösen mit Rückgängig. Fehler behoben: Speicher- und Ladefehler kommen als Meldung, nichts wird verschluckt. |
-| M-114 | Vorlesen | später (Stufe 4) | `detail/Karteninhalt.svelte`, `detail/Textfeld.svelte`, `ansichten/uebersicht/Heute.svelte`, `ansichten/zeit/Berichte.svelte` | Vorlesen ist die Anbindung Vertonung der Stufe Verbund (E-06); die Knöpfe an Karte, Beschreibung, Heute und Berichten stehen schon und lesen noch nicht vor, am Kommentar fehlt der Lautsprecher noch. |
+| M-114 | Vorlesen | abgebildet | `daten/anwendung/vorlesen.svelte.ts`, `backend/app/anwendung/vorlesen.py`, Vorleser des Appkerns | In der App (Stufe 4): an Beschreibung, Karte, jedem Kommentar, in Heute und bei Berichten; Stimme und Tempo in den Einstellungen der App. |
 | M-115 | Labelvorschläge | abgebildet | `detail/Karteninhalt.svelte`, `detail/Vorschlag.svelte`, `backend/app/anwendung/ki.py` | In der App (Stufe 4, KI an der Karte): Zauberstab hinter den Labels, das Modell wählt aus den Labels des Boards, die die Karte noch nicht hat; gesetzt wird nur, was angehakt bleibt. Ebenso Checkliste, Zusammenfassung und Karten aus Text. |
 | M-116 | Projekt-Prüfung | bewusst anders | `hatRecht` in `regeln/board.ts`, `darf` in `beispiel/abfragen.ts`, `mitRecht` in `beispiel/anwendung/boards.svelte.ts`, `ansichten/verwaltung/board/Rollen.svelte` | E-02, E-03, E-04: Rechte je Board und Rolle statt Mitgliedschaft in einer Mappe. Die Oberfläche blendet jetzt überall nach dem Recht aus, und Verschieben prüft es im Anwendungsfall; Anlegen, Bearbeiten, Duplizieren, Kommentieren und Papierkorb prüfen es dort noch nicht (siehe Befunde). |
 | M-117 | Zeit- und Timer-Rechte | bewusst anders | `RECHTE` in `beispiel/daten.ts`, `timerErlaubt` in `beispiel/abfragen.ts`, `detail/Zeiterfassung.svelte` | E-04, E-07: Rechte "Eigene Zeit buchen", "Zeiten anderer sehen" und "Zeiten anderer bearbeiten" je Rolle. Fehler behoben: die Oberfläche bietet Start, Ticketzeit, Ändern und Löschen nur an, wo das Recht besteht. |

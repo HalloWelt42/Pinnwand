@@ -5,6 +5,7 @@
   // nur Personen, deren Abwesenheiten du siehst; in Board-Berichten zählt die Zeit anderer nur mit "Zeiten anderer sehen".
   import { darf } from "../../daten/abfragen";
   import { berichtAdresse, berichtErstellen, berichtVorschau } from "../../daten/anwendung/berichte.svelte";
+  import { berichtText, berichtVorlesen, liest, vorlesen, vorlesenDa } from "../../daten/anwendung/vorlesen.svelte";
   import { ICH } from "../../daten/ich";
   import { monatText, spanne, wann, wocheText } from "../../daten/format";
   import { konto, mitKonto, stand } from "../../daten/stand.svelte";
@@ -193,6 +194,10 @@
       {#if rechts === "vorschau"}
         <div class="pw-berichte-vorschaukopf">
           <span class="etikett">Vorschau</span><span class="pw-schluessel">{vorschau?.datei ?? ""}</span>
+          {#if vorschau && vorlesenDa()}
+            <button class="knopf klein" aria-pressed={liest("berichtvorschau")} onclick={() => vorschau && vorlesen("berichtvorschau", berichtText(vorschau.titel, vorschau.inhalt))}>
+              <i class="fa-solid {liest('berichtvorschau') ? 'fa-stop' : 'fa-volume-high'}"></i>{liest("berichtvorschau") ? "Stopp" : "Vorlesen"}</button>
+          {/if}
           <button class="knopf klein rechts" onclick={() => (rechts = "liste")}><i class="fa-solid fa-list-ul"></i>Erstellte Berichte</button>
         </div>
         {#if !vorschau}
@@ -234,6 +239,10 @@
                 <i class="fa-solid {SYMBOL[b.format]} art"></i>
                 <div class="was"><b>{b.titel}</b><span class="schwach klein">{b.zeitraum}, {wann(b.erstellt)}, {b.groesse}</span></div>
                 <span class="knoepfe">
+                  {#if b.format === "markdown" && vorlesenDa()}
+                    <button class="knopf symbol klein" title={liest(`bericht-${b.id}`) ? "Vorlesen anhalten" : "Vorlesen"} aria-pressed={liest(`bericht-${b.id}`)}
+                            onclick={() => berichtVorlesen(b)}><i class="fa-solid {liest(`bericht-${b.id}`) ? 'fa-stop' : 'fa-volume-high'}"></i></button>
+                  {/if}
                   <a class="knopf symbol klein" href={berichtAdresse(b)} download={b.datei} title="Herunterladen: {b.datei}"><i class="fa-solid fa-download"></i></a>
                 </span>
               </div>

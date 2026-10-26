@@ -282,7 +282,14 @@ async def test_zeitkonto_und_abwesenheiten(pw: Pinnwand):
     a = await ok(pw, "anna", "/abwesenheiten", {"von": "2026-11-16", "bis": "2026-11-20", "art": "urlaub"})
     assert a["meldung"] == "Urlaub eingetragen: Mo 16.11. bis Fr 20.11.2026"
     a = await ok(pw, "anna", "/abwesenheiten", {"von": "2026-11-18", "bis": "2026-11-18", "art": "krank", "anteil": 0.5})
-    assert a["meldung"] == "Halber Tag Krank eingetragen: Mi 18.11.2026; ersetzt 1 Abwesenheit"
+    assert a["meldung"] == "Halber Tag Krank eingetragen: Mi 18.11.2026; 1 Abwesenheit angepasst, ihre übrigen Tage bleiben"
+    # der Urlaub drumherum bleibt vor und nach dem Krankentag stehen
+    assert sorted((x["von"], x["bis"], x["art"]) for x in (await pw.stand("anna"))["abwesenheiten"]) == [
+        ("2026-11-16", "2026-11-17", "urlaub"), ("2026-11-18", "2026-11-18", "krank"), ("2026-11-19", "2026-11-20", "urlaub")]
+    a = await ok(pw, "anna", "/abwesenheiten", {"von": "2026-11-16", "bis": "2026-11-17", "art": "krank"})
+    assert a["meldung"] == "Krank eingetragen: Mo 16.11. bis Di 17.11.2026; ersetzt 1 Abwesenheit"
+    await ok(pw, "anna", f"/abwesenheiten/entfernen", {"ids": [x["id"] for x in (await pw.stand("anna"))["abwesenheiten"]
+                                                         if x["von"] != "2026-11-18"]})
     await abgelehnt(pw, "anna", "/abwesenheiten", {"von": "2026-11-18", "bis": "2026-11-19", "art": "urlaub", "anteil": 0.3},
                     400, "Ein Tag zählt ganz oder halb")
     await abgelehnt(pw, "anna", "/abwesenheiten", {"von": "2026-11-19", "bis": "2026-11-18", "art": "urlaub"}, 400,

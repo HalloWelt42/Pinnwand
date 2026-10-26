@@ -32,7 +32,7 @@ export const HINWEIS_ARTEN: { art: HinweisArt; name: string; symbol: string; far
   { art: "zugewiesen", name: "Zugewiesen", symbol: "fa-user-plus", farbe: "himmel", text: "Jemand macht dich für eine Karte zuständig" },
   { art: "faellig", name: "Fällig", symbol: "fa-calendar-day", farbe: "koralle", text: "Eine deiner Karten ist heute fällig oder überfällig" },
   { art: "erwaehnt", name: "Erwähnt", symbol: "fa-at", farbe: "violett", text: "Jemand erwähnt dich mit @ in Beschreibung, Notizen oder einem Kommentar" },
-  { art: "termin", name: "Termin", symbol: "fa-calendar-days", farbe: "petrol", text: "Ein Termin mit dir steht an oder ändert sich" },
+  { art: "termin", name: "Termin", symbol: "fa-calendar-days", farbe: "petrol", text: "Ein neuer Termin mit dir" },
   { art: "kommentar", name: "Kommentar", symbol: "fa-comment", farbe: "stahl", text: "Neuer Kommentar an einer Karte, für die du zuständig bist" },
   { art: "verschoben", name: "Verschoben", symbol: "fa-right-left", farbe: "tuerkis", text: "Jemand verschiebt eine Karte, für die du zuständig bist" },
 ];
@@ -50,7 +50,7 @@ export interface ModulBeschreibung {
 /** Was jedes Modul in ein Board bringt; die Rechte erklärt es selbst (RECHTE in den Beispieldaten) */
 export const MODULE: ModulBeschreibung[] = [
   { id: "zeiterfassung", name: "Zeiterfassung", symbol: "fa-stopwatch", art: "fach",
-    text: "Timer und gebuchte Zeit an jeder Karte; ohne das Modul sind alle Karten Ideen.",
+    text: "Timer und gebuchte Zeit an jeder Arbeitskarte; Ideen haben keine Zeiterfassung.",
     ansichten: ["Zeit an der Karte", "Stundenzettel unter Zeiten"], felder: ["Schätzung"] },
   { id: "arbeitszeit", name: "Arbeitszeit und Urlaub", symbol: "fa-calendar-check", art: "fach",
     text: "Zeigt Zeiten und Abwesenheiten der Mitglieder; das Zeitkonto bleibt bei jeder Person.",

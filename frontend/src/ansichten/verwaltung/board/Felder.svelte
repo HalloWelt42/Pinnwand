@@ -22,7 +22,7 @@
     { art: "zahl", name: "Zahl", symbol: "fa-hashtag", text: "Eine Zahl, etwa eine Stückzahl; die Liste sortiert sie der Größe nach." },
     { art: "datum", name: "Datum", symbol: "fa-calendar-day", text: "Ein Tag im deutschen Format, etwa ein Liefertermin." },
     { art: "auswahl", name: "Auswahl", symbol: "fa-list", text: "Eine aus festen Optionen, etwa eine Maschine; im Filter wählbar." },
-    { art: "verweis", name: "Verweis", symbol: "fa-link", text: "Verweis auf eine andere Karte, als Textfeld mit Vorschlägen." },
+    { art: "verweis", name: "Verweis", symbol: "fa-link", text: "Verweis auf eine andere Karte, als Textfeld, etwa ihr Schlüssel." },
   ];
   const ART = Object.fromEntries(ARTEN.map((a) => [a.art, a])) as Record<FeldArt, (typeof ARTEN)[number]>;
 

@@ -1,6 +1,7 @@
 // Anwendungsfälle des Moduls Arbeitszeit über den Server: eigene Abwesenheiten eintragen und entfernen, eine neue
 // Fassung des eigenen Zeitkontos. Beides geht nur für dich selbst und nur, wenn das Modul Arbeitszeit in einem deiner
-// Boards an ist; das prüft der Server. Eine neue Abwesenheit ersetzt dort überlappende von dir.
+// Boards an ist; das prüft der Server. Eine neue Abwesenheit ersetzt dort überlappende von dir im neuen Zeitraum;
+// ihre übrigen Tage bleiben.
 
 import type { Abwesenheit, Kennung, Zeitkonto } from "../../modell";
 import { stand } from "../stand.svelte";

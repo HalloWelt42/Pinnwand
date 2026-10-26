@@ -109,7 +109,7 @@ Unter der Ticketzeit stehen ein Datumsfeld (Vorgabe heute), ein Feld für die Da
 Der Knopf **Zeit nachtragen** oben im Stundenzettel oder **Auf diesen Tag nachtragen** unten in der Leiste eines Tags öffnet rechts die Leiste **Nachtragen**:
 1. **Karte**: Schlüssel oder Titel eintippen, gesucht wird in allen Boards; jedes Wort muss vorkommen. Es erscheinen bis zu acht Karten, offene vor erledigten. Ideen fehlen, ebenso Boards ohne Zeiterfassung und Boards, in denen du keine Zeit buchen darfst. Das X neben der gewählten Karte wählt eine andere.
 2. **Tag**: im Datumsfeld oder mit den Knöpfen **Heute** und **Gestern**.
-3. **Dauer** und eine **Notiz**. Neben der Dauer steht, wie die Pinnwand sie gelesen hat.
+3. **Dauer** und eine **Notiz**. Neben der Dauer steht, wie die Pinnwand sie gelesen hat. Die Notiz steht im Stundennachweis neben der Karte.
 
 Unten steht vorher die Wirkung: die Zeit der Karte an diesem Tag vorher und nachher und der ganze Tag gegen dein Soll. Im Stundenzettel links erscheint die Buchung schon als Vorschau. **Buchen** (oder Enter in der Dauer) bucht; die Leiste bleibt für die nächste Buchung offen. **Fertig** schließt sie.
 

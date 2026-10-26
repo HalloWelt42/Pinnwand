@@ -91,6 +91,12 @@ export function wirkung(k: Zeitkonto, a: Abwesenheit): { arbeitstage: number; so
   };
 }
 
+/** Der Teil einer Abwesenheit im Zeitraum von bis bis: nur so viel ersetzt eine neue, ihre übrigen Tage bleiben (wie
+ *  `eintragen` in backend/app/anwendung/arbeitszeit.py) */
+export function imZeitraum(a: Abwesenheit, von: string, bis: string): Abwesenheit {
+  return { ...a, von: a.von > von ? a.von : von, bis: a.bis < bis ? a.bis : bis };
+}
+
 /** Urlaubstage eines Jahres bis einschließlich bis (oder danach), gewichtet mit der echten Wirkung des Tags */
 export function urlaubstage(k: Zeitkonto, abwesenheiten: Abwesenheit[], jahr: number, bis: string, danach = false): number {
   let summe = 0;

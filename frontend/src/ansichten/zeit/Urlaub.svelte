@@ -1,7 +1,7 @@
 <script lang="ts">
   // Urlaub und Abwesenheit: links eintragen (von, bis, Art, halber Tag, Notiz) und die Liste des Jahres mit ihrer Wirkung
   // auf das Soll, rechts das Ergebnis der Eingabe Tag für Tag und Brückentage als Vorschlag. Wochenenden und Feiertage
-  // zählen nie als Urlaubstag; was sich mit einer vorhandenen Abwesenheit überschneidet, wird ersetzt. Arbeitszeit zeigt
+  // zählen nie als Urlaubstag; wo sich eine vorhandene Abwesenheit überschneidet, wird sie ersetzt, ihre übrigen Tage bleiben. Arbeitszeit zeigt
   // diese Ansicht nur mit Zeitkonto.
   import { urlaub } from "../../daten/abfragen";
   import { eintragen as abwesenheitEintragen, entfernen } from "../../daten/anwendung/abwesenheiten.svelte";
@@ -10,7 +10,7 @@
   import { stand } from "../../daten/stand.svelte";
   import { uhr } from "../../daten/uhr.svelte";
   import type { Abwesenheit, AbwesenheitArt } from "../../modell";
-  import { ARTEN, artName, brueckentage, fassungAm, wirkung } from "../../regeln/arbeitszeit";
+  import { ARTEN, artName, brueckentage, fassungAm, imZeitraum, wirkung } from "../../regeln/arbeitszeit";
   import DatumFeld from "../../teile/DatumFeld.svelte";
 
   const heute = $derived(uhr.heute);
@@ -27,7 +27,9 @@
   const neu = $derived<Abwesenheit>({ id: "vorschau", konto: ICH, von, bis: gueltig ? bis : von, art, anteil: halb ? 0.5 : undefined, notiz: notiz || undefined });
   const k = $derived(fassungAm(stand.zeitkonten, ICH, von)!);
   const w = $derived(wirkung(k, neu));
-  const vorhanden = $derived(stand.abwesenheiten.filter((a) => a.konto === ICH && a.von <= neu.bis && a.bis >= neu.von));
+  /** was die neue Abwesenheit von vorhandenen ersetzt: nur ihr Teil im neuen Zeitraum, die übrigen Tage bleiben */
+  const vorhanden = $derived(stand.abwesenheiten.filter((a) => a.konto === ICH && a.von <= neu.bis && a.bis >= neu.von)
+    .map((a) => imZeitraum(a, neu.von, neu.bis)));
   const ersetzt = $derived(vorhanden.reduce((s, a) => s + wirkung(k, a).urlaubstage, 0));
   const u = $derived(urlaub(ICH)!);
   const liste = $derived(stand.abwesenheiten.filter((a) => a.konto === ICH && a.bis.slice(0, 4) >= String(jahr)).slice().sort((a, b) => a.von.localeCompare(b.von)));
@@ -110,7 +112,7 @@
         {/if}
       </div>
       {#if vorhanden.length}
-        <div class="hinweis warnung"><i class="fa-solid fa-triangle-exclamation"></i><div>Ersetzt {vorhanden.map((a) => `${artName(a)} ${spanne(a.von, a.bis)}`).join(", ")}.</div></div>
+        <div class="hinweis warnung"><i class="fa-solid fa-triangle-exclamation"></i><div>Ersetzt {vorhanden.map((a) => `${artName(a)} ${spanne(a.von, a.bis)}`).join(", ")}; übrige Tage davor und danach bleiben.</div></div>
       {/if}
       <div class="pw-arbeitszeit-tage">
         {#each w.tage as t (t.tag)}

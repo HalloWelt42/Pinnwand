@@ -15,7 +15,7 @@
   import Person from "../../board/Person.svelte";
   import type { Karte, Kennung, Monatsregel, Rhythmus, Serie } from "../../modell";
   import { modulAn } from "../../regeln/board";
-  import { istPausiert, naechstes, vorkommenListe, vorlaufEnde, type Vorkommen } from "../../regeln/serien";
+  import { istPausiert, naechstes, type Vorkommen, vorkommenListe, VORLAUF_HOECHSTENS, vorlaufEnde } from "../../regeln/serien";
   import { kalenderwoche, montagVon, plusTage, TAGE_KURZ, TAGE_LANG, WOCHE_AB_MONTAG, wochentag } from "../../regeln/tage";
   import DatumFeld from "../../teile/DatumFeld.svelte";
   import DauerFeld from "../../teile/DauerFeld.svelte";
@@ -318,9 +318,9 @@
       <section class="bereich">
         <h2>Vorbuchen</h2>
         <div class="einstellung">
-          <div><div class="name">Vorlauf</div><div class="erklaerung">So viele Tage im Voraus liegen die Karten in der Zielspalte; 0: nur heute</div></div>
+          <div><div class="name">Vorlauf</div><div class="erklaerung">So viele Tage im Voraus liegen die Karten in der Zielspalte; 0: nur heute, höchstens {VORLAUF_HOECHSTENS}</div></div>
           <div class="wert"><input class="eingabe" value={s.vorlaufTage}
-            oninput={(e) => { const n = Number(e.currentTarget.value); if (Number.isInteger(n) && n >= 0 && n <= 90) s.vorlaufTage = n; }} /><span class="einheit">Tage</span></div>
+            oninput={(e) => { const n = Number(e.currentTarget.value); if (Number.isInteger(n) && n >= 0 && n <= VORLAUF_HOECHSTENS) s.vorlaufTage = n; }} /><span class="einheit">Tage</span></div>
         </div>
         <div class="einstellung">
           <div><div class="name">Feiertage auslassen</div><div class="erklaerung">Nach dem Bundesland jedes Teilnehmers aus seinem Zeitkonto</div></div>

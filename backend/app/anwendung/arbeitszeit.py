@@ -8,7 +8,7 @@ from __future__ import annotations
 from ..modell import Abwesenheit, AbwesenheitArt, Board, Halbtagsregel, Kennung, Konto, Zeitkonto
 from ..regeln.arbeitszeit import abwesenheit_fehler, art_name, zeitkonto_fehler
 from ..regeln.board import mitglied, modul_an
-from ..regeln.tage import datum_text, spanne_text
+from ..regeln.tage import datum_text, plus_tage, spanne_text
 from . import serien
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext, neue_kennung
 
@@ -32,21 +32,35 @@ class Arbeitszeit:
 
     async def eintragen(self, konto: Konto, von: str, bis: str, art: AbwesenheitArt, anteil: float | None = None,
                         notiz: str = "") -> Antwort:
-        """Eine eigene Abwesenheit; überlappende derselben Person gehen dafür (mit Rückgängig zurück)."""
+        """Eine eigene Abwesenheit; überlappende derselben Person gehen dafür im neuen Zeitraum, außerhalb bleiben ihre
+        Tage stehen (eine umschließende teilt sich in davor und danach). Mit Rückgängig zurück."""
         fehler = abwesenheit_fehler(von, bis, anteil)
         if fehler:
             raise Abgelehnt(fehler)
 
         def arbeit(k: Kontext) -> str:
             eingeschaltet(k)
-            ersetzt = k.s.alle("abwesenheiten", "konto=? AND von<=? AND bis>=?", (k.konto.id, bis, von))
-            for d in ersetzt:
-                k.s.loesch("abwesenheiten", d["id"])
+            ersetzt, gekuerzt = 0, 0
+            for d in k.s.alle("abwesenheiten", "konto=? AND von<=? AND bis>=?", (k.konto.id, bis, von)):
+                alt = Abwesenheit.model_validate(d)
+                davor = alt.model_copy(update={"bis": plus_tage(von, -1)}) if alt.von < von else None
+                danach = alt.model_copy(update={"id": neue_kennung("a"), "von": plus_tage(bis, 1)}) if alt.bis > bis else None
+                if davor:
+                    k.s.schreib("abwesenheiten", davor.json_daten())
+                else:
+                    k.s.loesch("abwesenheiten", alt.id)
+                if danach:
+                    k.s.schreib("abwesenheiten", danach.json_daten())
+                if davor or danach:
+                    gekuerzt += 1
+                else:
+                    ersetzt += 1
             a = Abwesenheit(id=neue_kennung("a"), konto=k.konto.id, von=von, bis=bis, art=art, anteil=anteil,
                             notiz=notiz.strip() or None)
             k.s.schreib("abwesenheiten", a.json_daten())
             n = serien.ohne_person(k, k.konto.id, von, bis) if anteil is None else 0
-            return (f"{art_name(a)} eingetragen: {spanne_text(von, bis)}" + (f"; ersetzt {anzahl(len(ersetzt))}" if ersetzt else "")
+            return (f"{art_name(a)} eingetragen: {spanne_text(von, bis)}" + (f"; ersetzt {anzahl(ersetzt)}" if ersetzt else "")
+                    + (f"; {anzahl(gekuerzt)} angepasst, ihre übrigen Tage bleiben" if gekuerzt else "")
                     + (f"; {n} {'Vorbuchung' if n == 1 else 'Vorbuchungen'} einer Serie zurückgenommen" if n else ""))
 
         return await self.a.aendern(konto, arbeit)

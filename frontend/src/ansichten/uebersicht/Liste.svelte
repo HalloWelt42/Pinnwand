@@ -123,7 +123,7 @@
       </span>
     {:else}
       <span class="anzahl"><span class="zaehler">{zeilen.length}</span>Karten: {zeilen.length - fertigZahl} offen, {fertigZahl} erledigt
-        {#if erledigtSpalte}<span class="schwach" title="Wie im Board: die Erledigt-Spalte zeigt ihr Zeitfenster">im Zeitfenster {ZEITFENSTER[erledigtSpalte.zeitfenster ?? "woche"]}</span>{/if}
+        {#if erledigtSpalte}<span class="schwach" title="Wie im Board: die Erledigt-Spalte zeigt ihr Zeitfenster">im Zeitfenster {ZEITFENSTER[erledigtSpalte.zeitfenster ?? ZEITFENSTER_VORGABE]}</span>{/if}
         {#if suche}<span class="schwach">· Suche "{suche}"</span>{/if}</span>
       <span class="rechts schwach">Kästchen wählen für Sammelaktionen</span>
     {/if}

@@ -30,7 +30,7 @@ async def mit_zeiten(pw: Pinnwand) -> tuple[dict, dict]:
     k = await pw.karte("anna", b, "Fenster putzen")
     await ok(pw, "anna", f"/karten/{k['id']}/bearbeiten", {"felder": {"schaetzungMin": 120}})
     await ok(pw, "anna", "/zeiten", {"karte": k["id"], "datum": "2026-10-26", "sekunden": 6 * 3600})
-    await ok(pw, "bert", "/zeiten", {"karte": k["id"], "datum": "2026-10-26", "sekunden": 1800})
+    await ok(pw, "bert", "/zeiten", {"karte": k["id"], "datum": "2026-10-26", "sekunden": 1800, "notiz": "Rahmen"})
     await ok(pw, "anna", "/abwesenheiten", {"von": "2026-10-27", "bis": "2026-10-27", "art": "urlaub", "anteil": 0.5})
     return b, k
 
@@ -49,7 +49,8 @@ async def test_stundennachweis(pw: Pinnwand):
     assert anna["zeilen"] == [["Mo 26.10.", "8:00", "6:00", "-2:00", "HAUS-1", ""],
                               ["Di 27.10.", "4:00", "0:00", "-4:00", "", "Halber Tag Urlaub"]]
     assert anna["summe"] == ["Summe", "12:00", "6:00", "-6:00", "", ""]
-    assert bert["titel"] == "bert" and bert["zeilen"][0][:5] == ["Mo 26.10.", "8:00", "0:30", "-7:30", "HAUS-1"]
+    # die Notiz eines Eintrags steht neben seiner Karte
+    assert bert["titel"] == "bert" and bert["zeilen"][0][:5] == ["Mo 26.10.", "8:00", "0:30", "-7:30", "HAUS-1 (Rahmen)"]
 
     # ohne "Abwesenheiten sehen" geht der Nachweis nur für dich
     b = (await pw.stand("anna"))["boards"][0]

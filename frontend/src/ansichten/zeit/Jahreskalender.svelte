@@ -10,7 +10,7 @@
   import { stand } from "../../daten/stand.svelte";
   import { uhr } from "../../daten/uhr.svelte";
   import type { Abwesenheit, AbwesenheitArt } from "../../modell";
-  import { ARTEN, artName, fassungAm, wirkung } from "../../regeln/arbeitszeit";
+  import { ARTEN, artName, fassungAm, imZeitraum, wirkung } from "../../regeln/arbeitszeit";
   import { feiertage } from "../../regeln/feiertage";
   import { kalenderwoche, MONATE, tageImMonat, tageVon, TAGE_KURZ, WOCHE_AB_MONTAG, wochentag } from "../../regeln/tage";
 
@@ -91,9 +91,10 @@
     anteil: halb ? 0.5 : undefined, notiz: notiz || undefined } : null);
   const kNeu = $derived(auswahl ? fassungAm(stand.zeitkonten, ICH, auswahl.von)! : k);
   const w = $derived(neu ? wirkung(kNeu, neu) : null);
-  const vorhanden = $derived(auswahl ? stand.abwesenheiten.filter((a) => a.konto === ICH && a.von <= auswahl!.bis && a.bis >= auswahl!.von) : []);
+  const vorhanden = $derived(auswahl ? stand.abwesenheiten.filter((a) => a.konto === ICH && a.von <= auswahl!.bis && a.bis >= auswahl!.von)
+    .map((a) => imZeitraum(a, auswahl!.von, auswahl!.bis)) : []);
   const u = $derived(urlaub(ICH, jahr)!);
-  /** Urlaubstage, die die Auswahl neu belegt (vorhandener Urlaub im Bereich wird ersetzt) */
+  /** Urlaubstage, die die Auswahl neu belegt (vorhandener Urlaub nur im Bereich wird ersetzt) */
   const ersetzt = $derived(vorhanden.reduce((s, a) => s + wirkung(kNeu, a).urlaubstage, 0));
 
   const jahresTage = $derived.by(() => {

@@ -67,7 +67,7 @@ Jede Abwesenheit hat einen Zeitraum, eine Art und eine Notiz. Die Art bestimmt i
 Regeln dazu:
 - Der Schalter **Halbe Tage** lässt jeden Tag des Zeitraums halb zählen, für Soll und Urlaub. Bei Frei (Ausgleich) gibt es ihn nicht.
 - Wochenenden, freie Tage und Feiertage zählen nie als Urlaubstag. An einem deiner halben Tage zählt ein Urlaubstag halb.
-- Überschneidet sich eine neue Abwesenheit mit vorhandenen, ersetzt sie diese ganz, auch mit ihren Tagen außerhalb des neuen Zeitraums. Die Wirkung nennt sie vorher unter **Ersetzt**; trage übrige Tage danach neu ein.
+- Überschneidet sich eine neue Abwesenheit mit vorhandenen, ersetzt sie diese nur in ihrem eigenen Zeitraum; deren Tage davor und danach bleiben stehen (eine umschließende teilt sich in zwei). Die Wirkung nennt vorher unter **Ersetzt**, was wegfällt.
 - **Eintragen** bleibt grau, wenn im Zeitraum kein Arbeitstag liegt.
 - Eine ganztägige Abwesenheit nimmt dich ab heute aus noch unberührten Karten von Serien an diesen Tagen; bleibt niemand übrig, fällt die Karte weg. Die Meldung sagt, wie viele es waren. Mehr dazu unter [Teilnehmer einer Serie](hilfe:serien/teilnehmer).
 - Jede Änderung meldet sich unten mit Rückgängig.
@@ -78,7 +78,7 @@ Im Reiter **Urlaub** trägst du links unter **Eintragen** ein: **Von**, **Bis**,
 Rechts steht schon beim Tippen die **Wirkung**:
 - **Arbeitstage** im Zeitraum und wie viel **Soll** entfällt (oder **bleibt**).
 - Bei Urlaub die **Urlaubstage** und **Frei verplanbar** vorher und nachher; rot, wenn der Urlaub nicht reicht.
-- Ein Hinweis **Ersetzt**, wenn eine vorhandene Abwesenheit wegfällt.
+- Ein Hinweis **Ersetzt**, wenn die neue Abwesenheit Tage einer vorhandenen übernimmt.
 - Darunter jeder Tag einzeln, etwa Soll 8:00 auf 0:00, Wochenende oder Feiertag.
 
 **Brückentage** schlägt die Pinnwand von heute bis Ende nächsten Jahres vor: ein Arbeitstag, dessen beide Nachbartage frei sind (Feiertag oder kein Arbeitstag) und neben dem ein Feiertag liegt. Jeder Vorschlag nennt den Feiertag und wie viele freie Tage am Stück er bringt. **Übernehmen** füllt das Formular mit diesem Tag, Art Urlaub und der Notiz Brückentag; eingetragen ist er erst mit **Eintragen**.

@@ -89,7 +89,8 @@ class Lage:
 # ═══ Inhalt je Art ════════════════════════════════════════════════════════════════════════════════════════════════════
 
 def nachweis(a: Auswahl, lage: Lage) -> BerichtInhalt:
-    """Soll, Ist und Differenz je Tag aus dem Zeitkonto; Ist aus allen Boards, die Karten nur, wo du ihre Zeit siehst."""
+    """Soll, Ist und Differenz je Tag aus dem Zeitkonto; Ist aus allen Boards, die Karten (mit der Notiz ihres Eintrags)
+    nur, wo du ihre Zeit siehst."""
     abschnitte = []
     for p in a.personen:
         zeilen: list[list[str]] = []
@@ -104,7 +105,8 @@ def nachweis(a: Auswahl, lage: Lage) -> BerichtInhalt:
                 continue
             soll_summe += sl.soll_sek
             ist_summe += ist
-            wofuer = ", ".join(dict.fromkeys(lage.wofuer(e) for e in am_tag if lage.zeit_sichtbar(e)))
+            wofuer = ", ".join(dict.fromkeys(lage.wofuer(e) + (f" ({e.notiz})" if e.notiz else "")
+                                             for e in am_tag if lage.zeit_sichtbar(e)))
             hinweis = sl.feiertag or (art_name(sl.abwesenheit) if sl.abwesenheit else sl.regel or "")
             zeilen.append([datum_kurz(t), dauer_text(round(sl.soll_sek)), dauer_text(ist), differenz(ist - sl.soll_sek), wofuer,
                            hinweis])

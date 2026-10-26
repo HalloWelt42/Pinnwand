@@ -6,6 +6,10 @@
 import type { Kennung, Serie } from "../modell";
 import { istWochenende, plusTage, tageImMonat, tageVon, wochentag } from "./tage";
 
+/** So viele Tage im Voraus legt eine Serie ihre Karten höchstens an; gleich VORLAUF_HOECHSTENS in
+ *  backend/app/anwendung/serien.py */
+export const VORLAUF_HOECHSTENS = 60;
+
 /** Was die Regeln über Personen und die Karten der Serientage wissen müssen */
 export interface SerienUmfeld {
   heute: string;

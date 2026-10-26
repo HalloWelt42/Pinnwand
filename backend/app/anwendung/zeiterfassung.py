@@ -81,8 +81,14 @@ def timer_pruefen(b: Board, c: Karte, konto: Kennung) -> None:
 
 
 def aendern_pruefen(k: Kontext, e: Zeiteintrag) -> None:
-    """Eigene Einträge mit "Eigene Zeit buchen", die anderer mit "Zeiten anderer bearbeiten" im Board der Karte."""
-    b = k.board(e.board)
+    """Eigene Einträge mit "Eigene Zeit buchen", die anderer mit "Zeiten anderer bearbeiten" im Board der Karte. Ist das
+    Board endgültig gelöscht, gibt es keine Rechte mehr: dann ändert und löscht nur die Person ihre Einträge."""
+    d = k.s.lies("boards", e.board)
+    if d is None:
+        if e.konto != k.konto.id:
+            raise Abgelehnt("Diesen Zeiteintrag gibt es nicht (mehr)", 404)
+        return
+    b = Board.model_validate(d)
     recht = "zeit.buchen" if e.konto == k.konto.id else "zeit.andere.bearbeiten"
     if not hat_recht(b, recht, k.konto.id):
         raise fehlt(b, recht)
@@ -467,6 +473,30 @@ class Zeiterfassung:
             if e.termin:
                 bestaetigung_zuruecknehmen(k, e)
             return f"{text} gelöscht"
+
+        return await self.a.aendern(konto, arbeit)
+
+    async def auf_karten_loeschen(self, konto: Konto, karten: list[Kennung]) -> Antwort:
+        """Deine ganze Zeit auf diesen Karten löschen, über alle Tage, etwa auf den Karten eines gelöschten Boards, das
+        nur ein Versuch war. Mit Rückgängig; Einträge anderer bleiben."""
+        if not karten:
+            raise Abgelehnt("Keine Karte genannt")
+
+        def arbeit(k: Kontext) -> str:
+            weg = [e for c in dict.fromkeys(karten) for e in eintraege(k, "konto=? AND karte=?", (k.konto.id, c))]
+            if not weg:
+                raise Abgelehnt("Auf diesen Karten ist keine Zeit von dir gebucht")
+            for e in weg:
+                aendern_pruefen(k, e)
+                zerlegung_loesen(k, e)
+                k.s.loesch("zeiteintraege", e.id)
+            sek = sum(e.sekunden for e in weg)
+            betroffen = list(dict.fromkeys(e.karte for e in weg if e.karte))
+            for c in betroffen:
+                verlauf_an(k, c, None, "hat die eigene Zeit gelöscht")
+            wo = schluessel_von(k, betroffen[0]) if len(betroffen) == 1 else f"{len(betroffen)} Karten"
+            eintraege_text = "1 Eintrag" if len(weg) == 1 else f"{len(weg)} Einträge"
+            return f"Deine Zeit auf {wo} gelöscht ({dauer_text(sek)}, {eintraege_text})"
 
         return await self.a.aendern(konto, arbeit)
 

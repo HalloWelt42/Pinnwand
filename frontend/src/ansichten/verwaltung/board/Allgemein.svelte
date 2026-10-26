@@ -195,7 +195,7 @@
             {#if board.mitglieder.length > 1}Die {anzahl(board.mitglieder.length - 1, "andere Person verliert", "anderen Mitglieder verlieren")} das
               Board ebenfalls.{/if}
             {#if laufend.length}Laufende Timer ({laufend.map((k) => k.schluessel).join(", ")}) halten an und buchen.{/if}
-            Gebuchte Zeiten bleiben unter dem Namen ihrer Karte stehen. Das lässt sich nicht rückgängig machen.
+            Gebuchte Zeiten bleiben unter dem Namen ihrer Karte stehen; deine löschst du danach unter Zeiten. Das lässt sich nicht rückgängig machen.
           </Endgueltig>
         {/if}
       {/if}

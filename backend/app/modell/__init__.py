@@ -449,13 +449,14 @@ class Termin(Modell):
 
 
 class Kartenname(Modell):
-    """Name einer Karte, auf die sichtbare Zeiteinträge zeigen, die selbst nicht im Stand ist (archiviert, Board
-    verlassen)."""
+    """Name einer Karte, auf die sichtbare Zeiteinträge zeigen, die selbst nicht im Stand ist: da (archiviert, Board
+    verlassen), im Papierkorb oder entfernt (endgültig gelöscht, auch mit ihrem Board)."""
 
     karte: Kennung
     board: Kennung
     schluessel: str
     titel: str
+    zustand: Literal["da", "papierkorb", "entfernt"] = "da"
 
 
 class Terminname(Modell):

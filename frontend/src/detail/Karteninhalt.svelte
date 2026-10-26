@@ -335,7 +335,7 @@
   <Endgueltig frage="{k.schluessel} endgültig löschen?" wort={k.schluessel} knopf="Endgültig löschen" bestaetigen={endgueltigLoeschen}
               abbrechen={() => (endgueltig = false)}>
     Die Karte geht ohne Papierkorb, mit Checkliste, Kommentaren, Anhängen und Verlauf; ein laufender Timer bucht vorher.
-    Gebuchte Zeiten bleiben unter ihrem Namen stehen. Das lässt sich nicht rückgängig machen.
+    Gebuchte Zeiten bleiben unter ihrem Namen stehen; deine löschst du danach unter Zeiten. Das lässt sich nicht rückgängig machen.
   </Endgueltig>
 {/if}
 <div class="pw-detail-fuss">

@@ -160,12 +160,12 @@ class Abfragen:
             return []
         liste = sorted(fehlend)
         frage = ",".join("?" * len(liste))
-        gefunden = {d["id"]: d for d in await self.a.v.alle("karten", f"id IN ({frage})", tuple(liste))}
-        gefunden |= {d["id"]: d for d in await self.a.v.alle("entfernt", f"id IN ({frage})", tuple(liste))}
+        gefunden = {d["id"]: (d, "da") for d in await self.a.v.alle("karten", f"id IN ({frage})", tuple(liste))}
+        gefunden |= {d["id"]: (d, "entfernt") for d in await self.a.v.alle("entfernt", f"id IN ({frage})", tuple(liste))}
         for eintrag in await self.a.v.alle("papierkorb"):
-            gefunden |= {c["id"]: c for c in eintrag.get("karten", []) if c["id"] in fehlend}
-        return [Kartenname(karte=i, board=d["board"], schluessel=d["schluessel"], titel=d["titel"])
-                for i, d in gefunden.items()]
+            gefunden |= {c["id"]: (c, "papierkorb") for c in eintrag.get("karten", []) if c["id"] in fehlend}
+        return [Kartenname(karte=i, board=d["board"], schluessel=d["schluessel"], titel=d["titel"], zustand=z)
+                for i, (d, z) in gefunden.items()]
 
     async def _terminnamen(self, fehlend: set[Kennung]) -> list[Terminname]:
         """Namen der Termine, auf die eigene Einträge zeigen, die nicht im Stand sind (Board verlassen)."""

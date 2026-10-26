@@ -80,7 +80,7 @@ Später holst du sie über den Knopf **Papierkorb** in der Werkzeugleiste des Bo
 
 ### Endgültig löschen
 
-Im Kartendetail unten steht neben **In den Papierkorb** auch **Endgültig löschen**. Die Karte geht dann sofort und ohne Rückweg, ohne Papierkorb, mit Checkliste, Kommentaren, Anhängen und Verlauf; ein laufender Timer bucht vorher. Gebuchte Zeiten bleiben unter ihrem Namen stehen. Zur Sicherheit tippst du den Schlüssel der Karte ein, etwa HAUS-4; erst dann wirkt der Knopf. Das braucht die Rechte Karten löschen und Papierkorb leeren.
+Im Kartendetail unten steht neben **In den Papierkorb** auch **Endgültig löschen**. Die Karte geht dann sofort und ohne Rückweg, ohne Papierkorb, mit Checkliste, Kommentaren, Anhängen und Verlauf; ein laufender Timer bucht vorher. Gebuchte Zeiten bleiben unter ihrem Namen stehen; war es nur ein Versuch, löschst du deine danach unter Zeiten ([Zeit gelöschter Karten](hilfe:zeiterfassung/entfernt)). Zur Sicherheit tippst du den Schlüssel der Karte ein, etwa HAUS-4; erst dann wirkt der Knopf. Das braucht die Rechte Karten löschen und Papierkorb leeren.
 
 ## Archiv {#archiv}
 Erledigte Karten wandern von selbst ins Archiv des Boards, sobald ihr Abschluss länger zurückliegt als **Archiv ab** in den Einstellungen des Boards. Dort bleiben sie mit allem erhalten, und ihr Verweis führt weiter zu ihnen. Um eine archivierte Karte wieder ins Board zu holen, öffnest du sie im Archiv und stellst im Kartendetail ihren **Status** auf eine offene Spalte. Mehr unter [Archiv](hilfe:board/archiv).

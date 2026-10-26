@@ -1,7 +1,7 @@
 // Anwendungsfälle des Moduls Zeiterfassung über den Server: Zeit buchen, eine Tageszeit oder die Ticketzeit setzen,
-// Einträge ändern und löschen, die Rückfrage nach dem 12-Stunden-Deckel. Wie gebucht wird (Korrektur oder nachgetragen,
-// welche Einträge beim Kürzen zuerst gehen, das Ende einer Sitzung), rechnet der Server; die Oberfläche schickt nur, was
-// die Person will. Jede Änderung meldet sich mit Rückgängig, nur die Notiz bleibt still.
+// Einträge ändern und löschen (auch die ganze eigene Zeit auf Karten), die Rückfrage nach dem 12-Stunden-Deckel. Wie
+// gebucht wird (Korrektur oder nachgetragen, welche Einträge beim Kürzen zuerst gehen, das Ende einer Sitzung), rechnet
+// der Server; die Oberfläche schickt nur, was die Person will. Jede Änderung meldet sich mit Rückgängig, nur die Notiz bleibt still.
 
 import type { Kennung } from "../../modell";
 import { zeitDerKarte } from "../abfragen";
@@ -53,6 +53,11 @@ export function notizAendern(id: Kennung, notiz: string): void {
 /** Löschen mit Rückgängig: der Eintrag kommt genau so zurück (Person, Zeiten, Herkunft) */
 export function loeschen(id: Kennung): void {
   if (eintrag(id)) void aendern(() => loeschenAn(`/zeiten/${id}`));
+}
+
+/** Deine ganze Zeit auf diesen Karten löschen, über alle Tage, mit Rückgängig; Einträge anderer bleiben */
+export function zeitAufKartenLoeschen(karten: Kennung[]): void {
+  if (karten.length) void aendern(() => senden("/zeiten/entfernen", { karten }));
 }
 
 /** Rückfrage nach dem Deckel: das echte Ende der Sitzung (JJJJ-MM-TTTHH:MM); der Server bucht die Sitzung neu von ihrem

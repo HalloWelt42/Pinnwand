@@ -1,5 +1,5 @@
-"""Wege des Moduls Zeiterfassung: der eigene Timer, Zeit buchen und setzen, Einträge ändern und löschen, die Rückfrage
-nach dem Deckel. Feste Pfade stehen vor denen mit Kennung (sonst nimmt /zeiten/{id}/... auch "deckel")."""
+"""Wege des Moduls Zeiterfassung: der eigene Timer, Zeit buchen und setzen, Einträge ändern und löschen (auch die
+ganze eigene Zeit auf Karten), die Rückfrage nach dem Deckel. Feste Pfade stehen vor denen mit Kennung (sonst nimmt /zeiten/{id}/... auch "deckel")."""
 
 from __future__ import annotations
 
@@ -34,6 +34,10 @@ class Ticketzeit(Modell):
 
 class Deckel(Modell):
     ids: list[Kennung]
+
+
+class Karten(Modell):
+    karten: list[Kennung]
 
 
 class DeckelEnde(Deckel):
@@ -91,6 +95,10 @@ def router(z: Zugriff) -> APIRouter:
     @r.post("/zeiten/deckel/bestaetigen", response_model=Antwort)
     async def deckel_bestaetigen(e: Deckel, konto: Konto = Depends(ich)) -> Antwort:
         return await tun(d.zeiterfassung.deckel_bestaetigen(konto, e.ids))
+
+    @r.post("/zeiten/entfernen", response_model=Antwort)
+    async def auf_karten_loeschen(e: Karten, konto: Konto = Depends(ich)) -> Antwort:
+        return await tun(d.zeiterfassung.auf_karten_loeschen(konto, e.karten))
 
     @r.post("/zeiten/{eintrag_id}/dauer", response_model=Antwort)
     async def dauer_aendern(eintrag_id: Kennung, e: Dauer, konto: Konto = Depends(ich)) -> Antwort:

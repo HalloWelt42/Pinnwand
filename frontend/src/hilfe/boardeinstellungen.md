@@ -55,7 +55,7 @@ Eine Zahl außerhalb der Grenzen wird nicht übernommen; unter dem Feld steht da
 
 Nach dem Bestätigen landest du in Heute. Wiederherstellen geht in den [persönlichen Einstellungen](hilfe:einstellungen) im Reiter **Papierkorb**; bis dahin bleibt das Kürzel vergeben. Das braucht das Recht Board verwalten.
 
-**Endgültig löschen** darunter nimmt das Board sofort und ohne Rückweg weg, ohne Papierkorb: mit allen Karten, Kommentaren, Anhängen, Serien und Terminen, auch für alle anderen Mitglieder. Gebuchte Zeiten bleiben unter dem Namen ihrer Karte stehen, das Kürzel wird frei. Zur Sicherheit tippst du das Kürzel des Boards ein; erst dann wirkt der Knopf. Das braucht die Rechte Board verwalten und Papierkorb leeren.
+**Endgültig löschen** darunter nimmt das Board sofort und ohne Rückweg weg, ohne Papierkorb: mit allen Karten, Kommentaren, Anhängen, Serien und Terminen, auch für alle anderen Mitglieder. Gebuchte Zeiten bleiben unter dem Namen ihrer Karte stehen, das Kürzel wird frei. War das Board nur ein Versuch, löschst du deine Zeit danach unter **Zeiten** (siehe [Zeit gelöschter Karten und Boards](hilfe:zeiterfassung/entfernt)). Zur Sicherheit tippst du das Kürzel des Boards ein; erst dann wirkt der Knopf. Das braucht die Rechte Board verwalten und Papierkorb leeren.
 
 In welchem Ordner ein Board in deiner Seitenleiste steht, entscheidest du dort selbst, per Ziehen (siehe [Ordner und Boards in der Seitenleiste](hilfe:uebersicht/ordner)).
 

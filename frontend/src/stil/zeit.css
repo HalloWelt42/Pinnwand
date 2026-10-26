@@ -45,6 +45,7 @@ a.kennzahl.pw-zeiten-verweis:hover { background: var(--karte); }
 .kennzahl.pw-zeiten-lauf.laeuft > span { color: var(--akzent); }
 .kennzahl.pw-zeiten-lauf > small { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+.pw-zeiten-entfernt { margin-bottom: var(--a3); }
 .pw-zeiten-blatt { background: var(--bereich); border-radius: var(--r2); padding: var(--a1) var(--a3) var(--a2); overflow-x: auto; overscroll-behavior-x: contain; }
 .pw-zeiten-tabelle { table-layout: fixed; min-width: 720px; }
 .pw-zeiten-tabelle col.karte { width: 34%; }

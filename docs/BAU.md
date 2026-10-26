@@ -141,6 +141,9 @@ Eine Regel für Stand, Ereignis und Antwort (`anwendung/sicht.py`):
   eines Mitglieds (sein Timer im Board), Abschalten der Zeiterfassung (alle im Board). Die Meldung nennt die eigene
   gebuchte Zeit.
 - Eine neue Abwesenheit ersetzt überlappende derselben Person (Serien kommen mit Stufe 3 dazu).
+- Einträge eines endgültig gelöschten Boards bleiben; ohne Board gibt es keine Rechte mehr, sie ändert und löscht nur,
+  wer sie gebucht hat. `Kartenname.zustand` (da, papierkorb, entfernt) sagt der Oberfläche, welche Zellen fest bleiben;
+  über dem Stundenzettel steht die eigene Zeit auf entfernten Karten mit "Zeit löschen" (Nutzer 26.10.2026).
 
 ### Wege
 
@@ -159,6 +162,7 @@ Antwort wie immer (`{meldung, rueckgaengig, geaendert}`); Felder in camelCase.
 | `POST /zeiten/{id}/datum` | `{datum}` | `datumAendern` |
 | `POST /zeiten/{id}/notiz` | `{notiz}` (still, ohne Rückweg) | `notizAendern` |
 | `DELETE /zeiten/{id}` | leer | Eintrag löschen |
+| `POST /zeiten/entfernen` | `{karten}`: die ganze eigene Zeit auf diesen Karten, alle Tage, mit Rückweg | `zeitAufKartenLoeschen` |
 | `POST /abwesenheiten` | `{von, bis, art, anteil?, notiz?}` | `eintragen` |
 | `POST /abwesenheiten/entfernen` | `{ids}` | `entfernen` |
 | `POST /zeitkonten` | `{ab, wochenstunden, tage, bundesland, urlaubsanspruch, resturlaubVorjahr, halbtage}` | `zeitkontoSpeichern` |

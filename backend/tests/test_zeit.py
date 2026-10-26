@@ -222,6 +222,37 @@ async def test_eintrag_aendern_und_loeschen(pw: Pinnwand):
     assert {**zurueck, "fassung": 0} == {**vorher, "fassung": 0}
 
 
+async def test_zeit_eines_geloeschten_boards(pw: Pinnwand):
+    """Nach dem endgültigen Löschen des Boards bleiben die Einträge; ändern und löschen kann sie nur noch, wer sie
+    gebucht hat, einzeln oder die ganze eigene Zeit auf den Karten mit einem Schritt (mit Rückgängig)."""
+    b, k = await zeitboard(pw)
+    k2 = await pw.karte("anna", b, "Rahmen streichen")
+    for wer, karte, tag, sek in (("anna", k, "2026-10-26", 3600), ("anna", k, "2026-10-27", 1200),
+                                 ("anna", k2, "2026-10-20", 1800), ("bert", k, "2026-10-26", 600)):
+        await ok(pw, wer, "/zeiten", {"karte": karte["id"], "datum": tag, "sekunden": sek})
+    await ok(pw, "anna", f"/boards/{b['id']}/endgueltig", {"bestaetigung": "HAUS"})
+    s = await pw.stand("anna")
+    assert {(n["schluessel"], n["zustand"]) for n in s["kartennamen"]} == {("HAUS-1", "entfernt"), ("HAUS-2", "entfernt")}
+    eigene = [e for e in s["zeiteintraege"] if e["karte"] == k2["id"]]
+    a = await ok(pw, "anna", f"/zeiten/{eigene[0]['id']}/dauer", {"sekunden": 900})
+    assert a["meldung"] == "HAUS-2 Di 20.10.: 0:30 auf 0:15 geändert"
+    berts = next(e for e in await eintraege(pw, "bert") if e["konto"] != "1")
+    r = await pw.delete("anna", f"/zeiten/{berts['id']}")
+    assert (r.status_code, r.json()["detail"]) == (404, "Diesen Zeiteintrag gibt es nicht (mehr)")
+
+    await abgelehnt(pw, "anna", "/zeiten/entfernen", {"karten": []}, 400, "Keine Karte genannt")
+    a = await ok(pw, "anna", "/zeiten/entfernen", {"karten": [k["id"], k2["id"]]})
+    assert a["meldung"] == "Deine Zeit auf 2 Karten gelöscht (1:35, 3 Einträge)"
+    assert [e["konto"] for e in await eintraege(pw, "anna")] == []
+    assert [e["sekunden"] for e in await eintraege(pw, "bert")] == [600]             # berts Zeit bleibt seine
+    await abgelehnt(pw, "anna", "/zeiten/entfernen", {"karten": [k["id"]]}, 400,
+                    "Auf diesen Karten ist keine Zeit von dir gebucht")
+    await ok(pw, "anna", f"/rueckgaengig/{a['rueckgaengig']}")
+    assert sum(e["sekunden"] for e in await eintraege(pw, "anna")) == 3600 + 1200 + 900
+    a = await ok(pw, "anna", "/zeiten/entfernen", {"karten": [k2["id"]]})
+    assert a["meldung"] == "Deine Zeit auf HAUS-2 gelöscht (0:15, 1 Eintrag)"
+
+
 # ═══ Wer was sieht ════════════════════════════════════════════════════════════════════════════════════════════════════
 
 async def test_zeit_anderer_nur_mit_recht(pw: Pinnwand):
@@ -257,7 +288,8 @@ async def test_kartennamen_ausserhalb_des_stands(pw: Pinnwand):
     await ok(pw, "anna", f"/boards/{b['id']}/mitglieder/entfernen", {"kellerwolke": "bert"})
     s = await pw.stand("bert")
     assert s["boards"] == [] and [e["karte"] for e in s["zeiteintraege"]] == [k["id"]]
-    assert s["kartennamen"] == [{"karte": k["id"], "board": b["id"], "schluessel": "HAUS-1", "titel": "Fenster putzen"}]
+    assert s["kartennamen"] == [{"karte": k["id"], "board": b["id"], "schluessel": "HAUS-1", "titel": "Fenster putzen",
+                                 "zustand": "da"}]
 
 
 # ═══ Arbeitszeit ══════════════════════════════════════════════════════════════════════════════════════════════════════

@@ -140,7 +140,7 @@ Der Eintrag **Zeiten** in der Seitenleiste öffnet deinen Stundenzettel: deine g
 - Jede Zelle ist deine Zeit auf der Karte an diesem Tag und direkt änderbar. Mehr bucht die Differenz auf genau diesen Tag. Weniger kürzt deine Einträge dieses Tags in dieser Reihenfolge: erst Korrekturen, dann nachgetragene, dann Einträge aus Serien, zuletzt Timer-Einträge, jeweils der jüngste zuerst. Eine leere Zelle oder 0:00 nimmt deine ganze Zeit des Tags von der Karte. Einträge anderer bleiben immer.
 - Läuft dein Timer an dem Tag auf der Karte, zeigt die Zelle einen Punkt und lässt sich erst nach dem Anhalten ändern.
 - Am Anfang jeder Zeile sitzt der Timer-Knopf. Ein leerer Platz dort heißt **Kein Timer: erledigt, Idee oder nicht mehr im Board; nachtragen geht**.
-- In Termin-Zeilen lässt sich die Zeit nicht in der Zelle ändern; löschen geht in den Einträgen des Tags.
+- In Termin-Zeilen lässt sich die Zeit nicht in der Zelle ändern; löschen geht in den Einträgen des Tags. Ebenso fest sind die Zellen von Karten, die in keinem deiner Boards mehr stehen (im Papierkorb, gelöscht oder in einem Board, das du verlassen hast).
 - Unten stehen **Summe**, **Soll** aus deinem [Zeitkonto](hilfe:arbeitszeit/zeitkonto) und **Differenz**. Für heute zeigt die Differenz **noch** und die fehlende Zeit, solange das Soll nicht erreicht ist. Im Kopf einer Tagesspalte steht, was das Soll ändert: ein Feiertag, eine Abwesenheit, ein halber Tag oder ein freier Tag.
 
 Im Kopf jeder Seite siehst du außerdem **Heute** und **Woche**, jeweils gebucht gegen Soll. Ein Klick darauf öffnet den Stundenzettel.
@@ -152,6 +152,14 @@ Ein Klick auf einen Tag im Kopf des Stundenzettels öffnet rechts die Leiste **E
 - Spuren der Buchungsregeln stehen am Eintrag: **Sitzungen zusammengefasst** (der Hinweis nennt die einzelnen Sitzungen), **über Mitternacht, Teil am** (ein Klick springt zum anderen Teil) und **nach 12 Stunden gedeckelt** mit der [Rückfrage](#deckel) oben in der Leiste.
 - Läuft dein Timer an diesem Tag, steht er als eigene Zeile **läuft** mit einem Knopf zum Anhalten. Beim Anhalten kommt seine Zeit in den Timer-Eintrag der Karte für diesen Tag.
 - Unten führt **Auf diesen Tag nachtragen** zur Leiste [Nachtragen](#nachtragen) mit diesem Tag.
+
+## Zeit gelöschter Karten und Boards {#entfernt}
+Löschst du eine Karte oder ein ganzes Board endgültig, bleibt die gebuchte Zeit stehen: unter dem Namen der Karte, im Stundenzettel und in der Arbeitszeit. War es nur ein Versuch, nimmst du deine Zeit danach wieder heraus:
+- Über dem Stundenzettel steht dann der Hinweis **Stunden auf gelöschten Karten** mit der Summe aus allen Wochen und den Schlüsseln der Karten. **Zeit löschen** nimmt deine ganze Zeit auf diesen Karten heraus, aus allen Wochen; die Meldung unten bietet Rückgängig.
+- Einzelne Einträge löschst du in den [Einträgen eines Tags](#tagesleiste) mit dem X.
+- Nach dem Löschen eines Boards gelten dessen Rechte nicht mehr: Deine Einträge änderst und löschst nur du. Die Zeit der anderen Mitglieder bleibt ihre; sie räumen sie bei sich genauso auf.
+
+Liegt eine Karte nur im Papierkorb, bleibt ihre Zeit an ihr und kommt beim Wiederherstellen mit zurück.
 
 ## Geteilte Zeit verknüpfter Karten {#geteilte-zeit}
 Verknüpfte Arbeitskarten bilden eine Gruppe (siehe [Das Kartendetail](hilfe:kartendetail)). Im Abschnitt **Verknüpfte Aufgaben** des Kartendetails steht dann der Schalter **Zeit teilen**: Die Gruppe zeigt ihre gemeinsame Zeit; gebucht wird je Karte. Eine neue Gruppe teilt ihre Zeit von Anfang an.

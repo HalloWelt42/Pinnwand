@@ -475,12 +475,14 @@ export interface Geloescht {
   am: string;
 }
 
-/** Name einer Karte, auf die sichtbare Zeiteinträge zeigen, die selbst nicht im Stand ist (archiviert, Board verlassen) */
+/** Name einer Karte, auf die sichtbare Zeiteinträge zeigen, die selbst nicht im Stand ist: da (archiviert, Board
+ *  verlassen), im Papierkorb oder entfernt (endgültig gelöscht, auch mit ihrem Board) */
 export interface Kartenname {
   karte: Kennung;
   board: Kennung;
   schluessel: string;
   titel: string;
+  zustand: "da" | "papierkorb" | "entfernt";
 }
 
 /** Eine endgültig entfernte Karte: ihr Name bleibt für die Zeiteinträge, die weiter gebucht sind */

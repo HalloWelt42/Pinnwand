@@ -74,8 +74,21 @@ export function kartenName(karteId: string): { schluessel: string; titel: string
   const e = stand.entfernt.find((x) => x.karte === karteId);
   if (e) return { schluessel: e.schluessel, titel: e.titel, board: e.board, zustand: "entfernt" };
   const n = stand.kartennamen.find((x) => x.karte === karteId);
-  if (n) return { schluessel: n.schluessel, titel: n.titel, board: n.board, zustand: "da" };
+  if (n) return { schluessel: n.schluessel, titel: n.titel, board: n.board, zustand: n.zustand };
   return { schluessel: "", titel: "Entfernte Karte", board: "", zustand: "entfernt" };
+}
+
+/** Ob sich deine Zeit auf der Karte in der Zelle setzen lässt: nur, solange sie in einem deiner Boards steht (auch
+ *  archiviert); im Papierkorb, entfernt oder nach dem Verlassen des Boards bleibt die Zeit fest */
+export function zeitSetzbar(karteId: string): boolean {
+  const n = kartenName(karteId);
+  return n.zustand === "da" && stand.boards.some((b) => b.id === n.board);
+}
+
+/** Deine Zeit auf Karten, die es nicht mehr gibt (endgültig gelöscht, auch mit ihrem Board), über alle Tage */
+export function zeitAufEntferntenKarten(kontoId: string): { karten: string[]; sekunden: number } {
+  const eintraege = stand.zeiteintraege.filter((e) => e.konto === kontoId && e.karte && kartenName(e.karte).zustand === "entfernt");
+  return { karten: [...new Set(eintraege.map((e) => e.karte!))], sekunden: eintraege.reduce((s, e) => s + e.sekunden, 0) };
 }
 
 /** Zeiteinträge einer Person von bis (einschließlich) */

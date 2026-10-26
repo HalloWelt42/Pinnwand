@@ -4,11 +4,14 @@
   // Titel; ihre Zeit ändert sich nicht in der Zelle, gelöscht wird sie in den Einträgen des Tags wie jeder eigene
   // Eintrag. Darunter Summe, Soll aus dem Zeitkonto und Differenz.
   // Ein Klick auf einen Tag öffnet seine Einträge rechts als Leiste (wie das Kartendetail über dem Board); "Zeit
-  // nachtragen" öffnet dort die Buchung. Gelesen wird über die Abfragen, geändert nur über die Anwendungsfälle.
+  // nachtragen" öffnet dort die Buchung. Zellen von Karten, die in keinem deiner Boards mehr stehen, bleiben fest; deine
+  // Zeit auf Karten, die es nicht mehr gibt, nennt ein Hinweis über allen Wochen und löscht sie mit einem Schritt.
+  // Gelesen wird über die Abfragen, geändert nur über die Anwendungsfälle.
   import { Hilfepunkt } from "appkern-oberflaeche";
-  import { istAm, modulIrgendwo, saldo, sitzungAm, sitzungSek, sollTag, timerErlaubt, timerVon } from "../../daten/abfragen";
+  import { istAm, kartenName, modulIrgendwo, saldo, sitzungAm, sitzungSek, sollTag, timerErlaubt, timerVon, zeitAufEntferntenKarten,
+           zeitSetzbar } from "../../daten/abfragen";
   import { anhalten, fortsetzen, starten } from "../../daten/anwendung/timer.svelte";
-  import { setzeTageszeit } from "../../daten/anwendung/zeiten.svelte";
+  import { setzeTageszeit, zeitAufKartenLoeschen } from "../../daten/anwendung/zeiten.svelte";
   import { datum, dauer, differenz, wocheText } from "../../daten/format";
   import { ICH } from "../../daten/ich";
   import { board, karte, stand } from "../../daten/stand.svelte";
@@ -31,6 +34,12 @@
   const tage = $derived(tageVon(montag, plusTage(montag, 6)));
   const timer = $derived(timerVon(ICH));
   const eintraege = $derived(stand.zeiteintraege.filter((e) => e.konto === ICH && e.datum >= montag && e.datum <= plusTage(montag, 6)));
+  /** deine Zeit auf Karten, die es nicht mehr gibt, über alle Wochen */
+  const entfernt = $derived(zeitAufEntferntenKarten(ICH));
+  const entfernteNamen = $derived.by(() => {
+    const namen = entfernt.karten.map((id) => kartenName(id).schluessel).filter(Boolean).sort();
+    return namen.length > 4 ? `${namen.slice(0, 3).join(", ")} und ${namen.length - 3} weiteren` : namen.join(", ");
+  });
 
   /** laufende Sekunden deines Timers an diesem Tag auf dieser Karte (über Mitternacht zählt jeder Tag seinen Teil) */
   function laufendAm(tag: string, karteId: string): number {
@@ -148,6 +157,14 @@
 
 <div class="pw-zeiten-raum" class:mit-leiste={!!leiste}>
   <div class="rollfeld">
+    {#if entfernt.sekunden}
+      <div class="hinweis pw-zeiten-entfernt"><i class="fa-solid fa-eraser"></i>
+        <div><b>{dauer(entfernt.sekunden)} Stunden auf gelöschten Karten.</b> Deine Zeit auf {entfernteNamen || "gelöschten Karten"}
+          zählt weiter in deine Arbeitszeit, obwohl es die Karten nicht mehr gibt. War es nur ein Versuch, löschst du sie
+          hier aus allen Wochen; Rückgängig geht danach.</div>
+        <span class="rechts"><button class="knopf klein" onclick={() => zeitAufKartenLoeschen(entfernt.karten)}><i class="fa-solid fa-trash-can"></i>Zeit löschen</button></span>
+      </div>
+    {/if}
     <div class="pw-zeiten-blatt">
       <table class="tabelle pw-zeiten-tabelle">
         <colgroup><col class="karte" />{#each tage as t (t)}<col class="tag" />{/each}<col class="summe" /></colgroup>
@@ -183,6 +200,7 @@
             </tr>
             {:else}
             {@const k = karte(z.id)}
+            {@const setzbar = zeitSetzbar(z.id)}
             <tr>
               <td class="pw-zeiten-kartenzelle">
                 {#if timer?.karte === z.id && timer.seit}
@@ -205,6 +223,8 @@
                       <span class="punkt lebt"></span>{dauer(z.sek[t])}</span>
                   {:else if neu}
                     <span class="pw-zeiten-neu" title="Vorschau der Buchung">{dauer(z.sek[t] + vorschau!.sek)}</span>
+                  {:else if !setzbar}
+                    {#if z.sek[t]}<span class="pw-zeiten-fest" title="Die Karte steht in keinem deiner Boards mehr (Papierkorb, gelöscht oder Board verlassen); ihre Zeit bleibt fest">{dauer(z.sek[t])}</span>{/if}
                   {:else}
                     <DauerFeld sek={z.sek[t]} onwert={(s) => setzeTageszeit(z.id, t, s)}
                                titel="Deine Zeit auf {k?.schluessel ?? 'der Karte'} am {datum(t, true)}: mehr bucht die Differenz auf diesen Tag, weniger kürzt deine jüngsten Einträge des Tags" />

@@ -23,10 +23,18 @@ Die Darstellung gilt auf diesem Gerät; ein anderer Rechner oder Browser hat sei
 **Thema**: **Hell**, **Dunkel** oder **Wie das System**. Wie das System folgt der Einstellung des Rechners, auch
 wenn sie abends wechselt. Ohne Wahl ist die Pinnwand dunkel.
 
-**Vorlage**: ändert das ganze Aussehen, nicht nur Farben: Flächen, Linien, Ecken und Schriften. **Klassisch** ist das
-Grunddesign, **Futur** setzt auf tiefe Flächen, einen leuchtenden Akzent, feine Linien und technische Schrift. Die
-Vorlage gilt auf diesem Gerät und nur auf dem Rechner ab 1000 Pixel Breite; am Telefon und in schmalen Fenstern bleibt
-Klassisch. Hell und dunkel wählst du weiter mit dem Thema.
+**Vorlage**: ändert das ganze Aussehen, nicht nur Farben: Flächen, Linien, Ecken und Schriften. Die Vorlage gilt auf
+diesem Gerät und nur auf dem Rechner ab 1000 Pixel Breite; am Telefon und in schmalen Fenstern bleibt Klassisch. Hell
+und dunkel wählst du weiter mit dem Thema; jede Vorlage hat beide Fassungen.
+
+| Vorlage | Aussehen |
+|---|---|
+| **Klassisch** | das Grunddesign: ruhig, dicht und überall gleich |
+| **Futur** | tiefe Flächen, ein leuchtender Akzent, feine Linien und technische Schrift |
+| **Glas** | durchscheinende Flächen mit Lichtkanten über einem weich verschwommenen Grund |
+| **Papyrus** | Cremeweiß und warmes Braun, kleine leuchtende Akzente, Titel mit Serifen |
+| **Klar** | luftig und weich: viel Weißraum, runde Formen, Schatten statt Linien |
+| **Plakat** | mutig: kräftige Konturen, harte Schatten, Gelb als Signal, schwere Titel |
 
 **Schriftstufe**: ändert alle Schriften und Abstände zusammen, nie einzeln.
 

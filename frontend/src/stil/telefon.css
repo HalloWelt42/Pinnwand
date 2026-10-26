@@ -320,7 +320,8 @@ button.pw-tel-ziel:active { background: var(--karte-2); }
 .pw-tel-sprache .pegel { height: 64px; display: flex; align-items: center; gap: 3px; padding: 0 var(--a1); border-radius: var(--r2); background: var(--mulde); }
 .pw-tel-sprache .pegel span { flex: 1 1 0; min-width: 0; height: calc(var(--h) * 90%); border-radius: 2px; background: var(--akzent-flaeche);
                              transition: height 90ms linear; }
-.pw-tel-sprache .mitschrift { min-height: 132px; padding: var(--a3); border-radius: var(--r2); background: var(--bereich); font-size: var(--gross); line-height: 1.55; overflow-wrap: anywhere; }
+/* feste Höhe, die neueste Zeile unten in Sicht: die Knöpfe darunter bleiben stehen, während der Text wächst */
+.pw-tel-sprache .mitschrift { height: 9.5em; overflow-y: auto; padding: var(--a3); border-radius: var(--r2); background: var(--bereich); font-size: var(--gross); line-height: 1.55; overflow-wrap: anywhere; }
 .pw-tel-sprache .vorlaeufig { color: var(--text-3); font-style: italic; }
 .pw-tel-sprache .quelle { display: flex; align-items: flex-start; gap: var(--a2); font-size: var(--klein); color: var(--text-3); }
 .pw-tel-sprache .quelle i { margin-top: 4px; }

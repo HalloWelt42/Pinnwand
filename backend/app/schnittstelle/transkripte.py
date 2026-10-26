@@ -4,7 +4,7 @@ Kopf). Die Sitzung der Person geht an die Transkription mit."""
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, UploadFile
 from fastapi.responses import Response
 
 from appkern.anmeldung.api import COOKIE, KOPF
@@ -18,11 +18,6 @@ from ..anwendung.transkripte import SPRACHE_HOECHSTENS, Gehoert, Trefferseite
 from ..modell import Kennung, Konto, Modell
 from .transkription import VerbundTranskription
 from .zugriff import Zugriff
-
-
-#: Endung je Art des Tons, damit die Transkription die Aufnahme erkennt
-ENDUNG = {"audio/webm": ".webm", "audio/mp4": ".m4a", "audio/ogg": ".ogg", "audio/wav": ".wav", "audio/x-wav": ".wav",
-          "audio/mpeg": ".mp3"}
 
 
 class Verknuepfen(Modell):
@@ -68,16 +63,12 @@ def router(z: Zugriff) -> APIRouter:
         return await tun(d.ki.notiz_vorschlagen(konto, karte_id, marke_id, sitzung(request)))
 
     @r.post("/boards/{board_id}/sprache", response_model=Gehoert)
-    async def sprache(board_id: Kennung, request: Request, konto: Konto = Depends(ich)) -> Gehoert:
-        """Der Ton ist der Körper der Anfrage (Art im Kopf Content-Type), so wie der Browser die Aufnahme hat."""
-        inhalt = bytearray()
-        async for stueck in request.stream():
-            inhalt += stueck
-            if len(inhalt) > SPRACHE_HOECHSTENS:
-                break
-        typ = request.headers.get("content-type", "application/octet-stream").split(";")[0].strip()
-        return await tun(d.transkripte.hoeren(konto, board_id, sitzung(request), bytes(inhalt),
-                                              f"sprache{ENDUNG.get(typ, '')}", typ))
+    async def sprache(board_id: Kennung, datei: UploadFile, request: Request, konto: Konto = Depends(ich)) -> Gehoert:
+        """Ein Stück Sprache (Feld `datei`, wie der Hördienst der Transkription): die Live-Mitschrift der Aufnahme schickt
+        es an Sprechpausen, die Antwort ist sein Text."""
+        inhalt = await datei.read(SPRACHE_HOECHSTENS + 1)
+        return await tun(d.transkripte.hoeren(konto, board_id, sitzung(request), inhalt, datei.filename or "sprache.wav",
+                                              datei.content_type or "application/octet-stream"))
 
     return r
 

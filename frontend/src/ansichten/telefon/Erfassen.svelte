@@ -2,8 +2,8 @@
   // Schnell erfassen am Telefon: Board wählen (das zuletzt genutzte ist vorbelegt, gemerkt auf diesem Gerät), Titel,
   // Arbeit oder Idee (nur mit Zeiterfassung, sonst die Kartenart des Boards), Fällig; Anlegen legt die Karte ans Ende der
   // ersten offenen Spalte (oder der Spalte, aus der man kam), du bist zuständig, und das Formular bleibt für die nächste
-  // Karte offen (M-32, M-33). Mit dem Modul Transkripte nimmt "Sprechen" auf; der Text kommt nach dem Stopp in Titel
-  // und Beschreibung und wird vor dem Anlegen geprüft.
+  // Karte offen (M-32, M-33). Mit dem Modul Transkripte nimmt "Sprechen" auf; der Text wächst beim Sprechen und kommt
+  // nach dem Stopp in Titel und Beschreibung, geprüft vor dem Anlegen.
   import { boardGruppen, darf, kartenNummer } from "../../daten/abfragen";
   import { anlegen } from "../../daten/anwendung/karten.svelte";
   import { transkripteDa } from "../../daten/anwendung/transkripte.svelte";
@@ -14,7 +14,7 @@
   import DatumFeld from "../../teile/DatumFeld.svelte";
   import { boardPfad, wert } from "../../weg.svelte";
   import { geraet, geraetMerken } from "./geraet.svelte";
-  import Spracheingabe from "./Spracheingabe.svelte";
+  import Spracheingabe, { sprechenStarten } from "./Spracheingabe.svelte";
   import TelefonSchale from "./TelefonSchale.svelte";
   import { telPfad } from "./weg";
 
@@ -75,7 +75,7 @@
 {#snippet knoepfe()}
   <div class="pw-tel-aktionen">
     {#if transkripteDa(b)}
-      <button class="knopf" onclick={() => (sprache = true)} title="Per Sprache erfassen (Transkription)"><i class="fa-solid fa-microphone"></i>Sprechen</button>
+      <button class="knopf" onclick={() => { sprechenStarten(boardId); sprache = true; }} title="Per Sprache erfassen (Transkription)"><i class="fa-solid fa-microphone"></i>Sprechen</button>
     {/if}
     <button class="knopf haupt" disabled={!titel.trim() || !datumGueltig} title={datumGueltig ? "" : "Das Datum ist nicht lesbar"} onclick={anlegenKlick}><i class="fa-solid fa-plus"></i>Anlegen</button>
   </div>

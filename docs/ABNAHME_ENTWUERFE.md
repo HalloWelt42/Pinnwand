@@ -79,8 +79,8 @@ Was die Entwürfe offen ließen oder nur vorführten, ist in der App so gebaut:
   Stelle in der Pinnwand, "In der Transkription öffnen", eine Notiz und mit KI an der Karte ein Vorschlag dafür; lösen
   mit Rückgängig. Gefragt wird im Auftrag der Person: wer die Transkription nicht nutzen darf, sieht die Stellen, hört
   sie aber nicht.
-- Spracheingabe beim Erfassen am Telefon: der Text kommt nach dem Stopp (Nutzer: "Nach dem Stopp"), nicht mitlaufend wie
-  im Entwurf; erster Satz Titel, alles Beschreibung, mit Hinweis zum Prüfen.
+- Spracheingabe beim Erfassen am Telefon: der Text wächst stückweise beim Sprechen (an Sprechpausen, Nutzer: "Ja,
+  stückweise live"), nicht Wort für Wort wie im Entwurf; erster Satz Titel, alles Beschreibung, mit Hinweis zum Prüfen.
 
 ## Nachbesserungen in der App (25.10.2026)
 

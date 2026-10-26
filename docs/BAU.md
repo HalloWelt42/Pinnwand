@@ -315,9 +315,10 @@ sprechen kann nur, wer die Transkription selbst nutzen darf. Was an der Karte st
   der Transkription durch (Bereichsanfragen, damit Springen in langen Aufnahmen nur das Nötige lädt); dazu "In der
   Transkription öffnen" (`<adresse>/transkripte/<id>/<sekunde>`).
 - **Notiz vorschlagen** (mit dem Modul KI an der Karte): aus den Abschnitten um die Stelle (30 Sekunden davor, 90 danach).
-- **Spracheingabe beim Erfassen** am Telefon (Nutzer: "Nach dem Stopp"): Aufnahme mit Zeit und Pegel, nach dem Stopp
-  `POST /boards/{id}/sprache` (an `/api/v1/hoeren` der Transkription, bis zwei Minuten); der erste Satz wird Titel, alles
-  die Beschreibung, sichtbar vor dem Anlegen.
+- **Spracheingabe beim Erfassen** am Telefon mit dem Aufnahme-Baustein des Appkerns (Nutzer: "Ja, stückweise live"):
+  die Live-Mitschrift schneidet an Sprechpausen (5 bis 15 Sekunden) und schickt jedes Stück an `POST /boards/{id}/sprache`
+  (weiter an `/api/v1/hoeren` der Transkription); der Text wächst beim Sprechen, nach dem Stopp kommt das letzte Stück.
+  Der erste Satz wird Titel, alles die Beschreibung, sichtbar vor dem Anlegen; die Aufnahme selbst wird verworfen.
 - Ohne eingetragene Adresse zeigt die Oberfläche das Modul nicht an (`transkription_adresse` im Stand leer); Fehler der
   Transkription kommen als Ablehnung mit Grund (503 nicht erreichbar, 403 kein Zugang).
 
@@ -329,7 +330,7 @@ sprechen kann nur, wer die Transkription selbst nutzen darf. Was an der Karte st
 | `DELETE /karten/{id}/transkripte/{marke}` | entfernt die Marke |
 | `POST /karten/{id}/transkripte/{marke}/ki/notiz` | Vorschlag `{text}` |
 | `GET /inhalt/transkripte/{karte}/{marke}/ton` | Ton der Aufnahme, auch mit dem Inhalts-Cookie |
-| `POST /boards/{id}/sprache` | Ton als Körper (Art im Kopf `Content-Type`); Antwort `{text}` |
+| `POST /boards/{id}/sprache` | ein Stück Ton (mehrteilig, Feld `datei`, wie der Hördienst der Transkription); Antwort `{text}` |
 
 ## 10. Prüfen
 

@@ -17,7 +17,8 @@ from .rahmen import NAMEN_DER_RECHTE, Abgelehnt, Antwort, Anwendung, Kontext, ne
 #: so viele Marken trägt eine Karte höchstens; so lang darf ein gesuchter Text sein
 MARKEN_HOECHSTENS = 100
 SUCHE_LAENGE = 200
-#: so viel Ton nimmt die Spracheingabe an (Bytes; die Transkription hört bis zwei Minuten)
+#: so viel Ton nimmt die Spracheingabe je Stück an (Bytes; die Live-Mitschrift schickt höchstens 15 Sekunden, die
+#: Transkription hört bis zwei Minuten)
 SPRACHE_HOECHSTENS = 30 * 1024 * 1024
 
 
@@ -213,10 +214,10 @@ class Transkripte:
 
     async def hoeren(self, konto: Konto, board_id: Kennung, sitzung: str, inhalt: bytes, dateiname: str,
                      typ: str) -> Gehoert:
-        """Spracheingabe beim Erfassen einer Karte in diesem Board: der gesprochene Text."""
+        """Spracheingabe beim Erfassen einer Karte in diesem Board: der Text eines gesprochenen Stücks."""
         await self._board(konto, board_id, "karten.anlegen")
         if not inhalt:
             raise Abgelehnt("Es kam kein Ton an")
         if len(inhalt) > SPRACHE_HOECHSTENS:
-            raise Abgelehnt("Die Aufnahme ist zu lang; höchstens zwei Minuten", 413)
+            raise Abgelehnt("Das Stück der Aufnahme ist zu lang; höchstens zwei Minuten", 413)
         return Gehoert(text=(await self.t.hoeren(sitzung, inhalt, dateiname, typ)).strip())

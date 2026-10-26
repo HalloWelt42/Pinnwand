@@ -183,8 +183,9 @@ Entschieden vom Nutzer (25.10.2026):
   darf, die Zusammenfassung jedes Mitglied), nur am Rechner. Die Säuberung der Modelltexte ist ein Baustein des
   Appkerns (`appkern.leitstelle.text`).
 - Transkripte kommen nach KI an der Karte (Nutzer: "Transkripte"): Stellen der Transkription an der Karte, gefragt im
-  Auftrag der Person über den Baustein `appkern.verbund`; die Spracheingabe beim Erfassen setzt nach dem Stopp um
-  (Nutzer: "Nach dem Stopp"), nicht mitlaufend wie im Entwurf, weil die Transkription heute nur fertige Aufnahmen hört.
+  Auftrag der Person über den Baustein `appkern.verbund`. Die Spracheingabe beim Erfassen schreibt stückweise mit
+  (Nutzer zuerst "Nach dem Stopp", nach der Korrektur, dass der Aufnahme-Baustein des Appkerns an Sprechpausen
+  schneidet: "Ja, stückweise live"); Wort für Wort wie im Entwurf geht mit der Transkription heute nicht.
 - Die Zeit eines Termins ohne Karte zählt nach der Bestätigung ins Ist und in den Stundenzettel (Nutzer: "Ja, nach
   Bestätigung"); vorher steht der Termin nur in Heute, Kalender und Zeitachse.
 - Karten ziehen zwischen Boards um (Nutzer: "vom ideenboard muss ich auch sachen auf das arbeitsboard schieben

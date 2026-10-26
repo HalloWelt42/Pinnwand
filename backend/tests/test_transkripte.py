@@ -135,11 +135,12 @@ async def test_notiz_vorschlagen_mit_ki(pw: Pinnwand):
 
 async def test_spracheingabe(pw: Pinnwand):
     b, _ = await mit_transkripten(pw)
-    r = await pw.c.post(f"/api/v1/boards/{b['id']}/sprache", headers={**pw.kopf["bert"], "Content-Type": "audio/webm"},
-                        content=b"ton" * 100)
+    # die Live-Mitschrift schickt jedes Stück wie an den Hördienst der Transkription (Feld datei)
+    r = await pw.c.post(f"/api/v1/boards/{b['id']}/sprache", headers=pw.kopf["bert"],
+                        files={"datei": ("live.wav", b"RIFF" + b"ton" * 100, "audio/wav")})
     assert r.status_code == 200 and r.json() == {"text": TRANSKRIPTION.gehoert}
     anfrage = TRANSKRIPTION.anfragen[-1]
-    assert anfrage.url.path == "/api/v1/hoeren" and b'filename="sprache.webm"' in anfrage.content
-    assert b"Content-Type: audio/webm" in anfrage.content and anfrage.headers["x-kellerwolke-sitzung"] == "t-bert"
-    r = await pw.c.post(f"/api/v1/boards/{b['id']}/sprache", headers=pw.kopf["bert"], content=b"")
+    assert anfrage.url.path == "/api/v1/hoeren" and b'filename="live.wav"' in anfrage.content
+    assert b"Content-Type: audio/wav" in anfrage.content and anfrage.headers["x-kellerwolke-sitzung"] == "t-bert"
+    r = await pw.c.post(f"/api/v1/boards/{b['id']}/sprache", headers=pw.kopf["bert"], files={"datei": ("leer.wav", b"", "audio/wav")})
     assert (r.status_code, r.json()["detail"]) == (400, "Es kam kein Ton an")

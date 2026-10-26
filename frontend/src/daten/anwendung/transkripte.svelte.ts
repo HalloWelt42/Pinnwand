@@ -1,6 +1,7 @@
 // Transkripte an der Karte über den Server (Modul transkripte): suchen und verknüpfen, Notiz, lösen (mit Rückgängig),
-// der Ton einer Stelle und der Weg in die Transkription; dazu die Spracheingabe beim Erfassen. Der Server fragt die
-// Transkription im Auftrag der Person; wer sie nicht nutzen darf, bekommt den Grund als Meldung oder als Fehler.
+// der Ton einer Stelle und der Weg in die Transkription (die Spracheingabe beim Erfassen läuft über die Aufnahme des
+// Appkerns, siehe telefon/Spracheingabe). Der Server fragt die Transkription im Auftrag der Person; wer sie nicht
+// nutzen darf, bekommt den Grund als Meldung oder als Fehler.
 
 import { hole } from "appkern-oberflaeche";
 import type { Board, Kennung, TranskriptMarke } from "../../modell";
@@ -63,13 +64,4 @@ export function tonAdresse(karteId: Kennung, markeId: Kennung): string {
 /** Dieselbe Stelle in der Transkription */
 export function inTranskription(m: TranskriptMarke): string {
   return `${stand.transkriptionAdresse}/transkripte/${m.transkript}${m.sekunde != null ? `/${Math.floor(m.sekunde)}` : ""}`;
-}
-
-/** Spracheingabe: die Aufnahme zu Text (bis zwei Minuten). Das Umsetzen dauert, darum ohne Zeitgrenze; abbrechen
- *  kann die Person. */
-export async function sprechen(boardId: Kennung, ton: Blob, signal: AbortSignal): Promise<string> {
-  const typ = ton.type.split(";")[0] || "application/octet-stream";
-  const antwort = await hole<{ text: string }>(`/boards/${boardId}/sprache`,
-                                                { method: "POST", body: ton, headers: { "Content-Type": typ }, signal, zeitgrenzeMs: 0 });
-  return antwort.text;
 }

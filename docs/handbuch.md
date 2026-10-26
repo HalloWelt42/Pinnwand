@@ -36,7 +36,7 @@ unter Module einschaltet; die Karten der Serien legt die Pinnwand jeden Tag selb
 Checkliste, Labels und, in der Schnelleingabe einer Spalte unter "Aus Text", mehrere Karten aus einem Text. Übernommen
 wird nur, was man in der Vorschau bestätigt, mit Rückgängig. Das Modul Transkripte hängt Stellen aus der
 [[Transkription]] an eine Karte (suchen, abspielen ab der Stelle, Notiz) und bringt am Telefon unter Erfassen
-"Sprechen": nach dem Stopp stehen Titel und Beschreibung zum Prüfen da. Suchen, hören und sprechen kann nur, wer die
+"Sprechen": der Text wächst beim Sprechen an jeder Pause, nach dem Stopp stehen Titel und Beschreibung zum Prüfen da. Suchen, hören und sprechen kann nur, wer die
 Transkription selbst nutzen darf. Die Pinnwand entsteht in Stufen: Boards, Zeit und Planung sind da, vom Verbund die
 Berichte, Mitteilungen aufs Telefon, KI an der Karte und Transkripte; die übrigen Anbindungen an andere Apps folgen.
 Was eine Stufe noch nicht hat, zeigt die Oberfläche nicht.
@@ -141,5 +141,5 @@ Karte hängt.
 - Transkripte: "Die Transkription lässt dich nicht zu" heißt, das Konto darf die Transkription nicht nutzen (dort unter
   Einstellungen, Weitere Konten eintragen). Steht die Transkription in der Fußleiste als nicht verbunden, stimmt die
   Adresse nicht oder sie läuft nicht. Spracheingabe braucht die Pinnwand vom Home-Bildschirm über HTTPS und die
-  Erlaubnis fürs Mikrofon; eine Aufnahme hat höchstens zwei Minuten.
+  Erlaubnis fürs Mikrofon.
 - Docker legt `daten/` oder `sicherungen/` für root an: die Ordner vor dem ersten Start als `pi` anlegen (Schritt 2).

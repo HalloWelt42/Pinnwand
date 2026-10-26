@@ -1,7 +1,9 @@
 <script lang="ts">
-  // Darstellung auf diesem Gerät: Thema (hell, dunkel, wie das System) und Schriftstufe (Klein ist die Vorgabe) mit
-  // Vorschau einer deiner Karten in jeder Stufe (ohne Karten keine Vorschau). Eine Wahrheit in darstellung.svelte.ts;
-  // die Wahl gilt sofort für die ganze Seite und bleibt im Browser gemerkt.
+  // Darstellung auf diesem Gerät: Thema (hell, dunkel, wie das System), Vorlage des Aussehens (aus dem Appkern, nur auf
+  // dem Rechner) und Schriftstufe (Klein ist die Vorgabe) mit Vorschau einer deiner Karten in jeder Stufe (ohne Karten
+  // keine Vorschau). Thema und Schrift in darstellung.svelte.ts, die Vorlage im Baustein vorlage des Appkerns; jede
+  // Wahl gilt sofort für die ganze Seite und bleibt im Browser gemerkt.
+  import { VORLAGEN, vorlage, vorlageSetzen } from "appkern-oberflaeche";
   import { ICH } from "../../../daten/ich";
   import { board, stand } from "../../../daten/stand.svelte";
   import Karte from "../../../board/Karte.svelte";
@@ -29,6 +31,21 @@
         {/each}
       </span>
       <p class="pw-verwaltung-satz">Gilt auf diesem Gerät. Wie das System folgt der Einstellung des Rechners, auch wenn sie abends wechselt.</p>
+    </section>
+
+    <section class="bereich">
+      <h2 class="etikett">Vorlage</h2>
+      <p class="pw-verwaltung-satz">Ändert das ganze Aussehen: Flächen, Linien, Ecken und Schriften. Gilt auf diesem Gerät und nur auf dem
+        Rechner ab 1000 Pixel Breite; am Telefon bleibt Klassisch.</p>
+      <div class="wahl pw-verwaltung-wahl" role="radiogroup" aria-label="Vorlage">
+        {#each VORLAGEN as v (v.id)}
+          <label class:an={vorlage.wahl === v.id}>
+            <input type="radio" name="vorlage" value={v.id} checked={vorlage.wahl === v.id} onchange={() => vorlageSetzen(v.id)} />
+            <span class="kreis"></span>
+            <div><b><i class="fa-solid {v.symbol}"></i> {v.name}</b><span>{v.text}</span></div>
+          </label>
+        {/each}
+      </div>
     </section>
 
     <section class="bereich">

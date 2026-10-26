@@ -3,7 +3,7 @@
   // Mitteilungen dieses Geräts (ein Tippen führt an ihr Ziel). Jeder Pfad zeigt die Ansicht aus
   // der Wegetabelle (routen.ts), am Rechner in der Schale, am Telefon in der eigenen Ansicht. "/" führt zu Heute. Über
   // allem schwebt die Hilfe (Themen unter hilfe/); die Seitenleiste klappt nach der Wahl dieses Geräts ein.
-  import { geraet, Hilfe, hilfeThemen, pushStarten, seitenleisteStarten, verbindungenVerfolgen, vorleser } from "appkern-oberflaeche";
+  import { geraet, Hilfe, hilfeThemen, pushStarten, seitenleisteStarten, verbindungenVerfolgen, vorlageStarten, vorleser } from "appkern-oberflaeche";
   import { onMount, untrack } from "svelte";
   import { timerVon } from "./daten/abfragen";
   import { melden } from "./daten/anwendung/meldung.svelte";
@@ -19,6 +19,7 @@
   onMount(() => {
     void pushStarten();
     seitenleisteStarten();
+    vorlageStarten();
     const enden = [verbinden(), uhrStarten(), wegStarten(), verbindungenVerfolgen()];
     return () => enden.forEach((ende) => ende());
   });

@@ -49,7 +49,8 @@
     items: zonen[schluessel] ?? [], type: "board", flipDurationMs: 150, dropTargetStyle: {}, dragDisabled: bearbeiten !== null,
   });
 
-  // Ordner bearbeiten: Name im Feld (Enter oder Verlassen übernimmt, Escape verwirft), Löschen mit Rückfrage
+  // Ordner bearbeiten: Name im Feld (Enter oder Verlassen übernimmt, Escape verwirft). Löschen am Papierkorb daneben:
+  // ein leerer Ordner geht sofort (Rückgängig in der Meldung), einer mit Boards erst nach der Rückfrage
   let bearbeiten = $state<string | null>(null);
   let loeschen = $state<string | null>(null);
   async function umbenennen(o: Ordner, feld: HTMLInputElement): Promise<void> {
@@ -63,6 +64,10 @@
   }
   async function loeschenBestaetigen(o: Ordner): Promise<void> {
     if (await ordnerLoeschen(o.id)) loeschen = null;
+  }
+  function loeschenKlick(o: Ordner): void {
+    if (zonen[o.id]?.length) loeschen = loeschen === o.id ? null : o.id;
+    else void ordnerLoeschen(o.id);
   }
   const fokus = (feld: HTMLInputElement) => { feld.focus(); feld.select(); };
 
@@ -101,17 +106,18 @@
     {#if bearbeiten === o.id}
       <input class="eingabe pw-ordner-feld" value={o.name} aria-label="Name des Ordners {o.name}" use:fokus
              onkeydown={(e) => nameTaste(o, e)} onblur={(e) => umbenennen(o, e.currentTarget)} />
-      <button class="pw-ordner-knopf" title="Ordner {o.name} löschen" aria-label="Ordner {o.name} löschen"
-              onpointerdown={(e) => e.preventDefault()} onclick={() => { bearbeiten = null; loeschen = o.id; }}><i class="fa-solid fa-trash-can"></i></button>
     {:else}
+      {@const leer = !zonen[o.id]?.length}
       <span class="pw-ordner-name">{o.name}</span>
-      <button class="pw-ordner-knopf" title="Ordner {o.name} umbenennen oder löschen" aria-label="Ordner {o.name} bearbeiten"
+      <button class="pw-ordner-knopf" title="Ordner {o.name} umbenennen" aria-label="Ordner {o.name} umbenennen"
               onclick={() => { loeschen = null; bearbeiten = o.id; }}><i class="fa-solid fa-pen"></i></button>
+      <button class="pw-ordner-knopf" title={leer ? `Leeren Ordner ${o.name} löschen (Rückgängig möglich)` : `Ordner ${o.name} löschen; seine Boards bleiben`}
+              aria-label="Ordner {o.name} löschen" onclick={() => loeschenKlick(o)}><i class="fa-solid fa-trash-can"></i></button>
     {/if}
   </div>
   {#if loeschen === o.id}
     <div class="pw-ordner-rueckfrage" role="alert">
-      <span><b>Ordner {o.name} löschen?</b> {zonen[o.id]?.length ? "Seine Boards stehen danach ohne Ordner; an ihnen ändert sich nichts." : "Er ist leer."}</span>
+      <span><b>Ordner {o.name} löschen?</b> Seine Boards stehen danach ohne Ordner; an ihnen ändert sich nichts.</span>
       <span class="knoepfe"><button class="knopf klein" onclick={() => (loeschen = null)}>Abbrechen</button>
         <button class="knopf klein gefahr-voll" onclick={() => loeschenBestaetigen(o)}><i class="fa-solid fa-trash-can"></i>Löschen</button></span>
     </div>

@@ -23,6 +23,11 @@ Die Darstellung gilt auf diesem Gerät; ein anderer Rechner oder Browser hat sei
 **Thema**: **Hell**, **Dunkel** oder **Wie das System**. Wie das System folgt der Einstellung des Rechners, auch
 wenn sie abends wechselt. Ohne Wahl ist die Pinnwand dunkel.
 
+**Vorlage**: ändert das ganze Aussehen, nicht nur Farben: Flächen, Linien, Ecken und Schriften. **Klassisch** ist das
+Grunddesign, **Futur** setzt auf tiefe Flächen, einen leuchtenden Akzent, feine Linien und technische Schrift. Die
+Vorlage gilt auf diesem Gerät und nur auf dem Rechner ab 1000 Pixel Breite; am Telefon und in schmalen Fenstern bleibt
+Klassisch. Hell und dunkel wählst du weiter mit dem Thema.
+
 **Schriftstufe**: ändert alle Schriften und Abstände zusammen, nie einzeln.
 
 | Stufe | Wofür |
@@ -77,8 +82,9 @@ Seite. Unter **Deine Ordner**:
   Ordner kommt ans Ende. Ein Name hat höchstens 100 Zeichen.
 - **Umbenennen**: in das Namensfeld des Ordners klicken, den Namen ändern und das Feld verlassen.
 - **Ordnen**: am Griff links ziehen; so stehen die Ordner dann auch in der Seitenleiste.
-- **Löschen**: das Papierkorbsymbol rechts fragt nach, "Ordner ... löschen?". Seine Boards stehen danach ohne Ordner; an den
-  Boards selbst ändert sich nichts. **Ordner löschen** bestätigt, **Abbrechen** behält ihn.
+- **Löschen**: das Papierkorbsymbol rechts. Ein leerer Ordner geht sofort; die Meldung bietet Rückgängig. Hat er Boards,
+  fragt es nach, "Ordner ... löschen?"; seine Boards stehen danach ohne Ordner, an den Boards selbst ändert sich nichts.
+  **Ordner löschen** bestätigt, **Abbrechen** behält ihn.
 
 Hinter jedem Ordner steht, wie viele Boards er hat; zeigst du darauf, siehst du ihre Namen.
 

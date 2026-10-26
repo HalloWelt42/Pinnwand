@@ -79,8 +79,8 @@ in der Seitenleiste:
   **Anlegen** klicken. **Escape** bricht ab.
 - **Umbenennen**: der Stift rechts neben dem Ordner macht den Namen zum Feld; **Enter** oder ein Klick daneben
   übernimmt, **Escape** lässt den alten Namen.
-- **Löschen**: im Feld des Namens steht rechts der Papierkorb; er fragt nach. Die Boards des Ordners stehen danach
-  unter **Ohne Ordner**, an ihnen ändert sich nichts.
+- **Löschen**: der Papierkorb neben dem Stift. Ein leerer Ordner geht sofort; die Meldung bietet Rückgängig. Hat der
+  Ordner Boards, fragt er erst nach; die Boards stehen danach unter **Ohne Ordner**, an ihnen ändert sich nichts.
 - **Boards einsortieren**: ein Board mit der Maus in einen Ordner ziehen, aus ihm heraus (es erscheint dann **Ohne
   Ordner** als Ziel) oder im Ordner an eine andere Stelle. Ein leerer Ordner zeigt eine Fläche "Leer: Board hierher
   ziehen". Mit der Tastatur geht es auch: das Board wählen, **Leertaste** hebt es an, mit **Tab** zum Ordner, **Leertaste**

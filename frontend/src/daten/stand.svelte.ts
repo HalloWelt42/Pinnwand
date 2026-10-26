@@ -126,8 +126,20 @@ const TEILE = {
 
 type Zeile = { id: string; fassung?: number };
 
+/** Änderungen, die eintreffen, während der ganze Stand unterwegs ist: je laufendem Laden eine Liste. Der geholte Stand
+ *  kann älter sein als sie (sonst käme etwa ein eben gelöschtes Board zurück); darum kommen sie danach noch einmal
+ *  darüber, in ihrer Reihenfolge. Das ist ohne Schaden, weil ein Stand nur mit höherer Fassung ersetzt wird. */
+const unterwegs = new Set<Geaendert[]>();
+
 export async function laden(): Promise<void> {
-  const s = await hole<Serverstand>("/stand");
+  const danach: Geaendert[] = [];
+  unterwegs.add(danach);
+  let s: Serverstand;
+  try {
+    s = await hole<Serverstand>("/stand");
+  } finally {
+    unterwegs.delete(danach);
+  }
   ichSetzen(s.ich);
   Object.assign(stand, {
     moduleDa: s.moduleDa, konten: s.konten, boards: s.boards, karten: s.karten, gruppen: s.gruppen, laufnummern: s.laufnummern, ordner: s.ordner,
@@ -136,7 +148,10 @@ export async function laden(): Promise<void> {
     kiBereit: s.kiBereit, transkriptionAdresse: s.transkriptionAdresse, vertonungAdresse: s.vertonungAdresse, appBesitzer: s.appBesitzer,
     einstellungen: s.einstellungen, geladen: true,
   });
-  eigenesKontoPruefen();
+  let nochmal = false;
+  for (const g of danach) nochmal = einspielen(g) || nochmal;
+  if (!eigenesKontoPruefen()) return;
+  if (nochmal) void laden();
 }
 
 function fassung(z: unknown): number {
@@ -205,6 +220,7 @@ function fremdGeaendert(n: Neuigkeit): void {
 }
 
 export function uebernehmen(geaendert: Geaendert[]): void {
+  for (const liste of unterwegs) liste.push(...geaendert);
   let neu = false;
   for (const g of geaendert) neu = einspielen(g) || neu;
   if (!eigenesKontoPruefen()) return;

@@ -1,10 +1,11 @@
-// Einstieg: Symbole als Paket, die Gestaltung aus dem Appkern (Leitstand, Anmeldung, Aufklappliste), die der Pinnwand,
-// dann die App.
+// Einstieg: Symbole als Paket, die Gestaltung aus dem Appkern (Leitstand, Anmeldung, Aufklappliste, Hilfe, Vorlagen),
+// die der Pinnwand, dann die App.
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "appkern-oberflaeche/leitstand.css";
 import "appkern-oberflaeche/anmeldung.css";
 import "appkern-oberflaeche/auswahl.css";
 import "appkern-oberflaeche/hilfe.css";
+import "appkern-oberflaeche/vorlagen.css";
 import "./stil/pinnwand.css";
 import "./stil/board.css";
 import "./stil/detail.css";

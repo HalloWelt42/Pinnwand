@@ -1,6 +1,6 @@
 <script lang="ts">
-  // Ordner: deine Ordner der Seitenleiste in ihrer Reihenfolge (Ziehen am Griff), umbenennen, löschen mit Rückfrage in
-  // der Fläche (ihre Boards stehen danach ohne Ordner), neu anlegen; darunter jedes deiner Boards mit seinem Ordner zum
+  // Ordner: deine Ordner der Seitenleiste in ihrer Reihenfolge (Ziehen am Griff), umbenennen, löschen (ein leerer sofort
+  // mit Rückgängig, einer mit Boards nach der Rückfrage in der Fläche; seine Boards stehen danach ohne Ordner), neu anlegen; darunter jedes deiner Boards mit seinem Ordner zum
   // Einsortieren, in der Ordnung der Seitenleiste. Ordner ordnen nur, sie tragen keine Rechte; die anderen sortieren für
   // sich. Alles über die Anwendungsfälle.
   import { dragHandle, dragHandleZone, type DndEvent } from "svelte-dnd-action";
@@ -36,6 +36,10 @@
   async function loeschenBestaetigen(o: Ordner): Promise<void> {
     if (await ordnerLoeschen(o.id)) loeschen = null;
   }
+  function loeschenKlick(o: Ordner): void {
+    if (inhalt(o).length) loeschen = o.id;
+    else void ordnerLoeschen(o.id);
+  }
 
   let neuName = $state("");
   async function anlegen(): Promise<void> {
@@ -62,14 +66,14 @@
               <input class="eingabe pw-verwaltung-name" value={o.name} aria-label="Name des Ordners {o.name}" onchange={(e) => umbenennen(o, e)} />
               <span class="pw-angabe flaeche" title={drin.map((b) => b.name).join(", ") || "Noch leer"}>
                 <i class="fa-solid fa-table-columns"></i>{anzahl(drin.length)}</span>
-              <button class="knopf ohne symbol klein" title="Ordner {o.name} löschen" aria-label="Ordner {o.name} löschen" disabled={loeschen === o.id}
-                      onclick={() => (loeschen = o.id)}><i class="fa-solid fa-trash-can"></i></button>
+              <button class="knopf ohne symbol klein" title={drin.length ? `Ordner ${o.name} löschen; seine Boards bleiben` : `Leeren Ordner ${o.name} löschen (Rückgängig möglich)`}
+                      aria-label="Ordner {o.name} löschen" disabled={loeschen === o.id} onclick={() => loeschenKlick(o)}><i class="fa-solid fa-trash-can"></i></button>
             </div>
             {#if loeschen === o.id}
               <div class="hinweis gefahr pw-verwaltung-rueckfrage" role="alert"><i class="fa-solid fa-trash-can"></i>
                 <div><b>Ordner {o.name} löschen?</b>
-                  {#if drin.length}{drin.length === 1 ? "Sein Board" : `Seine ${drin.length} Boards`} ({drin.map((b) => b.name).join(", ")})
-                    {drin.length === 1 ? "steht" : "stehen"} danach ohne Ordner; an den Boards ändert sich nichts.{:else}Er ist leer.{/if}</div>
+                  {drin.length === 1 ? "Sein Board" : `Seine ${drin.length} Boards`} ({drin.map((b) => b.name).join(", ")})
+                  {drin.length === 1 ? "steht" : "stehen"} danach ohne Ordner; an den Boards ändert sich nichts.</div>
                 <span class="rechts"><button class="knopf klein" onclick={() => (loeschen = null)}>Abbrechen</button>
                   <button class="knopf gefahr-voll klein" onclick={() => loeschenBestaetigen(o)}><i class="fa-solid fa-trash-can"></i>Ordner löschen</button></span>
               </div>

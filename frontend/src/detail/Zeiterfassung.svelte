@@ -91,7 +91,7 @@
       <div class="pw-nachtragen" onkeydown={taste}>
         <DatumFeld {tag} ontag={(t) => (tag = t)} breite="150px" titel="Tag des Eintrags; Enter bucht" />
         <span class="pw-nachtragen-dauer"><DauerFeld sek={nachtrag} klasse="feld" platzhalter="0:30 oder 1,5" titel="Dauer wie 0:30, 1,5 oder 90min; Enter bucht" onwert={(s) => (nachtrag = s)} /></span>
-        <button class="knopf klein" disabled={!nachtrag} onclick={nachtragen}><i class="fa-solid fa-plus"></i>Tag buchen</button>
+        <button class="knopf" disabled={!nachtrag} onclick={nachtragen}><i class="fa-solid fa-plus"></i>Tag buchen</button>
       </div>
     {/if}
     <div class="pw-tageszeilen">

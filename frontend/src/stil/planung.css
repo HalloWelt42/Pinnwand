@@ -356,4 +356,4 @@
 @media (max-width: 1240px) {
   .pw-zeitachse-zeile > .name .pw-personen { display: none; }
 }
-.pw-serien-formular .pw-dauerfeld.feld { height: 42px; font-size: var(--gross); font-weight: 500; }
+.pw-serien-formular .pw-dauerfeld.feld { font-size: var(--gross); font-weight: 500; }

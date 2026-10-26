@@ -96,8 +96,8 @@ button.pw-tageszeile-tag:hover { border-color: var(--rand-stark); background: va
 .pw-tageszeile:hover { background: var(--karte-2); }
 .pw-tageszeile .wer { display: flex; align-items: center; gap: var(--a2); min-width: 0; color: var(--text-2); }
 .pw-tageszeile .dauer { font-family: var(--schrift-zahl); font-weight: 600; text-align: right; }
-.pw-nachtragen { display: flex; gap: var(--a2); align-items: center; flex-wrap: wrap; }
-.pw-nachtragen .eingabe { height: 36px; }
+/* Datum, Dauer und Knopf gleich hoch und oben bündig; der Wochentag unter dem Datum hängt darunter */
+.pw-nachtragen { display: flex; gap: var(--a2); align-items: flex-start; flex-wrap: wrap; }
 .pw-liste-klein { display: flex; flex-direction: column; gap: 2px; }
 .pw-liste-klein .zeile { padding: 6px var(--a2); }
 .pw-checkliste-balken { margin-bottom: var(--a1); }

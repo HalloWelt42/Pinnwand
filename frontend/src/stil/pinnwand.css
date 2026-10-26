@@ -190,7 +190,8 @@
 .pw-dauerfeld:hover { border-color: var(--rand-stark); background: var(--karte); }
 .pw-dauerfeld:focus { border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); background: var(--karte); }
 .pw-dauerfeld.gross { height: 38px; font-size: var(--gross); }
-.pw-dauerfeld.feld { border-color: var(--rand); background: var(--karte); text-align: left; padding: 0 var(--a3); height: 40px; }
+/* als Feld so hoch wie Eingaben und Knöpfe des Leitstands (42px), damit es neben ihnen bündig steht */
+.pw-dauerfeld.feld { border-color: var(--rand); background: var(--karte); text-align: left; padding: 0 var(--a3); height: 42px; }
 .pw-dauerfeld.falsch, .eingabe.falsch { border-color: color-mix(in srgb, var(--gefahr) 70%, transparent); background: color-mix(in srgb, var(--gefahr) 8%, var(--karte)); }
 
 /* Datum als Textfeld in deutscher Schreibweise, darunter, was verstanden wurde */

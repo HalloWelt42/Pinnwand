@@ -34,7 +34,7 @@
   } = $props();
 
   const ALLE_REITER: [Reiter, string, string, string][] = [
-    ["heute", "Heute", "fa-sun", "/heute"],
+    ["heute", "Heute", "fa-calendar-day", "/heute"],
     ["boards", "Boards", "fa-table-columns", "/boards"],
     ["zeit", "Zeit", "fa-stopwatch", "/zeiten"],
     ["erfassen", "Erfassen", "fa-circle-plus", "/erfassen"],

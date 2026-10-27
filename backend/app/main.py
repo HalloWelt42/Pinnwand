@@ -23,17 +23,17 @@ from .schnittstelle.sprachmodell import LeitstellenModell
 from .schnittstelle.transkription import VerbundTranskription
 from .schnittstelle.vertonung import VerbundVertonung
 from .schnittstelle.zugang import GeruestZugang
-from .sicherung import Nachtsicherung
 from .uhr import Uhr
 
 
 def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None, uhr: Uhr | None = None,
               sicherungen: Path | None = None) -> FastAPI:
-    """`transport` und `uhr` nur für Tests (Kellerwolke und Leitstelle nachgestellt, feste Uhr). Die Nachtsicherung
-    schreibt nach `sicherungen` (ohne Angabe neben den Daten: im Container /app/sicherungen)."""
+    """`transport` und `uhr` nur für Tests (Kellerwolke und Leitstelle nachgestellt, feste Uhr). Die Sicherung des
+    Appkerns (wöchentlich nach der Regel, Einstellungen, Sicherung) schreibt nach `sicherungen` (ohne Angabe neben den
+    Daten: im Container /app/sicherungen)."""
     geruest = Geruest(name="Pinnwand", kennung="pinnwand", rolle="plant Arbeit auf Boards", symbol="fa-thumbtack", farbe="#2f8f86", fassung=FASSUNG,
                       daten=daten, einstellungen=AppEinstellungen, oberflaeche=WURZEL / "frontend" / "dist",
-                      push=True, transport=transport)
+                      push=True, sicherungen=sicherungen, transport=transport)
     ablage = KellerwolkeAblage(geruest)
     transkription = VerbundTranskription(geruest)
     vertonung = VerbundVertonung(geruest)
@@ -46,9 +46,7 @@ def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None, uh
     geruest.einstellungen.anbieten("vertonung_adresse", geruest.verbund.angebot("Vertonung", "vertonung", vertonung.adresse))
     geruest.einstellungen.anbieten("vorlesen_stimme", vertonung.stimmen_angebot())
     geruest.verbund.anmelden("Vertonung", vertonung.adresse)
-    geruest.begleiter_anmelden(Start(geruest.db), Vorbuchung(dienste.serien), Faelligkeit(dienste.hinweise), dienste.mitteilungen,
-                               Nachtsicherung(Path(geruest.db.pfad), sicherungen or daten.parent / "sicherungen", "pinnwand",
-                                              dienste.anwendung.uhr))
+    geruest.begleiter_anmelden(Start(geruest.db), Vorbuchung(dienste.serien), Faelligkeit(dienste.hinweise), dienste.mitteilungen)
     app = geruest.fastapi()
     app.state.geruest = geruest
     app.state.dienste = dienste

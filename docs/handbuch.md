@@ -6,7 +6,7 @@ daten:
   - "Pi: {{wurzel}}/daten/pinnwand.sqlite, alle Boards, Karten, Ordner, Hinweise, Vorlagen, Zeiteinträge, Timer, Zeitkonten, Abwesenheiten, Serien und Termine, das Journal für Rückgängig und die Einstellungen"
   - "Kellerwolke: Anhänge der Karten in der Ablage der Pinnwand, ein Ordner je Board; erstellte Berichte im Ordner Berichte"
 sicherung:
-  - "Datenbank: jede Nacht ab 3 Uhr und vor jedem Ausrollen eine Kopie nach {{wurzel}}/sicherungen (die jüngsten zehn bleiben); das Werkzeug Sicherungen holt sie auf den Mac"
+  - "Datenbank: nach der Regel des Appkerns eine Kopie nach {{wurzel}}/sicherungen, wöchentlich und vor dem Ausrollen (nur, wenn die jüngste älter als 24 Stunden ist), nie ohne Änderung, höchstens drei Stände (Einstellungen, Sicherung); das Werkzeug Sicherungen holt sie auf den Mac"
   - "Anhänge: liegen in der Kellerwolke und sind mit ihr gesichert"
 schluessel_orte:
   - "Pi: Einstellungen in {{wurzel}}/daten/pinnwand.sqlite: App-Schlüssel der Kellerwolke und Schlüssel der Leitstelle (in der Oberfläche unter Einstellungen, App und Verbindungen, verdeckt)"
@@ -14,7 +14,7 @@ schluessel_orte:
   - "Pi: {{wurzel}}/zertifikate/, Blattzertifikat mit Schlüssel aus der Hausstelle"
   - "Mac: backend/.env.test im Klon, Modus 0600, Testzugang zur Kellerwolke der Entwicklung (nur für den Verbundtest)"
 einrichten: einrichten.sh
-stand: bea0d74
+stand: 8a7a279
 ---
 
 # Pinnwand
@@ -123,8 +123,11 @@ Probe: die eingeladene Person meldet sich an und sieht das Board in der Seitenle
 
 ## Sicherung und Rückspielen
 
-Datenbank: die App legt jede Nacht ab 3 Uhr, das Ausrollen vor jedem Neustart eine stimmige Kopie von `pinnwand.sqlite`
-nach `{{wurzel}}/sicherungen/pinnwand-<Zeit>.sqlite`; die jüngsten zehn bleiben. Das Werkzeug
+Datenbank: nach der Regel der Sicherung aus dem [[Appkern]] legt die App einmal je Woche, das Ausrollen vor dem
+Neustart (nur, wenn die jüngste älter als 24 Stunden ist) eine stimmige Kopie von `pinnwand.sqlite` nach
+`{{wurzel}}/sicherungen/pinnwand-<Zeit>.sqlite`; hat sich seit der jüngsten nichts geändert, entsteht keine, und
+höchstens drei bleiben. Die Werte stehen unter Einstellungen, Sicherung (Regelmäßige Sicherung, Sicherung vor dem
+Ausrollen, Aufbewahrte Sicherungen). Das Werkzeug
 `~/Entwicklung/Werkzeuge/Sicherungen` holt sie jeden Morgen auf den Mac nach `~/Sicherungen/pinnwand`. Zurückspielen: auf dem Pi im Ordner
 {{wurzel}} `docker compose -f compose.pi.yml stop pinnwand`, die Kopie als `daten/pinnwand.sqlite` ablegen (die Dateien
 `pinnwand.sqlite-wal` und `pinnwand.sqlite-shm` daneben entfernen), `docker compose -f compose.pi.yml start pinnwand`.

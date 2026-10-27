@@ -1,7 +1,7 @@
 <script lang="ts">
   // App und Verbindungen: die Einstellungen der ganzen Pinnwand (für alle, die sie nutzen), aus dem Gerüst des Appkerns:
-  // Verbindungen zu Kellerwolke, Leitstelle, Transkription und Vertonung, KI an der Karte, Vorlesen, Zugang. Je Gruppe
-  // ein Bereich mit Hilfepunkt; geänderte Werte stehen im Entwurf, bis die Leiste unten sie speichert.
+  // Verbindungen zu Kellerwolke, Leitstelle, Transkription und Vertonung, KI an der Karte, Vorlesen, Zugang, Sicherung.
+  // Je Gruppe ein Bereich mit Hilfepunkt; geänderte Werte stehen im Entwurf, bis die Leiste unten sie speichert.
   import { EinstellungsZeile, einstellungen, einstellungenLaden, einstellungenSpeichern, einstellungenVerwerfen,
            Hilfepunkt } from "appkern-oberflaeche";
   import type { Feld } from "appkern-oberflaeche";
@@ -13,6 +13,7 @@
     ["KI an der Karte", "fa-wand-magic-sparkles", "ki", "voraussetzungen"],
     ["Vorlesen", "fa-volume-high", "vorlesen", "stimme"],
     ["Zugang", "fa-user-shield", "einstellungen", "app"],
+    ["Sicherung", "fa-box-archive", "einstellungen", "sicherung"],
   ];
   let ladeFehler = $state("");
   $effect(() => {

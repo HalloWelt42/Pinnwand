@@ -128,10 +128,23 @@ Die Einstellungen stehen in Gruppen:
 - **Vorlesen**: Stimme und Tempo (siehe [Vorlesen](hilfe:vorlesen)).
 - **Zugang**: **Weitere Konten** nennt die Konten der Kellerwolke, die die Pinnwand außer deinem nutzen dürfen; nur
   sie können sich anmelden. Mehrere trennst du mit Komma.
+- **Sicherung**: wann die Pinnwand ihre Datenbank sichert (siehe [Sicherung](hilfe:einstellungen/sicherung)).
 
 Schlüssel stehen verdeckt da: das Auge zeigt sie ganz, das Symbol daneben kopiert sie, der Stift trägt einen neuen
 Wert ein. Jede Änderung trägt einen Punkt hinter dem Namen und steht in der Leiste unten, bis du **Speichern** klickst;
 **Verwerfen** nimmt alle Änderungen zurück. Die kleinen i-Knöpfe an den Gruppen führen in die passende Hilfe.
+
+## Sicherung {#sicherung}
+Die Pinnwand sichert ihre Datenbank (Boards, Karten, Ordner, Hinweise) nach derselben Regel wie alle Apps des Verbunds:
+
+- **Regelmäßige Sicherung**: so viele Tage nach der jüngsten Sicherung legt sie von selbst eine neue an (Vorgabe 7,
+  also einmal je Woche).
+- **Sicherung vor dem Ausrollen**: vor dem Neustart mit einer neuen Fassung entsteht eine nur, wenn die jüngste älter
+  ist als so viele Stunden (Vorgabe 24).
+- **Aufbewahrte Sicherungen**: so viele bleiben (Vorgabe 3); ältere entfernt die Pinnwand.
+
+Hat sich seit der jüngsten Sicherung nichts geändert, entsteht keine neue. Anhänge liegen in der Kellerwolke und sind
+dort gesichert.
 
 ## Konten {#konten}
 Den Reiter **Konten** sieht nur, wem die App gehört (der App-Schlüssel der Pinnwand stammt aus diesem Konto). Er listet

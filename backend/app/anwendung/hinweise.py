@@ -1,7 +1,12 @@
 """Hinweise an Personen: was sie in ihren Boards betrifft (zugewiesen, erwähnt, Kommentar, verschoben, fällig), mit
 Sprung zur Karte. Sie entstehen im Server in derselben Änderung wie ihr Anlass (Rückgängig nimmt sie mit), nie an die
 handelnde Person, nur an Mitglieder des Boards und nur auf den Wegen, die die Person eingeschaltet hat. Fällige Karten
-meldet der Begleiter `Faelligkeit` einmal am Tag. Gelesen gilt am Konto, auf allen Geräten."""
+meldet der Begleiter `Faelligkeit` einmal am Tag. Gelesen gilt am Konto, auf allen Geräten.
+
+Bündeln (HELF-54, Nutzer: "sonst flutet deine Arbeit"): was dieselbe Person an derselben Karte tut, solange der Hinweis
+darauf ungelesen ist, kommt in diesen einen Hinweis ("Helfer bei HELF-54: nach Dran verschoben, kommentiert, dir
+zugewiesen"); er rückt nach oben und trägt die wichtigste Art (zugewiesen vor erwähnt vor Kommentar vor verschoben).
+Nichts geht verloren, jeder Anlass steht im Text, und eine Zuweisung oder Erwähnung kommt weiter aufs Telefon."""
 
 from __future__ import annotations
 
@@ -37,6 +42,10 @@ NAMEN_DER_ARTEN = {"zugewiesen": "Zugewiesen", "faellig": "Fällig", "erwaehnt":
 NAMEN_DER_WEGE = {"pinnwand": "In der Pinnwand", "push": "Push aufs Telefon", "assistent": "Über den Assistenten"}
 #: wer handelt, wenn die Pinnwand selbst Hinweise gibt (fällig): steht im Journal, nie in einem Board
 PINNWAND = Konto(id="pinnwand", name="Pinnwand", kuerzel="PW", kellerwolke="")
+#: Arten, die sich je Person und Karte bündeln, die wichtigste zuerst (sie gibt dem Bündel seine Art)
+BUENDEL_RANG = ("zugewiesen", "erwaehnt", "kommentar", "verschoben")
+#: so viele Anlässe nennt ein Bündel höchstens (die ersten und die letzten)
+BUENDEL_HOECHSTENS = 6
 #: so oft schaut der Begleiter, ob ein neuer Tag begonnen hat (Sekunden)
 TAKT_S = 300.0
 
@@ -95,24 +104,54 @@ def erwaehnte(k: Kontext, b: Board, text: str | None) -> set[Kennung]:
 
 # --- Anlässe (in der Transaktion der auslösenden Änderung) -----------------------------------------------------------
 
-def melden(k: Kontext, b: Board, art: HinweisArt, an: Iterable[Kennung], karte: Karte | None, text: str) -> None:
+def buendel_text(name: str, schluessel: str, teile: list[str]) -> str:
+    """Text eines Bündels: "Helfer bei HELF-54: nach Dran verschoben, kommentiert und dir zugewiesen"; bei sehr vielen
+    Anlässen die ersten und die letzten mit "..." dazwischen."""
+    if len(teile) > BUENDEL_HOECHSTENS:
+        teile = [*teile[:2], "...", *teile[-(BUENDEL_HOECHSTENS - 3):]]
+    liste = ", ".join(teile[:-1]) + f" und {teile[-1]}" if len(teile) > 1 else teile[0]
+    return f"{name} bei {schluessel}: {liste}"
+
+
+def _buendel(k: Kontext, konto: Kennung, karte: Karte) -> Hinweis | None:
+    """Der ungelesene Hinweis derselben handelnden Person an derselben Karte, in den ein neuer Anlass kommt."""
+    for d in k.s.alle("hinweise", "konto=? AND gelesen=0", (konto,), "zeit DESC"):
+        h = Hinweis.model_validate(d)
+        if h.karte == karte.id and h.von == k.konto.id and h.art in BUENDEL_RANG:
+            return h
+    return None
+
+
+def melden(k: Kontext, b: Board, art: HinweisArt, an: Iterable[Kennung], karte: Karte | None, text: str,
+           teil: str | None = None) -> None:
     """Ein Hinweis je Person: nie an die handelnde, nur an Mitglieder des Boards, nur wenn die Person die Art in der
-    Pinnwand bekommen will. Ohne Karte (ein Termin) führt der Hinweis zu den Serien und Terminen."""
+    Pinnwand bekommen will. Ohne Karte (ein Termin) führt der Hinweis zu den Serien und Terminen. Mit `teil` (der Anlass
+    kurz, etwa "kommentiert") kommt er in den ungelesenen Hinweis derselben Person an derselben Karte, wenn es einen gibt."""
     mitglieder = {m.konto for m in b.mitglieder if m.konto}
     for konto in dict.fromkeys(an):
         if konto == k.konto.id or konto not in mitglieder or not will(k, konto, art):
             continue
+        alt = _buendel(k, konto, karte) if karte and teil and art in BUENDEL_RANG else None
+        if alt is not None:
+            alt.art = min(alt.art, art, key=BUENDEL_RANG.index)
+            alt.zeit, alt.schluessel = k.jetzt, karte.schluessel
+            if (alt.teile or [None])[-1] != teil:            # derselbe Anlass gleich noch einmal steht nur einmal da
+                alt.teile = [*(alt.teile or [alt.text]), teil]
+                alt.text = buendel_text(k.konto.name, karte.schluessel, alt.teile)
+            k.s.schreib("hinweise", alt.json_daten())
+            continue
         h = Hinweis(id=neue_kennung("h"), konto=konto, art=art, zeit=k.jetzt, von=k.konto.id, board=b.id,
-                    karte=karte.id if karte else None, schluessel=karte.schluessel if karte else None, text=text)
+                    karte=karte.id if karte else None, schluessel=karte.schluessel if karte else None, text=text,
+                    teile=[teil] if teil else [])
         k.s.schreib("hinweise", h.json_daten())
 
 
 def zugewiesen(k: Kontext, b: Board, karte: Karte, personen: Iterable[Kennung]) -> None:
-    melden(k, b, "zugewiesen", personen, karte, f"{k.konto.name} hat dir {karte.schluessel} zugewiesen")
+    melden(k, b, "zugewiesen", personen, karte, f"{k.konto.name} hat dir {karte.schluessel} zugewiesen", "dir zugewiesen")
 
 
 def erwaehnt(k: Kontext, b: Board, karte: Karte, personen: Iterable[Kennung]) -> None:
-    melden(k, b, "erwaehnt", personen, karte, f"{k.konto.name} hat dich in {karte.schluessel} erwähnt")
+    melden(k, b, "erwaehnt", personen, karte, f"{k.konto.name} hat dich in {karte.schluessel} erwähnt", "dich erwähnt")
 
 
 def nach_bearbeiten(k: Kontext, b: Board, alt: Karte, neu: Karte) -> None:
@@ -129,14 +168,14 @@ def nach_kommentar(k: Kontext, b: Board, karte: Karte, text: str) -> None:
     genannt = erwaehnte(k, b, text)
     erwaehnt(k, b, karte, sorted(genannt))
     melden(k, b, "kommentar", [x for x in karte.zustaendig if x not in genannt], karte,
-           f"{k.konto.name} hat {karte.schluessel} kommentiert")
+           f"{k.konto.name} hat {karte.schluessel} kommentiert", "kommentiert")
 
 
 def verschoben(k: Kontext, b: Board, karte: Karte, ziel: Spalte, mit: Karte | None = None) -> None:
     """An die Zuständigen einer Karte, die in eine andere Spalte kommt; `mit`: die Karte, mit der sie verknüpft mitzieht."""
     wie = f" mit {mit.schluessel}" if mit else ""
     was = "erledigt" if ziel.erledigt else f"nach {ziel.name} verschoben"
-    melden(k, b, "verschoben", karte.zustaendig, karte, f"{k.konto.name} hat {karte.schluessel}{wie} {was}")
+    melden(k, b, "verschoben", karte.zustaendig, karte, f"{k.konto.name} hat {karte.schluessel}{wie} {was}", f"{was}{wie}")
 
 
 def faellig_text(karte: Karte, heute: str) -> str:

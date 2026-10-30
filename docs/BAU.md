@@ -391,6 +391,18 @@ zurücksetzen und löschen. Alles ohne Rückweg; zur Sicherheit tippt die Person
 | `POST /konten/{id}/entfernen` | `{bestaetigung}` (Name des Kontos) |
 | `POST /boards/{id}/ordner` | `{ordner, stelle}`: Stelle im Ordner ab 0 (Ziehen in der Seitenleiste), ohne ans Ende |
 
+### Hinweise bündeln
+
+Nachtrag vom 30.10.2026 (HELF-54, Nutzer: "Alarmhinweise mit Button alle als gelesen bestätigen können, sonst flutet
+deine Arbeit"). Ursache der Flut: seit der Helfer eine eigene Person ist, löst jede seiner Handlungen an einem Ticket
+einen eigenen Hinweis an die Zuständigen aus (verschoben nach Dran, kommentiert, zugewiesen, nach Prüfung verschoben),
+also drei bis vier je Ticket. Jetzt kommt, was dieselbe Person an derselben Karte tut, in den ungelesenen Hinweis dazu
+(`Hinweis.teile`, Text "Helfer bei HELF-54: ..."), mit der wichtigsten Art (zugewiesen, erwähnt, Kommentar, verschoben)
+und neuer Zeit; Fällig und Termin bündeln nicht. Push nur bei einem neuen Hinweis, einem erneuerten Fällig oder wenn ein
+Bündel eine wichtigere Art bekommt; derselbe Tag ersetzt die Mitteilung auf dem Gerät. "Alle gelesen" (gab es schon,
+`POST /hinweise/alle-gelesen`) schließt auch die Mitteilungen der Pinnwand auf dem Gerät; die Glocke nennt die Zahl und
+den Knopf beim Überfahren.
+
 ### Arbeit auf der Zeitachse
 
 Nachtrag vom 30.10.2026 (HELF-46, Nutzer: "hier fehlen Zahlen der Aktivität und das Board ist so leer"). Die Zeitachse

@@ -43,6 +43,11 @@ Groß- und Kleinschreibung spielen keine Rolle. Ein @ in Code oder in einer Adre
   und Karten in einer Erledigt-Spalte bekommen keinen Hinweis **Fällig**; Serienkarten stehen in **Heute** unter
   **Serien heute**.
 - Macht jemand die Änderung rückgängig, die einen Hinweis ausgelöst hat, verschwindet der Hinweis mit.
+- Was dieselbe Person an derselben Karte tut, kommt in einen Hinweis, solange du ihn noch nicht gelesen hast, etwa
+  "Helfer bei HELF-54: nach Dran verschoben, kommentiert und dir zugewiesen". Er rückt dabei nach oben und trägt die
+  wichtigste Art: **Zugewiesen** vor **Erwähnt** vor **Kommentar** vor **Verschoben**. Jeder Anlass steht im Text, es
+  geht nichts verloren. Aufs Telefon kommt er erneut nur, wenn eine wichtigere Art dazukommt, etwa eine Zuweisung.
+  Hast du ihn gelesen, beginnt der nächste Anlass einen neuen Hinweis.
 
 ## Die Seite Hinweise {#seite}
 Die Seite öffnest du über die Glocke oder **Hinweise** in der Seitenleiste. Oben steht, wie viele Hinweise ungelesen
@@ -63,6 +68,9 @@ nicht mehr, hat der Hinweis kein Ziel und steht nur noch zum Lesen da.
   ungelesen ("Als ungelesen markieren"). Das geschieht still, ohne Meldung.
 - **Alle gelesen** oben markiert alle auf einmal, auch Hinweise aus Boards, die du nicht mehr siehst. Die Meldung
   sagt, wie viele es waren, und bietet **Rückgängig** an. Ist nichts ungelesen, ist der Knopf gesperrt.
+  Am Telefon steht **Alle gelesen** oben in der Liste, solange etwas neu ist. Auf diesem Gerät verschwinden dabei auch
+  die Mitteilungen der Pinnwand vom Sperrbildschirm, soweit der Browser das zulässt; ebenso die eines einzelnen
+  Hinweises, den du öffnest.
 
 ## Einstellen, was wohin kommt {#einstellen}
 Welche Hinweise du bekommst, stellst du unter **Einstellungen**, Reiter **Hinweise** ein. Auf der Seite Hinweise führt

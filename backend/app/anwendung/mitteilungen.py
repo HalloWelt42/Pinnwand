@@ -1,4 +1,5 @@
-"""Hinweise als Mitteilung aufs Telefon (Weg Push): ein neuer Hinweis (auch ein erneuerter Hinweis "fällig") geht an
+"""Hinweise als Mitteilung aufs Telefon (Weg Push): ein neuer Hinweis (auch ein erneuerter Hinweis "fällig" und ein
+Bündel, das eine wichtigere Art bekam) geht an
 alle Geräte der Person, wenn sie Push für seine Art an hat. Gesendet wird nach der Änderung, nie in ihr: der Rahmen
 meldet neue Hinweise, ein Begleiter schickt sie aus seiner Warteschlange. Was nicht ankommt, steht im Protokoll; der
 Hinweis bleibt in der Pinnwand."""
@@ -37,8 +38,19 @@ class Mitteilungen(Begleiter):
 
     def _gesehen(self, b: Bild) -> None:
         neu, alt = b.nachher, b.vorher
-        if neu and not neu.get("gelesen") and (alt is None or alt.get("zeit") != neu.get("zeit")):
+        if neu and not neu.get("gelesen") and self._neuer_anlass(alt, neu):
             self.warteschlange.put_nowait(neu)
+
+    @staticmethod
+    def _neuer_anlass(alt: dict | None, neu: dict) -> bool:
+        """Ein neuer Hinweis; ein erneuerter "fällig" (neuer Tag); oder ein Bündel, das eine wichtigere Art bekam (etwa
+        eine Zuweisung zu einem Kommentar, HELF-54). Kommt in ein Bündel nur ein weiterer Anlass derselben Art, klingelt
+        das Telefon nicht noch einmal."""
+        if alt is None or alt.get("gelesen"):
+            return True
+        if neu.get("art") == "faellig":
+            return alt.get("zeit") != neu.get("zeit")
+        return alt.get("art") != neu.get("art")
 
     async def starten(self) -> None:
         if self.push is not None:

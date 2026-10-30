@@ -73,7 +73,8 @@ async def test_erwaehnt_nur_neu(pw: Pinnwand):
     # erneut gespeichert mit denselben Erwähnungen: nichts Neues; in den Notizen ist bert neu erwähnt
     await bearbeiten(pw, "anna", k, {"beschreibung": "@co und @bert: bitte bis Freitag prüfen"})
     await bearbeiten(pw, "anna", k, {"notizen": "Leiter bei @bert"})
-    assert len(await hinweise(pw, "bert")) == 2 and len(await hinweise(pw, "cora")) == 1
+    # die neue Erwähnung kommt in den ungelesenen Hinweis derselben Person an derselben Karte (HELF-54)
+    assert await texte(pw, "bert") == ["anna hat dich in HAUS-1 erwähnt"] and len(await hinweise(pw, "cora")) == 1
     # Code, Adressen und E-Mail sind keine Erwähnung (wie in der Darstellung)
     await bearbeiten(pw, "bert", k, {"notizen": "`@cora`\n```\n@cora\n```\nhttps://beispiel.de/@cora und cora@beispiel.de"})
     assert len(await hinweise(pw, "cora")) == 1
@@ -89,10 +90,10 @@ async def test_kommentar(pw: Pinnwand):
     await pw.post("cora", f"/karten/{k['id']}/kommentieren", {"text": "Mache ich am Freitag"})
     assert await texte(pw, "anna") == ["cora hat HAUS-1 kommentiert"]
     assert "cora hat HAUS-1 kommentiert" in await texte(pw, "bert")
-    # wer im Kommentar erwähnt ist, bekommt nur den Hinweis "erwähnt"; wer kommentiert, nichts
+    # wer im Kommentar erwähnt ist, bekommt nur die Erwähnung (hier im Bündel mit annas Zuweisung); wer kommentiert, nichts
     await pw.post("anna", f"/karten/{k['id']}/kommentieren", {"text": "@bert hast du Zeit?"})
-    assert [h["art"] for h in await hinweise(pw, "bert")].count("erwaehnt") == 1
-    assert [h["art"] for h in await hinweise(pw, "bert")].count("kommentar") == 1
+    assert await texte(pw, "bert") == ["anna bei HAUS-1: dir zugewiesen und dich erwähnt", "cora hat HAUS-1 kommentiert"]
+    assert sorted(h["art"] for h in await hinweise(pw, "bert")) == ["kommentar", "zugewiesen"]
     assert await texte(pw, "cora") == []
 
 
@@ -106,12 +107,13 @@ async def test_verschoben_mit_verknuepften(pw: Pinnwand):
     vorher = {n: await texte(pw, n) for n in ("anna", "bert", "cora")}
 
     await pw.post("anna", f"/karten/{a['id']}/verschieben", {"nach": spalte(b, "Dran")})
-    neu = {n: [t for t in await texte(pw, n) if t not in vorher[n]] for n in vorher}
-    assert neu == {"anna": [], "bert": ["anna hat HAUS-1 nach Dran verschoben"],
-                   "cora": ["anna hat HAUS-2 mit HAUS-1 nach Dran verschoben"]}
+    # ungelesen von anna an derselben Karte: das Verschieben kommt ins Bündel mit der Zuweisung (HELF-54)
+    assert {n: await texte(pw, n) for n in vorher} == {
+        "anna": [], "bert": ["anna bei HAUS-1: dir zugewiesen und nach Dran verschoben"],
+        "cora": ["anna bei HAUS-2: dir zugewiesen und nach Dran verschoben mit HAUS-1"]}
     # neu ordnen in derselben Spalte ist kein Verschieben
     await pw.post("anna", f"/karten/{c['id']}/verschieben", {"nach": spalte(b, "Dran"), "platz": 0})
-    assert len(await hinweise(pw, "bert")) == len(vorher["bert"]) + 1
+    assert len(await hinweise(pw, "bert")) == 1
 
     await pw.post("bert", f"/karten/{a['id']}/erledigen")
     assert "bert hat HAUS-1 erledigt" in await texte(pw, "anna")
@@ -243,3 +245,30 @@ async def test_begleiter_meldet_beim_tageswechsel(pw: Pinnwand):
     assert [(h["art"], h["karte"]) for h in await hinweise(pw, "bert")] == [("faellig", k["id"])]
     await begleiter.starten()
     await begleiter.stoppen()
+
+
+
+async def test_buendeln_je_person_und_karte(pw: Pinnwand):
+    """HELF-54: was eine Person an einer Karte tut, kommt in einen Hinweis, solange er ungelesen ist; die wichtigste Art
+    gilt, und erst ein gelesener Hinweis beginnt ein neues Bündel. Nichts geht verloren."""
+    b = await zu_dritt(pw)
+    k = await pw.karte("bert", b, "Fenster")
+    await bearbeiten(pw, "bert", k, {"zustaendig": ["1"]})                        # anna zugewiesen
+    await pw.post("bert", f"/karten/{k['id']}/kommentieren", {"text": "Ursache gefunden"})
+    await pw.post("bert", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "Dran")})
+    await pw.post("bert", f"/karten/{k['id']}/kommentieren", {"text": "Noch etwas"})
+    [h] = await hinweise(pw, "anna")
+    assert (h["art"], h["text"]) == ("zugewiesen", "bert bei HAUS-1: dir zugewiesen, kommentiert, nach Dran verschoben und kommentiert")
+    # cora an derselben Karte: eigener Hinweis
+    await pw.post("cora", f"/karten/{k['id']}/kommentieren", {"text": "Ich helfe"})
+    assert len(await hinweise(pw, "anna")) == 2
+    # gelesen: der nächste Anlass beginnt einen neuen Hinweis
+    await pw.post("anna", "/hinweise/alle-gelesen")
+    await pw.post("bert", f"/karten/{k['id']}/erledigen")
+    assert [x["text"] for x in await hinweise(pw, "anna") if not x["gelesen"]] == ["bert hat HAUS-1 erledigt"]
+
+
+def test_buendel_text_kuerzt():
+    from app.anwendung.hinweise import buendel_text
+    teile = [f"t{i}" for i in range(10)]
+    assert buendel_text("Helfer", "HELF-1", teile) == "Helfer bei HELF-1: t0, t1, ..., t7, t8 und t9"

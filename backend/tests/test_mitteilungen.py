@@ -67,3 +67,27 @@ async def test_zuweisung_kommt_aufs_telefon(pw: Pinnwand):
     assert s["hinweiswege"]["da"] == ["pinnwand", "push"]
     assert s["hinweiswege"]["vorgabe"]["faellig"] == {"pinnwand": True, "push": True}
     assert s["hinweiswege"]["vorgabe"]["kommentar"] == {"pinnwand": True, "push": False}
+
+
+async def test_buendel_klingelt_nur_bei_wichtigerem(pw: Pinnwand):
+    """HELF-54: ein Bündel klingelt am Telefon, wenn eine wichtigere Art dazukommt (eine Zuweisung zu einem Kommentar),
+    nicht bei jedem weiteren Anlass."""
+    b = await zu_dritt(pw)
+    mitteilungen = pw.app.state.dienste.mitteilungen
+    schluessel = await telefon(pw, "bert")
+    k = await pw.karte("bert", b, "Fenster")                       # bert ist zuständig
+    await pw.post("anna", f"/karten/{k['id']}/kommentieren", {"text": "Ursache gefunden"})
+    await mitteilungen.leeren()
+    assert PUSH_EINGANG == []                                       # Kommentar: nur in der Pinnwand
+    await bearbeiten(pw, "anna", k, {"zustaendig": ["2", "3"]})     # cora dazu: an bert nichts Neues
+    await pw.post("anna", f"/karten/{k['id']}/verschieben", {"nach": next(s["id"] for s in b["spalten"] if s["name"] == "Dran")})
+    await mitteilungen.leeren()
+    assert PUSH_EINGANG == []
+    k2 = await pw.karte("anna", b, "Keller")
+    await pw.post("anna", f"/karten/{k2['id']}/kommentieren", {"text": "@bert schau bitte"})      # erwähnt: klingelt
+    await bearbeiten(pw, "anna", k2, {"zustaendig": ["1", "2"]})                                  # zugewiesen: wichtiger
+    await pw.post("anna", f"/karten/{k2['id']}/kommentieren", {"text": "Danke"})                  # Kommentar: still
+    await mitteilungen.leeren()
+    texte = [(m["titel"], m["text"]) for m in angekommen(schluessel)]
+    assert texte == [("Erwähnt, Haushalt", "anna hat dich in HAUS-2 erwähnt"),
+                     ("Zugewiesen, Haushalt", "anna bei HAUS-2: dich erwähnt und dir zugewiesen")]

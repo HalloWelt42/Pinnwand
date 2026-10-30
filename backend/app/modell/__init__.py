@@ -298,6 +298,9 @@ class Hinweis(Modell):
     schluessel: str | None = None
     text: str
     gelesen: bool = False
+    #: gebündelte Anlässe derselben Person an derselben Karte, solange ungelesen (HELF-54), etwa ["kommentiert",
+    #: "nach Prüfung verschoben"]; der Text nennt sie alle
+    teile: list[str] = Field(default_factory=list)
 
 
 class PersonEinstellungen(Modell):

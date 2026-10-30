@@ -80,7 +80,8 @@
   {/if}
   <button class="knopf symbol" class:aktiv={hilfe.offen} title="Hilfe: schwebendes Fenster, durchsuchbar" aria-label="Hilfe" onclick={() => hilfe.umschalten()}>
     <i class="fa-solid fa-circle-question"></i></button>
-  <a class="knopf symbol pw-glocke" href="/hinweise" title="Hinweise"><i class="fa-solid fa-bell"></i>
+  <a class="knopf symbol pw-glocke" href="/hinweise" aria-label="Hinweise"
+     title={zahl ? `Hinweise: ${zahl} ungelesen; dort oben bestätigt "Alle gelesen" alle auf einmal` : "Hinweise"}><i class="fa-solid fa-bell"></i>
     {#if zahl}<span class="zaehler pille gefahr">{zahl}</span>{/if}</a>
   <a class="knopf ohne" href="/einstellungen/konto" title="{konto(ICH).name}, angemeldet mit dem Kellerwolke-Konto"><Person id={ICH} /></a>
 </div>

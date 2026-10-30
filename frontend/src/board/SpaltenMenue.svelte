@@ -13,6 +13,7 @@
   import { kartenDerSpalte } from "../daten/stand.svelte";
   import type { Board, Spalte, Zeitfenster } from "../modell";
   import Farbwahl from "../teile/Farbwahl.svelte";
+  import { enter } from "../teile/taste";
 
   let { board, spalte, einklappen, schliessen, anker }: {
     board: Board; spalte: Spalte;
@@ -56,7 +57,7 @@
   }
   function nameTaste(e: KeyboardEvent): void {
     const feld = e.currentTarget as HTMLInputElement;
-    if (e.key === "Enter") feld.blur();
+    if (enter(e)) feld.blur();
     if (e.key === "Escape") feld.value = spalte.name;
   }
 

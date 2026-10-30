@@ -36,6 +36,7 @@
   import Verknuepfte from "./Verknuepfte.svelte";
   import Vorschlag from "./Vorschlag.svelte";
   import Zeiterfassung from "./Zeiterfassung.svelte";
+  import { enter } from "../teile/taste";
 
   let { karte: k, board, vollbild = $bindable(false), schliessen }: {
     karte: Karte; board: Board; vollbild?: boolean; schliessen: () => void;
@@ -68,7 +69,7 @@
   }
 
   function enterVerlaesst(e: KeyboardEvent & { currentTarget: HTMLInputElement }): void {
-    if (e.key === "Enter") verlassen(e.currentTarget);
+    if (enter(e)) verlassen(e.currentTarget);
   }
 
   function titelAendern(e: Event & { currentTarget: HTMLInputElement }): void {

@@ -25,6 +25,7 @@
   import Person from "./Person.svelte";
   import { abheben, istSchatten } from "./schatten";
   import Spalte from "./Spalte.svelte";
+  import { enter } from "../teile/taste";
 
   let { boardId, ansicht = "board", nummer = "" }: { boardId: string; ansicht?: string; nummer?: string } = $props();
 
@@ -102,7 +103,7 @@
     if (await spalteAnlegen(b.id, neuName, neuFarbe)) neueSpalte = false;
   }
   function neueTaste(e: KeyboardEvent): void {
-    if (e.key === "Enter") neueAnlegen();
+    if (enter(e)) neueAnlegen();
     if (e.key === "Escape") neueSpalte = false;
   }
 

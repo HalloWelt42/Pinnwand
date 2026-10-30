@@ -5,6 +5,7 @@
   import { uhr } from "../daten/uhr.svelte";
   import { datumJahr } from "../daten/format";
   import { datumLesen, datumText } from "../regeln/eingabe";
+  import { enter } from "./taste";
 
   let { tag, ontag, titel = "", breite = "", leerErlaubt = false, gueltig = $bindable(true) }: {
     tag: string; ontag: (tag: string) => void; titel?: string; breite?: string;
@@ -34,6 +35,6 @@
 <span class="pw-datumfeld" style={breite ? `width: ${breite}` : ""}>
   <input class="eingabe zahl" class:falsch bind:value={text} placeholder="TT.MM.JJJJ" title={titel || "Datum wie 16.11.2026, 16.11. oder 16112026"}
          aria-invalid={falsch} onfocus={() => (fokus = true)} onblur={() => { fokus = false; uebernehmen(); }}
-         onkeydown={(e) => { if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur(); if (e.key === "Escape") { text = zeigen(tag); (e.currentTarget as HTMLInputElement).blur(); } }} />
+         onkeydown={(e) => { if (enter(e)) (e.currentTarget as HTMLInputElement).blur(); if (e.key === "Escape") { text = zeigen(tag); (e.currentTarget as HTMLInputElement).blur(); } }} />
   <small class:falsch>{falsch ? "Datum nicht lesbar" : gelesen ? datumJahr(gelesen, true) : ""}</small>
 </span>

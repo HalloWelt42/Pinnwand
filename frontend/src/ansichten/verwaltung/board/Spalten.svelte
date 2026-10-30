@@ -14,6 +14,7 @@
   import Farbwahl from "../../../teile/Farbwahl.svelte";
   import { EINSTELLUNG_GRENZEN as GRENZEN } from "../../../regeln/board";
   import Zahlfeld from "../../../teile/Zahlfeld.svelte";
+  import { enter } from "../../../teile/taste";
 
   let { board }: { board: Board } = $props();
 
@@ -171,7 +172,7 @@
       <h2 class="etikett">Neue Spalte</h2>
       <div class="pw-verwaltung-formular">
         <input class="eingabe" bind:value={neuName} placeholder="Name der Spalte" aria-label="Name der neuen Spalte"
-               onkeydown={(e) => { if (e.key === "Enter") anlegen(); }} />
+               onkeydown={(e) => { if (enter(e)) anlegen(); }} />
         <button class="knopf haupt" disabled={!neuName.trim()} onclick={anlegen}><i class="fa-solid fa-plus"></i>Spalte anlegen</button>
       </div>
       <div class="pw-verwaltung-formular">

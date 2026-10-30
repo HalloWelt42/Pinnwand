@@ -15,6 +15,7 @@
   import { plusTage } from "../../regeln/tage";
   import DatumFeld from "../../teile/DatumFeld.svelte";
   import KartenName from "./KartenName.svelte";
+  import { enter } from "../../teile/taste";
 
   let { tag: tagVorgabe, schliessen, vorschauSetzen }: {
     tag: string; schliessen: () => void;
@@ -105,7 +106,7 @@
       <div class="pw-zeiten-tagwahl">
         <input class="eingabe zahl" class:falsch={dauerText.trim() !== "" && sek === null} bind:value={dauerText} placeholder="1:30, 1:30:15 oder 1,5"
                title="H:MM, H:MM:SS, Stunden mit Komma oder 90min" style="width: 190px"
-               onkeydown={(e) => { if (e.key === "Enter") void absenden(); }} />
+               onkeydown={(e) => { if (enter(e)) void absenden(); }} />
         <span class="pw-zeiten-gelesen" class:falsch={dauerText.trim() !== "" && sek === null}>
           {dauerText.trim() === "" ? "" : sek === null ? "Dauer bitte wie 1:30, 1,5 oder 90min" : `= ${dauer(sek, true)}`}</span>
       </div>

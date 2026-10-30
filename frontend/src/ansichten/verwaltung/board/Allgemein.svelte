@@ -15,6 +15,7 @@
   import Farbwahl from "../../../teile/Farbwahl.svelte";
   import Zahlfeld from "../../../teile/Zahlfeld.svelte";
   import { gehe } from "../../../weg.svelte";
+  import { enter } from "../../../teile/taste";
 
   let { board }: { board: Board } = $props();
 
@@ -154,7 +155,7 @@
       {#if vorlageOffen}
         <div class="pw-verwaltung-formular">
           <input class="eingabe" bind:value={vorlageName} aria-label="Name der Vorlage" placeholder="Name der Vorlage"
-                 onkeydown={(ev) => { if (ev.key === "Enter") void vorlageSpeichern(); }} />
+                 onkeydown={(ev) => { if (enter(ev)) void vorlageSpeichern(); }} />
           <button class="knopf ohne" onclick={() => (vorlageOffen = false)}>Abbrechen</button>
           <button class="knopf" disabled={!vorlageName.trim()} onclick={vorlageSpeichern}>
             <i class="fa-solid fa-check"></i>Vorlage speichern</button>

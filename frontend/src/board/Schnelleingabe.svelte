@@ -12,6 +12,7 @@
   import Vorschlag from "../detail/Vorschlag.svelte";
   import type { Board, Kartenentwurf, Spalte } from "../modell";
   import Person from "./Person.svelte";
+  import { enter } from "../teile/taste";
 
   let { board, spalte, schliessen }: { board: Board; spalte: Spalte; schliessen: () => void } = $props();
   let titel = $state("");
@@ -26,7 +27,7 @@
   }
 
   function taste(e: KeyboardEvent): void {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void anlegenUndWeiter(); }
+    if (enter(e) && !e.shiftKey) { e.preventDefault(); void anlegenUndWeiter(); }
     if (e.key === "Escape") { titel = ""; schliessen(); }
   }
 
@@ -59,7 +60,7 @@
   }
 
   function textTaste(e: KeyboardEvent): void {
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void vorschlagen(); }
+    if (enter(e) && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void vorschlagen(); }
     if (e.key === "Escape") einzeln();
   }
 

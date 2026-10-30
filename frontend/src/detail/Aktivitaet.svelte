@@ -12,6 +12,7 @@
   import Person from "../board/Person.svelte";
   import { markdownHtml, markdownText, type MarkdownOptionen } from "../teile/markdown";
   import { verwerfbar } from "../teile/verwerfen";
+  import { enter } from "../teile/taste";
 
   let { karte, board, optionen }: { karte: Karte; board: Board; optionen: MarkdownOptionen } = $props();
 
@@ -28,7 +29,7 @@
   }
 
   function taste(e: KeyboardEvent): void {
-    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+    if (enter(e) && !e.shiftKey) {
       e.preventDefault();
       void senden();
     }

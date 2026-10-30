@@ -12,6 +12,7 @@
   import { verlassen, verwerfen } from "../teile/verwerfen";
   import { SYMBOL } from "./anhang";
   import { inSicht } from "./sicht";
+  import { enter } from "../teile/taste";
 
   let { karte, schliessen }: { karte: Karte; schliessen: () => void } = $props();
 
@@ -71,7 +72,7 @@
   }
 
   function hinein(e: KeyboardEvent, d: KellerwolkeDatei): void {
-    if (e.key === "Enter") { e.preventDefault(); void zeigen(d.id); }
+    if (enter(e)) { e.preventDefault(); void zeigen(d.id); }
   }
 </script>
 

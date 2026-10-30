@@ -10,6 +10,7 @@
   import type { Board, Karte } from "../modell";
   import { verwerfen } from "../teile/verwerfen";
   import { boardPfad } from "../weg.svelte";
+  import { enter } from "../teile/taste";
 
   let { karte, board, schreiben }: { karte: Karte; board: Board; schreiben: boolean } = $props();
 
@@ -37,7 +38,7 @@
     if (!treffer.length) return;
     if (e.key === "ArrowDown") { e.preventDefault(); gewaehlt = (gewaehlt + 1) % treffer.length; }
     if (e.key === "ArrowUp") { e.preventDefault(); gewaehlt = (gewaehlt - 1 + treffer.length) % treffer.length; }
-    if (e.key === "Enter") { e.preventDefault(); nehmen(treffer[gewaehlt]); }
+    if (enter(e)) { e.preventDefault(); nehmen(treffer[gewaehlt]); }
   }
 </script>
 

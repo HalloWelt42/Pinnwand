@@ -10,6 +10,7 @@
   import type { Karte, Punkt } from "../modell";
   import { verlassen, verwerfbar } from "../teile/verwerfen";
   import Vorschlag from "./Vorschlag.svelte";
+  import { enter } from "../teile/taste";
 
   let { karte, schreiben, ki = false }: {
     karte: Karte;
@@ -89,7 +90,7 @@
       <input type="checkbox" checked={p.erledigt} disabled={!schreiben} aria-label="{p.text} {p.erledigt ? 'wieder öffnen' : 'abhaken'}" onchange={() => umschalten(i)} />
       {#if umbenennen === i}
         <input id="pw-punkt-{karte.id}-{i}" class="eingabe pw-punkt-name" value={p.text} aria-label="Punkt umbenennen" use:verwerfbar
-               onblur={(e) => uebernehmen(i, e.currentTarget)} onkeydown={(e) => { if (e.key === "Enter") verlassen(e.currentTarget); }} />
+               onblur={(e) => uebernehmen(i, e.currentTarget)} onkeydown={(e) => { if (enter(e)) verlassen(e.currentTarget); }} />
       {:else if schreiben}
         <button class="pw-punkt-text" title="Klick benennt um" onclick={() => bearbeitenAb(i)}>{p.text}</button>
       {:else}
@@ -116,6 +117,6 @@
   {/if}
   {#if schreiben}
     <input class="eingabe" placeholder="Punkt hinzufügen, Enter" aria-label="Punkt hinzufügen" bind:value={neu} use:verwerfbar
-           onkeydown={(e) => { if (e.key === "Enter") hinzu(); }} />
+           onkeydown={(e) => { if (enter(e)) hinzu(); }} />
   {/if}
 </section>

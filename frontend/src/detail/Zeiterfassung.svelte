@@ -20,6 +20,7 @@
   import Person from "../board/Person.svelte";
   import DatumFeld from "../teile/DatumFeld.svelte";
   import DauerFeld from "../teile/DauerFeld.svelte";
+  import { enter } from "../teile/taste";
 
   let { karte, board, gruppenSek = 0 }: { karte: Karte; board: Board; gruppenSek?: number } = $props();
   const andereSehen = $derived(darf(board, "zeit.andere.sehen"));
@@ -46,7 +47,7 @@
 
   /** Enter in Tag oder Dauer bucht (die Felder übernehmen ihren Wert schon beim Enter) */
   function taste(e: KeyboardEvent): void {
-    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") void nachtragen();
+    if (enter(e) && (e.target as HTMLElement).tagName === "INPUT") void nachtragen();
   }
 
   async function tagOeffnen(id: string, zelle: HTMLElement): Promise<void> {

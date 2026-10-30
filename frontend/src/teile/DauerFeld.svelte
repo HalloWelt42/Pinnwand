@@ -5,6 +5,7 @@
   import { untrack } from "svelte";
   import { dauer } from "../daten/format";
   import { dauerLesen } from "../regeln/eingabe";
+  import { enter } from "./taste";
 
   let { sek, onwert, mitSekunden = false, gesperrt = false, titel = "", klasse = "", platzhalter = "", leerErlaubt = true }: {
     sek: number; onwert: (sek: number) => void; mitSekunden?: boolean; gesperrt?: boolean; titel?: string; klasse?: string;
@@ -39,7 +40,7 @@
 
   function taste(e: KeyboardEvent): void {
     const el = e.currentTarget as HTMLInputElement;
-    if (e.key === "Enter") { el.blur(); }
+    if (enter(e)) { el.blur(); }
     if (e.key === "Escape") { verwerfen = true; el.blur(); e.stopPropagation(); }
   }
 </script>

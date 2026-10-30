@@ -10,6 +10,7 @@
   import { ordnerAnlegen, ordnerLoeschen, ordnerSetzen, ordnerUmbenennen } from "../daten/anwendung/boards.svelte";
   import type { Board, ModulKennung, Ordner } from "../modell";
   import { boardPfad } from "../weg.svelte";
+  import { enter } from "../teile/taste";
 
   let { aktiv }: { aktiv: string } = $props();
   const NAVI: [string, string, string, string, ModulKennung | null][] = [
@@ -59,7 +60,7 @@
     if (feld.value.trim() && feld.value.trim() !== o.name) await ordnerUmbenennen(o.id, feld.value);
   }
   function nameTaste(o: Ordner, e: KeyboardEvent): void {
-    if (e.key === "Enter") void umbenennen(o, e.currentTarget as HTMLInputElement);
+    if (enter(e)) void umbenennen(o, e.currentTarget as HTMLInputElement);
     if (e.key === "Escape") bearbeiten = null;
   }
   async function loeschenBestaetigen(o: Ordner): Promise<void> {
@@ -80,7 +81,7 @@
     }
   }
   function neuTaste(e: KeyboardEvent): void {
-    if (e.key === "Enter") void anlegen();
+    if (enter(e)) void anlegen();
     if (e.key === "Escape") neuOffen = false;
   }
 </script>

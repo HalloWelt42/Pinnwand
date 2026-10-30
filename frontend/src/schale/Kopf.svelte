@@ -12,6 +12,7 @@
   import Person from "../board/Person.svelte";
   import { plusTage, montagVon } from "../regeln/tage";
   import { boardPfad, gehe } from "../weg.svelte";
+  import { enter } from "../teile/taste";
 
   const zeiterfassung = $derived(modulIrgendwo("zeiterfassung"));
   const timer = $derived(timerVon(ICH));
@@ -44,7 +45,7 @@
 <div class="marke"><span class="pw-marke-symbol"><i class="fa-solid fa-thumbtack"></i></span><span class="marke-name">Pinnwand</span></div>
 <div class="pw-kopfsuche">
   <Suchfeld bind:wert={suche} placeholder="Karten in allen Boards suchen" aria-label="Karten in allen Boards suchen" autocomplete="off"
-    onkeydown={(e) => { if (e.key === "Enter") oeffnen(); if (e.key === "Escape") suche = ""; }} />
+    onkeydown={(e) => { if (enter(e)) oeffnen(); if (e.key === "Escape") suche = ""; }} />
   {#if suche.trim().length >= 2}
     <div class="pw-kopfsuche-treffer" role="listbox" aria-label="Treffer">
       {#each treffer as t, i (t.k.id)}

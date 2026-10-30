@@ -3,6 +3,7 @@
   // Sicherheit ein Wort zum Eintippen (Schlüssel, Kürzel, Name; Groß und klein egal); der Knopf wirkt erst, wenn es
   // stimmt. Der Server prüft dasselbe Wort.
   import type { Snippet } from "svelte";
+  import { enter } from "./taste";
 
   let { frage, wort, knopf, bestaetigen, abbrechen, children }: {
     frage: string;
@@ -39,7 +40,7 @@
     <div>{@render children()}</div>
     <label class="pw-endgueltig-feld">Zur Sicherheit <b class="pw-schluessel">{wort}</b> eintippen:
       <input class="eingabe" bind:value={eingabe} use:fokus autocomplete="off" aria-label="Zur Sicherheit {wort} eintippen"
-             onkeydown={(e) => { if (e.key === "Enter") void los(); if (e.key === "Escape") abbrechen(); }} /></label>
+             onkeydown={(e) => { if (enter(e)) void los(); if (e.key === "Escape") abbrechen(); }} /></label>
     <span class="pw-endgueltig-knoepfe">
       <button class="knopf klein" onclick={abbrechen}>Abbrechen</button>
       <button class="knopf gefahr-voll klein" disabled={!passt || laeuft} onclick={los}><i class="fa-solid fa-trash-can"></i>{knopf}</button>

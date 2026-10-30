@@ -14,6 +14,7 @@
   import type { Board, ModulKennung, Recht, Rolle } from "../../../modell";
   import { modulAn as modulEingeschaltet } from "../../../regeln/board";
   import { boardPfad } from "../../../weg.svelte";
+  import { enter } from "../../../teile/taste";
 
   let { board }: { board: Board } = $props();
 
@@ -98,7 +99,7 @@
       </div>
       <div class="pw-verwaltung-formular">
         <input class="eingabe" bind:value={neuName} placeholder="Name der neuen Rolle" aria-label="Name der neuen Rolle"
-               onkeydown={(e) => { if (e.key === "Enter") anlegen(); }} />
+               onkeydown={(e) => { if (enter(e)) anlegen(); }} />
         <span class="pw-verwaltung-mit">mit den Rechten von</span>
         <select class="eingabe" bind:value={kopie} aria-label="Rechte übernehmen von">
           {#each board.rollen as r (r.id)}<option value={r.id}>{r.name}</option>{/each}

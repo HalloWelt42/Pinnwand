@@ -5,6 +5,7 @@
   import { Suchfeld } from "appkern-oberflaeche";
   import Person from "../board/Person.svelte";
   import type { KellerwolkePerson, Kennung } from "../modell";
+  import { enter } from "./taste";
 
   let { kandidaten, ausser = [], waehlen, text = $bindable(""), platzhalter = "Name einer Person mit Kellerwolke-Konto", schwebend = false }: {
     kandidaten: KellerwolkePerson[];
@@ -29,7 +30,7 @@
 
 <div class="pw-personenwahl" class:schwebend>
   <Suchfeld symbol="fa-user-plus" bind:wert={text} placeholder={platzhalter} aria-label="Person suchen" autocomplete="off"
-            onkeydown={(e) => { if (e.key === "Enter" && treffer.length) nehmen(treffer[0]); if (e.key === "Escape") text = ""; }} />
+            onkeydown={(e) => { if (enter(e) && treffer.length) nehmen(treffer[0]); if (e.key === "Escape") text = ""; }} />
   {#if suche.length >= 2}
     <div class="pw-personenwahl-vorschlaege" role="listbox" aria-label="Vorschläge">
       {#each treffer as p (p.kennung)}

@@ -13,6 +13,7 @@
   import type { Karte, TranskriptMarke } from "../modell";
   import { verlassen, verwerfbar, verwerfen } from "../teile/verwerfen";
   import Vorschlag from "./Vorschlag.svelte";
+  import { enter } from "../teile/taste";
 
   let { karte, schreiben, ki = false }: {
     karte: Karte;
@@ -157,7 +158,7 @@
       {#if schreiben}
         <div class="pw-transkript-notiz">
           <input class="eingabe" value={m.notiz ?? ""} placeholder="Notiz zur Stelle" aria-label="Notiz zu {m.name}" use:verwerfbar
-                 onchange={(e) => notizAendern(m, e.currentTarget)} onkeydown={(e) => { if (e.key === "Enter") verlassen(e.currentTarget); }} />
+                 onchange={(e) => notizAendern(m, e.currentTarget)} onkeydown={(e) => { if (enter(e)) verlassen(e.currentTarget); }} />
           {#if ki}
             <button class="knopf ohne symbol klein" title="Notiz vorschlagen (über die Leitstelle)" aria-pressed={vorschlagFuer === m.id && vorschlag.offen}
                     onclick={() => notizVorschlagen(m)}><i class="fa-solid fa-wand-magic-sparkles"></i></button>

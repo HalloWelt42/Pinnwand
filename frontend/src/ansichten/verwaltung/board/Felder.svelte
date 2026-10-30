@@ -14,6 +14,7 @@
   import type { Board, Feld, FeldArt } from "../../../modell";
   import { modulAn } from "../../../regeln/board";
   import { GRUNDFELDER } from "../daten";
+  import { enter } from "../../../teile/taste";
 
   let { board }: { board: Board } = $props();
 
@@ -109,7 +110,7 @@
                   onclick={() => feldOption(board.id, f.id, o, false)}><i class="fa-solid fa-xmark"></i></button></span>
               {/each}
               <input class="eingabe" bind:value={option[f.id]} placeholder="Option, Enter" aria-label="Option hinzufügen"
-                     onkeydown={(e) => { if (e.key === "Enter") optionDazu(f); }} />
+                     onkeydown={(e) => { if (enter(e)) optionDazu(f); }} />
             </div>
           {/if}
           {#if loeschen === f.id}
@@ -132,7 +133,7 @@
       <h2 class="etikett">Neues Feld</h2>
       <div class="pw-verwaltung-formular">
         <input class="eingabe" bind:value={neuName} placeholder="Name des Feldes" aria-label="Name des neuen Feldes"
-               onkeydown={(e) => { if (e.key === "Enter") anlegen(); }} />
+               onkeydown={(e) => { if (enter(e)) anlegen(); }} />
         <button class="knopf haupt" disabled={!neuName.trim()} onclick={anlegen}><i class="fa-solid fa-plus"></i>Feld anlegen</button>
       </div>
       <div class="pw-verwaltung-formular">

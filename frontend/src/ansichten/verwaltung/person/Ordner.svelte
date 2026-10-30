@@ -10,6 +10,7 @@
   } from "../../../daten/anwendung/boards.svelte";
   import { ordnerVon, stand } from "../../../daten/stand.svelte";
   import type { Ordner } from "../../../modell";
+  import { enter } from "../../../teile/taste";
 
   // Ziehen ordnet erst die Anzeige, das Ablegen ruft den Anwendungsfall; danach gilt die Reihenfolge des Servers
   let items = $state<Ordner[]>([]);
@@ -86,7 +87,7 @@
       </div>
       <div class="pw-verwaltung-formular">
         <input class="eingabe" bind:value={neuName} placeholder="Name des Ordners" aria-label="Name des neuen Ordners"
-               onkeydown={(e) => { if (e.key === "Enter") void anlegen(); }} />
+               onkeydown={(e) => { if (enter(e)) void anlegen(); }} />
         <button class="knopf haupt" disabled={!neuName.trim()} onclick={anlegen}><i class="fa-solid fa-plus"></i>Ordner anlegen</button>
       </div>
       <p class="pw-verwaltung-satz">Ein neuer Ordner kommt ans Ende; am Griff ziehen ordnet die Ordner in der Seitenleiste.</p>

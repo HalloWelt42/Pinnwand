@@ -8,6 +8,7 @@
   import { onDestroy, tick } from "svelte";
   import { markdownHtml, type MarkdownOptionen } from "../teile/markdown";
   import { verlassen } from "../teile/verwerfen";
+  import { enter } from "../teile/taste";
 
   let { name, text = "", leer, schreiben, nurVollbild = false, vorlesen, liest = false, speichern, optionen = {} }: {
     name: string;
@@ -70,7 +71,7 @@
   function taste(e: KeyboardEvent): void {
     if (e.defaultPrevented) return;
     if (e.key === "Escape" && !e.isComposing) { e.preventDefault(); verwerfen(); }
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void fertig(); }
+    if (enter(e) && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void fertig(); }
   }
 
   /** ein Klick auf den Text bearbeitet; ein Verweis darin führt dagegen zu seinem Ziel */

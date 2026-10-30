@@ -7,6 +7,7 @@
   import { stand } from "../../../daten/stand.svelte";
   import type { Board, Farbe, Label } from "../../../modell";
   import Farbwahl from "../../../teile/Farbwahl.svelte";
+  import { enter } from "../../../teile/taste";
 
   let { board }: { board: Board } = $props();
 
@@ -69,7 +70,7 @@
       <div class="pw-verwaltung-formular">
         {#if neuName.trim()}<span class="pw-label" data-farbe={neuFarbe}>{neuName.trim()}</span>{/if}
         <input class="eingabe" bind:value={neuName} placeholder="Name des Labels" aria-label="Name des neuen Labels"
-               onkeydown={(e) => { if (e.key === "Enter") anlegen(); }} />
+               onkeydown={(e) => { if (enter(e)) anlegen(); }} />
         <button class="knopf haupt" disabled={!neuName.trim() || !!neuDoppelt} onclick={anlegen}><i class="fa-solid fa-plus"></i>Label anlegen</button>
       </div>
       {#if neuDoppelt}<span class="pw-verwaltung-fehler" role="alert">Das Label {neuDoppelt} gibt es schon; Groß und klein zählen nicht.</span>{/if}

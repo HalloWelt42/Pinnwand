@@ -19,6 +19,9 @@ from .kartenbasis import (
 )
 from .rahmen import Abgelehnt, Antwort, Anwendung, Kontext
 
+#: so viele Bilder hat ein Kommentar höchstens (HELF-56)
+BILDER_JE_KOMMENTAR = 10
+
 PRIORITAETEN = {"keine": "Keine", "niedrig": "Niedrig", "mittel": "Mittel", "hoch": "Hoch", "dringend": "Dringend"}
 SCHAETZUNG_HOECHSTENS = 100_000
 
@@ -196,8 +199,11 @@ class Inhalte:
 
         return await self.a.aendern(konto, arbeit)
 
-    async def kommentieren(self, konto: Konto, karte_id: Kennung, text: str) -> Antwort:
+    async def kommentieren(self, konto: Konto, karte_id: Kennung, text: str, bilder: list[str] | None = None) -> Antwort:
+        """Ein Kommentar, auf Wunsch mit Bildern (HELF-56): Namen von Bild-Anhängen der Karte, die hochgeladen sind (sie
+        liegen in der Kellerwolke und jedes Mitglied darf sie öffnen; verknüpfte aus einer fremden Kellerwolke nicht)."""
         t = text.strip()
+        namen = list(dict.fromkeys(bilder or []))
 
         def arbeit(k: Kontext) -> str:
             c = karte_lesen(k, karte_id)
@@ -206,7 +212,14 @@ class Inhalte:
                 raise Abgelehnt("Ein Kommentar braucht Text")
             if len(t) > KOMMENTAR_LAENGE:
                 raise Abgelehnt(f"Ein Kommentar hat höchstens {KOMMENTAR_LAENGE} Zeichen")
-            c.kommentare.append(Kommentar(von=konto.id, zeit=k.jetzt, text=t))
+            if len(namen) > BILDER_JE_KOMMENTAR:
+                raise Abgelehnt(f"Ein Kommentar hat höchstens {BILDER_JE_KOMMENTAR} Bilder")
+            vorhanden = {a.name: a for a in c.anhaenge}
+            for n in namen:
+                a = vorhanden.get(n)
+                if a is None or a.art != "bild" or a.verknuepft:
+                    raise Abgelehnt(f"{n} ist kein hochgeladenes Bild an {c.schluessel}")
+            c.kommentare.append(Kommentar(von=konto.id, zeit=k.jetzt, text=t, bilder=namen))
             vermerken(k, c, "hat kommentiert")
             speichern(k, c)
             hinweise.nach_kommentar(k, b, c, t)

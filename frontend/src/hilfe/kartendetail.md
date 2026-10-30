@@ -77,6 +77,7 @@ Unten im Detail stehen die Reiter **Kommentare** und **Verlauf**, je mit ihrer Z
 - Wer in einem Kommentar erwähnt ist, bekommt einen Hinweis; die übrigen Zuständigen der Karte bekommen einen Hinweis, dass kommentiert wurde. Wer in Beschreibung oder Notizen neu erwähnt wird, bekommt ebenfalls einen Hinweis.
 
 Kommentieren braucht das Recht Kommentieren. Mehr zu Hinweisen unter [Hinweise und Mitteilungen](hilfe:hinweise).
+- Ein Kommentar kann Bilder zeigen, etwa Bildschirmfotos zu einer Arbeit. Sie stehen klein unter seinem Text; ein Klick zeigt ein Bild groß über der Seite, die Pfeile oder die Pfeiltasten blättern, Escape, das X oder ein Klick daneben schließt es. Die Bilder sind Anhänge der Karte und liegen wie jeder Anhang in der Kellerwolke, im Ordner des Boards in der Ablage der Pinnwand. Nimmst du ein solches Bild von der Karte, fehlt es auch im Kommentar. Am Telefon gilt dasselbe.
 
 ## Anhänge {#anhaenge}
 Der Abschnitt **Anhänge** hängt Dateien an die Karte. Ändern braucht das Recht Karten bearbeiten.

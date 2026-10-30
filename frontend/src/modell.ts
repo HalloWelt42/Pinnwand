@@ -173,6 +173,8 @@ export interface Kommentar {
   von: Kennung;
   zeit: string;
   text: string;
+  /** Bilder zum Kommentar (HELF-56): Namen hochgeladener Bild-Anhänge der Karte (die Dateien liegen in der Kellerwolke) */
+  bilder?: string[];
 }
 
 /** Eine Datei an einer Karte: hochgeladen in den Ordner des Boards in der Ablage der Pinnwand, oder aus der eigenen

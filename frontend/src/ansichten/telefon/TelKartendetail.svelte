@@ -15,6 +15,7 @@
   import { karteText, kommentareText, liest, vorlesen, vorlesenDa } from "../../daten/anwendung/vorlesen.svelte";
   import { board, karte as holeKarte, konto, stand } from "../../daten/stand.svelte";
   import Person from "../../board/Person.svelte";
+  import Kommentarbilder from "../../teile/Kommentarbilder.svelte";
   import { boardPfad, gehe, wert } from "../../weg.svelte";
   import TelefonSchale from "./TelefonSchale.svelte";
   import Verschieben from "./Verschieben.svelte";
@@ -200,7 +201,8 @@
         <div class="pw-tel-kommentar">
           <Person id={c.von} />
           <div class="blase"><div class="kopfzeile"><b>{konto(c.von).name}</b><span>{wann(c.zeit)}</span></div>
-            <div class="pw-md">{@html markdownHtml(c.text, md)}</div></div>
+            <div class="pw-md">{@html markdownHtml(c.text, md)}</div>
+            {#if c.bilder?.length}<Kommentarbilder karte={k} namen={c.bilder} />{/if}</div>
         </div>
       {/each}
     </section>

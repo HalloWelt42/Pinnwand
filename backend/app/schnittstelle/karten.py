@@ -82,6 +82,8 @@ class Art(Modell):
 
 class Kommentar(Modell):
     text: str
+    #: Namen hochgeladener Bild-Anhänge der Karte, die der Kommentar zeigt (HELF-56)
+    bilder: list[str] = []
 
 
 def router(z: Zugriff) -> APIRouter:
@@ -150,6 +152,6 @@ def router(z: Zugriff) -> APIRouter:
 
     @r.post("/karten/{karte_id}/kommentieren", response_model=Antwort)
     async def kommentieren(karte_id: Kennung, e: Kommentar, konto: Konto = Depends(ich)) -> Antwort:
-        return await tun(d.inhalte.kommentieren(konto, karte_id, e.text))
+        return await tun(d.inhalte.kommentieren(konto, karte_id, e.text, e.bilder))
 
     return r

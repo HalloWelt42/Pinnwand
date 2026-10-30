@@ -275,3 +275,17 @@ button.navi { width: 100%; border: 0; background: none; font: inherit; text-alig
 
 /* Nachladen am Ende langer Listen (HELF-50): der Knopf ist auch die Stelle, die beim Rollen die nächsten holt */
 .pw-nachladen { display: flex; justify-content: center; padding: var(--a3); }
+
+/* Bilder an Kommentaren (HELF-56): klein im Kommentar, groß über der Seite */
+.pw-kommentarbilder { display: flex; flex-wrap: wrap; gap: var(--a2); margin-top: var(--a2); }
+.pw-kommentarbild { padding: 0; border: 0; border-radius: var(--r2); background: var(--karte-2); cursor: zoom-in; overflow: hidden; line-height: 0; }
+.pw-kommentarbild img { display: block; max-width: min(260px, 100%); max-height: 180px; object-fit: contain; }
+.pw-bildansicht { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: var(--a6) var(--a4);
+                  background: color-mix(in srgb, var(--hg) 94%, transparent); }
+.pw-bildansicht figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: var(--a2); max-width: 100%; max-height: 100%; }
+.pw-bildansicht img { max-width: 100%; max-height: calc(100dvh - 120px); object-fit: contain; border-radius: var(--r2); box-shadow: var(--schatten-schwebend); }
+.pw-bildansicht figcaption { font-size: var(--klein); color: var(--text-2); }
+.pw-bildansicht-zu { position: absolute; top: calc(var(--a4) + env(safe-area-inset-top)); right: var(--a4); }
+.pw-bildansicht-zurueck, .pw-bildansicht-weiter { position: absolute; top: 50%; transform: translateY(-50%); }
+.pw-bildansicht-zurueck { left: var(--a3); }
+.pw-bildansicht-weiter { right: var(--a3); }

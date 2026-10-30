@@ -11,6 +11,7 @@
   import { konto } from "../daten/stand.svelte";
   import type { Board, Karte } from "../modell";
   import Person from "../board/Person.svelte";
+  import Kommentarbilder from "../teile/Kommentarbilder.svelte";
   import { markdownHtml, markdownText, type MarkdownOptionen } from "../teile/markdown";
   import { verwerfbar } from "../teile/verwerfen";
   import { enter } from "../teile/taste";
@@ -71,7 +72,8 @@
                     aria-pressed={liest(kennung)} onclick={() => vorlesen(kennung, `${konto(c.von).name} schrieb: ${markdownText(c.text)}`, board.id)}>
               <i class="fa-solid {liest(kennung) ? 'fa-stop' : 'fa-volume-high'}"></i></button>
           {/if}</div>
-          <div class="pw-md">{@html markdownHtml(c.text, optionen)}</div></div></div>
+          <div class="pw-md">{@html markdownHtml(c.text, optionen)}</div>
+          {#if c.bilder?.length}<Kommentarbilder {karte} namen={c.bilder} />{/if}</div></div>
     {:else}
       <div class="schwach pw-detail-leer">Noch keine Kommentare.</div>
     {/each}

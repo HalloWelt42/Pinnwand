@@ -147,6 +147,9 @@ class Kommentar(Modell):
     von: Kennung
     zeit: str
     text: str
+    #: Bilder zum Kommentar (HELF-56): Namen hochgeladener Bild-Anhänge der Karte; die Dateien liegen wie jeder Anhang in
+    #: der Kellerwolke (Ablage der Pinnwand, Ordner des Boards), der Kommentar zeigt sie von dort
+    bilder: list[str] = Field(default_factory=list)
 
 
 AnhangArt = Literal["pdf", "bild", "tabelle", "text", "ton"]

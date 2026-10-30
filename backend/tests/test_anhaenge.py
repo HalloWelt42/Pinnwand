@@ -11,6 +11,7 @@ import pytest
 from app.anwendung import anhaenge
 from conftest import Pinnwand
 from nachgestellt import ABLAGE
+from test_verwaltung import abgelehnt, ok
 
 MB = 1024 * 1024
 
@@ -245,3 +246,29 @@ async def test_oeffnen_ueber_die_inhaltsadresse(pw: Pinnwand):
     await pw.post("bert", f"/karten/{k['id']}/anhaenge/aus-kellerwolke", {"dateien": [{"datei": eigene.id}]})
     r = await pw.c.get(f"/api/v1/inhalt/anhaenge/{k['id']}/{eigene.id}")
     assert (r.status_code, r.json()["detail"]) == (404, "Diese Datei kann die Pinnwand in der Kellerwolke nicht (mehr) lesen")
+
+
+# --- Bilder an Kommentaren (HELF-56) ----------------------------------------------------------------------------
+
+async def test_bilder_am_kommentar(pw: Pinnwand):
+    """Ein Kommentar zeigt hochgeladene Bild-Anhänge der Karte (sie liegen in der Kellerwolke); andere Anhänge,
+    verknüpfte und unbekannte Namen lehnt er ab."""
+    _, k = await mit_bert(pw)
+    r = await hochladen(pw, "anna", k, ("Vorher.png", b"\x89PNG eins", "image/png"), ("Nachher.png", b"\x89PNG zwei", "image/png"),
+                        ("Notiz.txt", b"Text", "text/plain"))
+    assert r.status_code == 200, r.text
+    a = await ok(pw, "bert", f"/karten/{k['id']}/kommentieren", {"text": "So sieht es jetzt aus", "bilder": ["Vorher.png", "Nachher.png"]})
+    assert a["meldung"] == "Kommentar an HAUS-1 gespeichert"
+    c = (await karte(pw, "anna"))["kommentare"][-1]
+    assert (c["text"], c["bilder"]) == ("So sieht es jetzt aus", ["Vorher.png", "Nachher.png"])
+    # jedes Mitglied öffnet das Bild über die Inhaltsadresse
+    datei = next(x["datei"] for x in (await karte(pw, "bert"))["anhaenge"] if x["name"] == "Nachher.png")
+    r = await pw.c.get(f"/api/v1/inhalt/anhaenge/{k['id']}/{datei}", headers=pw.kopf["bert"])
+    assert r.status_code == 200 and r.content == b"\x89PNG zwei"
+    for bilder, meldung in [(["Notiz.txt"], "Notiz.txt ist kein hochgeladenes Bild an HAUS-1"),
+                            (["Gibt-es-nicht.png"], "Gibt-es-nicht.png ist kein hochgeladenes Bild an HAUS-1"),
+                            ([f"b{i}.png" for i in range(11)], "Ein Kommentar hat höchstens 10 Bilder")]:
+        await abgelehnt(pw, "bert", f"/karten/{k['id']}/kommentieren", {"text": "x", "bilder": bilder}, 400, meldung)
+    # ohne Bilder wie bisher
+    await ok(pw, "bert", f"/karten/{k['id']}/kommentieren", {"text": "Danke"})
+    assert (await karte(pw, "anna"))["kommentare"][-1].get("bilder", []) == []

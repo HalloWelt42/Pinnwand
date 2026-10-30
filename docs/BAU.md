@@ -391,6 +391,16 @@ zurücksetzen und löschen. Alles ohne Rückweg; zur Sicherheit tippt die Person
 | `POST /konten/{id}/entfernen` | `{bestaetigung}` (Name des Kontos) |
 | `POST /boards/{id}/ordner` | `{ordner, stelle}`: Stelle im Ordner ab 0 (Ziehen in der Seitenleiste), ohne ans Ende |
 
+### Bilder an Kommentaren
+
+Nachtrag vom 30.10.2026 (HELF-56, Nutzer: Bildschirmfotos "als Anhang, der direkt angezeigt wird bei
+Ticket-Kommentaren und in groß"; "Die Screens können ja wieder in der Kellerwolke landen"). Anhänge liegen schon in der
+Kellerwolke (Ablage der Pinnwand, Ordner je Board); Kommentarbilder nehmen denselben Weg: erst als Anhang hochladen
+(`POST /karten/{id}/anhaenge/hochladen`), dann `POST /karten/{id}/kommentieren` mit `{text, bilder}` (Namen
+hochgeladener Bild-Anhänge der Karte, höchstens 10; verknüpfte aus einer fremden Kellerwolke nicht). `Kommentar.bilder`
+hält nur die Namen, die Datei bleibt eine Wahrheit am Anhang. Die Oberfläche zeigt sie klein im Kommentar und groß über
+der Seite (`teile/Kommentarbilder.svelte`), über die Inhaltsadresse, am Rechner und am Telefon.
+
 ### Hinweise bündeln
 
 Nachtrag vom 30.10.2026 (HELF-54, Nutzer: "Alarmhinweise mit Button alle als gelesen bestätigen können, sonst flutet

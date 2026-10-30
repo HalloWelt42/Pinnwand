@@ -82,6 +82,7 @@ Ein Tippen öffnet das Board **spaltenweise**:
 ## Eine Karte ansehen {#karte}
 Ein Tippen auf eine Karte öffnet sie. Von oben nach unten:
 
+- Oben im Kopf der **Schlüssel** der Karte: ein Tippen darauf kopiert ihn, etwa um ihn jemandem zu schicken.
 - **Labels, Titel**, das Zeichen **Idee** und, wenn die Karte blockiert ist, der Grund.
 - **Bearbeiten**, wenn du im Board das Recht **Karten bearbeiten** hast (siehe
   [Karte bearbeiten](hilfe:telefon/bearbeiten)).

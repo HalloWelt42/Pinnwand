@@ -26,6 +26,7 @@
   import Personenwahl from "../teile/Personenwahl.svelte";
   import { verlassen, verwerfbar } from "../teile/verwerfen";
   import { kopieren } from "../teile/zwischenablage";
+  import Kennungsknopf from "../teile/Kennungsknopf.svelte";
   import { boardPfad, gehe } from "../weg.svelte";
   import Aktivitaet from "./Aktivitaet.svelte";
   import Anhaenge from "./Anhaenge.svelte";
@@ -161,7 +162,7 @@
 </script>
 
 <div class="pw-detail-kopf">
-  <span class="pw-schluessel pw-detail-schluessel">{k.schluessel}</span>
+  <Kennungsknopf schluessel={k.schluessel} klasse="pw-detail-schluessel" />
   <span class="zustand" data-farbe={spalte.farbe}><span class="pw-farbpunkt"></span>{spalte.name}</span>
   <span class="pw-umschalter" title={board.module.zeiterfassung ? "Arbeit hat Zeiterfassung, eine Idee nicht; Umschalten hält laufende Timer an und bucht"
                                                                 : "Arbeit oder Idee; nur Arbeit lässt sich mit anderen Karten verknüpfen"}>

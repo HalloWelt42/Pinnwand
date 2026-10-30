@@ -17,6 +17,7 @@
   import { markdownText } from "../teile/markdown";
   import { kette, ketteBeenden, ketteBewegen, ketteStarten } from "./kette.svelte";
   import Person from "./Person.svelte";
+  import Kennungsknopf from "../teile/Kennungsknopf.svelte";
 
   let { karte, board, erledigt = false, art = "", oeffnen, aktionen = false }: {
     karte: Karte; board: Board; erledigt?: boolean;
@@ -136,7 +137,7 @@
             title="Verknüpft mit {andere.length} {andere.length === 1 ? 'weiteren Karte' : 'weiteren Karten'}: ziehen zusammen{geteilt ? '; die Zeit ist geteilt und zählt einmal' : ''}">
         <i class="fa-solid fa-link"></i>{andere.length + 1}</span>
     {/if}
-    <span class="pw-schluessel">{karte.schluessel}</span>
+    <Kennungsknopf schluessel={karte.schluessel} />
     {#if faellig}<span class="pw-angabe {faellig.klasse}" title="Fällig {datum(karte.faellig!, true)}"><i class="fa-regular fa-calendar"></i>{faellig.text}</span>{/if}
     {#if erledigt && karte.abgeschlossen}
       <span class="pw-angabe gut" title="Abgeschlossen"><i class="fa-solid fa-check"></i>{datum(karte.abgeschlossen, true)}</span>

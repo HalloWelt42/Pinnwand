@@ -14,7 +14,7 @@ Ein Klick auf eine Karte öffnet ihr Detail als Leiste rechts über dem Board. D
 - Der Knopf mit den Pfeilen nach außen (**Vollbild**) macht das Detail breit, derselbe Knopf (**Als Leiste**) wieder schmal.
 
 ## Der Kopf {#kopf}
-Links stehen der Schlüssel, die Spalte, in der die Karte liegt, und der Umschalter **Arbeit** und **Idee** (siehe [Arbeit oder Idee](hilfe:karten/art)). Rechts die Knöpfe, jeweils nur mit dem passenden Modul oder Recht:
+Links stehen der Schlüssel (ein Klick kopiert ihn, siehe [Schlüssel kopieren](hilfe:karten/kennung)), die Spalte, in der die Karte liegt, und der Umschalter **Arbeit** und **Idee** (siehe [Arbeit oder Idee](hilfe:karten/art)). Rechts die Knöpfe, jeweils nur mit dem passenden Modul oder Recht:
 
 | Knopf | was er tut |
 | - | - |

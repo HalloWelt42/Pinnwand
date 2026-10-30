@@ -61,7 +61,7 @@
 </script>
 
 {#if da}
-  <TelefonSchale titel={k.schluessel} unter={b.name} reiter="boards" {zurueck} karte={k.id}>
+  <TelefonSchale titel={k.schluessel} kopierbar unter={b.name} reiter="boards" {zurueck} karte={k.id}>
     <section class="pw-tel-kopfblock">
       {#if labels.length}<div class="labels">{#each labels as l (l.id)}<span class="pw-label" data-farbe={l.farbe}>{l.name}</span>{/each}</div>{/if}
       <h2 class="pw-tel-kartentitel">{k.titel}</h2>

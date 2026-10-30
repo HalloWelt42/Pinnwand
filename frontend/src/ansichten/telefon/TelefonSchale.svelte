@@ -12,11 +12,14 @@
   import { karte as holeKarte } from "../../daten/stand.svelte";
   import Meldung from "../../teile/Meldung.svelte";
   import Getrennt from "./Getrennt.svelte";
+  import Kennungsknopf from "../../teile/Kennungsknopf.svelte";
   import { telPfad } from "./weg";
 
   type Reiter = "heute" | "boards" | "zeit" | "erfassen";
-  let { titel, unter = "", reiter, zurueck = "", karte = "", glocke = true, leiste, unten, blatt, children }: {
+  let { titel, kopierbar = false, unter = "", reiter, zurueck = "", karte = "", glocke = true, leiste, unten, blatt, children }: {
     titel: string;
+    /** der Titel ist die Kennung einer Karte: ein Tippen kopiert sie */
+    kopierbar?: boolean;
     unter?: string;
     /** aktiver Reiter der Fußleiste; ohne: keiner (Hinweise) */
     reiter?: Reiter;
@@ -56,7 +59,7 @@
       <a class="pw-tel-knopf" href={zurueck} title="Zurück" aria-label="Zurück"><i class="fa-solid fa-chevron-left"></i></a>
     {/if}
     <div class="titel">
-      <h1>{titel}</h1>
+      <h1>{#if kopierbar}<Kennungsknopf schluessel={titel} klasse="pw-tel-kennung" />{:else}{titel}{/if}</h1>
       {#if unter}<span class="unter">{unter}</span>{/if}
     </div>
     {#if glocke}

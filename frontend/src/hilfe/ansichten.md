@@ -63,6 +63,10 @@ Die Zeitachse zeigt jede Karte mit Start oder Fälligkeit als Balken über die T
 - Erledigte Karten tragen einen Haken, überfällige ein Warnzeichen. Fällt ein Balken in die Abwesenheit einer zuständigen Person, trägt er einen Sonnenschirm, und der Hinweis beim Überfahren nennt die Abwesenheit.
 - Liegt eine Karte außerhalb des gezeigten Zeitraums, zeigt ein Pfeil am Rand, in welcher Richtung sie liegt.
 - Ein Klick auf den Namen links oder auf den Balken öffnet die Karte.
+- Die Zahl neben einer Spalte zählt alle ihre Karten, auch die ohne Datum; beim Überfahren steht, wie viele davon hier zu sehen sind.
+
+### Arbeit auf der Zeitachse {#zeitachse-arbeit}
+Neben den geplanten Tagen zeigt die Zeitachse, wann tatsächlich an einer Karte gearbeitet wurde: an jedem Tag mit gebuchter Zeit steht unten in der Zeile ein kleines Säulchen, so hoch wie die Zeit (ein voller Arbeitstag von acht Stunden füllt es). Haben mehrere Personen an dem Tag gebucht, ist es in ihren Farben geteilt, etwa du und der Helfer. Beim Überfahren steht die Zeit des Tags je Person. Eine Karte ohne Start und Fälligkeit, an der im gezeigten Zeitraum gearbeitet wurde, steht mit ihren Säulchen in ihrer Spalte, ohne Balken. **Nach Person** zeigt bei jeder Person nur ihre eigene Arbeit, auch an Karten, für die sie nicht zuständig ist. Gezählt wird, was du von der Zeit siehst: deine eigene und, mit dem Recht Zeiten anderer sehen, die der anderen.
 
 ## Planen auf der Zeitachse {#zeitachse-ziehen}
 - Den Balken ziehen verschiebt Start und Fälligkeit gemeinsam.

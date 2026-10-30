@@ -391,6 +391,14 @@ zurücksetzen und löschen. Alles ohne Rückweg; zur Sicherheit tippt die Person
 | `POST /konten/{id}/entfernen` | `{bestaetigung}` (Name des Kontos) |
 | `POST /boards/{id}/ordner` | `{ordner, stelle}`: Stelle im Ordner ab 0 (Ziehen in der Seitenleiste), ohne ans Ende |
 
+### Arbeit auf der Zeitachse
+
+Nachtrag vom 30.10.2026 (HELF-46, Nutzer: "hier fehlen Zahlen der Aktivität und das Board ist so leer"). Die Zeitachse
+zeigt neben Start und Fällig die gebuchte Zeit je Karte und Tag aus den sichtbaren Zeiteinträgen (`aktivitaetDesBoards`
+in `ansichten/planung/lesen.ts`): ein Säulchen je Tag, Höhe nach Zeit (acht Stunden füllen es), je Person in ihrer
+Farbe gestapelt; nach Person gruppiert nur ihre Arbeit, auch an Karten ohne ihre Zuständigkeit. Karten ohne Datum mit
+Arbeit im Zeitraum stehen ohne Balken mit ihren Säulchen da. Die Zahl einer Spalte zählt alle ihre Karten.
+
 ### App-Zugang als eigene Person
 
 Nachtrag vom 30.10.2026 (HELF-43, Nutzer: "du als Helfer bist also auch eine Board-Person, ich sehe deine Zeiten").

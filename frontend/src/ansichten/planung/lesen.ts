@@ -43,6 +43,38 @@ export function kartenPfad(b: Board, k: Karte): string {
   return boardPfad(b.kuerzel, kartenNummer(k));
 }
 
+// ═══ Aktivität aus Zeiteinträgen (HELF-46) ══════════════════════════════════════════════════════════════════
+
+/** Gebuchte Zeit einer Karte an einem Tag, je Person (die eigene und, mit dem Recht, die anderer) */
+export interface Aktivitaet {
+  tag: string;
+  /** je Person die Sekunden, größte zuerst */
+  personen: { konto: Kennung; sekunden: number }[];
+  sekunden: number;
+}
+
+/** Was an den Karten eines Boards zwischen `von` und `bis` gearbeitet wurde: je Karte die Tage mit gebuchter Zeit. Ohne
+ *  `person` alle sichtbaren Einträge, sonst nur ihre. Gerechnet aus den Zeiteinträgen im Stand (sie folgen der Sicht). */
+export function aktivitaetDesBoards(b: Board, von: string, bis: string, person?: Kennung): Map<Kennung, Aktivitaet[]> {
+  const je = new Map<Kennung, Map<string, Map<Kennung, number>>>();
+  for (const z of stand.zeiteintraege) {
+    if (z.board !== b.id || !z.karte || z.datum < von || z.datum > bis || (person && z.konto !== person) || z.sekunden <= 0) continue;
+    const tage = je.get(z.karte) ?? new Map<string, Map<Kennung, number>>();
+    const leute = tage.get(z.datum) ?? new Map<Kennung, number>();
+    leute.set(z.konto, (leute.get(z.konto) ?? 0) + z.sekunden);
+    tage.set(z.datum, leute);
+    je.set(z.karte, tage);
+  }
+  const ergebnis = new Map<Kennung, Aktivitaet[]>();
+  for (const [karte, tage] of je) {
+    ergebnis.set(karte, [...tage].sort(([a], [b]) => a.localeCompare(b)).map(([tag, leute]) => {
+      const personen = [...leute].map(([konto, sekunden]) => ({ konto, sekunden })).sort((x, y) => y.sekunden - x.sekunden);
+      return { tag, personen, sekunden: personen.reduce((s, x) => s + x.sekunden, 0) };
+    }));
+  }
+  return ergebnis;
+}
+
 // ═══ Abwesenheiten und Feiertage ══════════════════════════════════════════════════════════════════════════
 
 /** Abwesenheiten der Mitglieder sieht nur, wer im Board das Recht hat, und nur mit dem Modul Arbeitszeit */

@@ -4,12 +4,14 @@
   // Bundesländer der Mitglieder gekennzeichnet, Maßstab Woche oder Monat. Ziehen verschiebt, Ziehen am Rand ändert Start
   // oder Fällig (M-50, M-51), Klick öffnet die Karte; mit der Tastatur Pfeile (mit Umschalt: Fällig, mit Alt: Start).
   // Karten ohne Datum stehen daneben und landen beim Ablegen mit Start und Fällig auf dem Tag. Eine eigene Fläche
-  // rollt in beide Richtungen; Kopf und Namen bleiben stehen.
+  // rollt in beide Richtungen; Kopf und Namen bleiben stehen. Dazu die tatsächliche Arbeit (HELF-46): je Karte und Tag
+  // ein Säulchen der gebuchten Zeit, je Person in ihrer Farbe gestapelt (nach Person gruppiert: nur ihre); eine Karte
+  // ohne Datum, an der im Zeitraum gearbeitet wurde, steht mit ihren Säulchen da. Die Zahl einer Spalte zählt alle Karten.
   import { onMount } from "svelte";
   import { darf as darfIm } from "../../daten/abfragen";
   import { bearbeiten } from "../../daten/anwendung/karten.svelte";
   import { uhr } from "../../daten/uhr.svelte";
-  import { datum, monatText } from "../../daten/format";
+  import { datum, dauer, monatText } from "../../daten/format";
   import { konto, mitKonto, stand } from "../../daten/stand.svelte";
   import Person from "../../board/Person.svelte";
   import type { BoardAnsichtWerte } from "../../board/ansichten";
@@ -17,7 +19,10 @@
   import { istWochenende, kalenderwoche, monatsanfang, MONATE, montagVon, plusMonate, plusTage, TAGE_LANG, tageVon, tageZwischen, wochentag } from "../../regeln/tage";
   import { gehe } from "../../weg.svelte";
   import OhneDatum from "./OhneDatum.svelte";
-  import { abwesenheitenSichtbar, abwesenheitSymbol, artName, farbeDerSpalte, feiertageAm, feiertagTitel, istErledigt, kartenDesBoards, kartenPfad } from "./lesen";
+  import {
+    abwesenheitenSichtbar, abwesenheitSymbol, aktivitaetDesBoards, artName, farbeDerSpalte, feiertageAm, feiertagTitel, istErledigt, kartenDesBoards,
+    kartenPfad, type Aktivitaet,
+  } from "./lesen";
 
   let { board, filter, ziehenGesperrt = false }: BoardAnsichtWerte = $props();
 
@@ -50,36 +55,57 @@
   const abwSichtbar = $derived(abwesenheitenSichtbar(board));
   const darf = $derived(darfIm(board, "karten.bearbeiten") && !ziehenGesperrt);
 
-  interface Zeile { k: Karte; s: number; e: number; warnung: string; mit: Kennung[] }
+  /** eine Karte: mit Datum ein Balken (`datiert`), dazu die Tage, an denen an ihr gearbeitet wurde */
+  interface Zeile { k: Karte; s: number; e: number; warnung: string; mit: Kennung[]; datiert: boolean; akt: Aktivitaet[] }
+  /** ein voller Arbeitstag füllt das Säulchen */
+  const VOLL_S = 8 * 3600;
+  const aktivitaet = $derived(aktivitaetDesBoards(board, anfang, ende));
+  const datiert = (k: Karte): boolean => !!(k.start || k.faellig);
   interface Gruppe {
     id: string; name: string; farbe?: string; konto?: Kennung; zeilen: Zeile[];
+    /** Zahl im Kopf und ihre Erklärung */
+    zahl: number; zahlTitel: string;
     abwesend: { s: number; e: number; text: string; symbol: string; titel: string }[];
   }
 
-  function zeile(k: Karte, person?: Kennung): Zeile {
-    const von = k.start ?? k.faellig!;
-    const bis = k.faellig ?? k.start!;
+  function zeile(k: Karte, akt: Aktivitaet[], person?: Kennung): Zeile {
+    const mitDatum = datiert(k);
+    const von = mitDatum ? (k.start ?? k.faellig!) : akt[0].tag;
+    const bis = mitDatum ? (k.faellig ?? k.start!) : akt[akt.length - 1].tag;
     const treffer = abwSichtbar && !istErledigt(board, k)
       ? stand.abwesenheiten.filter((a) => k.zustaendig.includes(a.konto) && a.von <= bis && von <= a.bis && (a.anteil ?? 1) >= 1) : [];
     const warnung = treffer.map((a) => `fällt in ${artName(a)} von ${konto(a.konto).name} (${datum(a.von)} bis ${datum(a.bis)})`).join("; ");
-    return { k, s: pos(von), e: pos(bis), warnung, mit: k.zustaendig.filter((p) => p !== person) };
+    return { k, s: pos(von), e: pos(bis), warnung: mitDatum ? warnung : "", mit: k.zustaendig.filter((p) => p !== person), datiert: mitDatum, akt };
   }
   const nachStart = (a: Zeile, b: Zeile): number => a.s - b.s || a.e - b.e;
 
   const gruppen = $derived.by((): Gruppe[] => {
     if (gruppierung === "spalte") {
-      return board.spalten.map((sp) => ({ id: sp.id, name: sp.name, farbe: sp.farbe, abwesend: [],
-        zeilen: mitDatum.filter((k) => k.spalte === sp.id).map((k) => zeile(k)).sort(nachStart) }));
+      return board.spalten.map((sp) => {
+        const alle = karten.filter((k) => k.spalte === sp.id);
+        const zeilen = alle.filter((k) => datiert(k) || aktivitaet.has(k.id)).map((k) => zeile(k, aktivitaet.get(k.id) ?? [])).sort(nachStart);
+        return { id: sp.id, name: sp.name, farbe: sp.farbe, abwesend: [], zeilen, zahl: alle.length,
+                 zahlTitel: `${alle.length} Karten in ${sp.name}; ${zeilen.length} davon mit Datum oder mit Arbeit im gezeigten Zeitraum` };
+      });
     }
-    const g: Gruppe[] = mitglieder.filter((p) => mitDatum.some((k) => k.zustaendig.includes(p))).map((p) => ({
-      id: p, name: konto(p).name, konto: p,
-      zeilen: mitDatum.filter((k) => k.zustaendig.includes(p)).map((k) => zeile(k, p)).sort(nachStart),
+    // nach Person: ihre Karten mit Datum und jede Karte, an der sie im Zeitraum gearbeitet hat (auch ohne Zuständigkeit)
+    const ihre = (p: Kennung): { zeilen: Zeile[] } => {
+      const akt = aktivitaetDesBoards(board, anfang, ende, p);
+      return { zeilen: karten.filter((k) => (datiert(k) && k.zustaendig.includes(p)) || akt.has(k.id))
+        .map((k) => zeile(k, akt.get(k.id) ?? [], p)).sort(nachStart) };
+    };
+    const g: Gruppe[] = mitglieder.map((p) => ({ p, ...ihre(p) })).filter((x) => x.zeilen.length).map(({ p, zeilen }) => ({
+      id: p, name: konto(p).name, konto: p, zeilen, zahl: zeilen.length,
+      zahlTitel: `${zeilen.length} Karten: zuständig mit Datum oder im Zeitraum daran gearbeitet`,
       abwesend: abwSichtbar ? stand.abwesenheiten.filter((a) => a.konto === p && a.bis >= anfang && a.von <= ende).map((a) => ({
         s: Math.max(0, pos(a.von)), e: Math.min(tage.length - 1, pos(a.bis)), text: artName(a), symbol: abwesenheitSymbol(a),
         titel: `${konto(p).name}: ${artName(a)} ${datum(a.von)} bis ${datum(a.bis)}${a.notiz ? ` (${a.notiz})` : ""}` })) : [],
     }));
     const niemand = mitDatum.filter((k) => !k.zustaendig.length);
-    if (niemand.length) g.push({ id: "niemand", name: "Ohne Zuständige", zeilen: niemand.map((k) => zeile(k)).sort(nachStart), abwesend: [] });
+    if (niemand.length) {
+      g.push({ id: "niemand", name: "Ohne Zuständige", zeilen: niemand.map((k) => zeile(k, aktivitaet.get(k.id) ?? [])).sort(nachStart), abwesend: [],
+               zahl: niemand.length, zahlTitel: `${niemand.length} Karten mit Datum ohne Zuständige` });
+    }
     return g;
   });
 
@@ -244,7 +270,7 @@
             <div class="pw-zeitachse-gruppe" data-farbe={g.farbe}>
               <div class="name">
                 {#if g.konto}<Person id={g.konto} />{:else if g.farbe}<span class="pw-farbpunkt"></span>{:else}<i class="fa-solid fa-user-slash schwach"></i>{/if}
-                <b>{g.name}</b><span class="zaehler">{g.zeilen.length}</span>
+                <b>{g.name}</b><span class="zaehler" title={g.zahlTitel}>{g.zahl}</span>
               </div>
               <div class="spur">
                 {#each g.abwesend as a (a.s)}
@@ -268,7 +294,15 @@
                 </a>
                 <div class="spur">
                   {#each g.abwesend as a (a.s)}<span class="abwesend leise" style="left: {a.s * breite}px; width: {(a.e - a.s + 1) * breite}px"></span>{/each}
-                  {#if ve < vs}
+                  {#each z.akt as a (a.tag)}
+                    <span class="pw-zeitachse-arbeit" style="left: {pos(a.tag) * breite}px; width: {breite}px; --hoehe: {Math.min(1, a.sekunden / VOLL_S)}"
+                          title="{z.k.schluessel}, {datum(a.tag, true)}: {dauer(a.sekunden)} gebucht ({a.personen.map((x) => `${konto(x.konto).name} ${dauer(x.sekunden)}`).join(', ')})">
+                      {#each a.personen as x (x.konto)}<i data-farbe={konto(x.konto).farbe} style="flex: {x.sekunden}"></i>{/each}
+                    </span>
+                  {/each}
+                  {#if !z.datiert}
+                    <!-- ohne Datum: nur die Arbeit, kein Balken -->
+                  {:else if ve < vs}
                     <span class="ausserhalb" class:rechts={l.s >= tage.length} title="Außerhalb des gezeigten Zeitraums">
                       <i class="fa-solid {l.s >= tage.length ? 'fa-angles-right' : 'fa-angles-left'}"></i>{balkenText(z, l)}</span>
                   {:else}

@@ -357,3 +357,12 @@
   .pw-zeitachse-zeile > .name .pw-personen { display: none; }
 }
 .pw-serien-formular .pw-dauerfeld.feld { font-size: var(--gross); font-weight: 500; }
+
+/* Arbeit an einer Karte (HELF-46): je Tag ein Säulchen unten in der Spur, so hoch wie die gebuchte Zeit (ein voller
+   Arbeitstag füllt es), je Person in ihrer Farbe gestapelt, über dem Balken der Daten (schmal, damit er lesbar bleibt) */
+.pw-zeitachse-arbeit { position: absolute; bottom: 2px; z-index: 2; pointer-events: auto; height: calc(4px + 30px * var(--hoehe)); display: flex; flex-direction: column-reverse;
+                       padding: 0 calc(var(--tag) * 0.25); box-sizing: border-box; }
+.pw-zeitachse-flaeche.monat .pw-zeitachse-arbeit { padding: 0 1px; }
+.pw-zeitachse-arbeit i { display: block; min-height: 1px; background: var(--f, var(--stahl)); opacity: 0.75; }
+.pw-zeitachse-arbeit i:first-child { border-radius: 0 0 2px 2px; }
+.pw-zeitachse-arbeit i:last-child { border-radius: 2px 2px 0 0; }

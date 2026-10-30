@@ -1,15 +1,15 @@
 <script lang="ts">
-  // Ein Board: fester Kopf (Name, Ansichten, Mitglieder, Einstellungen), Werkzeugleiste (Suche, Filter, Personen,
-  // Sortierung) mit der Filtertafel darunter und der Spaltenstreifen oder eine andere Ansicht (Liste, Kalender,
-  // Zeitachse), die dieselben Filter bekommt. Suche, Filter, Sortierung, eingeklappte Spalten und Zeitfenster sind der
-  // Ansichtszustand je Board an diesem Gerät (ansicht.svelte.ts). Solange gefiltert oder sortiert wird, ist Ziehen
-  // gesperrt; ein Klick auf "Verschieben pausiert" setzt alles zurück. Spalten ordnen sich am Griff, neue entstehen am
+  // Ein Board: fester Kopf (Name, Ansichten, Mitglieder, Einstellungen), Werkzeugleiste (Suche, Filter, Personen) mit
+  // der Filtertafel darunter und der Spaltenstreifen oder eine andere Ansicht (Liste, Kalender, Zeitachse), die dieselben
+  // Filter bekommt. Suche, Filter, eingeklappte Spalten, Zeitfenster und die Sortierung je Spalte (im Kopf der Spalte,
+  // HELF-50) sind der Ansichtszustand je Board an diesem Gerät (ansicht.svelte.ts). Solange gefiltert wird, ist Ziehen
+  // gesperrt; ein Klick auf "Verschieben pausiert" setzt Suche und Filter zurück. Spalten ordnen sich am Griff, neue entstehen am
   // Ende des Streifens. Das Kartendetail fährt rechts über das Board und hat seinen eigenen Pfad (/board/prod/131).
   import { Hilfepunkt, Suchfeld } from "appkern-oberflaeche";
   import { untrack } from "svelte";
   import { dragHandleZone, type DndEvent } from "svelte-dnd-action";
   import { FARBEN } from "../anzeige";
-  import { darf, filterAktiv, kartenNummer, papierkorbVon, type Sortierung } from "../daten/abfragen";
+  import { darf, filterAktiv, kartenNummer, papierkorbVon } from "../daten/abfragen";
   import { spalteAnlegen, spaltenOrdnen } from "../daten/anwendung/boards.svelte";
   import { ICH } from "../daten/ich";
   import { board, karte, karteAusNummer, karteHolen, konto, mitKonto, ordnerVon, stand } from "../daten/stand.svelte";
@@ -38,11 +38,10 @@
   const a = $derived(ansichtVon(schluessel));
   const filter = $derived(wirksamerFilter(a.filter, b));
   const gefiltert = $derived(filterAktiv(filter));
-  const gesperrt = $derived(gefiltert || (ansicht === "board" && a.sortierung !== "manuell"));
+  const gesperrt = $derived(gefiltert);
   const filterZahl = $derived(filter.prioritaeten.length + filter.labels.length + Object.values(filter.felder).reduce((n, w) => n + w.length, 0));
   const personenText = $derived(filter.personen.length === 0 ? "Alle Personen"
     : filter.personen.length === 1 ? konto(filter.personen[0]).name : `${filter.personen.length} Personen`);
-  const SORTIERUNG_NAME: Record<Sortierung, string> = { manuell: "Manuell", faellig: "Fällig", prioritaet: "Priorität" };
 
   // Ansichtssachen: Filtertafel, offenes Spaltenmenü, Eingabe einer neuen Spalte
   let tafel = $state(false);
@@ -143,15 +142,10 @@
   <button class="chip" class:aktiv={filter.personen.length > 0} aria-expanded={tafel} onclick={() => (tafel = !tafel)}
           title="Nur Karten bestimmter Personen zeigen (zuständig ist eine davon)">
     <i class="fa-solid {filter.personen.length > 1 ? 'fa-users' : 'fa-user'}"></i>{personenText}</button>
-  {#if ansicht === "board"}
-    <button class="chip" class:aktiv={a.sortierung !== "manuell"} aria-expanded={tafel} onclick={() => (tafel = !tafel)}
-            title="Sortierung der offenen Spalten: Manuell, Fällig oder Priorität; Erledigt bleibt nach Abschluss">
-      <i class="fa-solid fa-arrow-down-wide-short"></i>{SORTIERUNG_NAME[a.sortierung]}</button>
-  {/if}
   <!-- der Platz bleibt auch ohne Sperre stehen, damit Werkzeugleiste und Tafel nicht springen, wenn sie erscheint -->
   <button class="pw-pausiert" class:frei={!gesperrt} disabled={!gesperrt} aria-hidden={!gesperrt} tabindex={gesperrt ? 0 : -1}
           onclick={() => allesZuruecksetzen(schluessel)}
-          title="Bei Suche, Filter oder Sortierung ist Ziehen gesperrt und Erledigte zeigen alle außerhalb des Archivs. Klick setzt Suche, Filter, Personen und Sortierung zurück">
+          title="Bei Suche oder Filter ist Ziehen gesperrt und Erledigte zeigen alle außerhalb des Archivs. Klick setzt Suche, Filter und Personen zurück">
     <i class="fa-solid fa-lock"></i>Verschieben pausiert<i class="fa-solid fa-xmark"></i></button>
   <div class="rechts">
     <a class="chip" href={boardPfad(b.kuerzel, "archiv")}><i class="fa-solid fa-box-archive"></i>Archiv</a>
@@ -159,7 +153,7 @@
   </div>
 </div>
 {#if tafel}
-  <Filtertafel board={b} {filter} sortierung={ansicht === "board" ? a.sortierung : undefined} {schluessel} schliessen={() => (tafel = false)} />
+  <Filtertafel board={b} {filter} {schluessel} schliessen={() => (tafel = false)} />
 {/if}
 <div class="pw-detail-raum">
   {#if Andere}
@@ -174,7 +168,7 @@
             <section class="pw-spalte pw-spalten-platz" class:eingeklappt={istEingeklappt(a, s)} aria-label="Hier landet die Spalte {s.name}">
               <div class="pw-schatten"><i class="fa-solid fa-table-columns"></i>{istEingeklappt(a, s) ? "" : `${s.name} hier ablegen`}</div></section>
           {:else}
-            <Spalte board={b} spalte={s} ansicht={a} {schluessel} {filter} sortierung={a.sortierung} ziehenGesperrt={gesperrt}
+            <Spalte board={b} spalte={s} ansicht={a} {schluessel} {filter} ziehenGesperrt={gesperrt}
                     {darstellung} {oeffnen} menueOffen={menue === s.id} menue={(offen) => (menue = offen ? s.id : null)} />
           {/if}
         {/each}

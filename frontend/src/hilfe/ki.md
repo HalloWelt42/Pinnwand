@@ -63,7 +63,7 @@ Aus einer Notiz, einer Nachricht, einem Protokoll oder einer Liste macht die KI 
 4. Die KI schlägt bis zu zwanzig Karten vor. Jede hat ein Häkchen und ihren Titel in einem Feld, den du gleich hier ändern kannst. Darunter steht kurz, welche Beschreibung sie bekommt und wie viele Punkte ihre Checkliste hat.
 5. Nimm die Häkchen bei Karten weg, die du nicht willst, und klicke auf **Anlegen**.
 
-Die angehakten Karten entstehen in einem Schritt am Ende der Spalte, mit Titel, Beschreibung und Checkliste; zuständig bist du. Hat das Board Zeiterfassung, gilt dabei die Wahl **Arbeit** oder **Idee** aus der Schnelleingabe, sonst die Kartenart des Boards. Die Meldung nennt alle neuen Karten, etwa "3 Karten in Offen angelegt (HAUS-12 bis HAUS-14)", und ein einziges **Rückgängig** nimmt sie alle zurück.
+Die angehakten Karten entstehen in einem Schritt oben in der Spalte, mit Titel, Beschreibung und Checkliste; zuständig bist du. Hat das Board Zeiterfassung, gilt dabei die Wahl **Arbeit** oder **Idee** aus der Schnelleingabe, sonst die Kartenart des Boards. Die Meldung nennt alle neuen Karten, etwa "3 Karten in Offen angelegt (HAUS-12 bis HAUS-14)", und ein einziges **Rückgängig** nimmt sie alle zurück.
 
 Der Text darf bis zu 20.000 Zeichen lang sein. **Einzeln anlegen** oder Escape führt zurück zur Eingabe einzelner Titel; Text und Vorschlag gehen dabei verloren. Steht im Text nichts, woraus eine Karte würde, sagt der Kasten das.
 

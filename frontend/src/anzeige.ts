@@ -1,7 +1,7 @@
 // Namen und Zeichen für Menschen, eine Quelle für alle Ansichten: Farben, Zeitfenster, Prioritäten, Herkunft von Zeiten,
 // Hinweise und Module. Schlüssel werden nie gedruckt, immer ihr Name von hier.
 
-import type { Farbe, Herkunft, HinweisArt, HinweisWeg, ModulKennung, Prioritaet, Zeitfenster } from "./modell";
+import type { Farbe, Herkunft, HinweisArt, HinweisWeg, ModulKennung, Prioritaet, Spaltensortierung, Zeitfenster } from "./modell";
 
 /** Palette in der Reihenfolge jeder Farbwahl; Wort und Farbe gehören zusammen */
 export const FARBEN: Farbe[] = ["koralle", "rose", "violett", "flieder", "himmel", "petrol", "tuerkis", "minze", "honig", "sand", "stahl"];
@@ -16,6 +16,16 @@ export const ZEITFENSTER: Record<Zeitfenster, string> = {
   heute: "Heute", gestern: "Gestern", woche: "Diese Woche", monat: "Dieser Monat", jahr: "Dieses Jahr", alle: "Alle",
 };
 export const ZEITFENSTER_VORGABE: Zeitfenster = "heute";
+
+/** Sortierungen einer Spalte (HELF-50) mit Namen, Symbol im Kopf der Spalte und Erklärung beim Überfahren */
+export const SPALTENSORTIERUNGEN: Record<Spaltensortierung, { name: string; symbol: string; erklaerung: string }> = {
+  prioritaet: { name: "Priorität", symbol: "fa-flag", erklaerung: "Dringend oben, dann Hoch, Mittel, Niedrig, ohne; bei gleicher Priorität die neueste oben" },
+  faellig: { name: "Fälligkeit", symbol: "fa-calendar-day", erklaerung: "Früheste Fälligkeit oben, Karten ohne Datum unten" },
+  arbeitsbeginn: { name: "Arbeitsbeginn", symbol: "fa-play", erklaerung: "Zuletzt in die Spalte gekommen oben, also zuletzt begonnen" },
+  erledigung: { name: "Erledigung", symbol: "fa-clock-rotate-left", erklaerung: "Zuletzt erledigt oben, am selben Tag die zuletzt abgelegte" },
+  anlage: { name: "Anlage", symbol: "fa-plus", erklaerung: "Zuletzt angelegt oben" },
+  hand: { name: "Von Hand", symbol: "fa-hand", erklaerung: "Reihenfolge von Hand; nur so lässt sich in der Spalte umsortieren, neue Karten kommen oben hin" },
+};
 
 export const PRIORITAETEN: [Prioritaet, string][] = [["keine", "Keine"], ["niedrig", "Niedrig"], ["mittel", "Mittel"], ["hoch", "Hoch"],
   ["dringend", "Dringend"]];

@@ -1,16 +1,16 @@
 <script lang="ts">
-  // Spalten: Reihenfolge per Ziehen am Griff (wie im Board), je Spalte Name, Farbe, Grenze oder Zeitfenster und ob sie
+  // Spalten: Reihenfolge per Ziehen am Griff (wie im Board), je Spalte Name, Farbe, Sortierung, Grenze oder Zeitfenster und ob sie
   // anfangs eingeklappt steht; genau eine Erledigt-Spalte. Löschen fragt in der Fläche und sagt, wohin die Karten gehen: verschieben (derselbe Weg wie Ziehen:
   // Alter neu, Gruppe zieht mit, Grenze warnt) oder mit der Spalte in den Papierkorb (Wiederherstellen an der alten
   // Stelle, mit Zeiten). Die Erledigt-Spalte und die letzte Spalte bleiben. Alles über die Anwendungsfälle.
   import { dragHandle, dragHandleZone, type DndEvent } from "svelte-dnd-action";
-  import { darf, laufendAuf, zeitDerKarte } from "../../../daten/abfragen";
+  import { darf, laufendAuf, sortierungVorgabe, zeitDerKarte } from "../../../daten/abfragen";
   import { spalteAendern, spalteAnlegen, spaltenOrdnen, zurErledigtSpalte } from "../../../daten/anwendung/boards.svelte";
   import { spalteLoeschen } from "../../../daten/anwendung/papierkorb.svelte";
   import { dauer } from "../../../daten/format";
   import { kartenDerSpalte, stand } from "../../../daten/stand.svelte";
-  import { ZEITFENSTER, ZEITFENSTER_VORGABE } from "../../../anzeige";
-  import type { Board, Farbe, Spalte, Zeitfenster } from "../../../modell";
+  import { SPALTENSORTIERUNGEN, ZEITFENSTER, ZEITFENSTER_VORGABE } from "../../../anzeige";
+  import type { Board, Farbe, Spalte, Spaltensortierung, Zeitfenster } from "../../../modell";
   import Farbwahl from "../../../teile/Farbwahl.svelte";
   import { EINSTELLUNG_GRENZEN as GRENZEN } from "../../../regeln/board";
   import Zahlfeld from "../../../teile/Zahlfeld.svelte";
@@ -102,6 +102,12 @@
               <span class="etikett">Anfangs eingeklappt</span>
               <button class="schalter" class:an={!!s.eingeklappt} aria-pressed={!!s.eingeklappt} aria-label="Spalte {s.name} anfangs eingeklappt"
                       onclick={() => spalteAendern(board.id, s.id, { eingeklappt: !s.eingeklappt })}></button>{s.eingeklappt ? "ja" : "nein"}</span>
+            <span class="angabe" title="Wie die Spalte ihre Karten ordnet; im Board stellt jede Person es mit dem Symbol im Kopf der Spalte für sich um">
+              <span class="etikett">Sortierung</span>
+              <select class="eingabe" value={sortierungVorgabe(s)} aria-label="Sortierung der Spalte {s.name}"
+                      onchange={(e) => spalteAendern(board.id, s.id, { sortierung: (e.currentTarget as HTMLSelectElement).value as Spaltensortierung })}>
+                {#each Object.entries(SPALTENSORTIERUNGEN) as [w, so] (w)}<option value={w} title={so.erklaerung}>{so.name}</option>{/each}
+              </select></span>
             {#if s.erledigt}
               <span class="angabe" title="Welche erledigten Karten das Board zuerst zeigt; im Board stellt jede Person es für sich um">
                 <span class="etikett">Zeitfenster</span>

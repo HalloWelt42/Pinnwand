@@ -4,9 +4,10 @@
 
 export const ABSTAND = 1024;
 
-/** Plätze für `n` Karten an `platz` (ohne: am Ende) zwischen den übrigen Karten der Spalte (ihre Reihen, geordnet) */
+/** Plätze für `n` Karten an `platz` (ohne: oben, das Neueste steht oben) zwischen den übrigen Karten der Spalte (ihre
+ *  Reihen, geordnet) */
 export function reihenFuer(andere: number[], platz: number | undefined, n: number): number[] {
-  const p = platz === undefined ? andere.length : Math.max(0, Math.min(platz, andere.length));
+  const p = platz === undefined ? 0 : Math.max(0, Math.min(platz, andere.length));
   const vorher = p > 0 ? andere[p - 1] : undefined;
   const nachher = p < andere.length ? andere[p] : undefined;
   const unten = vorher ?? (nachher !== undefined ? nachher - ABSTAND * (n + 1) : 0);

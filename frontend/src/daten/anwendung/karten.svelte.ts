@@ -53,7 +53,7 @@ export function ablegen(spalteId: Kennung, ids: Kennung[]): void {
                { vorab: vorab(bewegt, ziel, ziel.erledigt ? undefined : platz) });
 }
 
-/** Karte in eine andere Spalte ihres Boards, ans Ende (Status im Detail, Telefon, Liste) */
+/** Karte in eine andere Spalte ihres Boards, oben hinein (Status im Detail, Telefon, Liste) */
 export function verschieben(id: Kennung, nach: Kennung): void {
   const k = karte(id);
   const ziel = k && board(k.board).spalten.find((s) => s.id === nach);

@@ -141,9 +141,9 @@ async def test_enge_reihe_wird_neu_nummeriert(pw: Pinnwand):
     """Immer wieder an Platz 1: der Raum halbiert sich, bis die Spalte neu nummeriert; die Reihenfolge bleibt richtig."""
     b = await pw.board("anna")
     offen = spalte(b, "Offen")
-    erste = await pw.karte("anna", b, "Anfang")
-    zweite = await pw.karte("anna", b, "Zweite")
     neue = [await pw.karte("anna", b, f"Neu {i}") for i in range(36)]
+    zweite = await pw.karte("anna", b, "Zweite")
+    erste = await pw.karte("anna", b, "Anfang")                       # neue Karten kommen oben hin
     for k in neue:
         assert (await pw.post("anna", f"/karten/{k['id']}/verschieben", {"nach": offen, "platz": 1})).status_code == 200
     erwartet = [erste["schluessel"], *[k["schluessel"] for k in reversed(neue)], zweite["schluessel"]]
@@ -163,8 +163,8 @@ async def test_verknuepfte_ziehen_mit(pw: Pinnwand):
     await pw.karte("anna", b, "Schon dran", spalte=spalte(b, "Dran"))
     r = await pw.post("anna", f"/karten/{a['id']}/verschieben", {"nach": spalte(b, "Dran")})
     assert r.json()["meldung"] == "HAUS-1 nach Dran; 1 verknüpfte zieht mit"
-    # die bewegte ans Ende, die mitgezogene dahinter, jede mit eigener Reihe
-    assert await reihe(pw, "anna", b, "Dran") == ["HAUS-3", "HAUS-1", "HAUS-2"]
+    # die bewegte oben (das Neueste steht oben), die mitgezogene direkt darunter, jede mit eigener Reihe
+    assert await reihe(pw, "anna", b, "Dran") == ["HAUS-1", "HAUS-2", "HAUS-3"]
     reihen = [k["reihe"] for k in (await pw.stand("anna"))["karten"] if k["spalte"] == spalte(b, "Dran")]
     assert len(set(reihen)) == 3
     assert (await karte(pw, "anna", "HAUS-2"))["verlauf"][-1]["text"] == "mit verknüpfter Karte verschoben nach Dran"

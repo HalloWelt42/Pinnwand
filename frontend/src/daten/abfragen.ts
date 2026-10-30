@@ -4,7 +4,9 @@
 
 import { hole } from "appkern-oberflaeche";
 import { ZEITFENSTER_VORGABE } from "../anzeige";
-import type { Board, Karte, KellerwolkeOrdner, KellerwolkePerson, Kennung, ModulKennung, Ordner, Prioritaet, Serie, Spalte, Termin, Timer, Zeitfenster } from "../modell";
+import type {
+  Board, Karte, KellerwolkeOrdner, KellerwolkePerson, Kennung, ModulKennung, Ordner, Prioritaet, Serie, Spalte, Spaltensortierung, Termin, Timer, Zeitfenster,
+} from "../modell";
 import { abwesenheitAm, artName, fassungAm, sollAm, urlaubstage, type TagSoll } from "../regeln/arbeitszeit";
 import { feiertag } from "../regeln/feiertage";
 import { vorkommen, type Nachtragposten, type SerienUmfeld } from "../regeln/serien";
@@ -240,7 +242,7 @@ export function passt(k: Karte, b: Board, suche: string | string[]): boolean {
   return w.every((x) => t.includes(x));
 }
 
-// ═══ Filter und Sortierung der Werkzeugleiste (Board, Liste, Kalender, Zeitachse) ═══════════════════════════
+// ═══ Filter der Werkzeugleiste (Board, Liste, Kalender, Zeitachse) ═══════════════════════════
 
 /** Suche und Filter der Werkzeugleiste eines Boards. Ein leerer Teil filtert nicht; innerhalb eines Teils reicht ein
  *  Treffer (oder), über die Teile muss alles passen (und). Mechanik M-91 bis M-93. */
@@ -274,41 +276,52 @@ export function kartePasst(k: Karte, b: Board, f: Kartenfilter): boolean {
     && passt(k, b, f.suche);
 }
 
-/** Ordnung offener Spalten (M-94): von Hand, nach Fälligkeit (früheste zuerst, ohne Datum am Ende) oder nach Priorität */
-export type Sortierung = "manuell" | "faellig" | "prioritaet";
+// ═══ Ordnung der Spalten (HELF-50) ═════════════════════════════════════════════════════════════════════════
 
-/** Offene Karten nach der Sortierung; bei Gleichstand bleibt die Reihenfolge von Hand */
-export function kartenOrdnen(karten: Karte[], s: Sortierung): Karte[] {
-  if (s === "manuell") return karten;
-  return [...karten].sort(s === "faellig" ? (a, b) => (a.faellig ?? "9999").localeCompare(b.faellig ?? "9999")
-    : (a, b) => RANG[a.prioritaet] - RANG[b.prioritaet]);
+/** Die Sortierung einer Spalte für alle: ihre Vorgabe, ohne Angabe Erledigt nach Erledigung, sonst nach Priorität */
+export function sortierungVorgabe(s: Spalte): Spaltensortierung {
+  return s.sortierung ?? (s.erledigt ? "erledigung" : "prioritaet");
 }
 
-/** Erledigte neueste zuerst nach Abschluss, am selben Tag die zuletzt abgelegte zuerst (M-28); die Ordnung steht fest */
-function neuesteZuerst(karten: Karte[]): Karte[] {
-  const am = (k: Karte) => k.abgeschlossen ?? k.bewegtAm.slice(0, 10);
-  return [...karten].sort((a, b) => am(b).localeCompare(am(a)) || b.bewegtAm.localeCompare(a.bewegtAm));
+/** Tag des Abschlusses, bei offenen Karten der Tag, an dem sie in die Spalte kamen */
+const erledigtAm = (k: Karte): string => k.abgeschlossen ?? k.bewegtAm.slice(0, 10);
+
+/** Vergleich je Sortierung, jeweils das Neueste oben; von Hand: keiner (die Reihe bleibt) */
+const VERGLEICH: Record<Spaltensortierung, ((a: Karte, b: Karte) => number) | null> = {
+  prioritaet: (a, b) => RANG[a.prioritaet] - RANG[b.prioritaet] || b.erstelltAm.localeCompare(a.erstelltAm),
+  faellig: (a, b) => (a.faellig ?? "9999").localeCompare(b.faellig ?? "9999"),
+  arbeitsbeginn: (a, b) => b.bewegtAm.localeCompare(a.bewegtAm),
+  erledigung: (a, b) => erledigtAm(b).localeCompare(erledigtAm(a)) || b.bewegtAm.localeCompare(a.bewegtAm),
+  anlage: (a, b) => b.erstelltAm.localeCompare(a.erstelltAm),
+  hand: null,
+};
+
+/** Die eine Ordnung der Karten einer Spalte für Board, Liste und Telefon. Die Karten kommen in ihrer Reihe von Hand
+ *  (kartenDerSpalte); bei Gleichstand bleibt diese Reihe */
+export function spaltenOrdnung(karten: Karte[], art: Spaltensortierung): Karte[] {
+  const vergleich = VERGLEICH[art];
+  return vergleich ? [...karten].sort(vergleich) : karten;
 }
 
 /** Was eine Spalte im Board zeigt */
 export interface Spalteninhalt {
   /** alle Karten der Spalte (Erledigt: außerhalb des Archivs), nie nur die Treffer: daran hängen Zahl und Grenze (M-14) */
   alle: number;
-  /** die gezeigten Karten in ihrer Ordnung: offene von Hand oder nach der Sortierung, erledigte neueste zuerst */
+  /** die passenden Karten in der Ordnung der Spalte */
   karten: Karte[];
-  /** Erledigt bei Suche, Filter oder Sortierung: ohne Zeitfenster, alle passenden außerhalb des Archivs (M-25) */
+  /** Erledigt bei Suche oder Filter: ohne Zeitfenster, alle passenden außerhalb des Archivs (M-25) */
   ohneFenster: boolean;
 }
 
-export function spalteninhalt(b: Board, s: Spalte, f: Kartenfilter, sortierung: Sortierung, fenster: Zeitfenster): Spalteninhalt {
+export function spalteninhalt(b: Board, s: Spalte, f: Kartenfilter, art: Spaltensortierung, fenster: Zeitfenster): Spalteninhalt {
   if (!s.erledigt) {
     const alle = kartenDerSpalte(s.id);
-    return { alle: alle.length, karten: kartenOrdnen(alle.filter((k) => kartePasst(k, b, f)), sortierung), ohneFenster: false };
+    return { alle: alle.length, karten: spaltenOrdnung(alle.filter((k) => kartePasst(k, b, f)), art), ohneFenster: false };
   }
   const ausserhalb = erledigteOhneArchiv(b, s);
-  const ohneFenster = filterAktiv(f) || sortierung !== "manuell";
+  const ohneFenster = filterAktiv(f);
   const grund = ohneFenster ? ausserhalb : sichtbareKarten(b, s, fenster);
-  return { alle: ausserhalb.length, karten: neuesteZuerst(grund.filter((k) => kartePasst(k, b, f))), ohneFenster };
+  return { alle: ausserhalb.length, karten: spaltenOrdnung(grund.filter((k) => kartePasst(k, b, f)), art), ohneFenster };
 }
 
 // ═══ Mein Tag (Heute am Rechner und am Telefon) ══════════════════════════════════════════════════════════

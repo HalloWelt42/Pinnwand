@@ -22,7 +22,7 @@ Die Liste zeigt dieselben Karten wie die Spalten als Tabelle: alle offenen Karte
 Die Spalten der Tabelle: **Schlüssel**, **Titel**, **Status** (die Spalte im Board), **Zuständig**, **Priorität**, **Fällig**, **Labels**, die eigenen Felder des Boards und, mit Zeiterfassung, **Zeit** als gebucht und geschätzt. Vor dem Titel trägt eine Idee eine Glühbirne und eine blockierte Karte ein Sperrzeichen; erledigte Karten zeigen statt der Fälligkeit ihr Abschlussdatum.
 
 ### Sortieren
-Ein Klick auf eine Spaltenüberschrift sortiert danach, ein zweiter Klick dreht die Richtung. Zu Beginn sortiert die Liste nach **Status**, also in der Reihenfolge der Spalten des Boards. Zahlenfelder sortieren der Größe nach; Karten ohne Wert stehen aufsteigend am Ende. Die Kopfzeile und die ersten Spalten bleiben beim Rollen stehen. Ein Klick auf eine Zeile öffnet die Karte.
+Ein Klick auf eine Spaltenüberschrift sortiert danach, ein zweiter Klick dreht die Richtung. Zu Beginn sortiert die Liste nach **Status**, also in der Reihenfolge der Spalten des Boards und darin so, wie die Spalte sortiert (siehe [Sortierung einer Spalte](hilfe:board/sortierung)). Die Liste zeigt zuerst so viele Zeilen wie **Karten je Ladeschritt**; Rollen ans Ende oder **mehr laden** holt die nächsten. Sortieren, Suche und Filter gehen dabei über alle Karten. Zahlenfelder sortieren der Größe nach; Karten ohne Wert stehen aufsteigend am Ende. Die Kopfzeile und die ersten Spalten bleiben beim Rollen stehen. Ein Klick auf eine Zeile öffnet die Karte.
 
 ## Sammelaktionen in der Liste {#sammelaktionen}
 Mit den Kästchen links wählst du Karten aus; das Kästchen in der Kopfzeile wählt alle. Sobald eine gewählt ist, erscheint oben die Sammelleiste mit der Zahl der gewählten Karten:

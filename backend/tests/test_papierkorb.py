@@ -53,7 +53,7 @@ async def test_karte_in_papierkorb_und_zurueck(pw: Pinnwand):
     assert r.json()["meldung"] == "1 Karte im Papierkorb, mit Kommentaren und Anhängen wiederherstellbar"
     assert r.json()["rueckgaengig"]
     s = await pw.stand("anna")
-    assert [x["schluessel"] for x in s["karten"]] == ["HAUS-1", "HAUS-3"]
+    assert [x["schluessel"] for x in s["karten"]] == ["HAUS-3", "HAUS-1"]             # neueste oben
     [e] = s["papierkorb"]
     assert (e["art"], e["board"], e["von"], e["am"]) == ("karte", b["id"], "1", "2026-10-27T10:00:00")
     assert e["stelle"] == {"spalte": spalte(b, "Offen"), "platz": 1}
@@ -63,7 +63,7 @@ async def test_karte_in_papierkorb_und_zurueck(pw: Pinnwand):
 
     r = await pw.post("anna", f"/papierkorb/{e['id']}/wiederherstellen")
     assert r.json()["meldung"] == "HAUS-2 wiederhergestellt, an der alten Stelle in Offen in Haushalt"
-    assert await reihe(pw, "anna", b, "Offen") == ["HAUS-1", "HAUS-2", "HAUS-3"]
+    assert await reihe(pw, "anna", b, "Offen") == ["HAUS-3", "HAUS-2", "HAUS-1"]
     assert (await pw.stand("anna"))["papierkorb"] == []
     assert (await karte(pw, "anna", "HAUS-2"))["verlauf"][-1]["text"] == "hat sie wiederhergestellt"
     # Rückgängig legt sie wieder hinein, der Eintrag ist derselbe
@@ -86,13 +86,13 @@ async def test_rueckgaengig_bringt_die_karte_genau_zurueck(pw: Pinnwand):
 async def test_mehrere_karten_je_ein_eintrag(pw: Pinnwand):
     b = await pw.board("anna")
     k = [await pw.karte("anna", b, t) for t in ("A", "B", "C", "D")]
-    r = await wegwerfen(pw, "anna", k[0], k[1])
+    r = await wegwerfen(pw, "anna", k[3], k[2])                                      # die obersten zwei
     assert r.json()["meldung"] == "2 Karten im Papierkorb, mit Kommentaren und Anhängen wiederherstellbar"
-    erste, zweite = await eintrag(pw, "anna", "HAUS-1"), await eintrag(pw, "anna", "HAUS-2")
+    erste, zweite = await eintrag(pw, "anna", "HAUS-4"), await eintrag(pw, "anna", "HAUS-3")
     assert (erste["stelle"]["platz"], zweite["stelle"]["platz"]) == (0, 0)          # nacheinander herausgenommen
     for e in (zweite, erste):
         await pw.post("anna", f"/papierkorb/{e['id']}/wiederherstellen")
-    assert await reihe(pw, "anna", b, "Offen") == ["HAUS-1", "HAUS-2", "HAUS-3", "HAUS-4"]
+    assert await reihe(pw, "anna", b, "Offen") == ["HAUS-4", "HAUS-3", "HAUS-2", "HAUS-1"]
 
     andere = await pw.board("anna", "Werkstatt", "WERK")
     fremd = await pw.karte("anna", andere, "Bohrer")
@@ -176,13 +176,13 @@ async def test_spalte_mit_karten_in_den_papierkorb(pw: Pinnwand):
     assert s["karten"] == [] and s["gruppen"] == []
     [e] = s["papierkorb"]
     assert (e["art"], e["spalte"]["name"], e["stelle"]) == ("spalte", "Dran", {"platz": 1})
-    assert [k["schluessel"] for k in e["karten"]] == ["HAUS-1", "HAUS-2"]
+    assert [k["schluessel"] for k in e["karten"]] == ["HAUS-2", "HAUS-1"]
 
     r = await pw.post("anna", f"/papierkorb/{e['id']}/wiederherstellen")
     assert r.json()["meldung"] == "Spalte Dran wiederhergestellt, an der alten Stelle in Haushalt"
     s = await pw.stand("anna")
     assert [x["name"] for x in s["boards"][0]["spalten"]] == ["Offen", "Dran", "Erledigt"]
-    assert await reihe(pw, "anna", b, "Dran") == ["HAUS-1", "HAUS-2"]
+    assert await reihe(pw, "anna", b, "Dran") == ["HAUS-2", "HAUS-1"]
     [g] = s["gruppen"]                                                  # beide lagen in der Spalte: wieder verknüpft
     assert {k.get("gruppe") for k in s["karten"]} == {g["id"]}
 
@@ -205,7 +205,7 @@ async def test_spalte_loeschen_karten_wandern_vorher(pw: Pinnwand):
     await pw.post("anna", f"/rueckgaengig/{r.json()['rueckgaengig']}")
     s = await pw.stand("anna")
     assert [x["name"] for x in s["boards"][0]["spalten"]] == ["Offen", "Dran", "Erledigt"] and s["papierkorb"] == []
-    assert await reihe(pw, "anna", b, "Dran") == ["HAUS-2", "HAUS-3"]
+    assert await reihe(pw, "anna", b, "Dran") == ["HAUS-3", "HAUS-2"]
 
 
 async def test_spalte_regeln(pw: Pinnwand):

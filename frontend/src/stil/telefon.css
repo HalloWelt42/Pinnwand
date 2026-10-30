@@ -210,8 +210,9 @@
 .pw-tel-spalten button.aktiv { background: var(--bereich); border-color: var(--rand-stark); color: var(--text); }
 .pw-tel-spalten .zaehler { height: 22px; min-width: 26px; }
 .pw-tel-wischfeld { flex: 1 0 auto; display: flex; flex-direction: column; gap: var(--a2); touch-action: pan-y; }
-.pw-tel-fenster { display: flex; align-items: center; gap: var(--a2); font-size: var(--klein); }
-.pw-tel-fenster i { color: var(--gut); }
+.pw-tel-fenster { display: flex; align-items: center; gap: var(--a2); font-size: var(--klein); min-height: 40px; }
+.pw-tel-fenster .rechts { margin-left: auto; }
+.pw-tel-fenster > i { color: var(--gut); }
 .pw-tel-wischfeld > .knopf { margin-top: var(--a2); }
 
 /* ═══ Karte im Detail ═══════════════════════════════════════════════════════════════════════════════════════ */

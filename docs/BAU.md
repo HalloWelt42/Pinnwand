@@ -402,6 +402,34 @@ Boards, angezeigt als "# 101" klein über dem Titel, kopierbar und durchsuchbar 
   Reihenfolge der Anlage (in derselben Sekunde nach der Nummer im ersten Board), die älteste ist # 1; Rückgängig von
   Änderungen aus der Zeit davor gilt danach nicht mehr (es ginge auf Stände ohne Nummer zurück).
 
+### Ordnung der Spalten
+
+Nachtrag vom 30.10.2026 (HELF-50, Nutzer: "das neueste Ticket landet immer oben", "nach unten scrollen wir in die
+Vergangenheit", "offene Tickets sortieren sich nach Prio", "erledigte nur nach Abarbeitung", Sortierung je Spalte bei
+neuen Boards festlegbar wie das Zeitfenster, "mit Mini-Icons umschaltbar", "ab 50 laden automatisch nach beim
+Weiterscrollen, durchsucht werden kann aber immer alles").
+
+- Jede Spalte hat eine Sortierung (`Spalte.sortierung`, `Spaltensortierung`): `prioritaet` (Dringend bis ohne, bei
+  gleicher Priorität die neueste Karte oben), Fälligkeit (früheste oben, ohne Datum unten), `arbeitsbeginn`
+  (zuletzt in die Spalte gekommen oben; in einer Spalte wie Dran ist das der Beginn der Arbeit), `erledigung` (zuletzt
+  erledigt oben, am selben Tag die zuletzt abgelegte), `anlage` (zuletzt angelegt oben) und `hand` (Reihe von Hand).
+  Ohne Angabe gilt `erledigung` für die Erledigt-Spalte und `prioritaet` für alle anderen. Bei Gleichstand bleibt die
+  Reihe von Hand. Eine Wahrheit für Board, Liste und Telefon: `spaltenOrdnung` in `frontend/src/daten/abfragen.ts`.
+- Die Sortierung der Spalte ist die Vorgabe für alle (Menü der Spalte und Einstellungen, Spalten; Recht "Board
+  verwalten"; Weg zum Ändern der Spalte mit `sortierung`). Jede Person stellt sie sich wie das Zeitfenster für sich an
+  diesem Gerät um, mit dem kleinen Symbol im Kopf der Spalte (Ansichtszustand, `ansicht.svelte.ts`). Die
+  Werkzeugleiste hat keine eigene Sortierung mehr; sie war dieselbe Sache an zweiter Stelle.
+- Vorlagen tragen die Sortierung je Spalte (`VorlageSpalte.sortierung`), eine aus einem Board gespeicherte Vorlage
+  übernimmt sie. Mitgeliefert: offene Spalten `prioritaet`, in Arbeit (Dran, In Arbeit, Umsetzen) `arbeitsbeginn`,
+  Erledigt `erledigung`.
+- Neue Karten kommen oben in die Spalte: anlegen, mehrere, duplizieren, umziehen, Serienkarten und jedes Verschieben
+  ohne Platz (Status im Detail, Telefon, Liste, Sammelaktion; mitgezogene Verknüpfte direkt darunter). `einreihen` ohne
+  Platz heißt oben. Ziehen von Hand legt nur in einer Spalte mit `hand` an den Platz; in einer sortierten Spalte steht
+  die Karte, wo die Sortierung sie hinstellt, und innerhalb der Spalte umsortieren geht nicht.
+- Jede Spalte zeigt zuerst so viele Karten wie der Ladeschritt des Boards (anfangs 50) und lädt beim Rollen ans Ende die
+  nächsten; ebenso die Liste und die Spalte am Telefon. Suche und Filter laufen immer über alle Karten des Stands, nicht
+  nur über die gezeigten; Zahl und Grenze im Kopf zählen alle.
+
 ## 10. Prüfen
 
 - Tests je Anwendungsfall (Recht, Regel, Fassung, Journal, Rückgängig, Ereignis) gegen eine Datenbank im Speicher; der

@@ -4,21 +4,16 @@
   // Zeilen muss alles passen. Angeboten wird alles, was das Board kennt (in der alten App fehlten Labels, die nur an
   // erledigten Karten hingen). Gilt in Board, Liste, Kalender und Zeitachse und wird je Board an diesem Gerät gemerkt.
   import { PRIORITAETEN } from "../anzeige";
-  import type { Kartenfilter, Sortierung } from "../daten/abfragen";
+  import type { Kartenfilter } from "../daten/abfragen";
   import { konto, mitKonto } from "../daten/stand.svelte";
   import type { Board } from "../modell";
-  import { feldUmschalten, filterUmschalten, filterZuruecksetzen, sortierungSetzen } from "./ansicht.svelte";
+  import { feldUmschalten, filterUmschalten, filterZuruecksetzen } from "./ansicht.svelte";
   import Person from "./Person.svelte";
 
-  let { board, filter, sortierung, schluessel, schliessen }: {
+  let { board, filter, schluessel, schliessen }: {
     board: Board; filter: Kartenfilter;
-    /** Sortierung der offenen Spalten (nur im Board; die Liste sortiert über ihre Spaltenköpfe) */
-    sortierung?: Sortierung;
     schluessel: string; schliessen: () => void;
   } = $props();
-
-  const SORTIERUNGEN: [Sortierung, string, string][] = [["manuell", "Manuell", "Reihenfolge von Hand; nur so lässt sich ziehen"],
-    ["faellig", "Fällig", "Früheste Fälligkeit zuerst, ohne Datum am Ende"], ["prioritaet", "Priorität", "Dringend, hoch, mittel, niedrig, ohne"]];
 
   const auswahlfelder = $derived(board.felder.filter((f) => f.art === "auswahl" && f.optionen?.length));
   const gewaehlt = $derived(filter.personen.length + filter.prioritaeten.length + filter.labels.length
@@ -60,17 +55,6 @@
       {/each}
     </div>
   {/each}
-  {#if sortierung}
-    <div class="pw-filtertafel-zeile">
-      <span class="etikett" title="Ordnung der offenen Spalten; Erledigt bleibt neueste zuerst nach Abschluss">Sortierung</span>
-      <span class="stufen" role="radiogroup" aria-label="Sortierung der offenen Spalten">
-        {#each SORTIERUNGEN as [s, name, erklaerung] (s)}
-          <button role="radio" aria-checked={sortierung === s} class:an={sortierung === s} title={erklaerung}
-                  onclick={() => sortierungSetzen(schluessel, s)}>{name}</button>
-        {/each}
-      </span>
-    </div>
-  {/if}
   <div class="pw-filtertafel-fuss">
     <span class="schwach">In einer Zeile reicht eins, über die Zeilen gilt alles.</span>
     {#if gewaehlt}

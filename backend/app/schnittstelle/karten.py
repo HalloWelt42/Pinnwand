@@ -30,7 +30,7 @@ class MehrereKarten(Modell):
 
 class Verschieben(Modell):
     nach: Kennung
-    #: Platz in der Zielspalte (ab 0); ohne: ans Ende
+    #: Platz in der Zielspalte (ab 0); ohne: oben (das Neueste steht oben)
     platz: int | None = None
 
 

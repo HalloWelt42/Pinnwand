@@ -270,3 +270,6 @@ button.navi { width: 100%; border: 0; background: none; font: inherit; text-alig
 .pw-endgueltig-knoepfe { display: flex; gap: var(--a2); justify-content: flex-end; flex-wrap: wrap; }
 .pw-konten-wer { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .pw-konten-wer b { display: flex; align-items: center; gap: var(--a2); }
+
+/* Nachladen am Ende langer Listen (HELF-50): der Knopf ist auch die Stelle, die beim Rollen die nächsten holt */
+.pw-nachladen { display: flex; justify-content: center; padding: var(--a3); }

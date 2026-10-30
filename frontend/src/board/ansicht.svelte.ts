@@ -1,25 +1,24 @@
-// Der Ansichtszustand eines Boards (Mechanik M-97): Suche, Filter, Sortierung, eingeklappte Spalten und das Zeitfenster
-// der Erledigt-Spalten. Er gehört der Person an diesem Gerät, nicht dem Board: er bleibt beim Wechsel der Seite und liegt
+// Der Ansichtszustand eines Boards (Mechanik M-97): Suche, Filter, eingeklappte Spalten, das Zeitfenster der
+// Erledigt-Spalten und die Sortierung je Spalte (HELF-50). Er gehört der Person an diesem Gerät, nicht dem Board: er bleibt beim Wechsel der Seite und liegt
 // je Board im Browser, damit er nach dem Neuladen wieder da ist. Jeder Zugriff auf den Speicher ist geschützt; ohne
 // Speicher gilt er bis zum Neuladen. Der Schlüssel des Zustands ist das Board.
 
-import { PRIORITAETEN, ZEITFENSTER, ZEITFENSTER_VORGABE } from "../anzeige";
-import { leererFilter, type Kartenfilter, type Sortierung } from "../daten/abfragen";
-import type { Board, Kennung, Prioritaet, Spalte, Zeitfenster } from "../modell";
+import { PRIORITAETEN, SPALTENSORTIERUNGEN, ZEITFENSTER, ZEITFENSTER_VORGABE } from "../anzeige";
+import { leererFilter, sortierungVorgabe, type Kartenfilter } from "../daten/abfragen";
+import type { Board, Kennung, Prioritaet, Spalte, Spaltensortierung, Zeitfenster } from "../modell";
 
 export interface Ansichtszustand {
   filter: Kartenfilter;
-  sortierung: Sortierung;
   /** eingeklappt (ja) oder bewusst aufgeklappt (nein); ohne Eintrag gilt die Vorgabe der Spalte */
   eingeklappt: Record<Kennung, boolean>;
   /** eigenes Zeitfenster je Erledigt-Spalte; ohne Eintrag gilt die Vorgabe der Spalte */
   zeitfenster: Record<Kennung, Zeitfenster>;
+  /** eigene Sortierung je Spalte; ohne Eintrag gilt die Vorgabe der Spalte */
+  sortierungen: Record<Kennung, Spaltensortierung>;
 }
 
-const SORTIERUNGEN: Sortierung[] = ["manuell", "faellig", "prioritaet"];
-
 function leer(): Ansichtszustand {
-  return { filter: leererFilter(), sortierung: "manuell", eingeklappt: {}, zeitfenster: {} };
+  return { filter: leererFilter(), eingeklappt: {}, zeitfenster: {}, sortierungen: {} };
 }
 
 /** bis eine Ansicht eingerichtet ist (erster Durchlauf), gilt die Vorgabe */
@@ -60,10 +59,12 @@ function bereinigt(roh: unknown, b: Board): Ansichtszustand {
     personen: liste(f.personen), prioritaeten: liste(f.prioritaeten) as Prioritaet[], labels: liste(f.labels),
     felder: Object.fromEntries(Object.entries(objekt(f.felder)).map(([k, w]) => [k, liste(w)])),
   }, b);
-  if (SORTIERUNGEN.includes(r.sortierung as Sortierung)) a.sortierung = r.sortierung as Sortierung;
   for (const [id, an] of Object.entries(objekt(r.eingeklappt))) if (b.spalten.some((s) => s.id === id) && typeof an === "boolean") a.eingeklappt[id] = an;
   for (const [id, z] of Object.entries(objekt(r.zeitfenster))) {
     if (b.spalten.some((s) => s.id === id && s.erledigt) && typeof z === "string" && z in ZEITFENSTER) a.zeitfenster[id] = z as Zeitfenster;
+  }
+  for (const [id, art] of Object.entries(objekt(r.sortierungen))) {
+    if (b.spalten.some((s) => s.id === id) && typeof art === "string" && art in SPALTENSORTIERUNGEN) a.sortierungen[id] = art as Spaltensortierung;
   }
   return a;
 }
@@ -122,16 +123,12 @@ export function feldUmschalten(schluessel: string, feld: Kennung, wert: string):
   });
 }
 
-export function sortierungSetzen(schluessel: string, s: Sortierung): void {
-  aendern(schluessel, (a) => { a.sortierung = s; });
-}
-
-/** Suche, Filter, Personen und Sortierung zurück (M-69); eingeklappte Spalten und Zeitfenster bleiben */
+/** Suche, Filter und Personen zurück (M-69); eingeklappte Spalten, Zeitfenster und Sortierungen bleiben */
 export function allesZuruecksetzen(schluessel: string): void {
-  aendern(schluessel, (a) => { a.filter = leererFilter(); a.sortierung = "manuell"; });
+  aendern(schluessel, (a) => { a.filter = leererFilter(); });
 }
 
-/** Nur die Filter der Tafel zurück (Personen, Prioritäten, Labels, Felder); Suche und Sortierung bleiben */
+/** Nur die Filter der Tafel zurück (Personen, Prioritäten, Labels, Felder); die Suche bleibt */
 export function filterZuruecksetzen(schluessel: string): void {
   aendern(schluessel, (a) => { a.filter = { ...leererFilter(), suche: a.filter.suche }; });
 }
@@ -150,4 +147,17 @@ export function fensterVon(a: Ansichtszustand, s: Spalte): Zeitfenster {
 
 export function fensterSetzen(schluessel: string, spalteId: Kennung, f: Zeitfenster): void {
   aendern(schluessel, (a) => { a.zeitfenster[spalteId] = f; });
+}
+
+/** Die Sortierung, nach der diese Person die Spalte an diesem Gerät sieht: die eigene, sonst die Vorgabe der Spalte */
+export function sortierungVon(a: Ansichtszustand, s: Spalte): Spaltensortierung {
+  return a.sortierungen[s.id] ?? sortierungVorgabe(s);
+}
+
+/** Eigene Sortierung einer Spalte an diesem Gerät; gleich der Vorgabe der Spalte: kein eigener Eintrag mehr */
+export function sortierungSetzen(schluessel: string, s: Spalte, art: Spaltensortierung): void {
+  aendern(schluessel, (a) => {
+    if (art === sortierungVorgabe(s)) delete a.sortierungen[s.id];
+    else a.sortierungen[s.id] = art;
+  });
 }

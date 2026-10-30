@@ -4,7 +4,7 @@ untertitel: Karten finden, eingrenzen und ordnen
 bereich: Boards
 symbol: fa-filter
 ---
-Die Pinnwand sucht an zwei Stellen: oben im Kopf über alle deine Boards, und in der Werkzeugleiste eines Boards nur in diesem Board. Dazu grenzen Filter nach Personen, Priorität, Labels und eigenen Feldern ein, und die Sortierung ordnet die offenen Spalten.
+Die Pinnwand sucht an zwei Stellen: oben im Kopf über alle deine Boards, und in der Werkzeugleiste eines Boards nur in diesem Board. Dazu grenzen Filter nach Personen, Priorität, Labels und eigenen Feldern ein. Wie die Karten geordnet sind, stellt jede Spalte selbst ein (siehe [Sortierung einer Spalte](hilfe:board/sortierung)).
 
 ## Suche über alle Boards {#kopfsuche}
 Das Feld **Karten in allen Boards suchen** steht oben im Kopf der App. Ab zwei Zeichen erscheinen darunter bis zu acht Treffer aus allen Boards, in denen du Mitglied bist, je mit Schlüssel, Titel und Board.
@@ -44,22 +44,16 @@ Die Filter gelten in Board, Liste, Kalender und Zeitachse.
 Der Knopf neben **Filter** heißt anfangs **Alle Personen**. Er öffnet dieselbe Filtertafel; dort wählst du in der Zeile **Zuständig** eine oder mehrere Personen. Der Knopf zeigt danach den Namen der gewählten Person oder die Zahl, etwa **2 Personen**. Es bleiben die Karten, für die eine der gewählten Personen zuständig ist; Karten ohne Zuständige fallen dabei heraus. Zur Auswahl stehen alle Mitglieder, die sich schon einmal angemeldet haben.
 
 ## Sortierung {#sortierung}
-In der Ansicht Board steht ein dritter Knopf, anfangs **Manuell**. Er öffnet ebenfalls die Filtertafel, deren Zeile **Sortierung** die offenen Spalten ordnet:
-
-- **Manuell**: die Reihenfolge von Hand; nur so lässt sich ziehen.
-- **Fällig**: früheste Fälligkeit zuerst, Karten ohne Datum am Ende.
-- **Priorität**: Dringend, Hoch, Mittel, Niedrig, ohne.
-
-Bei Gleichstand bleibt die Reihenfolge von Hand. Die Erledigt-Spalte bleibt immer nach Abschluss geordnet, neueste zuerst. Die Liste sortiert über ihre Spaltenüberschriften (siehe [Liste](hilfe:ansichten/liste)).
+Die Werkzeugleiste hat keine eigene Sortierung. Jede Spalte ordnet ihre Karten selbst, umzustellen über das kleine Symbol in ihrem Kopf (siehe [Sortierung einer Spalte](hilfe:board/sortierung)). Die Liste sortiert über ihre Spaltenüberschriften (siehe [Liste](hilfe:ansichten/liste)).
 
 ## Verschieben pausiert {#pausiert}
-Solange eine Suche, ein Filter oder im Board eine Sortierung außer Manuell gilt:
+Solange eine Suche oder ein Filter gilt:
 
 - lassen sich im Board keine Karten ziehen; in Kalender und Zeitachse sperren Suche und Filter das Ziehen ebenso;
 - zeigen offene Spalten, wie viele ihrer Karten passen;
 - zeigt die Erledigt-Spalte **Ohne Zeitfenster** alle passenden erledigten Karten außerhalb des Archivs.
 
-Zahl und Grenze im Kopf einer Spalte zählen dabei weiter alle Karten der Spalte. In der Werkzeugleiste erscheint der Knopf **Verschieben pausiert** mit einem Schloss. Ein Klick darauf setzt Suche, Filter, Personen und Sortierung zurück, und du kannst wieder ziehen; eingeklappte Spalten und Zeitfenster bleiben, wie sie sind.
+Zahl und Grenze im Kopf einer Spalte zählen dabei weiter alle Karten der Spalte. In der Werkzeugleiste erscheint der Knopf **Verschieben pausiert** mit einem Schloss. Ein Klick darauf setzt Suche, Filter und Personen zurück, und du kannst wieder ziehen; eingeklappte Spalten, Zeitfenster und Sortierungen bleiben, wie sie sind.
 
 ## Was sich die Pinnwand merkt {#gemerkt}
-Suche, Filter, Personen, Sortierung, eingeklappte Spalten und das Zeitfenster der Erledigt-Spalte merkt sich die Pinnwand je Board in diesem Browser. Das gilt nur für dich: es bleibt beim Wechsel der Seite und nach dem Neuladen erhalten, und auf einem anderen Gerät beginnst du mit der Vorgabe des Boards. Gibt es eine gemerkte Person, ein Label, ein Feld oder eine Option im Board nicht mehr, fällt sie aus dem Filter heraus.
+Suche, Filter, Personen, eingeklappte Spalten, das Zeitfenster der Erledigt-Spalte und die Sortierung jeder Spalte merkt sich die Pinnwand je Board in diesem Browser. Das gilt nur für dich: es bleibt beim Wechsel der Seite und nach dem Neuladen erhalten, und auf einem anderen Gerät beginnst du mit der Vorgabe des Boards. Gibt es eine gemerkte Person, ein Label, ein Feld oder eine Option im Board nicht mehr, fällt sie aus dem Filter heraus.

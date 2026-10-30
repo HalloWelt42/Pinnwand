@@ -63,6 +63,9 @@ export interface Label {
 }
 
 export type Zeitfenster = "heute" | "gestern" | "woche" | "monat" | "jahr" | "alle";
+/** Ordnung der Karten einer Spalte (HELF-50): Priorität (dann neueste), Fälligkeit, Arbeitsbeginn (zuletzt in die
+ *  Spalte gekommen), Erledigung, Anlage (je neueste oben) oder von Hand */
+export type Spaltensortierung = "prioritaet" | "faellig" | "arbeitsbeginn" | "erledigung" | "anlage" | "hand";
 
 export interface Spalte {
   id: Kennung;
@@ -75,6 +78,8 @@ export interface Spalte {
   eingeklappt?: boolean;
   /** Vorgabe des Zeitfensters einer Erledigt-Spalte */
   zeitfenster?: Zeitfenster;
+  /** Vorgabe der Ordnung für alle; ohne: Erledigt nach Erledigung, sonst nach Priorität */
+  sortierung?: Spaltensortierung;
 }
 
 export type FeldArt = "text" | "zahl" | "datum" | "auswahl" | "verweis";
@@ -406,6 +411,7 @@ export interface VorlageSpalte {
   farbe: Farbe;
   erledigt: boolean;
   grenze?: number;
+  sortierung?: Spaltensortierung;
 }
 
 /** Vorlage eines neuen Boards: Spalten, eigene Felder, Labels und Module; eigene Vorlagen entstehen aus einem Board */

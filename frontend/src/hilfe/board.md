@@ -24,12 +24,30 @@ Das Kürzel (etwa PROD) ist der feste Kurzname des Boards. Es steht vor jeder Ka
 ## Der Kopf des Boards {#kopf}
 Oben steht der Name des Boards mit seiner Farbe. Daneben die Reiter **Board**, **Liste**, **Kalender** und **Zeitachse** (siehe [Liste, Kalender und Zeitachse](hilfe:ansichten)). Rechts siehst du die Mitglieder als Kürzel im Kreis (der volle Name erscheint beim Überfahren), den Knopf **Einladen** (nur mit dem Recht Mitglieder und Rollen verwalten) und den Knopf **Einstellungen**, der zu den [Einstellungen des Boards](hilfe:boardeinstellungen) führt. Die Zeile darunter nennt Ordner, Kürzel, die Zahl der Mitglieder und deine Rolle.
 
-Darunter liegt die Werkzeugleiste: links Suche, **Filter**, Personen und Sortierung (siehe [Suchen und Filtern](hilfe:filter)), rechts die Knöpfe **Archiv** und **Papierkorb**.
+Darunter liegt die Werkzeugleiste: links Suche, **Filter** und Personen (siehe [Suchen und Filtern](hilfe:filter)), rechts die Knöpfe **Archiv** und **Papierkorb**. Wie die Karten einer Spalte geordnet sind, stellt jede Spalte selbst ein (siehe [Sortierung einer Spalte](hilfe:board/sortierung)).
 
 ## Spalten {#spalten}
-Jede Spalte ist ein Schritt im Ablauf, etwa Offen, In Arbeit, Erledigt. Im Kopf einer Spalte stehen Farbe, Name und die Zahl ihrer Karten. Am Fuß einer offenen Spalte legt **Karte** eine neue Karte an (siehe [Karten anlegen und bewegen](hilfe:karten)).
+Jede Spalte ist ein Schritt im Ablauf, etwa Offen, In Arbeit, Erledigt. Im Kopf einer Spalte stehen Farbe, Name, die Zahl ihrer Karten und das kleine Symbol ihrer Sortierung. Am Fuß einer offenen Spalte legt **Karte** eine neue Karte an (siehe [Karten anlegen und bewegen](hilfe:karten)).
 
 Mit dem Recht Board verwalten hat jede Spalte links im Kopf einen Griff (**Ziehen zum Umsortieren**): daran ziehen ordnet die Spalten um, für alle Mitglieder.
+
+## Sortierung einer Spalte {#sortierung}
+Oben in einer Spalte steht immer das Neueste; nach unten geht es in die Vergangenheit. Wonach eine Spalte ordnet, zeigt das kleine Symbol im Kopf der Spalte; beim Überfahren erklärt es sich. Ein Klick darauf öffnet die Auswahl:
+
+| Sortierung | Symbol | Oben steht |
+| - | - | - |
+| **Priorität** | Fahne | Dringend, dann Hoch, Mittel, Niedrig, ohne; bei gleicher Priorität die zuletzt angelegte |
+| **Fälligkeit** | Kalenderblatt | die früheste Fälligkeit; Karten ohne Datum stehen unten |
+| **Arbeitsbeginn** | Spielen | die Karte, die zuletzt in die Spalte kam, in einer Spalte wie Dran also die zuletzt begonnene |
+| **Erledigung** | Uhr mit Pfeil | die zuletzt erledigte, am selben Tag die zuletzt abgelegte |
+| **Anlage** | Plus | die zuletzt angelegte |
+| **Von Hand** | Hand | die Reihenfolge, in die ihr die Karten gezogen habt |
+
+Was du dort wählst, gilt nur für dich an diesem Gerät, wie das Zeitfenster. Was für alle zuerst gilt, legt **Sortierung für alle** im Menü der Spalte oder in den Einstellungen des Boards fest; in der Auswahl steht daran "für alle". Ohne eigene Einstellung ordnet die Erledigt-Spalte nach Erledigung und jede andere nach Priorität. Ein neues Board bringt die Sortierung aus seiner Vorlage mit: offene Spalten nach Priorität, Spalten wie Dran oder In Arbeit nach Arbeitsbeginn, Erledigt nach Erledigung. Eine eigene Vorlage übernimmt die Sortierung ihres Boards.
+
+Neue Karten kommen oben in die Spalte, ebenso Kopien und Karten, die über **Status**, die Liste oder das Telefon in die Spalte wechseln. In einer sortierten Spalte steht eine hineingezogene Karte dort, wo die Sortierung sie hinstellt; innerhalb der Spalte umsortieren geht nur mit **Von Hand**.
+
+Eine lange Spalte zeigt zuerst so viele Karten, wie **Karten je Ladeschritt** in den Einstellungen des Boards angibt, anfangs 50. Rollst du ans Ende, kommen die nächsten; **Mehr laden** am Fuß der Spalte tut dasselbe, und oben steht, wie viele geladen sind, etwa 50 von 120 geladen. Suche und Filter gehen immer über alle Karten, nicht nur über die geladenen; Zahl und Grenze im Kopf zählen ebenfalls alle.
 
 ### Neue Spalte
 Mit demselben Recht steht am Ende des Spaltenstreifens der Knopf **Spalte** (**Neue Spalte am Ende anlegen**). Er öffnet ein Feld für den Namen und eine Farbwahl; vorgewählt ist eine Farbe, die noch keine Spalte trägt. Enter oder **Anlegen** legt die Spalte an, Escape oder **Abbrechen** bricht ab. Die neue Spalte kommt ans Ende, ohne Grenze und offen.
@@ -52,6 +70,7 @@ Eingeklappt nimmt die Spalte weiter Karten an: zieh eine Karte einfach auf den S
 Mit dem Recht Board verwalten steht im Kopf jeder aufgeklappten Spalte der Knopf mit den drei Punkten (**Spalte bearbeiten: Name, Farbe, Grenze, Reihenfolge, löschen**). Er öffnet ein Menü direkt an der Spalte:
 
 - **Name** und **Farbe**. Ein neuer Name gilt beim Verlassen des Felds oder mit Enter; Escape im Feld stellt den alten Namen wieder her.
+- **Sortierung für alle** (siehe [Sortierung einer Spalte](hilfe:board/sortierung)).
 - **Grenze** bei offenen Spalten, **Zeitfenster für alle** bei der Erledigt-Spalte (siehe [Zeitfenster](hilfe:board/zeitfenster)).
 - **Einklappen**, **Nach links** und **Nach rechts**.
 - **Zur Erledigt-Spalte machen** (siehe [Die Erledigt-Spalte](hilfe:board/erledigt)).
@@ -74,16 +93,16 @@ Jedes Board hat genau eine Erledigt-Spalte, meist ganz rechts. Was dort hineinko
 - Laufende Timer auf der Karte halten an und buchen.
 - Statt der Sanduhr zeigt die Karte ihr Abschlussdatum mit Haken; eine Fälligkeit zeigt sie nicht mehr.
 
-Die Erledigt-Spalte ordnet sich selbst: neueste zuerst nach Abschluss, am selben Tag die zuletzt abgelegte oben. Von Hand umsortieren lässt sie sich nicht; eine neu hineingezogene Karte landet oben. Holst du eine Karte zurück in eine offene Spalte, ist sie wieder offen und verliert ihr Abschlussdatum.
+Die Erledigt-Spalte ordnet sich anfangs nach Erledigung: die zuletzt erledigte oben, am selben Tag die zuletzt abgelegte. Eine neu hineingezogene Karte landet oben (siehe [Sortierung einer Spalte](hilfe:board/sortierung)). Holst du eine Karte zurück in eine offene Spalte, ist sie wieder offen und verliert ihr Abschlussdatum.
 
 **Zur Erledigt-Spalte machen** (im Menü einer Spalte oder in den Einstellungen) macht eine andere Spalte zur Erledigt-Spalte. Ihre Karten gelten dann als erledigt mit Abschluss heute, und ihre Grenze entfällt. Die bisherige Erledigt-Spalte wird eine offene Spalte; ihre Karten sind wieder offen, und ihr Alter beginnt neu.
 
 ## Zeitfenster der Erledigt-Spalte {#zeitfenster}
 Damit die Erledigt-Spalte nicht endlos wächst, zeigt sie nur die Karten eines Zeitfensters. Oben in der Spalte wählst du es aus: **Heute**, **Gestern**, **Diese Woche** (ab Montag), **Dieser Monat**, **Dieses Jahr** oder **Alle**. Diese Wahl gilt nur für dich an diesem Gerät. Was für alle zuerst gilt, legt **Zeitfenster für alle** im Menü der Spalte fest; ohne Einstellung ist es Heute.
 
-Daneben steht, wie viele Karten geladen sind, etwa 50 von 120. Die Spalte lädt seitenweise: **Mehr laden** oder Rollen ans Ende holt die nächsten. Wie viele auf einmal kommen, stellt **Karten je Ladeschritt** in den Einstellungen des Boards ein.
+Daneben steht, wie viele Karten geladen sind, etwa 50 von 120. Die Spalte lädt seitenweise wie jede Spalte: **Mehr laden** oder Rollen ans Ende holt die nächsten.
 
-Solange eine Suche, ein Filter oder eine Sortierung außer Manuell gilt, steht dort **Ohne Zeitfenster**: die Spalte zeigt dann alle passenden erledigten Karten außerhalb des Archivs.
+Solange eine Suche oder ein Filter gilt, steht dort **Ohne Zeitfenster**: die Spalte zeigt dann alle passenden erledigten Karten außerhalb des Archivs.
 
 ## Alterung: die Sanduhr {#alterung}
 Jede offene Karte zeigt unten eine Sanduhr mit einer Zahl: so viele Tage liegt sie schon in ihrer Spalte. Das Alter beginnt bei jedem Wechsel der Spalte neu, nicht beim Bearbeiten. So siehst du, welche Karten liegen bleiben.

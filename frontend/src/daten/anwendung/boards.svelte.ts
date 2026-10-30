@@ -6,7 +6,7 @@
 
 import { hole } from "appkern-oberflaeche";
 import type {
-  Board, BoardEinstellungen, Farbe, FeldArt, KellerwolkePerson, Kennung, ModulKennung, Ordner, Vorlage, Zeitfenster,
+  Board, BoardEinstellungen, Farbe, FeldArt, KellerwolkePerson, Kennung, ModulKennung, Ordner, Spaltensortierung, Vorlage, Zeitfenster,
 } from "../../modell";
 import type { KuerzelPruefung } from "../../regeln/kuerzel";
 import { kuerzelPruefen } from "../abfragen";
@@ -135,9 +135,11 @@ export interface Spaltenaenderung {
   zeitfenster?: Zeitfenster;
   /** anfangs eingeklappt für alle; jede Person klappt für sich um */
   eingeklappt?: boolean;
+  /** Vorgabe der Sortierung für alle; jede Person stellt für sich um */
+  sortierung?: Spaltensortierung;
 }
 
-/** Name, Farbe, Grenze, Zeitfenster und ob die Spalte anfangs eingeklappt steht */
+/** Name, Farbe, Grenze, Zeitfenster, Sortierung und ob die Spalte anfangs eingeklappt steht */
 export function spalteAendern(boardId: Kennung, spalteId: Kennung, a: Spaltenaenderung): Promise<boolean> {
   return schicken(`/boards/${boardId}/spalten/${spalteId}/aendern`, a);
 }

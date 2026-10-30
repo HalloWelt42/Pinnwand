@@ -1,5 +1,5 @@
 """Anwendungsfälle an Karten. Verschieben ist ein Weg für Ziehen, Status im Detail, Telefon, Liste und Sammelaktion:
-beim Spaltenwechsel beginnt das Alter neu, verknüpfte Karten desselben Boards ziehen mit ans Ende, in einer
+beim Spaltenwechsel beginnt das Alter neu, verknüpfte Karten desselben Boards ziehen mit, in einer
 Erledigt-Spalte gibt es das Abschlussdatum (Serienkarten ihren Termintag); über der Grenze nur eine Warnung. Jede
 Bewegung steht im Verlauf der Karte, die Zuständigen bekommen einen Hinweis. Neue Karten bekommen die nächste Nummer
 ihres Boards (Schlüssel HAUS-12)."""
@@ -44,11 +44,11 @@ def ueber_grenze(k: Kontext, ziel: Spalte) -> str:
 
 
 def einreihen(k: Kontext, ziel: Spalte, karten: list[Karte], platz: int | None) -> None:
-    """Gibt den Karten Plätze in der Zielspalte: ab `platz` (oder am Ende) in dieser Reihenfolge; die übrigen Karten
-    der Spalte behalten ihre Reihe. Wird der Raum zu eng, nummeriert die Spalte neu."""
+    """Gibt den Karten Plätze in der Zielspalte: ab `platz` (ohne: oben, das Neueste steht oben, HELF-50) in dieser
+    Reihenfolge; die übrigen Karten der Spalte behalten ihre Reihe. Wird der Raum zu eng, nummeriert die Spalte neu."""
     bewegt = {c.id for c in karten}
     andere = [c for c in karten_der_spalte(k, ziel.id) if c.id not in bewegt]
-    p = len(andere) if platz is None else max(0, min(platz, len(andere)))
+    p = 0 if platz is None else max(0, min(platz, len(andere)))
     vorher = andere[p - 1].reihe if p > 0 else None
     nachher = andere[p].reihe if p < len(andere) else None
     unten = vorher if vorher is not None else (nachher - ABSTAND * (len(karten) + 1) if nachher is not None else 0.0)
@@ -78,7 +78,7 @@ def wechseln(k: Kontext, karte: Karte, ziel: Spalte, b: Board, mitgezogen: bool)
 
 
 def hinein(k: Kontext, b: Board, ids: list[Kennung], ziel: Spalte, platz: int | None) -> str:
-    """Karten in eine Spalte bringen: an den Platz (oder ans Ende), verknüpfte desselben Boards ziehen mit ans Ende
+    """Karten in eine Spalte bringen: an den Platz (ohne: oben), verknüpfte desselben Boards ziehen mit direkt darunter
     (M-76); Mitglieder auf anderen Boards bleiben stehen. Ergebnis: der Text der Meldung."""
     karten = [karte_lesen(k, i) for i in ids]
     for c in karten:
@@ -89,16 +89,13 @@ def hinein(k: Kontext, b: Board, ids: list[Kennung], ziel: Spalte, platz: int | 
            if d.get("gruppe") == g and d["id"] not in ids and d["spalte"] != ziel.id]
     mit = list({c.id: c for c in mit}.values())
     wechselnde = {c.id for c in karten if c.spalte != ziel.id}
-    einreihen(k, ziel, karten, platz)
+    einreihen(k, ziel, karten + mit, platz)
     gebucht = 0
     for c in karten:
         if c.id in wechselnde:
             gebucht += wechseln(k, c, ziel, b, False)
             hinweise.verschoben(k, b, c, ziel)
         speichern(k, c)
-    # erst jetzt, da die bewegten Karten in der Spalte stehen, reihen sich die mitgezogenen dahinter ein
-    if mit:
-        einreihen(k, ziel, mit, None)
     for c in mit:
         gebucht += wechseln(k, c, ziel, b, True)
         hinweise.verschoben(k, b, c, ziel, mit=next(x for x in karten if x.gruppe == c.gruppe))
@@ -165,7 +162,7 @@ def neue_karte(k: Kontext, b: Board, ziel: Spalte, e: Kartenentwurf, art: Karten
 
 
 def in_spalte_legen(k: Kontext, b: Board, ziel: Spalte, karten: list[Karte]) -> None:
-    """Neue Karten in dieser Reihenfolge ans Ende der Spalte, gespeichert; wer in einer Beschreibung erwähnt ist, bekommt
+    """Neue Karten in dieser Reihenfolge oben in die Spalte, gespeichert; wer in einer Beschreibung erwähnt ist, bekommt
     einen Hinweis."""
     einreihen(k, ziel, karten, None)
     for c in karten:
@@ -184,7 +181,7 @@ class Karten:
     async def anlegen(self, konto: Konto, board_id: Kennung, titel: str, spalte: Kennung | None = None,
                       art: Kartenart | None = None, faellig: str | None = None,
                       beschreibung: str | None = None) -> Antwort:
-        """Neue Karte am Ende der Spalte (ohne: die erste offene), zuständig ist, wer sie anlegt. Ohne Art: die Kartenart
+        """Neue Karte oben in der Spalte (ohne: die erste offene), zuständig ist, wer sie anlegt. Ohne Art: die Kartenart
         des Boards."""
         titel = titel.strip()
 
@@ -203,7 +200,7 @@ class Karten:
 
     async def mehrere_anlegen(self, konto: Konto, board_id: Kennung, entwuerfe: list[Kartenentwurf],
                               spalte: Kennung | None = None, art: Kartenart | None = None) -> Antwort:
-        """Mehrere Karten mit Inhalt in einer Änderung am Ende der Spalte (ein Rückgängig für alle), etwa aus einem
+        """Mehrere Karten mit Inhalt in einer Änderung oben in der Spalte (ein Rückgängig für alle), etwa aus einem
         Vorschlag der KI; sonst wie `anlegen`."""
 
         def arbeit(k: Kontext) -> str:
@@ -224,7 +221,7 @@ class Karten:
         return await self.a.aendern(konto, arbeit)
 
     async def duplizieren(self, konto: Konto, karte_id: Kennung) -> Antwort:
-        """Kopie in derselben Spalte am Ende: Titel mit "(Kopie)", Inhalt und Angaben gleich, Checkliste unerledigt; ohne
+        """Kopie in derselben Spalte oben: Titel mit "(Kopie)", Inhalt und Angaben gleich, Checkliste unerledigt; ohne
         Kommentare, Blockade, Transkripte, Gruppe, Serie und Anhänge (M-36)."""
 
         def arbeit(k: Kontext) -> str:
@@ -250,7 +247,7 @@ class Karten:
         return await self.a.aendern(konto, arbeit)
 
     async def umziehen(self, konto: Konto, karte_id: Kennung, board_id: Kennung, spalte: Kennung | None = None) -> Antwort:
-        """Eine Karte zieht in ein anderes Board (etwa vom Ideenboard aufs Arbeitsboard), ans Ende der Spalte (ohne: der
+        """Eine Karte zieht in ein anderes Board (etwa vom Ideenboard aufs Arbeitsboard), oben in die Spalte (ohne: der
         ersten offenen). Sie bekommt dort die nächste Nummer und die Kartenart des Boards; Labels und eigene Felder mit
         gleichem Namen bleiben, Zuständige, wenn sie dort Mitglied sind. Die Verknüpfung endet, laufende Timer buchen,
         ihre Zeit zieht mit; Inhalt, Checkliste, Kommentare, Anhänge und Verlauf bleiben. Der alte Schlüssel führt
@@ -366,7 +363,7 @@ class Karten:
         return await self.a.aendern(konto, arbeit)
 
     async def verschieben(self, konto: Konto, karte_id: Kennung, nach: Kennung, platz: int | None = None) -> Antwort:
-        """Karte in eine Spalte ihres Boards, an den Platz (Ziehen) oder ans Ende (Status, Telefon, Liste)."""
+        """Karte in eine Spalte ihres Boards, an den Platz (Ziehen) oder oben (Status, Telefon, Liste)."""
 
         def arbeit(k: Kontext) -> str | None:
             karte = karte_lesen(k, karte_id)

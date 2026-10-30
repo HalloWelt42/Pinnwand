@@ -41,7 +41,7 @@ Unter den Texten stehen die Angaben der Karte:
 
 | Angabe | Bedeutung |
 | - | - |
-| **Status** | die Spalte; umstellen verschiebt die Karte ans Ende dieser Spalte, wie Ziehen (Recht Karten verschieben) |
+| **Status** | die Spalte; umstellen verschiebt die Karte oben in diese Spalte, wie Ziehen (Recht Karten verschieben) |
 | **Priorität** | Keine, Niedrig, Mittel, Hoch oder Dringend |
 | **Start** | ab wann an der Karte gearbeitet wird |
 | **Fällig** | bis wann sie fertig sein soll |
@@ -72,7 +72,7 @@ Oben zeigt der Zähler erledigt/gesamt und ein Balken den Fortschritt; ist alles
 ## Kommentare und Erwähnungen {#kommentare}
 Unten im Detail stehen die Reiter **Kommentare** und **Verlauf**, je mit ihrer Zahl.
 
-- Im Feld **Kommentar schreiben, @ erwähnt eine Person** tippen. Enter sendet, Umschalt und Enter macht eine neue Zeile; **Senden** geht ebenso. Kommentare verstehen dieselbe Schreibweise wie die Beschreibung.
+- Oben steht das Feld **Kommentar schreiben, @ erwähnt eine Person**, darunter die Kommentare, der neueste zuerst. Ins Feld tippen. Enter sendet, Umschalt und Enter macht eine neue Zeile; **Senden** geht ebenso. Kommentare verstehen dieselbe Schreibweise wie die Beschreibung.
 - Mit @ erwähnst du ein Mitglied des Boards: @ und dahinter sein Vorname, sein Kontoname der Kellerwolke oder sein Kürzel, etwa @Anna. Die Erwähnung wird hervorgehoben, der volle Name erscheint beim Überfahren.
 - Wer in einem Kommentar erwähnt ist, bekommt einen Hinweis; die übrigen Zuständigen der Karte bekommen einen Hinweis, dass kommentiert wurde. Wer in Beschreibung oder Notizen neu erwähnt wird, bekommt ebenfalls einen Hinweis.
 

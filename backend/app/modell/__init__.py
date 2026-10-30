@@ -12,6 +12,9 @@ from pydantic.alias_generators import to_camel
 Kennung = str
 Farbe = Literal["tuerkis", "minze", "honig", "petrol", "rose", "koralle", "sand", "himmel", "flieder", "violett", "stahl"]
 Zeitfenster = Literal["heute", "gestern", "woche", "monat", "jahr", "alle"]
+#: Ordnung der Karten einer Spalte (HELF-50): Priorität (dann neueste), Fälligkeit, Arbeitsbeginn (zuletzt in die Spalte
+#: gekommen), Erledigung, Anlage (je neueste oben) oder von Hand; gerechnet wird sie in der Oberfläche (`spaltenOrdnung`)
+Spaltensortierung = Literal["prioritaet", "faellig", "arbeitsbeginn", "erledigung", "anlage", "hand"]
 FeldArt = Literal["text", "zahl", "datum", "auswahl", "verweis"]
 ModulKennung = Literal["zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte", "vorlesen", "ki"]
 Prioritaet = Literal["keine", "niedrig", "mittel", "hoch", "dringend"]
@@ -66,6 +69,8 @@ class Spalte(Modell):
     grenze: int | None = None
     eingeklappt: bool | None = None
     zeitfenster: Zeitfenster | None = None
+    #: Vorgabe der Ordnung für alle; ohne: Erledigt nach Erledigung, sonst nach Priorität (jede Person stellt für sich um)
+    sortierung: Spaltensortierung | None = None
 
 
 class Feld(Modell):
@@ -255,6 +260,7 @@ class VorlageSpalte(Modell):
     farbe: Farbe
     erledigt: bool = False
     grenze: int | None = None
+    sortierung: Spaltensortierung | None = None
 
 
 class VorlageFeld(Modell):

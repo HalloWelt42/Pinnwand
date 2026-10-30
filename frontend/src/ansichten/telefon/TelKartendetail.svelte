@@ -164,17 +164,18 @@
 
     <section class="pw-tel-abschnitt" aria-label="Kommentare">
       <div class="etikett">Kommentare<span class="zaehler">{k.kommentare.length}</span></div>
-      {#each k.kommentare as c, i (i)}
+      <div class="pw-tel-schreiben">
+        <textarea class="eingabe" rows="2" bind:value={kommentar} placeholder="Kommentar schreiben; mit @ erwähnen"></textarea>
+        <button class="knopf" disabled={!kommentar.trim()} onclick={senden}><i class="fa-solid fa-paper-plane"></i>Senden</button>
+      </div>
+      <!-- neueste zuerst, nach unten in die Vergangenheit (HELF-50) -->
+      {#each [...k.kommentare].reverse() as c, i (i)}
         <div class="pw-tel-kommentar">
           <Person id={c.von} />
           <div class="blase"><div class="kopfzeile"><b>{konto(c.von).name}</b><span>{wann(c.zeit)}</span></div>
             <div class="pw-md">{@html markdownHtml(c.text, md)}</div></div>
         </div>
       {/each}
-      <div class="pw-tel-schreiben">
-        <textarea class="eingabe" rows="2" bind:value={kommentar} placeholder="Kommentar schreiben; mit @ erwähnen"></textarea>
-        <button class="knopf" disabled={!kommentar.trim()} onclick={senden}><i class="fa-solid fa-paper-plane"></i>Senden</button>
-      </div>
     </section>
 
     {#snippet blatt()}

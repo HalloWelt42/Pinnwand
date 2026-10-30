@@ -1,17 +1,18 @@
 <script lang="ts">
-  // Menü einer Spalte im Board (Mechanik M-21), nur mit dem Recht "Board verwalten": Name, Farbe, Grenze oder bei der
-  // Erledigt-Spalte die Vorgabe des Zeitfensters; einklappen, nach links oder rechts, zur Erledigt-Spalte machen und
+  // Menü einer Spalte im Board (Mechanik M-21), nur mit dem Recht "Board verwalten": Name, Farbe, Sortierung für alle,
+  // Grenze oder bei der Erledigt-Spalte die Vorgabe des Zeitfensters; einklappen, nach links oder rechts, zur Erledigt-Spalte machen und
   // löschen mit Rückfrage in der Fläche (Karten verschieben oder mit der Spalte in den Papierkorb). Felder speichern beim
   // Verlassen oder mit Enter, Befehle schließen das Menü; Escape oder ein Klick daneben schließt es auch (in der alten App
   // blieb es offen). Alles über die Anwendungsfälle mit Rückgängig.
   import { untrack } from "svelte";
-  import { ZEITFENSTER, ZEITFENSTER_VORGABE } from "../anzeige";
+  import { SPALTENSORTIERUNGEN, ZEITFENSTER, ZEITFENSTER_VORGABE } from "../anzeige";
+  import { sortierungVorgabe } from "../daten/abfragen";
   import { EINSTELLUNG_GRENZEN as GRENZEN } from "../regeln/board";
   import Zahlfeld from "../teile/Zahlfeld.svelte";
   import { spalteAendern, spaltenOrdnen, zurErledigtSpalte } from "../daten/anwendung/boards.svelte";
   import { spalteLoeschen } from "../daten/anwendung/papierkorb.svelte";
   import { kartenDerSpalte } from "../daten/stand.svelte";
-  import type { Board, Spalte, Zeitfenster } from "../modell";
+  import type { Board, Spalte, Spaltensortierung, Zeitfenster } from "../modell";
   import Farbwahl from "../teile/Farbwahl.svelte";
   import { enter } from "../teile/taste";
 
@@ -127,6 +128,12 @@
       <input class="eingabe" value={spalte.name} bind:this={nameFeld} aria-label="Name der Spalte" onchange={umbenennen} onkeydown={nameTaste} /></label>
     <div class="pw-spaltenmenue-feld"><span class="etikett">Farbe</span>
       <Farbwahl wert={spalte.farbe} waehlen={(f) => f && spalteAendern(board.id, spalte.id, { farbe: f })} wofuer="Farbe der Spalte {spalte.name}" /></div>
+    <label class="pw-spaltenmenue-feld" title="Wie die Spalte ihre Karten ordnet, solange jemand es nicht für sich umstellt (Symbol im Kopf der Spalte)">
+      <span class="etikett">Sortierung für alle</span>
+      <select class="eingabe" value={sortierungVorgabe(spalte)} aria-label="Vorgabe der Sortierung der Spalte {spalte.name}"
+              onchange={(e) => spalteAendern(board.id, spalte.id, { sortierung: e.currentTarget.value as Spaltensortierung })}>
+        {#each Object.entries(SPALTENSORTIERUNGEN) as [w, s] (w)}<option value={w} title={s.erklaerung}>{s.name}</option>{/each}
+      </select></label>
     {#if spalte.erledigt}
       <label class="pw-spaltenmenue-feld" title="Welche erledigten Karten die Spalte zeigt, solange jemand es nicht für sich umstellt">
         <span class="etikett">Zeitfenster für alle</span>

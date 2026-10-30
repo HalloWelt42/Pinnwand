@@ -90,6 +90,21 @@
                                  border: 1px dashed var(--rand-stark); color: var(--text-3); font-size: var(--klein); }
 
 /* Menü einer Spalte: schwebt in der Spalte unter dem Kopf */
+/* Sortierung einer Spalte (HELF-50): kleines Symbol im Kopf, darunter die Auswahl */
+.pw-sortierwahl { position: relative; display: inline-flex; }
+.pw-sortierwahl-liste {
+  position: absolute; top: calc(100% + 4px); right: 0; z-index: 7; width: 240px; max-width: calc(100vw - 32px);
+  display: flex; flex-direction: column; gap: 2px; padding: var(--a2);
+  background: var(--karte); border: 1px solid var(--rand-stark); border-radius: var(--r3); box-shadow: var(--schatten-schwebend);
+}
+.pw-sortierwahl-liste button {
+  display: flex; align-items: center; gap: var(--a2); min-height: 40px; padding: 0 var(--a3); border: 0; border-radius: var(--r2);
+  background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer;
+}
+.pw-sortierwahl-liste button:hover { background: var(--karte-2); }
+.pw-sortierwahl-liste button.an { background: color-mix(in srgb, var(--akzent-flaeche) 14%, transparent); font-weight: 700; }
+.pw-sortierwahl-liste button i { width: 18px; text-align: center; color: var(--text-2); }
+.pw-sortierwahl-vorgabe { margin-left: auto; font-size: var(--klein); font-weight: 400; color: var(--text-3); }
 .pw-spaltenmenue {
   position: absolute; top: 48px; left: var(--a2); right: var(--a2); z-index: 6; max-height: calc(100% - 56px); overflow-y: auto;
   display: flex; flex-direction: column; gap: var(--a3); padding: var(--a3); outline: 0;

@@ -1,7 +1,8 @@
 <script lang="ts">
   // Kommentare und Verlauf der Karte (M-61, M-64). Kommentare in einfachem Markdown, Erwähnungen mit @ hervorgehoben (der
   // volle Name im Hinweis). Enter sendet, Umschalt und Enter macht eine neue Zeile; das Feld leert sich erst, wenn der
-  // Kommentar gespeichert ist. Der Verlauf zeigt, was die Anwendungsfälle vermerkt haben, neueste zuerst.
+  // Kommentar gespeichert ist. Neueste zuerst (HELF-50: nach unten in die Vergangenheit): das Feld für einen neuen
+  // Kommentar steht oben, darunter der jüngste. Der Verlauf zeigt, was die Anwendungsfälle vermerkt haben, ebenso.
   import { darf } from "../daten/abfragen";
   import { kommentieren } from "../daten/anwendung/karten.svelte";
   import { liest, vorlesen, vorlesenDa } from "../daten/anwendung/vorlesen.svelte";
@@ -20,6 +21,8 @@
   let text = $state("");
   /** neueste zuerst; was im selben Augenblick geschah, in der Folge, in der es geschah, von hinten */
   const verlauf = $derived([...karte.verlauf].reverse().sort((a, b) => b.zeit.localeCompare(a.zeit)));
+  /** Kommentare neueste zuerst, mit ihrer Stelle an der Karte (die Kennung des Vorlesens hängt daran) */
+  const kommentare = $derived(karte.kommentare.map((c, i) => ({ c, i })).reverse());
 
   /** das Feld leert sich sofort; lehnt der Server ab, steht der Text wieder da */
   async function senden(): Promise<void> {
@@ -42,7 +45,17 @@
     <button class:aktiv={reiter === "verlauf"} onclick={() => (reiter = "verlauf")}><i class="fa-solid fa-clock-rotate-left"></i>Verlauf<span class="zaehler">{karte.verlauf.length}</span></button>
   </div>
   {#if reiter === "kommentare"}
-    {#each karte.kommentare as c, i (i)}
+    {#if darf(board, "kommentieren")}
+      <div class="pw-kommentar"><Person id={ICH} />
+        <div class="pw-kommentar-neu">
+          <textarea class="eingabe" rows="2" bind:value={text} use:verwerfbar onkeydown={taste} aria-label="Kommentar"
+                    placeholder="Kommentar schreiben, @ erwähnt eine Person"
+                    title="Enter sendet, Umschalt und Enter macht eine neue Zeile; Markdown wie **fett**, *kursiv* und - Liste"></textarea>
+          <div><button class="knopf klein" disabled={!text.trim()} onclick={senden}><i class="fa-solid fa-paper-plane"></i>Senden</button></div>
+        </div>
+      </div>
+    {/if}
+    {#each kommentare as { c, i } (i)}
       <div class="pw-kommentar"><Person id={c.von} />
         <div class="blase"><div class="kopf-zeile"><b>{konto(c.von).name}</b><span>{wann(c.zeit)}</span>
           {#if vorlesenDa(board)}
@@ -55,16 +68,6 @@
     {:else}
       <div class="schwach pw-detail-leer">Noch keine Kommentare.</div>
     {/each}
-    {#if darf(board, "kommentieren")}
-      <div class="pw-kommentar"><Person id={ICH} />
-        <div class="pw-kommentar-neu">
-          <textarea class="eingabe" rows="2" bind:value={text} use:verwerfbar onkeydown={taste} aria-label="Kommentar"
-                    placeholder="Kommentar schreiben, @ erwähnt eine Person"
-                    title="Enter sendet, Umschalt und Enter macht eine neue Zeile; Markdown wie **fett**, *kursiv* und - Liste"></textarea>
-          <div><button class="knopf klein" disabled={!text.trim()} onclick={senden}><i class="fa-solid fa-paper-plane"></i>Senden</button></div>
-        </div>
-      </div>
-    {/if}
   {:else}
     <div class="pw-verlauf">
       {#each verlauf as e, i (i)}

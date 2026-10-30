@@ -1,30 +1,33 @@
 <script lang="ts">
   // Eine Spalte: Kopf mit Griff, Farbe, Name, Zahl und Grenze aus allen Karten der Spalte (nie aus den Treffern einer
-  // Suche), darunter der Füllbalken der Grenze; Einklappen und das Menü der Spalte. Erledigt-Spalten zeigen neueste
-  // zuerst nach Abschluss, ihr Zeitfenster (bei Suche, Filter oder Sortierung alle außerhalb des Archivs) und laden
-  // seitenweise nach dem Ladeschritt des Boards. Karten ziehen und ablegen über den einen Weg ablegen(); lehnt er ab
-  // (getrennt), zeigt die Spalte wieder den Stand und die Karte springt zurück. Eingeklappt bleibt die Spalte Ablagezone,
-  // mit einem Strich je Karte.
+  // Suche), darunter der Füllbalken der Grenze; Sortierung als kleines Symbol, Einklappen und das Menü der Spalte. Die
+  // Karten stehen in der Ordnung der Spalte (HELF-50, das Neueste oben) und laden seitenweise nach dem Ladeschritt des
+  // Boards, beim Rollen ans Ende die nächsten; Suche und Filter gehen über alle. Erledigt-Spalten zeigen ihr Zeitfenster
+  // (bei Suche oder Filter alle außerhalb des Archivs). Karten ziehen und ablegen über den einen Weg ablegen(); lehnt er
+  // ab (getrennt), zeigt die Spalte wieder den Stand und die Karte springt zurück. Nur eine Spalte von Hand lässt sich in
+  // sich umsortieren; in einer sortierten landet eine neue Karte oben. Eingeklappt bleibt die Spalte Ablagezone, mit
+  // einem Strich je Karte.
   import { dndzone, dragHandle, TRIGGERS, type DndEvent } from "svelte-dnd-action";
   import { ZEITFENSTER } from "../anzeige";
-  import { darf, filterAktiv, spalteninhalt, type Kartenfilter, type Sortierung } from "../daten/abfragen";
+  import { darf, filterAktiv, spalteninhalt, type Kartenfilter } from "../daten/abfragen";
   import { ablegen } from "../daten/anwendung/karten.svelte";
   import { kartenDerSpalte } from "../daten/stand.svelte";
   import type { Board, Karte as KarteT, Spalte, Zeitfenster } from "../modell";
   import { boardPfad } from "../weg.svelte";
-  import { einklappen, fensterSetzen, fensterVon, istEingeklappt, type Ansichtszustand } from "./ansicht.svelte";
+  import { einklappen, fensterSetzen, fensterVon, istEingeklappt, sortierungSetzen, sortierungVon, type Ansichtszustand } from "./ansicht.svelte";
   import Karte from "./Karte.svelte";
   import { abheben, istSchatten } from "./schatten";
   import Schnelleingabe from "./Schnelleingabe.svelte";
+  import SortierWahl from "./SortierWahl.svelte";
   import SpaltenMenue from "./SpaltenMenue.svelte";
 
-  let { board, spalte, ansicht, schluessel, filter, sortierung, ziehenGesperrt = false, darstellung = {}, oeffnen,
+  let { board, spalte, ansicht, schluessel, filter, ziehenGesperrt = false, darstellung = {}, oeffnen,
         menueOffen = false, menue }: {
     board: Board; spalte: Spalte;
-    /** Ansichtszustand des Boards an diesem Gerät (eingeklappt, Zeitfenster) und sein Schlüssel zum Ändern */
+    /** Ansichtszustand des Boards an diesem Gerät (eingeklappt, Zeitfenster, Sortierung) und sein Schlüssel zum Ändern */
     ansicht: Ansichtszustand; schluessel: string;
-    /** Suche und Filter der Werkzeugleiste; Sortierung der offenen Spalten */
-    filter: Kartenfilter; sortierung: Sortierung;
+    /** Suche und Filter der Werkzeugleiste */
+    filter: Kartenfilter;
     ziehenGesperrt?: boolean;
     /** Darstellung einzelner Karten (offen: im Detail geöffnet) */
     darstellung?: Record<string, "offen">;
@@ -38,17 +41,21 @@
   const sperre = $derived(ziehenGesperrt || !darf(board, "karten.verschieben"));
   const eingeklappt = $derived(istEingeklappt(ansicht, spalte));
   const fenster = $derived(fensterVon(ansicht, spalte));
-  const inhalt = $derived(spalteninhalt(board, spalte, filter, sortierung, fenster));
+  const art = $derived(sortierungVon(ansicht, spalte));
+  /** sortiert (nicht von Hand): die Ordnung steht fest, umsortieren in der Spalte geht nicht, Neues kommt oben hin */
+  const feste = $derived(art !== "hand");
+  const inhalt = $derived(spalteninhalt(board, spalte, filter, art, fenster));
   const gefiltert = $derived(filterAktiv(filter));
   let neuOffen = $state(false);
   let menueKnopf = $state<HTMLElement>();
 
-  // Erledigt lädt seitenweise nach dem Ladeschritt des Boards (M-26); ein neues Fenster oder ein neuer Filter fängt vorn an
+  // jede Spalte lädt seitenweise nach dem Ladeschritt des Boards (M-26, HELF-50); ein neues Fenster, eine neue
+  // Sortierung oder ein neuer Filter fängt vorn an
   const ladeschritt = $derived(board.einstellungen.ladeschritt);
-  const ladeSchluessel = $derived(`${fenster}|${sortierung}|${JSON.stringify(filter)}`);
+  const ladeSchluessel = $derived(`${fenster}|${art}|${JSON.stringify(filter)}`);
   let geladen = $state({ fuer: "", seiten: 1 });
   const seiten = $derived(geladen.fuer === ladeSchluessel ? geladen.seiten : 1);
-  const gezeigt = $derived(spalte.erledigt ? inhalt.karten.slice(0, seiten * ladeschritt) : inhalt.karten);
+  const gezeigt = $derived(inhalt.karten.slice(0, seiten * ladeschritt));
   const weitere = $derived(inhalt.karten.length - gezeigt.length);
   function mehrLaden(): void {
     geladen = { fuer: ladeSchluessel, seiten: seiten + 1 };
@@ -68,14 +75,15 @@
     : stufe === "voll" ? `${inhalt.alle} von ${grenze}: die Grenze ist erreicht, jede weitere Karte liegt darüber`
     : `${inhalt.alle} von höchstens ${grenze} Karten`);
   const geladenTitel = $derived(inhalt.ohneFenster ? `${gezeigt.length} geladen von ${inhalt.karten.length} passenden außerhalb des Archivs`
-    : `${gezeigt.length} geladen von ${inhalt.karten.length} im Zeitfenster ${ZEITFENSTER[fenster]}; neueste zuerst nach Abschluss`);
+    : `${gezeigt.length} geladen von ${inhalt.karten.length} im Zeitfenster ${ZEITFENSTER[fenster]}`);
 
   // Ziehen: während eines Zugs zeigt die Spalte, was die Bibliothek vorschlägt, sonst immer den Stand (M-70: lehnt ablegen()
   // ab, steht die Karte danach wieder an ihrem Platz)
   let zug = $state.raw<KarteT[] | null>(null);
   const items = $derived(zug ?? gezeigt);
 
-  /** Erledigt hat eine feste Ordnung (M-28): eine eigene Karte bleibt an ihrem Platz, eine neue landet oben (heute erledigt) */
+  /** Eine sortierte Spalte hat eine feste Ordnung (M-28, HELF-50): eine eigene Karte bleibt an ihrem Platz, eine neue
+   *  landet oben */
   function feststehend(vorschlag: KarteT[]): KarteT[] {
     const schatten = vorschlag.find(istSchatten);
     if (!schatten) return vorschlag;
@@ -84,7 +92,7 @@
     return rest;
   }
   function erwaegen(e: CustomEvent<DndEvent<KarteT>>): void {
-    zug = spalte.erledigt ? feststehend(e.detail.items) : e.detail.items;
+    zug = feste ? feststehend(e.detail.items) : e.detail.items;
   }
   function abgelegt(e: CustomEvent<DndEvent<KarteT>>): void {
     const reihe = e.detail.items.filter((k) => !istSchatten(k)).map((k) => k.id);
@@ -92,9 +100,9 @@
     // die Spalte, aus der eine Karte weggezogen wurde, meldet nichts: die Zielspalte legt ab (ein Weg, eine Meldung)
     if (e.detail.info.trigger === TRIGGERS.DROPPED_INTO_ANOTHER) return;
     const vorher = kartenDerSpalte(spalte.id).map((k) => k.id);
-    if (spalte.erledigt) {
+    if (feste) {
       const neu = reihe.filter((id) => !vorher.includes(id));
-      if (neu.length) ablegen(spalte.id, [...vorher, ...neu]);
+      if (neu.length) ablegen(spalte.id, [...neu, ...vorher]);
       return;
     }
     const danach = [...reihe, ...vorher.filter((id) => !reihe.includes(id))];
@@ -135,6 +143,7 @@
       <span class="name" title={spalte.name}>{spalte.name}</span>
       <span class="zaehler {zahlKlasse}" title={zahlTitel}>{inhalt.alle}{grenze !== undefined ? `/${grenze}` : ""}</span>
       <span class="rechts">
+        <SortierWahl {spalte} {art} setzen={(neu) => sortierungSetzen(schluessel, spalte, neu)} />
         <button class="knopf ohne symbol klein" title="Einklappen: nur für dich an diesem Gerät" aria-label="Spalte {spalte.name} einklappen"
                 onclick={() => einklappen(schluessel, spalte.id, true)}><i class="fa-solid fa-angles-left"></i></button>
         {#if verwalten}
@@ -153,7 +162,7 @@
     {#if spalte.erledigt}
       <div class="pw-spalte-leiste">
         {#if inhalt.ohneFenster}
-          <span title="Bei Suche, Filter oder Sortierung zeigt die Spalte alle passenden Karten außerhalb des Archivs">Ohne Zeitfenster</span>
+          <span title="Bei Suche oder Filter zeigt die Spalte alle passenden Karten außerhalb des Archivs">Ohne Zeitfenster</span>
         {:else}
           <select class="eingabe" value={fenster} aria-label="Zeitfenster der Spalte {spalte.name}"
                   title="Zeitfenster: welche erledigten Karten du siehst; nur für dich an diesem Gerät"
@@ -165,7 +174,11 @@
       </div>
     {:else if gefiltert}
       <div class="pw-spalte-leiste"><span title="{inhalt.karten.length} von {inhalt.alle} Karten dieser Spalte passen zu Suche und Filter">
-        {inhalt.karten.length} von {inhalt.alle} passen</span></div>
+        {inhalt.karten.length} von {inhalt.alle} passen</span>
+        {#if weitere > 0}<span class="pw-spalte-geladen" title="{gezeigt.length} geladen; Rollen ans Ende lädt die nächsten">{gezeigt.length} geladen</span>{/if}</div>
+    {:else if weitere > 0}
+      <div class="pw-spalte-leiste"><span class="pw-spalte-geladen" title="{gezeigt.length} von {inhalt.karten.length} Karten geladen; Rollen ans Ende lädt die nächsten {ladeschritt}">
+        {gezeigt.length} von {inhalt.karten.length} geladen</span></div>
     {/if}
     <div class="pw-spalte-karten" use:dndzone={{ items, flipDurationMs: 160, type: "karte", dragDisabled: sperre, dropFromOthersDisabled: sperre,
                                                useCursorForDetection: true, dropTargetStyle: {}, transformDraggedElement: abheben("gezogen", ".pw-karte") }}
@@ -179,11 +192,11 @@
       {/each}
     </div>
     <div class="pw-spalte-fuss">
+      {#if weitere > 0}
+        <button class="knopf ohne klein" onclick={mehrLaden} title="Lädt die nächsten {ladeschritt} (Ladeschritt des Boards); Rollen ans Ende lädt auch">
+          <i class="fa-solid fa-angles-down"></i>Mehr laden ({Math.min(weitere, ladeschritt)} weitere)</button>
+      {/if}
       {#if spalte.erledigt}
-        {#if weitere > 0}
-          <button class="knopf ohne klein" onclick={mehrLaden} title="Lädt die nächsten {ladeschritt} (Ladeschritt des Boards); Rollen ans Ende lädt auch">
-            <i class="fa-solid fa-angles-down"></i>Mehr laden ({Math.min(weitere, ladeschritt)} weitere)</button>
-        {/if}
         <div class="pw-mehr"><span>Älter als {board.einstellungen.archivTage} Tage im Archiv</span><a href={boardPfad(board.kuerzel, "archiv")}>Archiv</a></div>
       {:else if neuOffen}
         <Schnelleingabe {board} {spalte} schliessen={() => (neuOffen = false)} />

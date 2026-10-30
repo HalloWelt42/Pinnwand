@@ -11,7 +11,7 @@ Eine Karte ist eine Aufgabe oder eine Idee. Hier steht, wie du Karten anlegst, d
 2. Den Titel tippen; Enter oder **Anlegen** legt die Karte an.
 3. Das Feld bleibt offen für die nächste Karte. **Schließen** oder Escape schließt es; was noch im Feld steht, wird verworfen.
 
-Die neue Karte kommt ans Ende der Spalte, und du bist für sie zuständig. Unter dem Feld steht, welchen Schlüssel sie bekommt und wo sie landet, etwa "PROD-132 in Offen". Nummern vergibt die Pinnwand fortlaufend je Board und nie zweimal, auch nicht nach dem Löschen. Lehnt die Pinnwand ab, steht dein Titel wieder im Feld, und die Meldung nennt den Grund. Liegt die Spalte danach über ihrer Grenze, sagt es die Meldung ebenfalls.
+Die neue Karte kommt oben in die Spalte, und du bist für sie zuständig. Unter dem Feld steht, welchen Schlüssel sie bekommt und wo sie landet, etwa "PROD-132 in Offen". Nummern vergibt die Pinnwand fortlaufend je Board und nie zweimal, auch nicht nach dem Löschen. Lehnt die Pinnwand ab, steht dein Titel wieder im Feld, und die Meldung nennt den Grund. Liegt die Spalte danach über ihrer Grenze, sagt es die Meldung ebenfalls.
 
 Karten anlegen darf, wer im Board das Recht Karten anlegen hat. Neue Karten entstehen in den offenen Spalten; am Fuß der Erledigt-Spalte stehen stattdessen der Weg ins Archiv und, wenn es weitere erledigte Karten gibt, **Mehr laden**.
 
@@ -28,7 +28,7 @@ Hat das Board das Modul KI an der Karte und ist es eingerichtet, steht unter dem
 1. **Aus Text** klicken und den Text in das große Feld schreiben oder einfügen.
 2. **Vorschlagen** klicken oder Strg und Enter drücken. Das Rechnen kann einen Moment dauern; **Abbrechen** hält an.
 3. Der Vorschlag listet die Karten mit Titel und, falls vorhanden, Beschreibung und Zahl der Checklistenpunkte. Das Häkchen vor einer Karte nimmt sie heraus oder wieder hinein, ihren Titel kannst du direkt ändern.
-4. **Anlegen** legt alle angehakten Karten am Ende dieser Spalte an, mit Beschreibung und Checkliste, höchstens 50 auf einmal. Ein einziges **Rückgängig** nimmt alle zurück.
+4. **Anlegen** legt alle angehakten Karten oben in dieser Spalte an, mit Beschreibung und Checkliste, höchstens 50 auf einmal. Ein einziges **Rückgängig** nimmt alle zurück.
 
 **Verwerfen** schließt den Vorschlag. Ging etwas schief, nennt der Kasten den Grund, und **Noch einmal** fragt erneut. **Einzeln anlegen** führt zurück zum einfachen Titelfeld. Mehr dazu unter [KI an der Karte](hilfe:ki).
 
@@ -36,21 +36,21 @@ Hat das Board das Modul KI an der Karte und ist es eingerichtet, steht unter dem
 Zieh eine Karte mit der Maus an eine andere Stelle derselben Spalte oder in eine andere Spalte. Ein gestrichelter Platzhalter zeigt, wo sie landet. Kommt sie in eine andere Spalte:
 
 - beginnt ihr Alter, die Sanduhr, neu;
-- ziehen verknüpfte Karten desselben Boards mit und reihen sich am Ende der Zielspalte ein (siehe [Verknüpfen](hilfe:karten/verknuepfen));
+- ziehen verknüpfte Karten desselben Boards mit und reihen sich direkt unter ihr ein (siehe [Verknüpfen](hilfe:karten/verknuepfen));
 - bekommen ihre Zuständigen einen Hinweis, dass sie verschoben wurde;
 - vermerkt der Verlauf der Karte den Wechsel;
 - nennt die Meldung, wenn die Zielspalte danach über ihrer Grenze liegt; aufgehalten wird nichts.
 
-Auch eingeklappte Spalten nehmen Karten an. Ziehen geht mit dem Recht Karten verschieben, und nicht, solange eine Suche, ein Filter oder eine Sortierung außer Manuell gilt (siehe [Verschieben pausiert](hilfe:filter/pausiert)).
+Auch eingeklappte Spalten nehmen Karten an. Ziehen geht mit dem Recht Karten verschieben, und nicht, solange eine Suche oder ein Filter gilt (siehe [Verschieben pausiert](hilfe:filter/pausiert)). In einer sortierten Spalte steht die Karte danach dort, wo die Sortierung sie hinstellt; an eine bestimmte Stelle legen und in der Spalte umsortieren geht nur, wenn die Spalte **Von Hand** sortiert (siehe [Sortierung einer Spalte](hilfe:board/sortierung)).
 
-Ohne Ziehen geht es auch: im Kartendetail stellt **Status** die Spalte um, in der Liste **Verschieben nach ...**. Die Karte kommt dann ans Ende der Spalte; sonst gilt dasselbe wie beim Ziehen.
+Ohne Ziehen geht es auch: im Kartendetail stellt **Status** die Spalte um, in der Liste **Verschieben nach ...**. Die Karte kommt dann oben in die Spalte; sonst gilt dasselbe wie beim Ziehen.
 
 ## Nach Erledigt legen {#erledigen}
 Ziehst du eine Karte in die Erledigt-Spalte oder stellst ihren Status darauf:
 
 - bekommt sie das Abschlussdatum von heute, eine Karte aus einer Serie ihren Termintag;
 - halten laufende Timer auf ihr an und buchen; stoppt dabei dein eigener Timer, nennt die Meldung die gebuchte Zeit;
-- steht sie oben in der Erledigt-Spalte, die nach Abschluss geordnet ist und sich nicht von Hand umsortieren lässt;
+- steht sie oben in der Erledigt-Spalte, die anfangs nach Erledigung geordnet ist;
 - werden verknüpfte Karten mit erledigt;
 - wandert sie nach der Archivgrenze des Boards von selbst ins Archiv.
 
@@ -103,7 +103,7 @@ Dabei gilt:
 Umziehen braucht im alten Board das Recht Karten löschen und im neuen das Recht Karten anlegen. Den Knopf siehst du nur, wenn es ein solches Ziel gibt.
 
 ## Duplizieren {#duplizieren}
-Der Knopf mit den zwei Blättern im Kopf des Kartendetails (**Duplizieren: Kopie in derselben Spalte, ohne Zeiten, Kommentare und Anhänge**) legt eine Kopie am Ende derselben Spalte an und öffnet sie. Die Kopie heißt wie das Original mit "(Kopie)" dahinter, bekommt die nächste Nummer und übernimmt Inhalt und Angaben; alle Punkte der Checkliste sind wieder offen. Ohne Kopie bleiben Zeiten, Kommentare, Anhänge, Blockade, Transkripte, Verknüpfung und Serie. Duplizieren braucht das Recht Karten anlegen.
+Der Knopf mit den zwei Blättern im Kopf des Kartendetails (**Duplizieren: Kopie in derselben Spalte, ohne Zeiten, Kommentare und Anhänge**) legt eine Kopie oben in derselben Spalte an und öffnet sie. Die Kopie heißt wie das Original mit "(Kopie)" dahinter, bekommt die nächste Nummer und übernimmt Inhalt und Angaben; alle Punkte der Checkliste sind wieder offen. Ohne Kopie bleiben Zeiten, Kommentare, Anhänge, Blockade, Transkripte, Verknüpfung und Serie. Duplizieren braucht das Recht Karten anlegen.
 
 ## Nummern einer Karte {#kennung}
 Jede Karte hat zwei Nummern:

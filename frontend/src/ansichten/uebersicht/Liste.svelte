@@ -2,10 +2,14 @@
   // Liste eines Boards unter Kopf und Werkzeugleiste des Boards: dieselben Karten wie die Spalten (offene und die
   // Erledigten im Zeitfenster der Spalte) als Tabelle mit Schlüssel, Titel, Status, Zuständig, Priorität, Fällig,
   // Labels, den eigenen Feldern des Boards und Zeit. Ein Klick auf den Spaltenkopf sortiert, ein zweiter dreht die
-  // Richtung; Status sortiert nach der Spaltenfolge des Boards. Kopf und die ersten Spalten bleiben beim Rollen stehen.
+  // Richtung; Status sortiert nach der Spaltenfolge des Boards und darin nach der Sortierung der Spalte (HELF-50). Kopf
+  // und die ersten Spalten bleiben beim Rollen stehen. Gezeigt werden zuerst so viele Zeilen wie der Ladeschritt des
+  // Boards, beim Rollen ans Ende die nächsten; Suche, Filter und Sortierung gehen über alle.
   // Kästchen wählen Karten für Sammelaktionen (verschieben, zuweisen, Label, Priorität, Papierkorb); ein Klick auf eine
   // Zeile öffnet die Karte über ihren Pfad.
   import { kartenNummer, laufendAuf, leererFilter, spalteninhalt, zeitDerKarte, type Kartenfilter } from "../../daten/abfragen";
+  import { ansichtVon, sortierungVon } from "../../board/ansicht.svelte";
+  import { nachladen } from "../../teile/nachladen";
   import { ZEITFENSTER_VORGABE } from "../../anzeige";
   import { sammelLabel, sammelPrioritaet, sammelVerschieben, sammelZuweisen } from "../../daten/anwendung/karten.svelte";
   import { inPapierkorb } from "../../daten/anwendung/papierkorb.svelte";
@@ -27,9 +31,10 @@
     Record<Prioritaet, { name: string; rang: number }>;
 
   interface Zeile { karte: Karte; spalte: Spalte; rang: number }
-  // dieselben Karten wie die Spalten des Boards (dieselbe Abfrage): offene alle, erledigte im Zeitfenster der Spalte;
-  // Suche und Filter der Werkzeugleiste wirken wie im Board
-  const zeilen = $derived(board.spalten.flatMap((s, si) => spalteninhalt(board, s, filter, "manuell", s.zeitfenster ?? ZEITFENSTER_VORGABE)
+  // dieselben Karten wie die Spalten des Boards (dieselbe Abfrage): offene alle, erledigte im Zeitfenster der Spalte,
+  // je Spalte in ihrer Sortierung; Suche und Filter der Werkzeugleiste wirken wie im Board
+  const ansicht = $derived(ansichtVon(board.id));
+  const zeilen = $derived(board.spalten.flatMap((s, si) => spalteninhalt(board, s, filter, sortierungVon(ansicht, s), s.zeitfenster ?? ZEITFENSTER_VORGABE)
     .karten.map((karte, i) => ({ karte, spalte: s, rang: si * 10000 + i }))));
   const erledigtSpalte = $derived(board.spalten.find((s) => s.erledigt));
   const fertigZahl = $derived(zeilen.filter((z) => z.spalte.erledigt).length);
@@ -73,6 +78,17 @@
   }));
   function sortieren(feld: string): void {
     sortierung = { feld, auf: sortierung.feld === feld ? !sortierung.auf : true };
+  }
+
+  // seitenweise nach dem Ladeschritt des Boards; eine neue Sortierung oder ein neuer Filter fängt vorn an
+  const ladeschritt = $derived(board.einstellungen.ladeschritt);
+  const ladeSchluessel = $derived(`${sortierung.feld}|${sortierung.auf}|${JSON.stringify(filter)}`);
+  let geladen = $state({ fuer: "", seiten: 1 });
+  const seiten = $derived(geladen.fuer === ladeSchluessel ? geladen.seiten : 1);
+  const gezeigt = $derived(sortiert.slice(0, seiten * ladeschritt));
+  const weitere = $derived(sortiert.length - gezeigt.length);
+  function mehrLaden(): void {
+    if (weitere > 0) geladen = { fuer: ladeSchluessel, seiten: seiten + 1 };
   }
 
   // Auswahl: räumt sich selbst auf, wenn Karten verschwinden (verschoben in ein anderes Board, im Papierkorb)
@@ -146,7 +162,7 @@
         </tr>
       </thead>
       <tbody>
-        {#each sortiert as z (z.karte.id)}
+        {#each gezeigt as z (z.karte.id)}
           {@const k = z.karte}
           {@const faellig = k.faellig && !z.spalte.erledigt ? faelligText(k.faellig) : null}
           {@const sek = zeitSek(k)}
@@ -191,5 +207,11 @@
         {/each}
       </tbody>
     </table>
+    {#if weitere > 0}
+      <div class="pw-nachladen" use:nachladen={{ mehr: mehrLaden, gezeigt: gezeigt.length }}>
+        <button class="knopf ohne klein" onclick={mehrLaden} title="Lädt die nächsten {ladeschritt} (Ladeschritt des Boards); Rollen ans Ende lädt auch">
+          <i class="fa-solid fa-angles-down"></i>{gezeigt.length} von {sortiert.length}, mehr laden</button>
+      </div>
+    {/if}
   </div>
 </div>

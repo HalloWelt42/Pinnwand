@@ -77,6 +77,10 @@ Ein Tippen öffnet das Board **spaltenweise**:
 - Die gewählte Spalte merkt sich das Telefon je Board.
 - Steht eine Spalte über ihrer Grenze, sagt es ein Hinweis oben.
 - Eine Erledigt-Spalte zeigt nur die Karten ihres Zeitfensters, etwa **Diese Woche**.
+- Rechts über den Karten steht, wonach die Spalte sortiert, etwa **Priorität**; ein Tippen darauf wählt eine andere
+  Sortierung, nur für dich auf diesem Gerät (siehe [Sortierung einer Spalte](hilfe:board/sortierung)). Oben steht das
+  Neueste.
+- Lange Spalten zeigen zuerst 50 Karten (Ladeschritt des Boards); rollst du ans Ende, kommen die nächsten.
 - Unten legt **Karte in ...** eine neue Karte direkt in dieser Spalte an.
 
 ## Eine Karte ansehen {#karte}
@@ -94,14 +98,15 @@ Ein Tippen auf eine Karte öffnet sie. Von oben nach unten:
   dieser Karte.
 - **Checkliste**: Punkte abhaken durch Tippen.
 - **Beschreibung** zum Lesen.
-- **Kommentare**: lesen und unten schreiben, mit @ erwähnst du jemanden. **Senden** speichert den Kommentar.
+- **Kommentare**: oben schreiben, darunter der neueste zuerst; mit @ erwähnst du jemanden. **Senden** speichert den
+  Kommentar.
 
 **Zurück** führt dorthin, woher du kamst: zu Heute, zu den Hinweisen oder zum Board.
 
 ## Verschieben {#verschieben}
 **Verschieben nach** öffnet von unten eine Auswahl der Spalten.
 
-- Ein Tippen auf eine offene Spalte verschiebt die Karte dorthin, ans Ende. Die aktuelle Spalte ist mit
+- Ein Tippen auf eine offene Spalte verschiebt die Karte dorthin, oben hinein. Die aktuelle Spalte ist mit
   **Jetzt hier** markiert. Du brauchst dafür im Board das Recht **Karten verschieben**.
 - Würde die Spalte damit über ihre Grenze kommen, steht dort eine Warnung, etwa "Danach über der Grenze (5/4)";
   verschieben geht trotzdem.
@@ -137,7 +142,7 @@ Der Reiter **Erfassen** legt schnell eine neue Karte an.
 4. **Fällig**: wie beim Bearbeiten, mit **Heute**, **Morgen**, dem nächsten Freitag oder **Ohne**.
 5. **Anlegen**.
 
-Die Karte kommt ans Ende der ersten offenen Spalte, oder in die Spalte, aus der du über **Karte in ...** kamst. Das
+Die Karte kommt oben in die erste offene Spalte, oder in die Spalte, aus der du über **Karte in ...** kamst. Das
 Formular bleibt offen für die nächste Karte; oben führt **Zuletzt angelegt** zur eben erfassten.
 
 ### Per Sprache erfassen

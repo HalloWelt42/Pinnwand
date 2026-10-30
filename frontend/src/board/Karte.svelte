@@ -128,7 +128,7 @@
       {:else if fremd}
         <span class="pw-timer fremd" class:ueber title="Timer von {konto(fremd.konto).name} läuft{zeitHinweis}"><i class="fa-solid fa-circle-play"></i>{dauer(zeit)}</span>
       {:else if timerErlaubt(karte)}
-        <button class="pw-timer" class:ueber title="{geteilt ? 'Timer starten (Zeit geteilt)' : 'Timer starten'}: dein laufender Timer endet dabei und bucht{zeitHinweis}"
+        <button class="pw-timer" class:ueber title="{geteilt ? 'Timer starten (Zeit geteilt)' : 'Timer starten'}: läuft deiner auf einer anderen Karte, pausiert er dort und bucht{zeitHinweis}"
                 onclick={timer}><i class="fa-solid fa-play"></i>{zeit ? dauer(zeit) : ""}</button>
       {:else if zeit}
         <span class="pw-angabe" class:gefahr={ueber} title="Gebuchte Zeit{zeitHinweis}"><i class="fa-regular fa-clock"></i>{dauer(zeit)}</span>

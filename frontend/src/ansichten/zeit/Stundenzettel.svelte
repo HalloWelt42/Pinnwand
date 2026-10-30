@@ -208,7 +208,7 @@
                 {:else if timer?.karte === z.id}
                   <button class="pw-timer" title="Dein Timer ist angehalten: fortsetzen" onclick={fortsetzen}><i class="fa-solid fa-play"></i></button>
                 {:else if k && timerErlaubt(k)}
-                  <button class="pw-timer" title="Timer starten (dein Timer auf einer anderen Karte endet dabei und bucht)" onclick={() => starten(z.id)}><i class="fa-solid fa-play"></i></button>
+                  <button class="pw-timer" title="Timer starten (dein Timer auf einer anderen Karte pausiert dort und bucht)" onclick={() => starten(z.id)}><i class="fa-solid fa-play"></i></button>
                 {:else}
                   <span class="pw-zeiten-ohne-timer" title="Kein Timer: erledigt, Idee oder nicht mehr im Board; nachtragen geht"></span>
                 {/if}

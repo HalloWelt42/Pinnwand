@@ -103,7 +103,7 @@
       <div class="etikett">Zuletzt genutzt</div>
       {#each zuletzt as k (k.id)}
         <div class="pw-tel-zeile">
-          <button class="pw-tel-timer" title="Timer starten; dein Timer auf einer anderen Karte endet dabei und bucht" aria-label="Timer auf {k.schluessel} starten"
+          <button class="pw-tel-timer" title="Timer starten; dein Timer auf einer anderen Karte pausiert dort und bucht" aria-label="Timer auf {k.schluessel} starten"
                   onclick={() => starten(k.id)}><i class="fa-solid fa-play"></i></button>
           <a class="text" href={pfadKarte(k)}><span class="titel">{k.titel}</span>
             <span class="angaben" data-farbe={board(k.board).farbe}><span class="pw-farbpunkt"></span><span class="pw-schluessel">{k.schluessel}</span>

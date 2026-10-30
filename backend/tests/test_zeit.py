@@ -78,7 +78,7 @@ async def test_start_auf_anderer_karte_beendet_nur_den_eigenen(pw: Pinnwand):
     await ok(pw, "anna", "/timer/starten", {"karte": k["id"]})
     vor(pw, 20)
     a = await ok(pw, "anna", "/timer/starten", {"karte": zweite["id"]})
-    assert a["meldung"] == "Timer läuft auf HAUS-2; HAUS-1 beendet, 0:20 gebucht"
+    assert a["meldung"] == "Timer gewechselt: HAUS-2 läuft, HAUS-1 pausiert (0:20 gebucht)"
     timer = {t["konto"]: t["karte"] for t in (await pw.stand("anna"))["timer"]}
     assert timer == {"1": zweite["id"], "2": k["id"]}                    # berts Timer läuft weiter (M-80)
 

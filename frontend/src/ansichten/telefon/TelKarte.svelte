@@ -95,7 +95,7 @@
     <span class="pw-tel-timer fremd" title="Timer von {konto(fremd.konto).name} läuft">
       <i class="fa-solid fa-circle-play"></i><span class="zahl">{konto(fremd.konto).kuerzel}</span></span>
   {:else if mitZeit}
-    <button class="pw-tel-timer" title="Timer starten; dein Timer auf einer anderen Karte endet dabei und bucht" aria-label="Timer starten"
+    <button class="pw-tel-timer" title="Timer starten; dein Timer auf einer anderen Karte pausiert dort und bucht" aria-label="Timer starten"
             onclick={() => starten(k.id)}><i class="fa-solid fa-play"></i>{#if zeit}<span class="zahl">{dauer(zeit)}</span>{/if}</button>
   {/if}
 </div>

@@ -87,7 +87,7 @@ Rechts in jeder Zeile steht der Knopf des Timers dieser Karte:
 | Dein Timer läuft auf der Karte | Pause mit der laufenden Zeit | hält an und bucht |
 | Dein Timer ist auf der Karte angehalten | Dreieck mit der Zeit | setzt ihn fort |
 | Der Timer einer anderen Person läuft | Kreis mit der Zeit, ohne Knopf | nichts |
-| Kein Timer, aber einer ist erlaubt | **Start** oder, wenn schon Zeit gebucht ist, Dreieck mit der Zeit | startet deinen Timer; dein Timer auf einer anderen Karte endet dabei und bucht |
+| Kein Timer, aber einer ist erlaubt | **Start** oder, wenn schon Zeit gebucht ist, Dreieck mit der Zeit | startet deinen Timer; dein Timer auf einer anderen Karte pausiert dort und bucht |
 
 Starten lässt sich ein Timer nur auf einer Karte, die Arbeit ist, nicht erledigt ist, in einem Board mit
 Zeiterfassung liegt und für die du dort das Recht **Eigene Zeit buchen** hast. Mehr unter

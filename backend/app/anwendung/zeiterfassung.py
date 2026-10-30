@@ -288,8 +288,8 @@ class Zeiterfassung:
     # --- Timer ------------------------------------------------------------------------------------------------------
 
     async def starten(self, konto: Konto, karte_id: Kennung) -> Antwort:
-        """Timer auf einer Karte starten; der eigene Timer auf einer anderen Karte endet dabei (gebucht), fremde laufen
-        weiter (M-80). Der erste Start setzt den Starttag der Karte."""
+        """Timer auf einer Karte starten; der eigene Timer auf einer anderen Karte pausiert dabei (gebucht; ein Mensch
+        arbeitet nicht parallel, HELF-42), fremde laufen weiter (M-80). Der erste Start setzt den Starttag der Karte."""
 
         def arbeit(k: Kontext) -> str | None:
             c = karte_lesen(k, karte_id)
@@ -299,8 +299,9 @@ class Zeiterfassung:
                 return None
             if vorher and vorher.karte != c.id:
                 sek = sitzung_buchen(k, vorher)
-                text = f"Timer läuft auf {c.schluessel}; {schluessel_von(k, vorher.karte)} beendet" + (
-                    f", {dauer_text(sek)} gebucht" if sek else "")
+                # ein Wechsel (HELF-42): die alte Karte pausiert, ihre Zeit ist gebucht; die Oberfläche bietet die Rückkehr an
+                text = f"Timer gewechselt: {c.schluessel} läuft, {schluessel_von(k, vorher.karte)} pausiert" + (
+                    f" ({dauer_text(sek)} gebucht)" if sek else "")
             else:
                 text = f"Timer auf {c.schluessel} fortgesetzt" if vorher else f"Timer läuft auf {c.schluessel}"
             k.s.schreib("timer", Timer(id=k.konto.id, konto=k.konto.id, karte=c.id, board=c.board, seit=k.jetzt).json_daten())

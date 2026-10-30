@@ -66,7 +66,7 @@
     {:else if fremd.length}
       <span class="pw-timer fremd" title="Timer von {fremd.map((t) => konto(t.konto).name).join(', ')} läuft"><i class="fa-solid fa-circle-play"></i>{dauer(zeit)}</span>
     {:else if timerErlaubt(k)}
-      <button class="pw-timer" disabled={gesperrt} title="Timer starten (dein laufender endet dabei und bucht)" onclick={() => starten(k.id)}>
+      <button class="pw-timer" disabled={gesperrt} title="Timer starten (dein laufender pausiert und bucht)" onclick={() => starten(k.id)}>
         <i class="fa-solid fa-play"></i>{zeit ? dauer(zeit) : "Start"}</button>
     {:else if k.art === "idee"}
       <span class="pw-angabe pw-uebersicht-idee"><i class="fa-solid fa-lightbulb"></i>Idee</span>

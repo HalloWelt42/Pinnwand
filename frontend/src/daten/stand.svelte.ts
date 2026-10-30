@@ -14,6 +14,8 @@ import { ICH, ichSetzen } from "./ich";
 export interface Meldung {
   text: string;
   rueckgaengig?: () => void;
+  /** ein Schritt, der sich aus der Meldung anbietet, etwa "Zurück zu HELF-12" nach einem Timer-Wechsel (HELF-42) */
+  weiter?: { text: string; symbol: string; tun: () => void };
 }
 
 export interface Zustand {

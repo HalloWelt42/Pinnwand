@@ -31,7 +31,7 @@ Starten kannst du ihn hier:
 - Unter **Zeiten** am Anfang jeder Kartenzeile im Stundenzettel.
 - [Am Telefon](hilfe:telefon) auf der Seite für die Zeit.
 
-Läuft dein Timer schon auf einer anderen Karte oder ist er dort angehalten, endet er beim Start und bucht; die Meldung nennt die gebuchte Zeit. Timer anderer Personen laufen weiter. Der erste Start setzt den Starttag der Karte, wenn sie noch keinen hat.
+Läuft dein Timer schon auf einer anderen Karte oder ist er dort angehalten, ist das ein Wechsel: du arbeitest nicht an zwei Karten zugleich. Die alte Karte pausiert, ihre Zeit bis jetzt ist gebucht, und die Meldung sagt es, etwa "Timer gewechselt: HAUS-12 läuft, HAUS-7 pausiert (0:25 gebucht)". Darin steht der Knopf **Zurück zu HAUS-7**: ein Klick startet den Timer dort wieder, und HAUS-12 pausiert ebenso. Timer anderer Personen laufen weiter; ein App-Zugang wie der Helfer hat seinen eigenen Timer neben deinem. Der erste Start setzt den Starttag der Karte, wenn sie noch keinen hat.
 
 - **Anhalten** bucht die laufende Sitzung. Der Timer bleibt auf der Karte und lässt sich mit **Fortsetzen** weiterführen.
 - **Stoppen** bucht ebenso und beendet den Timer.

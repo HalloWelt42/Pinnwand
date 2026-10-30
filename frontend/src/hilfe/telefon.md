@@ -62,7 +62,7 @@ auf der Karte, endet er dabei und bucht. Wie am Rechner brauchst du im Board das
 
 ### Timer an der Karte
 Rechts an einer Karte steht der Knopf des Timers, wenn auf ihr einer laufen darf: das Dreieck startet deinen Timer
-(dein Timer auf einer anderen Karte endet dabei und bucht), die Pause hält ihn an, bei angehaltenem Timer setzt das
+(dein Timer auf einer anderen Karte pausiert dort und bucht; die Meldung bietet **Zurück zu ...**), die Pause hält ihn an, bei angehaltenem Timer setzt das
 Dreieck ihn fort. Läuft dort der Timer einer anderen Person, steht ihr Kürzel da.
 
 ## Boards am Telefon {#boards}

@@ -24,6 +24,14 @@ SENDUNG_HOECHSTENS = 500
 SCHLUESSEL = re.compile(r"(?<![A-Za-z0-9])([A-Z][A-Z0-9]{1,5})-([1-9][0-9]{0,6})(?![0-9A-Za-z])")
 #: so viele Treffer liefert die Suche nach einem Commit
 TREFFER = 20
+#: ein Hash in einem Text: 7 bis 40 Zeichen 0-9a-f, mindestens ein Buchstabe (sonst wäre jedes Datum einer)
+HASH = re.compile(r"(?<![0-9A-Za-z])(?=[0-9a-f]*[a-f])([0-9a-f]{7,40})(?![0-9A-Za-z])")
+#: eine Zeile im Verlauf, mit der eine Karte die Spalte wechselt (kartenbasis.vermerken in karten.wechseln)
+WECHSEL = re.compile(r"^hat sie von (.+) nach (.+) verschoben$")
+#: so viele Vorschläge bekommt eine Karte höchstens (je Lauf)
+VORSCHLAEGE_JE_KARTE = 20
+GRUND_HASH = "Hash im Text der Karte"
+GRUND_ARBEIT = "Repo im Titel, Commit während der Arbeit an der Karte"
 
 
 class RepoAngabe(Modell):
@@ -52,6 +60,41 @@ class Sendung(Modell):
 class Eingespielt(Modell):
     neu: int
     verknuepft: int
+
+
+class Vorgeschlagen(Modell):
+    vorschlaege: int
+
+
+def hashes_in(text: str) -> list[str]:
+    return list(dict.fromkeys(HASH.findall(text or "")))
+
+
+def arbeitszeiten(karte: Karte, board: Board, jetzt: str) -> list[tuple[str, str]]:
+    """Wann an der Karte gearbeitet wurde: von jedem Wechsel in eine Spalte, die weder die erste noch die Erledigt-Spalte
+    ist (etwa Dran), bis zum nächsten Wechsel oder Abschluss (Ende des Tages), sonst bis jetzt."""
+    erste = board.spalten[0].name if board.spalten else ""
+    erledigt = {s.name for s in board.spalten if s.erledigt}
+    spannen: list[tuple[str, str]] = []
+    beginn: str | None = None
+    for e in sorted(karte.verlauf, key=lambda e: e.zeit):
+        m = WECHSEL.match(e.text)
+        if not m and e.text != "hat sie erledigt":
+            continue
+        if beginn:
+            spannen.append((beginn, e.zeit))
+            beginn = None
+        if m and m.group(2) != erste and m.group(2) not in erledigt:
+            beginn = e.zeit
+    if beginn:
+        spannen.append((beginn, f"{karte.abgeschlossen}T23:59:59" if karte.abgeschlossen else jetzt))
+    return spannen
+
+
+def repo_im_titel(titel: str) -> str | None:
+    """Ein Repo, das der Titel vorn nennt ("Pinnwand: ..."), klein geschrieben."""
+    vorn, trenner, _ = titel.partition(":")
+    return vorn.strip().lower() if trenner and 0 < len(vorn.strip()) <= 60 else None
 
 
 def schluessel_in(text: str) -> list[str]:
@@ -148,6 +191,72 @@ class Commits:
         await self.a.aendern(konto, arbeit, rueckgaengig=False, melden=False, ins_journal=False)
         return Eingespielt(**zahlen)
 
+    async def vorschlaege(self, konto: Konto) -> Vorgeschlagen:
+        """Unsichere Zuordnungen als Vorschlag zum Bestätigen (Nachtrag, "automatisch, dann prüfen"): ein bekannter
+        Commit-Hash in Beschreibung oder Kommentaren einer Karte, und Commits ohne Kartenschlüssel aus dem Repo, das der
+        Titel vorn nennt, aus der Zeit, in der an der Karte gearbeitet wurde. Was schon an der Karte hängt, gelöst oder
+        verworfen ist, kommt nicht wieder. Nur der Besitzer der App (der Commitsammler ruft es nach jedem Lauf)."""
+        if not self.besitzer_der_app(konto):
+            raise Abgelehnt("Vorschläge rechnet nur der Besitzer der App", 403)
+        zahl = {"neu": 0}
+
+        def vorschlagen(k: Kontext, karte: Karte, c: Commit, grund: str, je_karte: dict[str, int]) -> None:
+            if je_karte.get(karte.id, 0) >= VORSCHLAEGE_JE_KARTE:
+                return
+            if k.s.lies("commitbezuege", bezug_kennung(c.id, karte.id)) is not None:
+                return
+            b = bezug_aus(c, karte, "vorschlag", k)
+            b.grund = grund
+            k.s.schreib("commitbezuege", b.json_daten())
+            je_karte[karte.id] = je_karte.get(karte.id, 0) + 1
+            zahl["neu"] += 1
+
+        def arbeit(k: Kontext) -> str | None:
+            je_karte: dict[str, int] = {}
+            boards = {d["id"]: Board.model_validate(d) for d in k.s.alle("boards")}
+            for d in k.s.alle("karten"):
+                karte = Karte.model_validate(d)
+                board = boards.get(karte.board)
+                if board is None:
+                    continue
+                texte = " ".join([karte.beschreibung or "", *(c.text for c in karte.kommentare)])
+                for h in hashes_in(texte):
+                    treffer = k.s.alle("commits", "id LIKE ?", (f"%@{h}%",), "zeit DESC LIMIT 3")
+                    if len({z["hash"] for z in treffer}) == 1:           # nur eindeutige
+                        for z in treffer:
+                            vorschlagen(k, karte, Commit.model_validate(z), GRUND_HASH, je_karte)
+                repo = repo_im_titel(karte.titel)
+                if not repo:
+                    continue
+                for von, bis in arbeitszeiten(karte, board, k.jetzt):
+                    for z in k.s.alle("commits", "zeit BETWEEN ? AND ? AND lower(json_extract(daten, '$.reponame')) = ?",
+                                      (von, bis, repo), "zeit"):
+                        c = Commit.model_validate(z)
+                        if not schluessel_in(c.nachricht):
+                            vorschlagen(k, karte, c, GRUND_ARBEIT, je_karte)
+            return f"{zahl['neu']} Vorschläge für Commits an Karten" if zahl["neu"] else None
+
+        await self.a.aendern(konto, arbeit, rueckgaengig=False, melden=False, ins_journal=False)
+        return Vorgeschlagen(vorschlaege=zahl["neu"])
+
+    async def bestaetigen(self, konto: Konto, karte_id: Kennung, bezug_id: Kennung) -> Antwort:
+        """Einen Vorschlag übernehmen: der Commit hängt dann wie von Hand verknüpft an der Karte (Recht Karten
+        bearbeiten, mit Rückgängig)."""
+
+        def arbeit(k: Kontext) -> str:
+            karte = karte_lesen(k, karte_id)
+            k.board_mit_recht(karte.board, "karten.bearbeiten")
+            d = k.s.lies("commitbezuege", bezug_id)
+            if d is None or d.get("karte") != karte.id or d.get("geloest") or d.get("art") != "vorschlag":
+                raise Abgelehnt("Diesen Vorschlag gibt es nicht (mehr)", 404)
+            b = CommitBezug.model_validate(d)
+            k.s.schreib("commitbezuege", b.model_copy(update={"art": "hand", "grund": None, "von": k.konto.id, "am": k.jetzt}).json_daten())
+            vermerken(k, karte, f"hat Commit {b.hash[:7]} aus {b.reponame} übernommen")
+            k.s.schreib("karten", karte.json_daten())
+            return f"{karte.schluessel}: Commit {b.hash[:7]} übernommen"
+
+        return await self.a.aendern(konto, arbeit)
+
     async def verknuepfen(self, konto: Konto, karte_id: Kennung, commit_id: Kennung) -> Antwort:
         """Einen bekannten Commit von Hand an die Karte hängen (Recht Karten bearbeiten); war er gelöst, gilt er wieder."""
 
@@ -169,8 +278,9 @@ class Commits:
         return await self.a.aendern(konto, arbeit)
 
     async def loesen(self, konto: Konto, karte_id: Kennung, bezug_id: Kennung) -> Antwort:
-        """Einen Commit von der Karte lösen (Recht Karten bearbeiten). Hing er über den Schlüssel in der Nachricht an
-        ihr, bleibt der Bezug als gelöst stehen, damit der nächste Abgleich ihn nicht wieder anhängt."""
+        """Einen Commit von der Karte lösen oder einen Vorschlag verwerfen (Recht Karten bearbeiten). Hing er über den
+        Schlüssel in der Nachricht an ihr oder war er ein Vorschlag, bleibt der Bezug als gelöst stehen, damit der nächste
+        Abgleich ihn nicht wiederbringt."""
 
         def arbeit(k: Kontext) -> str:
             karte = karte_lesen(k, karte_id)
@@ -179,13 +289,14 @@ class Commits:
             if d is None or d.get("karte") != karte.id or d.get("geloest"):
                 raise Abgelehnt("Dieser Commit hängt nicht (mehr) an der Karte", 404)
             b = CommitBezug.model_validate(d)
-            if b.art == "kennung":
+            if b.art in ("kennung", "vorschlag"):
                 k.s.schreib("commitbezuege", b.model_copy(update={"geloest": True, "von": k.konto.id, "am": k.jetzt}).json_daten())
             else:
                 k.s.loesch("commitbezuege", b.id)
-            vermerken(k, karte, f"hat Commit {b.hash[:7]} gelöst")
+            wort = "verworfen" if b.art == "vorschlag" else "gelöst"
+            vermerken(k, karte, f"hat Commit {b.hash[:7]} {wort}")
             k.s.schreib("karten", karte.json_daten())
-            return f"{karte.schluessel}: Commit {b.hash[:7]} gelöst"
+            return f"{karte.schluessel}: Commit {b.hash[:7]} {wort}"
 
         return await self.a.aendern(konto, arbeit)
 

@@ -104,6 +104,8 @@ Der Abschnitt **Commits** zeigt je Commit den kurzen Hash, die erste Zeile der N
 - **Commit suchen** findet bekannte Commits über den Anfang des Hashs oder über Wörter der Nachricht; ein Klick auf einen Treffer verknüpft ihn von Hand mit der Karte.
 - Das X löst einen Commit von der Karte, mit Rückgängig. Hing er über den Schlüssel in der Nachricht an ihr, bleibt er gelöst, auch wenn der Sammler ihn wieder meldet.
 
+Unter den Commits stehen **Vorschläge**: Commits, die wahrscheinlich, aber nicht sicher zur Karte gehören, je mit dem Grund. Vorgeschlagen wird ein Commit, dessen Hash in der Beschreibung oder einem Kommentar der Karte steht, und ein Commit ohne Kartenschlüssel aus dem Repo, das der Titel vorn nennt (etwa "Pinnwand: ..."), aus der Zeit, in der die Karte in Arbeit war. Der Haken übernimmt ihn, als wäre er von Hand verknüpft; das X verwirft ihn, und er kommt nicht wieder.
+
 Verknüpfen und lösen geht mit dem Recht Karten bearbeiten; der Abschnitt steht da, sobald die Karte Commits hat oder im Board schon Commits hängen. Am Telefon stehen die Commits zum Lesen in der Karte.
 
 ## Abschnitte der Module {#module}

@@ -1,11 +1,11 @@
-"""Wege der Commits an Karten (HELF-35): Einspielen durch den Commitsammler (nur der Besitzer der App), Suchen,
-Verknüpfen und Lösen am Ticket."""
+"""Wege der Commits an Karten (HELF-35): Einspielen und Vorschläge rechnen durch den Commitsammler (nur der Besitzer der
+App), Suchen, Verknüpfen, Vorschlag übernehmen und Lösen am Ticket."""
 
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
 
-from ..anwendung.commits import Eingespielt, Sendung
+from ..anwendung.commits import Eingespielt, Sendung, Vorgeschlagen
 from ..anwendung.rahmen import Antwort
 from ..modell import Commit, Kennung, Konto, Modell
 from .zugriff import Zugriff
@@ -23,6 +23,14 @@ def router(z: Zugriff) -> APIRouter:
     @r.post("/commits/einspielen", response_model=Eingespielt)
     async def einspielen(s: Sendung, konto: Konto = Depends(ich)) -> Eingespielt:
         return await tun(d.commits.einspielen(konto, s))
+
+    @r.post("/commits/vorschlaege", response_model=Vorgeschlagen)
+    async def vorschlaege(konto: Konto = Depends(ich)) -> Vorgeschlagen:
+        return await tun(d.commits.vorschlaege(konto))
+
+    @r.post("/karten/{karte_id}/commits/{bezug_id}/bestaetigen", response_model=Antwort)
+    async def bestaetigen(karte_id: Kennung, bezug_id: Kennung, konto: Konto = Depends(ich)) -> Antwort:
+        return await tun(d.commits.bestaetigen(konto, karte_id, bezug_id))
 
     @r.get("/karten/{karte_id}/commits/suche", response_model=list[Commit])
     async def suchen(karte_id: Kennung, text: str = "", konto: Konto = Depends(ich)) -> list[Commit]:

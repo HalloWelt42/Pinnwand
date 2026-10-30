@@ -190,6 +190,9 @@ button.pw-punkt-text { cursor: text; }
 .pw-commit-inhalt { padding: 0 var(--a3) var(--a2) calc(22px + 2 * var(--a3)); font-size: var(--klein); color: var(--text-2); }
 .pw-commit-inhalt pre { margin: 0 0 var(--a2); font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text); }
 .pw-commit-inhalt ul { margin: 0; padding-left: var(--a4); font-family: var(--schrift-zahl); overflow-wrap: anywhere; }
+.pw-commit-vorschlaege { display: flex; flex-direction: column; gap: var(--a1); }
+.pw-commit-vorschlaege > .schwach { font-size: var(--klein); }
+.pw-commit-vorschlag { background: color-mix(in srgb, var(--info) 10%, var(--karte)); }
 .pw-commit-treffer { display: flex; flex-direction: column; gap: 2px; padding: var(--a2); background: var(--karte); border-radius: var(--r2);
                      max-height: 22em; overflow-y: auto; }
 .pw-commit-treffer .fundstelle { display: flex; gap: var(--a3); align-items: baseline; padding: var(--a2); border: 0; border-radius: var(--r1);

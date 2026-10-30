@@ -239,17 +239,21 @@ class Commit(Modell):
     verweis: str | None = None
 
 
-CommitArt = Literal["kennung", "hand"]
+#: über den Schlüssel in der Nachricht, von Hand, oder ein Vorschlag, der noch bestätigt werden will (HELF-35, Stufe 2)
+CommitArt = Literal["kennung", "hand", "vorschlag"]
 
 
 class CommitBezug(Commit):
     """Ein Commit an einer Karte, mit allem, was die Karte zeigt; Kennung fest aus Commit und Karte. `art`: über den Schlüssel in
-    der Nachricht oder von Hand; gelöst bleibt ein Bezug aus der Nachricht stehen, damit er nicht wiederkommt."""
+    der Nachricht, von Hand oder als Vorschlag; gelöst bleibt ein Bezug aus der Nachricht oder ein verworfener Vorschlag
+    stehen, damit er nicht wiederkommt."""
 
     commit: Kennung
     karte: Kennung
     board: Kennung
     art: CommitArt
+    #: warum ein Vorschlag (Hash im Text der Karte, Repo im Titel während der Arbeit)
+    grund: str | None = None
     geloest: bool = False
     #: wer ihn zuletzt verknüpft oder gelöst hat, und wann
     von: Kennung

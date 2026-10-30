@@ -3,8 +3,9 @@
   // Verweis öffnet der Knopf den Commit in seiner Git-Verwaltung; ein lokaler Commit (ohne Verweis) klappt hier auf und
   // zeigt die ganze Nachricht und die geänderten Dateien. Wer die Karte bearbeiten darf, sucht unter den bekannten
   // Commits (Anfang des Hashs oder Wörter der Nachricht) und verknüpft von Hand, oder löst einen (mit Rückgängig).
+  // Vorschläge (unsichere Zuordnungen aus dem Nachtrag) stehen darunter mit ihrem Grund: übernehmen oder verwerfen.
   import { Hilfepunkt, Suchfeld } from "appkern-oberflaeche";
-  import { betreff, commitsDer, loesen, suchen, verknuepfen } from "../daten/anwendung/commits.svelte";
+  import { bestaetigen, betreff, commitsDer, loesen, suchen, verknuepfen, vorschlaegeDer } from "../daten/anwendung/commits.svelte";
   import { wann } from "../daten/format";
   import type { Commit, Karte } from "../modell";
   import { verwerfen } from "../teile/verwerfen";
@@ -12,6 +13,7 @@
   let { karte, schreiben }: { karte: Karte; schreiben: boolean } = $props();
 
   const liste = $derived(commitsDer(karte.id));
+  const vorschlaege = $derived(vorschlaegeDer(karte.id));
   let offen = $state<string | null>(null);
 
   /** so lange nach der letzten Taste wird gesucht */
@@ -96,6 +98,30 @@
       {/if}
     </div>
   {/each}
+
+  {#if vorschlaege.length}
+    <div class="pw-commit-vorschlaege" aria-label="Vorschläge">
+      <div class="schwach">Vorschläge: diese Commits könnten zur Karte gehören</div>
+      {#each vorschlaege as c (c.id)}
+        <div class="pw-anhang pw-commit-vorschlag">
+          <i class="fa-solid fa-code-commit"></i>
+          <span class="pw-commit-hash" title={c.hash}>{c.hash.slice(0, 7)}</span>
+          <span class="pw-commit-text">
+            <span class="name" title={c.nachricht}>{betreff(c)}</span>
+            <span class="meta">{c.reponame} · {wann(c.zeit)} · {c.grund}</span></span>
+          {#if c.verweis}
+            <a class="knopf ohne symbol klein" href={c.verweis} target="_blank" rel="noopener" title="In {c.quelle} ansehen"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+          {/if}
+          {#if schreiben}
+            <button class="knopf ohne symbol klein" title="Übernehmen: gehört zur Karte" aria-label="Commit {c.hash.slice(0, 7)} übernehmen"
+                    onclick={() => bestaetigen(karte.id, c.id)}><i class="fa-solid fa-check"></i></button>
+            <button class="knopf ohne symbol klein" title="Verwerfen: gehört nicht dazu, kommt nicht wieder" aria-label="Vorschlag {c.hash.slice(0, 7)} verwerfen"
+                    onclick={() => loesen(karte.id, c.id)}><i class="fa-solid fa-xmark"></i></button>
+          {/if}
+        </div>
+      {/each}
+    </div>
+  {/if}
 
   {#if schreiben}
     <Suchfeld klasse="pw-detail-suche" symbol={sucht ? "fa-spinner fa-spin-pulse" : "fa-code-commit"} placeholder="Commit suchen: Hash oder Wörter der Nachricht"

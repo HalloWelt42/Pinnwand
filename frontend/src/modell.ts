@@ -204,13 +204,15 @@ export interface Commit {
   verweis?: string;
 }
 
-/** Ein Commit an einer Karte: über den Schlüssel in der Nachricht ("kennung") oder von Hand; gelöst bleibt ein Bezug aus
- *  der Nachricht stehen, damit er nicht wiederkommt */
+/** Ein Commit an einer Karte: über den Schlüssel in der Nachricht ("kennung"), von Hand oder als Vorschlag zum Bestätigen;
+ *  gelöst bleibt ein Bezug aus der Nachricht oder ein verworfener Vorschlag stehen, damit er nicht wiederkommt */
 export interface CommitBezug extends Commit {
   commit: Kennung;
   karte: Kennung;
   board: Kennung;
-  art: "kennung" | "hand";
+  art: "kennung" | "hand" | "vorschlag";
+  /** warum ein Vorschlag */
+  grund?: string;
   geloest?: boolean;
   von: Kennung;
   am: string;

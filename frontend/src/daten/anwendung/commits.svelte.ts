@@ -7,9 +7,19 @@ import type { Board, Commit, CommitBezug, Kennung } from "../../modell";
 import { stand } from "../stand.svelte";
 import { aendern, loeschenAn, senden } from "./meldung.svelte";
 
-/** Die Commits einer Karte, neueste zuerst (gelöste nicht) */
+function bezuegeDer(karteId: Kennung, vorschlag: boolean): CommitBezug[] {
+  return stand.commitbezuege.filter((c) => c.karte === karteId && !c.geloest && (c.art === "vorschlag") === vorschlag)
+    .sort((a, b) => b.zeit.localeCompare(a.zeit));
+}
+
+/** Die Commits einer Karte, neueste zuerst (ohne gelöste und ohne Vorschläge) */
 export function commitsDer(karteId: Kennung): CommitBezug[] {
-  return stand.commitbezuege.filter((c) => c.karte === karteId && !c.geloest).sort((a, b) => b.zeit.localeCompare(a.zeit));
+  return bezuegeDer(karteId, false);
+}
+
+/** Vorschläge für eine Karte zum Übernehmen oder Verwerfen, neueste zuerst */
+export function vorschlaegeDer(karteId: Kennung): CommitBezug[] {
+  return bezuegeDer(karteId, true);
 }
 
 /** Gibt es in diesem Board Commits? Dann bietet jede Karte das Verknüpfen von Hand an */
@@ -30,6 +40,12 @@ export async function verknuepfen(karteId: Kennung, commit: Kennung): Promise<bo
   return !!(await aendern(() => senden(`/karten/${karteId}/commits`, { commit })));
 }
 
+/** Einen Vorschlag übernehmen (wie von Hand verknüpft) */
+export async function bestaetigen(karteId: Kennung, bezugId: Kennung): Promise<boolean> {
+  return !!(await aendern(() => senden(`/karten/${karteId}/commits/${bezugId}/bestaetigen`, {})));
+}
+
+/** Lösen, bei einem Vorschlag: verwerfen (kommt nicht wieder) */
 export async function loesen(karteId: Kennung, bezugId: Kennung): Promise<boolean> {
   return !!(await aendern(() => loeschenAn(`/karten/${karteId}/commits/${bezugId}`)));
 }

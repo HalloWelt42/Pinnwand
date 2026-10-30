@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Commitsammler der Pinnwand (HELF-35): ein eigenes kleines Programm neben der App. Es liest Commits aus Git-Repos auf
 diesem Rechner und spielt sie in die Pinnwand ein; die Pinnwand hängt jeden Commit an die Karten, deren Schlüssel in
-seiner Nachricht steht (etwa HELF-12). Zugänge zu Git-Verwaltungen und alle Einstellungen bleiben hier, die Pinnwand
+seiner Nachricht steht (etwa HELF-12), und rechnet danach Vorschläge für unsichere Zuordnungen. Zugänge zu Git-Verwaltungen und alle Einstellungen bleiben hier, die Pinnwand
 bekommt nur die Werte.
 
     commitsammler.py                  alle Repos abgleichen (neue Commits seit dem letzten Lauf)
@@ -117,15 +117,20 @@ def commits(r: Repo, seit: str | None) -> list[dict]:
     return list(reversed(liste))
 
 
-def senden(e: dict, r: Repo, liste: list[dict]) -> dict:
+def schicken(e: dict, weg: str, daten: dict) -> dict:
+    """POST an die Pinnwand mit dem Schlüssel aus der Schlüsseldatei."""
     schluessel = Path(e["schluessel"]).expanduser().read_text().strip()
-    daten = {"repo": {"kennung": r.kennung, "name": r.name, "quelle": r.quelle, "verweis": r.verweis}, "commits": liste}
-    anfrage = urllib.request.Request(e["adresse"].rstrip("/") + "/commits/einspielen", data=json.dumps(daten).encode(),
+    anfrage = urllib.request.Request(e["adresse"].rstrip("/") + weg, data=json.dumps(daten).encode(),
                                      headers={"Authorization": "Bearer " + schluessel, "Content-Type": "application/json"},
                                      method="POST")
     kontext = ssl._create_unverified_context() if e.get("hauszertifikat", True) else None
-    with urllib.request.urlopen(anfrage, context=kontext, timeout=120) as antwort:
+    with urllib.request.urlopen(anfrage, context=kontext, timeout=300) as antwort:
         return json.load(antwort)
+
+
+def senden(e: dict, r: Repo, liste: list[dict]) -> dict:
+    return schicken(e, "/commits/einspielen",
+                    {"repo": {"kennung": r.kennung, "name": r.name, "quelle": r.quelle, "verweis": r.verweis}, "commits": liste})
 
 
 def main() -> None:
@@ -157,7 +162,10 @@ def main() -> None:
         if liste:
             stand[r.kennung] = liste[-1]["hash"]
             stand_datei.write_text(json.dumps(stand, indent=1))
-    print(f"{len(repos)} Repos, {gesamt['commits']} Commits gesendet, {gesamt['neu']} neu, {gesamt['verknuepft']} an Karten gehängt")
+    # unsichere Zuordnungen als Vorschlag zum Bestätigen am Ticket (Hash im Text, Repo im Titel während der Arbeit)
+    vorschlaege = schicken(e, "/commits/vorschlaege", {}).get("vorschlaege", 0)
+    print(f"{len(repos)} Repos, {gesamt['commits']} Commits gesendet, {gesamt['neu']} neu, {gesamt['verknuepft']} an Karten gehängt, "
+          f"{vorschlaege} neue Vorschläge")
 
 
 if __name__ == "__main__":

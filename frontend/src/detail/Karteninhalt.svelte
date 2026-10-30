@@ -31,7 +31,7 @@
   import Aktivitaet from "./Aktivitaet.svelte";
   import Anhaenge from "./Anhaenge.svelte";
   import Commits from "./Commits.svelte";
-  import { commitsDer, commitsImBoard } from "../daten/anwendung/commits.svelte";
+  import { commitsDer, commitsImBoard, vorschlaegeDer } from "../daten/anwendung/commits.svelte";
   import Checkliste from "./Checkliste.svelte";
   import Textfeld from "./Textfeld.svelte";
   import Transkripte from "./Transkripte.svelte";
@@ -332,7 +332,7 @@
 
   <Anhaenge karte={k} {schreiben} />
 
-  {#if commitsDer(k.id).length || (schreiben && commitsImBoard(board))}
+  {#if commitsDer(k.id).length || vorschlaegeDer(k.id).length || (schreiben && commitsImBoard(board))}
     <Commits karte={k} {schreiben} />
   {/if}
 

@@ -129,3 +129,37 @@ async def test_umzug_und_fruehere_schluessel(pw: Pinnwand):
     # der alte Schlüssel führt weiter zur Karte
     assert await einspielen(pw, commit("b", "HAUS-1: nach dem Umzug")) == {"neu": 1, "verknuepft": 1}
     assert {x["karte"] for x in await bezuege(pw)} == {k["id"]}
+
+
+# --- Stufe 2: Vorschläge ---------------------------------------------------------------------------------------
+
+async def test_vorschlaege_aus_hash_und_arbeitszeit(pw: Pinnwand):
+    b = await mit_bert(pw)
+    k = await pw.karte("anna", b, "Pinnwand: Sortierung")
+    andere = await pw.karte("anna", b, "Keller")
+    await ok(pw, "anna", f"/karten/{andere['id']}/kommentieren", {"text": "Erledigt mit Commit bbbbbbbb, nicht 20261030."})
+    pw.zeiger.zeit = pw.zeiger.zeit.replace(hour=11)
+    await ok(pw, "anna", f"/karten/{k['id']}/verschieben", {"nach": next(s["id"] for s in b["spalten"] if s["name"] == "Dran")})
+    pw.zeiger.zeit = pw.zeiger.zeit.replace(hour=14)
+    await ok(pw, "anna", f"/karten/{k['id']}/erledigen")
+    await einspielen(pw, commit("a", "Sortierung je Spalte", "2026-10-27T12:00:00"),      # während der Arbeit
+                     commit("b", "Aufräumen", "2026-10-27T09:00:00"),                        # Hash im Kommentar
+                     commit("c", "zu früh", "2026-10-27T10:30:00"),
+                     commit("d", "HAUS-9: mit Schlüssel", "2026-10-27T12:30:00"))
+    await abgelehnt(pw, "bert", "/commits/vorschlaege", None, 403, "Vorschläge rechnet nur der Besitzer der App")
+    assert await ok(pw, "anna", "/commits/vorschlaege") == {"vorschlaege": 2}
+    vor = {x["karte"]: x for x in await bezuege(pw, "bert") if x["art"] == "vorschlag"}
+    assert (vor[k["id"]]["hash"][:1], vor[k["id"]]["grund"]) == ("a", "Repo im Titel, Commit während der Arbeit an der Karte")
+    assert (vor[andere["id"]]["hash"][:1], vor[andere["id"]]["grund"]) == ("b", "Hash im Text der Karte")
+    # noch einmal: nichts Neues
+    assert await ok(pw, "anna", "/commits/vorschlaege") == {"vorschlaege": 0}
+    # übernehmen: wie von Hand; verwerfen: bleibt verworfen
+    a = await ok(pw, "bert", f"/karten/{k['id']}/commits/{vor[k['id']]['id']}/bestaetigen")
+    assert a["meldung"] == "HAUS-1: Commit aaaaaaa übernommen" and a["rueckgaengig"]
+    r = await pw.c.delete(f"/api/v1/karten/{andere['id']}/commits/{vor[andere['id']]['id']}", headers=pw.kopf["bert"])
+    assert r.json()["meldung"] == "HAUS-2: Commit bbbbbbb verworfen"
+    assert await ok(pw, "anna", "/commits/vorschlaege") == {"vorschlaege": 0}
+    arten = sorted((x["karte"] == k["id"], x["art"], x.get("geloest", False)) for x in await bezuege(pw))
+    assert arten == [(False, "vorschlag", True), (True, "hand", False)]
+    await abgelehnt(pw, "bert", f"/karten/{k['id']}/commits/{vor[k['id']]['id']}/bestaetigen", None, 404,
+                    "Diesen Vorschlag gibt es nicht (mehr)")

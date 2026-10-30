@@ -463,9 +463,16 @@ Programm, in Stufen ausrollen).
   gelöster Bezug aus der Nachricht bleibt als `geloest` stehen, damit der nächste Abgleich ihn nicht wieder anhängt.
 - Der Nachtrag ist ein Lauf des Sammlers über die ganze Geschichte (`--alles`); danach sendet er je Repo nur, was
   seit dem letzten Lauf dazukam.
-- Stufe 1 (diese): Sammler für Repos auf dem Rechner, Verknüpfen über die Kennung und von Hand, Anzeige im
-  Kartendetail und am Telefon. Später: Vorschläge für unsichere Zuordnungen (Hash in Kommentaren, ähnliche Titel) zum
-  Bestätigen, Git-Verwaltungen ohne lokale Kopie über ihre Schnittstelle, regelmäßiger Lauf des Sammlers.
+- Stufe 1: Sammler für Repos auf dem Rechner, Verknüpfen über die Kennung und von Hand, Anzeige im Kartendetail und
+  am Telefon.
+- Stufe 2: Vorschläge für unsichere Zuordnungen (`art` "vorschlag" mit `grund`): ein bekannter Hash (7 bis 40
+  Zeichen, mindestens ein Buchstabe, eindeutig) in Beschreibung oder Kommentaren einer Karte, und Commits ohne
+  Kartenschlüssel aus dem Repo, das der Titel vorn nennt ("Pinnwand: ..."), aus der Arbeitszeit der Karte (vom Wechsel
+  in eine Spalte, die weder die erste noch Erledigt ist, bis zum nächsten Wechsel oder Abschluss); höchstens 20 je Karte
+  und Lauf. `POST /commits/vorschlaege` (Besitzer der App, der Sammler ruft es nach jedem Lauf), am Ticket
+  `POST /karten/{id}/commits/{bezug}/bestaetigen` (wird wie von Hand) oder verwerfen über Lösen (bleibt gelöst).
+- Später: Git-Verwaltungen ohne lokale Kopie über ihre Schnittstelle (Zugang im Sammler), regelmäßiger Lauf des
+  Sammlers (wartet auf das Ja des Nutzers).
 
 ## 10. Prüfen
 

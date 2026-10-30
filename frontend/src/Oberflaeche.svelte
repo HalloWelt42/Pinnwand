@@ -62,7 +62,7 @@
 {#if !stand.geladen}
   <div class="anmeldung pw-laedt"><span>Lädt die Boards ...</span></div>
 {:else if treffer && geraetArt === "telefon"}
-  <div class="pw-telefon-app"><treffer.komponente {...werte} /></div>
+  <div class="pw-telefon-app" data-rahmen="app"><treffer.komponente {...werte} /></div>
 {:else if treffer}
   <Schale aktiv={treffer.navi}><treffer.komponente {...werte} /></Schale>
 {:else}

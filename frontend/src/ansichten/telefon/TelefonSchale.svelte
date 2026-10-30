@@ -54,7 +54,7 @@
 </script>
 
 <div class="pw-tel">
-  <header class="pw-tel-kopf" class:mit-zurueck={!!zurueck}>
+  <header class="pw-tel-kopf" data-rahmen="kopf" class:mit-zurueck={!!zurueck}>
     {#if zurueck}
       <a class="pw-tel-knopf" href={zurueck} title="Zurück" aria-label="Zurück"><i class="fa-solid fa-chevron-left"></i></a>
     {/if}
@@ -73,7 +73,7 @@
 
   {#if leiste}<div class="pw-tel-leiste">{@render leiste()}</div>{/if}
 
-  <main class="pw-tel-inhalt">{@render children()}</main>
+  <main class="pw-tel-inhalt" data-rahmen="inhalt">{@render children()}</main>
 
   {#if unten}<div class="pw-tel-unten">{@render unten()}</div>{/if}
 
@@ -99,7 +99,7 @@
     </div>
   {/if}
 
-  <nav class="pw-tel-fuss" aria-label="Bereiche">
+  <nav class="pw-tel-fuss" data-rahmen="fuss" aria-label="Bereiche">
     {#each REITER as [id, name, symbol, pfad] (id)}
       <a href={telPfad(pfad)} class:aktiv={reiter === id} aria-current={reiter === id ? "page" : undefined}>
         <span class="symbol"><i class="fa-solid {symbol}"></i></span>{name}</a>

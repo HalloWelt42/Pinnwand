@@ -12,6 +12,7 @@
   import { alterTage, datum, dauer, faelligText, gesamtnummer, uhrzeit, wann } from "../../daten/format";
   import Kennungsknopf from "../../teile/Kennungsknopf.svelte";
   import { betreff, commitsDer } from "../../daten/anwendung/commits.svelte";
+  import { karteText, kommentareText, liest, vorlesen, vorlesenDa } from "../../daten/anwendung/vorlesen.svelte";
   import { board, karte as holeKarte, konto, stand } from "../../daten/stand.svelte";
   import Person from "../../board/Person.svelte";
   import { boardPfad, gehe, wert } from "../../weg.svelte";
@@ -70,6 +71,11 @@
       <h2 class="pw-tel-kartentitel">{k.titel}</h2>
       {#if k.art === "idee"}<span class="pw-angabe pw-tel-idee"><i class="fa-solid fa-lightbulb"></i>Idee</span>{/if}
       {#if k.blockiert}<div class="hinweis gefahr"><i class="fa-solid fa-ban"></i><div><b>Blockiert:</b> {k.blockiert}</div></div>{/if}
+      {#if vorlesenDa(b)}
+        <!-- die ganze Karte vorlesen (HELF-34): Titel, Beschreibung, offene Punkte; ein zweites Tippen hält an -->
+        <button class="knopf pw-tel-breit" aria-pressed={liest(`karte-${k.id}`)} onclick={() => vorlesen(`karte-${k.id}`, karteText(k), b.id)}>
+          <i class="fa-solid {liest(`karte-${k.id}`) ? 'fa-stop' : 'fa-volume-high'}"></i>{liest(`karte-${k.id}`) ? "Vorlesen anhalten" : "Karte vorlesen"}</button>
+      {/if}
       {#if darf(b, "karten.bearbeiten")}
         <a class="knopf pw-tel-breit" href={telPfad(boardPfad(b.kuerzel, `${kartenNummer(k)}/bearbeiten`), von ? { von } : {})}>
           <i class="fa-solid fa-pen"></i>Bearbeiten</a>
@@ -178,7 +184,13 @@
     {/if}
 
     <section class="pw-tel-abschnitt" aria-label="Kommentare">
-      <div class="etikett">Kommentare<span class="zaehler">{k.kommentare.length}</span></div>
+      <div class="etikett">Kommentare<span class="zaehler">{k.kommentare.length}</span>
+        {#if vorlesenDa(b) && k.kommentare.length}
+          <button class="knopf ohne symbol pw-tel-vorlesen" aria-pressed={liest(`kommentare-${k.id}`)}
+                  aria-label={liest(`kommentare-${k.id}`) ? "Vorlesen anhalten" : "Alle Kommentare vorlesen"}
+                  onclick={() => vorlesen(`kommentare-${k.id}`, kommentareText(k), b.id)}>
+            <i class="fa-solid {liest(`kommentare-${k.id}`) ? 'fa-stop' : 'fa-volume-high'}"></i></button>
+        {/if}</div>
       <div class="pw-tel-schreiben">
         <textarea class="eingabe" rows="2" bind:value={kommentar} placeholder="Kommentar schreiben; mit @ erwähnen"></textarea>
         <button class="knopf" disabled={!kommentar.trim()} onclick={senden}><i class="fa-solid fa-paper-plane"></i>Senden</button>

@@ -5,7 +5,7 @@
   // Kommentar steht oben, darunter der jüngste. Der Verlauf zeigt, was die Anwendungsfälle vermerkt haben, ebenso.
   import { darf } from "../daten/abfragen";
   import { kommentieren } from "../daten/anwendung/karten.svelte";
-  import { liest, vorlesen, vorlesenDa } from "../daten/anwendung/vorlesen.svelte";
+  import { kommentareText, liest, verlaufText, vorlesen, vorlesenDa } from "../daten/anwendung/vorlesen.svelte";
   import { ICH } from "../daten/ich";
   import { wann } from "../daten/format";
   import { konto } from "../daten/stand.svelte";
@@ -43,6 +43,13 @@
   <div class="reiter pw-detail-reiter">
     <button class:aktiv={reiter === "kommentare"} onclick={() => (reiter = "kommentare")}><i class="fa-regular fa-comment"></i>Kommentare<span class="zaehler">{karte.kommentare.length}</span></button>
     <button class:aktiv={reiter === "verlauf"} onclick={() => (reiter = "verlauf")}><i class="fa-solid fa-clock-rotate-left"></i>Verlauf<span class="zaehler">{karte.verlauf.length}</span></button>
+    {#if vorlesenDa(board) && (reiter === "verlauf" ? karte.verlauf.length : karte.kommentare.length)}
+      {@const kennung = `${reiter}-${karte.id}`}
+      <button class="knopf ohne symbol klein pw-aktivitaet-vorlesen" aria-pressed={liest(kennung)}
+              title={liest(kennung) ? "Vorlesen anhalten" : reiter === "verlauf" ? "Ganzen Verlauf vorlesen, neueste zuerst" : "Alle Kommentare vorlesen, neueste zuerst"}
+              onclick={() => vorlesen(kennung, reiter === "verlauf" ? verlaufText(karte) : kommentareText(karte), board.id)}>
+        <i class="fa-solid {liest(kennung) ? 'fa-stop' : 'fa-volume-high'}"></i></button>
+    {/if}
   </div>
   {#if reiter === "kommentare"}
     {#if darf(board, "kommentieren")}

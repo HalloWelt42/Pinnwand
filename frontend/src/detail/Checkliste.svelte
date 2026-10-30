@@ -12,11 +12,15 @@
   import Vorschlag from "./Vorschlag.svelte";
   import { enter } from "../teile/taste";
 
-  let { karte, schreiben, ki = false }: {
+  let { karte, schreiben, ki = false, vorlesen, liest = false }: {
     karte: Karte;
     schreiben: boolean;
     /** Vorschläge der KI gehen in diesem Board */
     ki?: boolean;
+    /** liest die Punkte vor (Modul Vorlesen); ohne: kein Knopf */
+    vorlesen?: () => void;
+    /** liest gerade (der Knopf hält dann an) */
+    liest?: boolean;
   } = $props();
 
   const erledigt = $derived(karte.checkliste.filter((p) => p.erledigt).length);
@@ -76,6 +80,10 @@
 
 <section class="pw-abschnitt">
   <div class="etikett">Checkliste<Hilfepunkt thema="kartendetail" abschnitt="checkliste" /> {#if karte.checkliste.length}<span class="zaehler" class:erfolg={anteil === 1}>{erledigt}/{karte.checkliste.length}</span>{/if}
+    {#if vorlesen && karte.checkliste.length}
+      <button class="knopf ohne symbol klein" title={liest ? "Vorlesen anhalten" : "Checkliste vorlesen: offene, dann erledigte Punkte"} aria-pressed={liest}
+              onclick={vorlesen}><i class="fa-solid {liest ? 'fa-stop' : 'fa-volume-high'}"></i></button>
+    {/if}
     {#if ki && schreiben}
       <span class="rechts"><button class="knopf ohne klein" title="Neue Punkte vorschlagen (über die Leitstelle)" aria-pressed={vorschlag.offen}
                                    onclick={() => (vorschlag.offen ? vorschlag.schliessen() : vorschlagen())}><i class="fa-solid fa-wand-magic-sparkles"></i>Vorschlagen</button></span>

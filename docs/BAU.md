@@ -353,6 +353,11 @@ Stimmen aus dem Katalog der Vertonung und private, die sie der Pinnwand freigibt
   durchgezählt). Fehler vor dem ersten Satz als HTTP-Ablehnung, danach als Zeile `fehler`.
 - Gespielt wird mit dem Vorleser des Appkerns (Satz für Satz lückenlos, im Tippen gestartet, ein zweites Tippen hält an,
   immer nur ein Ton). Ohne eingetragene Adresse zeigt die Oberfläche keine Knöpfe zum Vorlesen.
+- Nachtrag vom 30.10.2026 (HELF-34, Nutzer: "Alle Kommentare vorlesbar machen ... mit leichtem Vorlauf ... bei
+  Auslastung mehr Vorlauf", "Alles vorlesbar machen"): dazu Notizen, Checkliste (offene, dann erledigte Punkte), alle
+  Kommentare und der Verlauf (je neueste zuerst, wie angezeigt), am Telefon die ganze Karte und alle Kommentare. Der
+  Vorleser des Appkerns (ab 0.61) spielt mit Vorlauf: erst ab 1,5 Sekunden bereitem Ton, bei langsamer Vertonung
+  gemessen mehr (höchstens 20), nach einem Abriss wieder mit Vorlauf und für die nächsten Läufe mehr.
 
 | Weg | Inhalt |
 |---|---|

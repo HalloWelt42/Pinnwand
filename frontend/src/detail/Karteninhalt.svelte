@@ -11,7 +11,7 @@
   import { inPapierkorb, karteEndgueltig } from "../daten/anwendung/papierkorb.svelte";
   import Endgueltig from "../teile/Endgueltig.svelte";
   import { transkripteDa } from "../daten/anwendung/transkripte.svelte";
-  import { karteText, liest, vorlesen, vorlesenDa } from "../daten/anwendung/vorlesen.svelte";
+  import { checklisteText, karteText, liest, vorlesen, vorlesenDa } from "../daten/anwendung/vorlesen.svelte";
   import { uhr } from "../daten/uhr.svelte";
   import { alterTage, datumJahr, gesamtnummer } from "../daten/format";
   import { konto, mitKonto, stand } from "../daten/stand.svelte";
@@ -219,6 +219,8 @@
             liest={liest(`beschreibung-${k.id}`)} {optionen}
             speichern={(t) => setzen({ beschreibung: t || undefined }, "Beschreibung gespeichert")} />
   <Textfeld name="Notizen" text={k.notizen} leer="Keine Notizen." {schreiben} nurVollbild {optionen}
+            vorlesen={vorlesenDa(board) ? () => vorlesen(`notizen-${k.id}`, markdownText(k.notizen ?? ""), board.id) : undefined}
+            liest={liest(`notizen-${k.id}`)}
             speichern={(t) => setzen({ notizen: t || undefined }, "Notizen gespeichert")} />
 
   <section class="pw-abschnitt">
@@ -325,7 +327,8 @@
     <Verknuepfte karte={k} {board} {schreiben} />
   {/if}
 
-  <Checkliste karte={k} {schreiben} {ki} />
+  <Checkliste karte={k} {schreiben} {ki} vorlesen={vorlesenDa(board) ? () => vorlesen(`checkliste-${k.id}`, checklisteText(k), board.id) : undefined}
+              liest={liest(`checkliste-${k.id}`)} />
 
   <Anhaenge karte={k} {schreiben} />
 

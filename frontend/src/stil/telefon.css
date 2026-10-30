@@ -355,3 +355,4 @@ button.pw-tel-ziel:active { background: var(--karte-2); }
 /* Commits an der Karte am Telefon (HELF-35): zum Lesen, mit Verweis zur Git-Verwaltung */
 .pw-tel-commit { display: flex; flex-direction: column; gap: 2px; padding: var(--a2) 0; overflow-wrap: anywhere; }
 .pw-tel-commit .schwach { font-size: var(--klein); }
+.pw-tel-vorlesen { margin-left: auto; width: 44px; height: 44px; }

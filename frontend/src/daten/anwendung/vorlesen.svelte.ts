@@ -9,9 +9,9 @@ import { modulAn } from "../../regeln/board";
 import { markdownText } from "../../teile/markdown";
 import { wochentag } from "../../regeln/tage";
 import { modulIrgendwo, type MeinTag, type TagEintrag } from "../abfragen";
-import { datumJahr } from "../format";
+import { datumJahr, wann } from "../format";
 import { berichtAdresse } from "./berichte.svelte";
-import { stand } from "../stand.svelte";
+import { konto, stand } from "../stand.svelte";
 
 const TAGE = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
@@ -38,6 +38,28 @@ export function karteText(k: Karte): string {
   const offen = k.checkliste.filter((p) => !p.erledigt).map((p) => p.text);
   if (offen.length) teile.push(`Offene Punkte: ${offen.join("; ")}.`);
   return teile.join("\n");
+}
+
+/** Die Checkliste zum Vorlesen: erst die offenen, dann die erledigten Punkte */
+export function checklisteText(k: Karte): string {
+  const offen = k.checkliste.filter((p) => !p.erledigt).map((p) => p.text);
+  const fertig = k.checkliste.filter((p) => p.erledigt).map((p) => p.text);
+  const teile = [`Checkliste von ${k.schluessel}.`];
+  if (offen.length) teile.push(`Offen: ${offen.join("; ")}.`);
+  if (fertig.length) teile.push(`Erledigt: ${fertig.join("; ")}.`);
+  return teile.join("\n");
+}
+
+/** Alle Kommentare zum Vorlesen, wie die Karte sie zeigt: der neueste zuerst, je mit Person und Zeit */
+export function kommentareText(k: Karte): string {
+  return [`Kommentare zu ${k.schluessel}.`,
+    ...[...k.kommentare].reverse().map((c) => `${konto(c.von).name}, ${wann(c.zeit)}: ${markdownText(c.text)}`)].join("\n");
+}
+
+/** Der Verlauf zum Vorlesen, der neueste Eintrag zuerst */
+export function verlaufText(k: Karte): string {
+  const zeilen = [...k.verlauf].reverse().sort((a, b) => b.zeit.localeCompare(a.zeit));
+  return [`Verlauf von ${k.schluessel}.`, ...zeilen.map((e) => `${wann(e.zeit)}: ${konto(e.von).name} ${e.text}.`)].join("\n");
 }
 
 function karten(liste: TagEintrag[], seit: boolean): string {

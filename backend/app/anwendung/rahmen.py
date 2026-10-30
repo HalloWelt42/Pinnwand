@@ -139,9 +139,10 @@ class Anwendung:
         self._beobachter.setdefault(tabelle, []).append(nach_aenderung)
 
     async def aendern(self, konto: Konto, arbeit: Callable[[Kontext], str | None], *, rueckgaengig: bool = True,
-                      melden: bool = True) -> Antwort:
+                      melden: bool = True, ins_journal: bool = True) -> Antwort:
         """Führt `arbeit` in einer Transaktion aus. `arbeit` gibt den Text der Meldung zurück oder None, wenn nichts
-        geschah; Ablehnungen kommen als `Abgelehnt`."""
+        geschah; Ablehnungen kommen als `Abgelehnt`. `ins_journal=False` nur für Werte von außen ohne Rückweg (eingespielte
+        Commits): sie kämen sonst in großer Menge ins Journal, das niemand braucht."""
         uhr = self.uhr
 
         def transaktion(s: Schreiber) -> tuple[str | None, Kennung | None, dict[tuple[str, str], tuple]]:
@@ -150,7 +151,7 @@ class Anwendung:
             sicht = Sicht(s)
             sichten = {(b.tabelle, b.id): (sicht.wer(b.tabelle, b.vorher, vorher=True) if b.vorher else set(),
                                            sicht.wer(b.tabelle, b.nachher) if b.nachher else set()) for b in s.bilder}
-            if text is None or not s.bilder:
+            if text is None or not s.bilder or not ins_journal:
                 return text, None, sichten
             journal = neue_kennung("j")
             s.v.execute("INSERT INTO journal (id, konto, zeit, text, bilder, rueckgaengig) VALUES (?, ?, ?, ?, ?, ?)",

@@ -4,7 +4,7 @@
 
 import { abmelden, beiRueckkehr, ereignisse, hole } from "appkern-oberflaeche";
 import type {
-  Abwesenheit, Bericht, Board, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Kartenname, Konto, Laufnummer, Hinweiswege, Mitglied, ModulKennung, Ordner, PersonEinstellungen, Terminname,
+  Abwesenheit, Bericht, Board, CommitBezug, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Kartenname, Konto, Laufnummer, Hinweiswege, Mitglied, ModulKennung, Ordner, PersonEinstellungen, Terminname,
   Serie, Termin, Timer, Verbindung, Vorlage, Zeiteintrag, Zeitkonto,
 } from "../modell";
 import { PINNWAND_KONTO } from "./konstanten";
@@ -45,6 +45,8 @@ export interface Zustand {
   terminnamen: Terminname[];
   vorlagen: Vorlage[];
   berichte: Bericht[];
+  /** Commits an den Karten deiner Boards (HELF-35) */
+  commitbezuege: CommitBezug[];
   /** Vorschläge der KI gehen (Leitstelle eingerichtet); sonst zeigt die Oberfläche keine */
   kiBereit: boolean;
   /** wo die Transkription liegt (leer: nicht eingerichtet, keine Transkripte und keine Spracheingabe) */
@@ -61,7 +63,7 @@ export interface Zustand {
 export const stand = $state<Zustand>({
   geladen: false, moduleDa: [], konten: [], boards: [], karten: [], gruppen: [], laufnummern: [], ordner: [], timer: [], zeiteintraege: [],
   zeitkonten: [], abwesenheiten: [], serien: [], termine: [], hinweise: [], hinweiswege: { da: ["pinnwand"], vorgabe: {} }, einstellungen: { hinweise: {} } as PersonEinstellungen, papierkorb: [],
-  entfernt: [], kartennamen: [], terminnamen: [], vorlagen: [], berichte: [], kiBereit: false, transkriptionAdresse: "", vertonungAdresse: "", appBesitzer: false, verbindung: "getrennt", meldung: null,
+  entfernt: [], kartennamen: [], terminnamen: [], vorlagen: [], berichte: [], commitbezuege: [], kiBereit: false, transkriptionAdresse: "", vertonungAdresse: "", appBesitzer: false, verbindung: "getrennt", meldung: null,
 });
 
 /** Antwort von /stand: die Teile, die der Server schon kennt (die übrigen kommen mit ihren Stufen) */
@@ -88,6 +90,7 @@ interface Serverstand {
   kartennamen: Kartenname[];
   terminnamen: Terminname[];
   berichte: Bericht[];
+  commitbezuege: CommitBezug[];
   hinweiswege: Hinweiswege;
   kiBereit: boolean;
   transkriptionAdresse: string;
@@ -121,7 +124,7 @@ const TEILE = {
   konten: "konten", boards: "boards", karten: "karten", gruppen: "gruppen", laufnummern: "laufnummern", ordner: "ordner",
   timer: "timer", zeiteintraege: "zeiteintraege", zeitkonten: "zeitkonten", abwesenheiten: "abwesenheiten",
   serien: "serien", termine: "termine", hinweise: "hinweise", vorlagen: "vorlagen", papierkorb: "papierkorb", entfernt: "entfernt",
-  berichte: "berichte",
+  berichte: "berichte", commitbezuege: "commitbezuege",
 } as const satisfies Record<string, keyof Zustand>;
 
 type Zeile = { id: string; fassung?: number };
@@ -144,7 +147,7 @@ export async function laden(): Promise<void> {
   Object.assign(stand, {
     moduleDa: s.moduleDa, konten: s.konten, boards: s.boards, karten: s.karten, gruppen: s.gruppen, laufnummern: s.laufnummern, ordner: s.ordner,
     timer: s.timer, zeiteintraege: s.zeiteintraege, zeitkonten: s.zeitkonten, abwesenheiten: s.abwesenheiten,
-    serien: s.serien, termine: s.termine, hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, kartennamen: s.kartennamen, terminnamen: s.terminnamen, berichte: s.berichte, hinweiswege: s.hinweiswege,
+    serien: s.serien, termine: s.termine, hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, kartennamen: s.kartennamen, terminnamen: s.terminnamen, berichte: s.berichte, commitbezuege: s.commitbezuege ?? [], hinweiswege: s.hinweiswege,
     kiBereit: s.kiBereit, transkriptionAdresse: s.transkriptionAdresse, vertonungAdresse: s.vertonungAdresse, appBesitzer: s.appBesitzer,
     einstellungen: s.einstellungen, geladen: true,
   });

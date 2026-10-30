@@ -18,6 +18,7 @@ from .arbeitszeit import Arbeitszeit
 from .aufbau import Aufbau
 from .berichte import Berichte
 from .boards import Boards, Zugang
+from .commits import Commits
 from . import gesamtnummer
 from .ereignisse import Ereignisse
 from .hinweise import Hinweise
@@ -62,6 +63,7 @@ class Dienste:
     ki: Ki
     transkripte: Transkripte
     vorlesen: Vorlesen
+    commits: Commits
 
     @classmethod
     def bauen(cls, db: Datenbank, zugang: Zugang, ablage: Ablage, uhr: Uhr | None = None, push: Push | None = None,
@@ -79,7 +81,8 @@ class Dienste:
                    mitglieder=Mitglieder(a), persoenlich=Persoenliches(a), anhaenge=Anhaenge(a, ablage),
                    zeiterfassung=Zeiterfassung(a), arbeitszeit=Arbeitszeit(a), serien=Serien(a), termine=Termine(a),
                    berichte=Berichte(a, ablage), mitteilungen=Mitteilungen(a, push), ki=ki,
-                   transkripte=Transkripte(a, transkription), vorlesen=Vorlesen(a, vertonung))
+                   transkripte=Transkripte(a, transkription), vorlesen=Vorlesen(a, vertonung),
+                   commits=Commits(a, konten.besitzer_der_app))
 
 
 class Start(Begleiter):

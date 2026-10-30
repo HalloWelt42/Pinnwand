@@ -430,6 +430,38 @@ Weiterscrollen, durchsucht werden kann aber immer alles").
   nächsten; ebenso die Liste und die Spalte am Telefon. Suche und Filter laufen immer über alle Karten des Stands, nicht
   nur über die gezeigten; Zahl und Grenze im Kopf zählen alle.
 
+### Commits an Karten
+
+Nachtrag vom 30.10.2026 (HELF-35, Nutzer: Commits "in Tickets verankert", Quellen "GitHub oder GitLab, lokal oder
+online", "Einrichtungslogik wegen multipler Services ... alles gleichsam nutzbar"; Entscheide: Kennung im Commit plus von
+Hand, alle Quellen mit Ziel je Repo, Nachtrag automatisch und dann prüfen; Auftrag: lokaler Sammler als eigenes kleines
+Programm, in Stufen ausrollen).
+
+- Ein eigenes kleines Programm, der Commitsammler (`sammler/commitsammler.py`, nur Python und git), liest Commits aus
+  den Git-Repos eines Rechners und spielt sie ein. Alle Einstellungen und Zugänge zu Git-Verwaltungen bleiben bei ihm
+  (`~/.config/pinnwand/commits.toml`, Vorlage `sammler/commits.beispiel.toml`): Adresse der Pinnwand, Schlüsseldatei,
+  beliebig viele Git-Verwaltungen gleichberechtigt (Name, Rechner wie im Remote, Muster des Verweises), Wurzeln und
+  Besitzer der Repos, je Repo das Ziel des Verweises oder "lokal". Die Pinnwand bekommt nur die Werte.
+- `POST /commits/einspielen` mit `{repo: {kennung, name, quelle, verweis}, commits: [{hash, autor, zeit, nachricht,
+  dateien}]}` (höchstens 500 je Sendung), nur der Besitzer der App; Antwort `{neu, verknuepft}`. `verweis` ist das
+  Muster mit `{hash}`; ohne zeigt die Pinnwand den Commit selbst (Nachricht, Autor, Zeit, Dateien). Wiederholtes
+  Einspielen schreibt nur Neues oder Geändertes; ein geänderter Verweis zieht in alle Bezüge nach. Eingespieltes kommt
+  nicht ins Journal (kein Rückweg, sonst wüchse es mit jeder Sendung).
+- Tabelle `commits` (Schemastufe 6, Spalten repo, zeit; Kennung `repo@hash`): jeder bekannte Commit, für niemanden im
+  Stand. Tabelle `commitbezuege` (Spalten commitkennung, karte, board; Kennung fest aus Commit und Karte): je Commit und Karte eine
+  Zeile mit allem, was die Karte zeigt, und `art` (`kennung`: Schlüssel in der Nachricht, `hand`: von Hand),
+  sichtbar für die Mitglieder des Boards wie Karten. Eine umziehende Karte nimmt ihre Bezüge mit.
+- Verknüpft wird jeder Schlüssel in der Nachricht (Kürzel, Bindestrich, Nummer, etwa HELF-12; auch frühere Schlüssel
+  einer umgezogenen Karte), wenn es die Karte gibt. Von Hand: `GET /karten/{id}/commits/suche?text=` (Anfang des Hashs
+  oder Wörter der Nachricht, neueste zuerst, höchstens 20), `POST /karten/{id}/commits` mit `{commit}`, lösen mit
+  `DELETE /karten/{id}/commits/{bezug}`; beides mit dem Recht "Karten bearbeiten", Verlaufszeile und Rückgängig. Ein
+  gelöster Bezug aus der Nachricht bleibt als `geloest` stehen, damit der nächste Abgleich ihn nicht wieder anhängt.
+- Der Nachtrag ist ein Lauf des Sammlers über die ganze Geschichte (`--alles`); danach sendet er je Repo nur, was
+  seit dem letzten Lauf dazukam.
+- Stufe 1 (diese): Sammler für Repos auf dem Rechner, Verknüpfen über die Kennung und von Hand, Anzeige im
+  Kartendetail und am Telefon. Später: Vorschläge für unsichere Zuordnungen (Hash in Kommentaren, ähnliche Titel) zum
+  Bestätigen, Git-Verwaltungen ohne lokale Kopie über ihre Schnittstelle, regelmäßiger Lauf des Sammlers.
+
 ## 10. Prüfen
 
 - Tests je Anwendungsfall (Recht, Regel, Fassung, Journal, Rückgängig, Ereignis) gegen eine Datenbank im Speicher; der

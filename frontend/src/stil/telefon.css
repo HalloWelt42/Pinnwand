@@ -351,3 +351,7 @@ button.pw-tel-ziel:active { background: var(--karte-2); }
 .pw-tel-hinweis .kopfzeile .zeit { min-width: 0; font-size: var(--marke); }
 .pw-tel-hinweis .kopfzeile .zaehler { margin-left: auto; }
 .pw-tel-hinweis .was { overflow-wrap: anywhere; line-height: 1.35; }
+
+/* Commits an der Karte am Telefon (HELF-35): zum Lesen, mit Verweis zur Git-Verwaltung */
+.pw-tel-commit { display: flex; flex-direction: column; gap: 2px; padding: var(--a2) 0; overflow-wrap: anywhere; }
+.pw-tel-commit .schwach { font-size: var(--klein); }

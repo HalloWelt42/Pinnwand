@@ -187,6 +187,35 @@ export interface Anhang {
   von?: Kennung;
 }
 
+/** Ein Commit, wie der Commitsammler ihn einspielt (HELF-35); Kennung "repo@hash" */
+export interface Commit {
+  id: Kennung;
+  /** Kennung des Repos beim Sammler (Besitzer/Name oder lokal/Name) */
+  repo: string;
+  reponame: string;
+  /** Name der Git-Verwaltung, auf die der Verweis zeigt ("lokal": keine) */
+  quelle: string;
+  hash: string;
+  autor: string;
+  zeit: string;
+  nachricht: string;
+  dateien: string[];
+  /** Adresse des Commits in seiner Git-Verwaltung; ohne zeigt die Pinnwand ihn selbst */
+  verweis?: string;
+}
+
+/** Ein Commit an einer Karte: über den Schlüssel in der Nachricht ("kennung") oder von Hand; gelöst bleibt ein Bezug aus
+ *  der Nachricht stehen, damit er nicht wiederkommt */
+export interface CommitBezug extends Commit {
+  commit: Kennung;
+  karte: Kennung;
+  board: Kennung;
+  art: "kennung" | "hand";
+  geloest?: boolean;
+  von: Kennung;
+  am: string;
+}
+
 /** Eine Stelle der Transkription an einer Karte (ohne Sekunde: das ganze Transkript); Name, Sprecher und Text kommen
  *  beim Verknüpfen aus dem Transkript */
 export interface TranskriptMarke {

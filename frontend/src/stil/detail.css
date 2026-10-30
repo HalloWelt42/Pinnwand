@@ -183,6 +183,22 @@ button.pw-punkt-text { cursor: text; }
 .pw-transkript-treffer .fundstelle:hover { background: var(--karte-2); }
 .pw-transkript-treffer .zeit { flex: none; font-family: var(--schrift-zahl); color: var(--akzent); }
 .pw-transkript-treffer .ausschnitt { min-width: 0; overflow-wrap: anywhere; }
+/* Commits an der Karte (HELF-35): Zeile wie ein Anhang, ein lokaler Commit klappt mit Nachricht und Dateien auf */
+.pw-commit { display: flex; flex-direction: column; gap: var(--a1); }
+.pw-commit-hash { flex: none; font-family: var(--schrift-zahl); color: var(--akzent); }
+.pw-commit-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pw-commit-inhalt { padding: 0 var(--a3) var(--a2) calc(22px + 2 * var(--a3)); font-size: var(--klein); color: var(--text-2); }
+.pw-commit-inhalt pre { margin: 0 0 var(--a2); font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text); }
+.pw-commit-inhalt ul { margin: 0; padding-left: var(--a4); font-family: var(--schrift-zahl); overflow-wrap: anywhere; }
+.pw-commit-treffer { display: flex; flex-direction: column; gap: 2px; padding: var(--a2); background: var(--karte); border-radius: var(--r2);
+                     max-height: 22em; overflow-y: auto; }
+.pw-commit-treffer .fundstelle { display: flex; gap: var(--a3); align-items: baseline; padding: var(--a2); border: 0; border-radius: var(--r1);
+                                 background: none; color: var(--text); font: inherit; font-size: var(--klein); text-align: left; cursor: pointer; }
+.pw-commit-treffer .fundstelle:hover:not(:disabled) { background: var(--karte-2); }
+.pw-commit-treffer .fundstelle:disabled { cursor: default; color: var(--text-3); }
+.pw-commit-treffer .zeit { flex: none; font-family: var(--schrift-zahl); color: var(--akzent); }
+.pw-commit-treffer .ausschnitt { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.pw-commit-treffer .meta { flex: none; font-size: var(--marke); color: var(--text-3); }
 .pw-umschalter { display: inline-flex; gap: 2px; padding: 2px; background: var(--karte-2); border-radius: var(--r2); }
 .pw-umschalter button { height: 34px; padding: 0 var(--a3); border: 0; border-radius: var(--r1); background: transparent; color: var(--text-2);
                         font-size: var(--klein); font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }

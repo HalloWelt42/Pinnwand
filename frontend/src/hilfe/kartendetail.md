@@ -94,6 +94,18 @@ Diesen Abschnitt haben nur Arbeitskarten. Er zeigt die anderen Karten der Gruppe
 
 Verknüpfte Karten ziehen zusammen in andere Spalten (siehe [Verknüpfen](hilfe:karten/verknuepfen)). Ändern braucht das Recht Karten bearbeiten.
 
+## Commits {#commits}
+Ein Commit aus der Programmierarbeit hängt sich von selbst an seine Karte, wenn ihr Schlüssel in der Nachricht steht, etwa "HELF-12: Fehler behoben". Auch ein früherer Schlüssel einer umgezogenen Karte zählt. Eingespielt werden die Commits vom Commitsammler, einem kleinen Programm auf dem Rechner mit den Repos; wie man ihn einrichtet, steht in der Anleitung der Pinnwand (README, Abschnitt Commits).
+
+Der Abschnitt **Commits** zeigt je Commit den kurzen Hash, die erste Zeile der Nachricht, das Repo, wer ihn geschrieben hat und wann; die neuesten stehen oben. Auf der Karte im Board zeigt ein kleines Zeichen, wie viele Commits an ihr hängen.
+
+- Liegt das Repo bei einer Git-Verwaltung, öffnet der Pfeil den Commit dort in einem neuen Fenster.
+- Liegt es nur auf dem Rechner, klappt der Pfeil nach unten den Commit hier auf: die ganze Nachricht und die geänderten Dateien.
+- **Commit suchen** findet bekannte Commits über den Anfang des Hashs oder über Wörter der Nachricht; ein Klick auf einen Treffer verknüpft ihn von Hand mit der Karte.
+- Das X löst einen Commit von der Karte, mit Rückgängig. Hing er über den Schlüssel in der Nachricht an ihr, bleibt er gelöst, auch wenn der Sammler ihn wieder meldet.
+
+Verknüpfen und lösen geht mit dem Recht Karten bearbeiten; der Abschnitt steht da, sobald die Karte Commits hat oder im Board schon Commits hängen. Am Telefon stehen die Commits zum Lesen in der Karte.
+
 ## Abschnitte der Module {#module}
 Je nach den Modulen des Boards hat das Detail weitere Abschnitte:
 

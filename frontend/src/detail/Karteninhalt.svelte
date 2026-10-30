@@ -30,6 +30,8 @@
   import { boardPfad, gehe } from "../weg.svelte";
   import Aktivitaet from "./Aktivitaet.svelte";
   import Anhaenge from "./Anhaenge.svelte";
+  import Commits from "./Commits.svelte";
+  import { commitsDer, commitsImBoard } from "../daten/anwendung/commits.svelte";
   import Checkliste from "./Checkliste.svelte";
   import Textfeld from "./Textfeld.svelte";
   import Transkripte from "./Transkripte.svelte";
@@ -326,6 +328,10 @@
   <Checkliste karte={k} {schreiben} {ki} />
 
   <Anhaenge karte={k} {schreiben} />
+
+  {#if commitsDer(k.id).length || (schreiben && commitsImBoard(board))}
+    <Commits karte={k} {schreiben} />
+  {/if}
 
   {#if transkripteDa(board)}
     <Transkripte karte={k} {schreiben} {ki} />

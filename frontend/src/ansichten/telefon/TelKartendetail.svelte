@@ -11,6 +11,7 @@
   import { ICH } from "../../daten/ich";
   import { alterTage, datum, dauer, faelligText, gesamtnummer, uhrzeit, wann } from "../../daten/format";
   import Kennungsknopf from "../../teile/Kennungsknopf.svelte";
+  import { betreff, commitsDer } from "../../daten/anwendung/commits.svelte";
   import { board, karte as holeKarte, konto, stand } from "../../daten/stand.svelte";
   import Person from "../../board/Person.svelte";
   import { boardPfad, gehe, wert } from "../../weg.svelte";
@@ -159,6 +160,20 @@
       <section class="pw-tel-abschnitt" aria-label="Beschreibung">
         <div class="etikett">Beschreibung</div>
         <div class="pw-tel-text pw-md">{@html markdownHtml(k.beschreibung, md)}</div>
+      </section>
+    {/if}
+
+    {#if commitsDer(k.id).length}
+      <!-- Commits zum Lesen (HELF-35); verknüpfen und lösen am Rechner -->
+      <section class="pw-tel-abschnitt" aria-label="Commits">
+        <div class="etikett">Commits<span class="zaehler">{commitsDer(k.id).length}</span></div>
+        {#each commitsDer(k.id) as c (c.id)}
+          {@const zeile = `${c.hash.slice(0, 7)} ${betreff(c)}`}
+          <div class="pw-tel-commit">
+            {#if c.verweis}<a href={c.verweis} target="_blank" rel="noopener">{zeile}</a>{:else}<span>{zeile}</span>{/if}
+            <span class="schwach">{c.reponame} · {wann(c.zeit)}</span>
+          </div>
+        {/each}
       </section>
     {/if}
 

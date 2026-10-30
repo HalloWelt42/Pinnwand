@@ -44,6 +44,8 @@ class Stand(Modell):
     termine: list[dict]
     terminnamen: list[Terminname]
     berichte: list[dict]
+    #: Commits an den Karten deiner Boards (HELF-35)
+    commitbezuege: list[dict] = []
     hinweiswege: Hinweiswege
     #: ob die Vorschläge der KI gehen (Leitstelle eingerichtet); sonst zeigt die Oberfläche keine
     ki_bereit: bool
@@ -131,6 +133,7 @@ class Abfragen:
             serien=serien,
             termine=termine,
             berichte=await self.a.v.alle("berichte", "konto=?", (konto.id,), "erstellt DESC"),
+            commitbezuege=await self.a.v.alle("commitbezuege", f"board IN ({frage})", tuple(ids)) if ids else [],
             hinweiswege=Hinweiswege(da=list(WEGE_DA), vorgabe={a: {w: vorgabe(a, w) for w in WEGE_DA} for a in ARTEN_DA}),
             ki_bereit=self.ki_bereit(),
             app_besitzer=bool(self.besitzer()) and konto.kellerwolke == self.besitzer(),

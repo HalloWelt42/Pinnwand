@@ -56,6 +56,10 @@ TABELLEN_DER_STUFEN: tuple[tuple[Tabelle, ...], ...] = ((
     Tabelle("berichte", ("konto", "erstellt")),
 ), (
     Tabelle("zaehler"),
+), (
+    Tabelle("commits", ("repo", "zeit")),
+    # "commit" ist ein Wort von SQL: die Spalte heißt commitkennung
+    Tabelle("commitbezuege", ("commitkennung", "karte", "board"), felder={"commitkennung": "commit"}),
 ))
 TABELLEN: dict[str, Tabelle] = {t.name: t for stufe in TABELLEN_DER_STUFEN for t in stufe}
 
@@ -108,6 +112,13 @@ STUFEN: list[str] = [
     _tabellen_sql(4) + """
     ALTER TABLE karten ADD COLUMN nummer INTEGER;
     CREATE UNIQUE INDEX karten_nummer ON karten(nummer);
+    """,
+    # Commits an Karten (HELF-35): jeder bekannte Commit und je Commit und Karte ein Bezug
+    _tabellen_sql(5) + """
+    CREATE INDEX commits_zeit ON commits(zeit);
+    CREATE INDEX commitbezuege_commit ON commitbezuege(commitkennung);
+    CREATE INDEX commitbezuege_karte ON commitbezuege(karte);
+    CREATE INDEX commitbezuege_board ON commitbezuege(board);
     """,
 ]
 

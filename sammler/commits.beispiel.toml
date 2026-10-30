@@ -1,0 +1,32 @@
+# Einstellungen des Commitsammlers (sammler/commitsammler.py); gehört nach ~/.config/pinnwand/commits.toml.
+
+# Adresse der Pinnwand und die Datei mit dem Schlüssel eines Kontos, das die App besitzt (nur der Besitzer der App darf
+# Commits einspielen). Das Hauszertifikat wird ohne Prüfung angenommen.
+adresse = "https://192.168.178.49:8420/api/v1"
+schluessel = "~/.config/pinnwand/helfer.schluessel"
+hauszertifikat = true
+
+# Wo Repos liegen (bis zu dieser Tiefe gesucht) und wessen Repos zählen: Repos ohne Remote immer, mit Remote nur, wenn
+# der Besitzer im Weg (github.com/<besitzer>/...) in dieser Liste steht.
+wurzeln = ["~/Entwicklung"]
+tiefe = 3
+besitzer = ["HalloWelt42"]
+
+# Git-Verwaltungen, beliebig viele und gleichberechtigt: Name, Rechner wie im Remote, Muster des Verweises auf einen
+# Commit ({weg} ist Besitzer/Name des Repos, {hash} der Commit). Ein Repo verweist auf die Verwaltung seines Remotes.
+[[quelle]]
+name = "GitHub"
+rechner = "github.com"
+verweis = "https://github.com/{weg}/commit/{hash}"
+
+# [[quelle]]
+# name = "GitLab im Haus"
+# rechner = "gitlab.haus"
+# verweis = "https://gitlab.haus/{weg}/-/commit/{hash}"
+
+# Je Repo abweichend (Schlüssel: Pfad): ziel = Name einer Quelle oder "lokal" (dann zeigt die Pinnwand den Commit
+# selbst), weg = Besitzer/Name dort, aus = true lässt das Repo weg. Ein Eintrag hier nimmt ein Repo auch auf, wenn sein
+# Besitzer nicht in der Liste steht.
+# [repo."~/Entwicklung/Werkzeuge/Pinnwand"]
+# ziel = "GitLab im Haus"
+# weg = "werkzeuge/pinnwand"

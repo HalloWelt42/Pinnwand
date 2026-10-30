@@ -220,6 +220,42 @@ class Karte(Modell):
     fassung: int = 0
 
 
+class Commit(Modell):
+    """Ein Commit, wie der Commitsammler ihn einspielt (HELF-35); Kennung `repo@hash`. Für niemanden im Stand: an den
+    Karten stehen seine Bezüge."""
+
+    id: Kennung
+    #: Kennung des Repos beim Sammler (Besitzer/Name oder lokal/Name)
+    repo: str
+    reponame: str
+    #: Name der Git-Verwaltung, auf die der Verweis zeigt ("lokal": keine)
+    quelle: str
+    hash: str
+    autor: str = ""
+    zeit: str
+    nachricht: str = ""
+    dateien: list[str] = Field(default_factory=list)
+    #: Adresse des Commits in seiner Git-Verwaltung; ohne zeigt die Pinnwand ihn selbst
+    verweis: str | None = None
+
+
+CommitArt = Literal["kennung", "hand"]
+
+
+class CommitBezug(Commit):
+    """Ein Commit an einer Karte, mit allem, was die Karte zeigt; Kennung fest aus Commit und Karte. `art`: über den Schlüssel in
+    der Nachricht oder von Hand; gelöst bleibt ein Bezug aus der Nachricht stehen, damit er nicht wiederkommt."""
+
+    commit: Kennung
+    karte: Kennung
+    board: Kennung
+    art: CommitArt
+    geloest: bool = False
+    #: wer ihn zuletzt verknüpft oder gelöst hat, und wann
+    von: Kennung
+    am: str
+
+
 class Gruppe(Modell):
     """Verknüpfte Karten eines Boards: ziehen zusammen und teilen auf Wunsch ihre Zeit."""
 

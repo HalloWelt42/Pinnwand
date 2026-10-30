@@ -12,6 +12,7 @@ from ..modell import Board, Ereignis, Gruppe, Karte, Kartenart, Kennung, Konto, 
 from ..regeln.board import abschluss, spalte_von, uebertragen
 from ..regeln.tage import ist_tag
 from . import hinweise, zeiterfassung
+from .commits import bezuege_umziehen
 from .kartenbasis import (
     KURZ_LAENGE, PUNKTE_HOECHSTENS, TEXT_LAENGE, TITEL_LAENGE, gruppen_aufraeumen, karte_lesen, karten_der_spalte, serientag_auslassen, speichern, vermerken,
 )
@@ -277,6 +278,7 @@ class Karten:
             if gruppe:
                 gruppen_aufraeumen(k, quelle.id, {gruppe})
             zeiterfassung.zeit_umziehen(k, c.id, b.id)
+            bezuege_umziehen(k, c)
             teile = [f"{alt} ist jetzt {c.schluessel} in {b.name}, {ziel.name}"]
             if entfallen:
                 teile.append(f"{entfallen} {'Label oder Feld' if entfallen == 1 else 'Labels und Felder'} ohne Gegenstück "

@@ -18,6 +18,7 @@
   import { kette, ketteBeenden, ketteBewegen, ketteStarten } from "./kette.svelte";
   import Person from "./Person.svelte";
   import Kennungsknopf from "../teile/Kennungsknopf.svelte";
+  import { commitsDer } from "../daten/anwendung/commits.svelte";
 
   let { karte, board, erledigt = false, art = "", oeffnen, aktionen = false }: {
     karte: Karte; board: Board; erledigt?: boolean;
@@ -31,6 +32,7 @@
   const labels = $derived(karte.labels.map((l) => board.labels.find((x) => x.id === l)).filter((l) => l !== undefined));
   const felder = $derived(board.felder.filter((f) => f.aufKarte && karte.felder[f.id]));
   const erledigtePunkte = $derived(karte.checkliste.filter((p) => p.erledigt).length);
+  const commits = $derived(commitsDer(karte.id).length);
   const vollstaendig = $derived(karte.checkliste.length > 0 && erledigtePunkte === karte.checkliste.length);
   const alter = $derived(alterTage(karte.bewegtAm));
   const alterKlasse = $derived(alterung(alter, board.einstellungen));
@@ -151,6 +153,7 @@
     {/if}
     {#if karte.kommentare.length}<span class="pw-angabe"><i class="fa-regular fa-comment"></i>{karte.kommentare.length}</span>{/if}
     {#if karte.anhaenge.length}<span class="pw-angabe"><i class="fa-solid fa-paperclip"></i>{karte.anhaenge.length}</span>{/if}
+    {#if commits}<span class="pw-angabe" title="{commits} {commits === 1 ? 'Commit' : 'Commits'} an dieser Karte"><i class="fa-solid fa-code-commit"></i>{commits}</span>{/if}
     {#if karte.serie}<span class="pw-angabe" title="Aus einer Serie"><i class="fa-solid fa-repeat"></i></span>{/if}
     <span class="rechts">
       {#if prioritaet}<span class="pw-prio" data-prioritaet={karte.prioritaet} role="img" aria-label="Priorität {prioritaet}" title="Priorität: {prioritaet}"></span>{/if}

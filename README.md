@@ -30,6 +30,21 @@ im Repo) mit `KELLERWOLKE_ADRESSE`, `KELLERWOLKE_SCHLUESSEL`, `KELLERWOLKE_KENNU
 Zugang nur für Tests, nicht der der Entwicklungsinstanz. Aufräumen und Zurückziehen der Aktionen kommen aus
 `appkern.testen`.
 
+## Commits
+
+Commits hängen sich an ihre Karten, wenn deren Schlüssel in der Nachricht steht (etwa `HELF-12: ...`). Eingespielt
+werden sie vom Commitsammler, einem eigenen kleinen Programm auf dem Rechner mit den Repos (nur Python und git):
+
+```bash
+cp sammler/commits.beispiel.toml ~/.config/pinnwand/commits.toml   # Adresse, Schlüsseldatei, Git-Verwaltungen, Wurzeln
+python3 sammler/commitsammler.py --zeigen    # welche Repos mit welchem Ziel gefunden werden
+python3 sammler/commitsammler.py --alles     # Nachtrag: die ganze Geschichte, die Pinnwand nimmt nur Neues
+python3 sammler/commitsammler.py             # danach: was seit dem letzten Lauf dazukam
+```
+
+Einspielen darf nur der Besitzer der App. Je Git-Verwaltung steht in der Datei, wie ein Verweis auf einen Commit
+aussieht; je Repo lässt sich das Ziel wählen oder "lokal" setzen, dann zeigt die Pinnwand den Commit selbst.
+
 ## Prüfungen
 
 Vor jedem Commit (Hook in `tools/git-hooks`, eingerichtet von `einrichten.sh`): Fassung hochzählen, nur gerade

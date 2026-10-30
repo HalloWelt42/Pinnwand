@@ -2,7 +2,8 @@
   // Schale der Telefonansicht, eigener Aufbau statt verkleinerter Rechnerschale: oben ein schmaler Kopf (Zurück, Titel,
   // Hinweise mit Zahl), darunter auf Wunsch eine feste Leiste der Ansicht (Spalten eines Boards), der Inhalt mit eigenem
   // Rollfeld, dann fest unten Knöpfe der Ansicht, die eine Meldung mit Rückgängig (teile/Meldung), die Laufleiste des Timers
-  // und die Fußleiste mit den Reitern (Zeit nur mit Zeiterfassung). Die sicheren Ränder halten oben die Statusleiste und unten die Wischleiste frei.
+  // und die Fußleiste mit den Reitern (Zeit nur mit Zeiterfassung). Der sichere Rand hält oben die Statusleiste frei;
+  // unten steht die Fußleiste ohne Abstand. Fehlt die Verbindung, sagt es ein Band unter dem Kopf.
   import type { Snippet } from "svelte";
   import { modulIrgendwo, timerVon, ungelesen, zeitDerKarte } from "../../daten/abfragen";
   import { anhalten, fortsetzen } from "../../daten/anwendung/timer.svelte";
@@ -10,6 +11,7 @@
   import { dauer } from "../../daten/format";
   import { karte as holeKarte } from "../../daten/stand.svelte";
   import Meldung from "../../teile/Meldung.svelte";
+  import Getrennt from "./Getrennt.svelte";
   import { telPfad } from "./weg";
 
   type Reiter = "heute" | "boards" | "zeit" | "erfassen";
@@ -63,6 +65,8 @@
         {#if neu}<span class="zaehler pille gefahr">{neu}</span>{/if}</a>
     {/if}
   </header>
+
+  <Getrennt />
 
   {#if leiste}<div class="pw-tel-leiste">{@render leiste()}</div>{/if}
 

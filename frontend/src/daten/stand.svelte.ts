@@ -2,7 +2,7 @@
 // die Antworten der Änderungen und den Ereignisstrom. Ändern nur über die Anwendungsfälle in daten/anwendung/, lesen
 // über die Hilfen hier und in daten/abfragen.ts. Jede Zeile trägt ihre Fassung; eine ältere überschreibt nie eine neuere.
 
-import { abmelden, ereignisse, hole } from "appkern-oberflaeche";
+import { abmelden, beiRueckkehr, ereignisse, hole } from "appkern-oberflaeche";
 import type {
   Abwesenheit, Bericht, Board, Entfernt, Geloescht, Gruppe, Hinweis, Karte, Kartenname, Konto, Laufnummer, Hinweiswege, Mitglied, ModulKennung, Ordner, PersonEinstellungen, Terminname,
   Serie, Termin, Timer, Verbindung, Vorlage, Zeiteintrag, Zeitkonto,
@@ -258,19 +258,93 @@ function eigenesKontoPruefen(): boolean {
   return true;
 }
 
-/** Hält den Zustand über den Ereignisstrom aktuell; nach einem Abbruch neu verbinden und den ganzen Stand holen.
- *  Ergebnis: zum Beenden (Abmelden, Verlassen der Seite). */
+/** Pause vor dem nächsten Versuch nach einem Abbruch: erst kurz, dann doppelt so lang bis höchstens zur längsten */
+const ERSTE_PAUSE_MS = 1000;
+const LAENGSTE_PAUSE_MS = 30_000;
+/** So lange im Hintergrund, dann wird der Strom bei der Rückkehr frisch aufgebaut: ein schlafendes Telefon trennt ihn,
+ *  ohne dass das sicher als Abbruch ankommt (der Server schickt alle 20 Sekunden ein Lebenszeichen) */
+const HINTERGRUND_NEU_MS = 45_000;
+
+/** weckt die laufende Verbindung: der nächste Versuch kommt sofort statt nach der Pause */
+let wecken: (() => void) | null = null;
+/** wer darauf wartet, dass die Verbindung wieder steht */
+const verbundenHoerer = new Set<() => void>();
+
+/** seit wann die Verbindung fehlt (0: sie steht oder stand noch nie) */
+let getrenntAb = 0;
+
+/** wie lange die Verbindung schon fehlt, in Millisekunden (0, wenn sie steht) */
+export function getrenntSeit(): number {
+  return stand.verbindung === "getrennt" && getrenntAb ? Date.now() - getrenntAb : 0;
+}
+
+function verbundenMelden(): void {
+  getrenntAb = 0;
+  stand.verbindung = "verbunden";
+  for (const fn of [...verbundenHoerer]) fn();
+}
+
+/** Sofort neu verbinden statt die Pause abzuwarten (Knopf "Neu verbinden", ein Änderungsversuch ohne Verbindung) */
+export function neuVerbinden(): void {
+  wecken?.();
+}
+
+/** Wartet höchstens `ms`, bis die Verbindung wieder steht, und stößt dazu einen Versuch an. Ergebnis: ob sie steht. */
+export function verbindungAbwarten(ms: number): Promise<boolean> {
+  if (stand.verbindung === "verbunden") return Promise.resolve(true);
+  neuVerbinden();
+  return new Promise((fertig) => {
+    const ende = (ok: boolean) => {
+      clearTimeout(uhr);
+      verbundenHoerer.delete(da);
+      fertig(ok);
+    };
+    const da = () => ende(true);
+    const uhr = setTimeout(() => ende(false), ms);
+    verbundenHoerer.add(da);
+  });
+}
+
+/** Hält den Zustand über den Ereignisstrom aktuell; nach einem Abbruch neu verbinden und den ganzen Stand holen. Die
+ *  Pause davor endet sofort, wenn das Netz wiederkommt, die Seite wieder nach vorn kommt oder die App wieder antwortet;
+ *  nach langer Zeit im Hintergrund wird der Strom frisch aufgebaut. Ergebnis: zum Beenden (Abmelden, Verlassen). */
 export function verbinden(): () => void {
   const halt = new AbortController();
+  let strom = new AbortController();
+  let pause = ERSTE_PAUSE_MS;
+  let weckzeichen: (() => void) | null = null;
+  wecken = () => {
+    pause = ERSTE_PAUSE_MS;
+    weckzeichen?.();
+  };
+  let versteckt = 0;
+  const sichtbarkeit = (): void => {
+    if (document.hidden) {
+      versteckt = Date.now();
+      return;
+    }
+    const lange = versteckt > 0 && Date.now() - versteckt > HINTERGRUND_NEU_MS;
+    versteckt = 0;
+    if (lange && stand.verbindung === "verbunden") strom.abort();
+    else wecken?.();
+  };
+  const sofort = (): void => wecken?.();
+  addEventListener("online", sofort);
+  addEventListener("pageshow", sofort);
+  document.addEventListener("visibilitychange", sichtbarkeit);
+  const rueckkehrEnde = beiRueckkehr(sofort);
+  const stromBeenden = (): void => strom.abort();
+  halt.signal.addEventListener("abort", stromBeenden);
+
   void (async () => {
-    let warten = 1000;
     while (!halt.signal.aborted) {
+      strom = new AbortController();
       try {
-        for await (const e of ereignisse("/ereignisse", halt.signal)) {
+        for await (const e of ereignisse("/ereignisse", strom.signal)) {
           if (e.art === "bereit") {
             await laden();
-            stand.verbindung = "verbunden";
-            warten = 1000;
+            verbundenMelden();
+            pause = ERSTE_PAUSE_MS;
           } else if (e.art === "geaendert") {
             const n = JSON.parse(e.daten) as Neuigkeit;
             uebernehmen(n.geaendert);
@@ -281,12 +355,30 @@ export function verbinden(): () => void {
         // getrennt: unten neu verbinden
       }
       if (halt.signal.aborted) break;
+      if (!getrenntAb) getrenntAb = Date.now();
       stand.verbindung = "getrennt";
-      await new Promise((r) => setTimeout(r, warten));
-      warten = Math.min(warten * 2, 30_000);
+      // bewusst frisch aufgebaut (nach dem Hintergrund): gleich wieder, sonst nach der Pause oder wenn etwas weckt
+      if (strom.signal.aborted) continue;
+      await new Promise<void>((weiter) => {
+        const uhr = setTimeout(weiter, pause);
+        weckzeichen = () => {
+          clearTimeout(uhr);
+          weiter();
+        };
+      });
+      weckzeichen = null;
+      pause = Math.min(pause * 2, LAENGSTE_PAUSE_MS);
     }
   })();
-  return () => halt.abort();
+  return () => {
+    halt.abort();
+    weckzeichen?.();
+    wecken = null;
+    removeEventListener("online", sofort);
+    removeEventListener("pageshow", sofort);
+    document.removeEventListener("visibilitychange", sichtbarkeit);
+    rueckkehrEnde();
+  };
 }
 
 /** Eine Karte einzeln vom Server in den Zustand holen (etwa eine archivierte über ihren Pfad, M-09, auch über einen

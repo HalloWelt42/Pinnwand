@@ -7,10 +7,10 @@
 /* Die Telefonansicht füllt den Schirm; die Seite selbst rollt nie, nur der Inhalt */
 .pw-telefon-app { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
-/* Sichere Ränder: am Gerät aus env() (Statusleiste oben, Wischleiste unten; ohne Angabe des Geräts 0) */
+/* Sicherer Rand nur oben (Statusleiste, aus env(), ohne Angabe des Geräts 0); unten steht die Fußleiste ohne Abstand
+   ganz am Rand wie in den übrigen Apps, die Wischleiste des Geräts liegt über ihr */
 .pw-tel {
   --pw-tel-oben: env(safe-area-inset-top, 0px);
-  --pw-tel-unten: env(safe-area-inset-bottom, 0px);
   flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; overflow: hidden;
   background: var(--hg); color: var(--text);
   -webkit-tap-highlight-color: transparent;
@@ -40,6 +40,11 @@
 }
 .pw-tel-knopf:active { background: var(--karte-2); }
 .pw-tel-glocke .zaehler { position: absolute; top: 3px; right: 0; }
+
+/* Ohne Verbindung: ein Band unter dem Kopf, solange sie fehlt (Ändern ist dann gesperrt) */
+.pw-tel-getrennt { flex: none; margin: var(--a2) var(--a2) 0; align-items: center; }
+.pw-tel-getrennt > div { flex: 1; min-width: 0; }
+.pw-tel-getrennt .knopf { flex: none; }
 
 .pw-tel-leiste { flex: none; background: var(--hg); border-bottom: 1px solid var(--rand); }
 
@@ -75,9 +80,9 @@
 .pw-tel-laufleiste .laufzeit { color: var(--akzent); }
 .pw-tel-laufleiste .karte-titel { font-size: var(--klein); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Fußleiste mit vier Reitern; die Leiste reicht bis an den unteren Rand, die Reiter stehen über der Wischleiste */
+/* Fußleiste mit vier Reitern, ganz unten ohne Abstand */
 .pw-tel-fuss {
-  flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); padding: var(--a1) var(--a1) var(--pw-tel-unten);
+  flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); padding: var(--a1) var(--a1) 0;
   background: var(--leiste); border-top: 1px solid var(--rand);
 }
 .pw-tel-fuss a {
@@ -260,7 +265,7 @@
 .pw-tel-schleier { position: absolute; inset: 0; z-index: 20; border: 0; padding: 0; background: var(--schleier); cursor: default; }
 .pw-tel-blatt {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 21; max-height: 82%; display: flex; flex-direction: column; gap: var(--a2);
-  padding: var(--a3) var(--a4) calc(var(--a4) + var(--pw-tel-unten)); background: var(--leiste);
+  padding: var(--a3) var(--a4) var(--a4); background: var(--leiste);
   border-radius: var(--r3) var(--r3) 0 0; box-shadow: var(--schatten-schwebend);
 }
 .pw-tel-blatt .kopfzeile { display: flex; align-items: center; gap: var(--a2); }

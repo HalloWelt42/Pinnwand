@@ -4,7 +4,7 @@
 // `vorab` das lokal; die Antwort ersetzt es, eine Ablehnung lädt den Stand neu.
 
 import { ApiFehler, hole, json } from "appkern-oberflaeche";
-import { laden, stand, uebernehmen, type Geaendert } from "../stand.svelte";
+import { laden, stand, uebernehmen, verbindungAbwarten, type Geaendert } from "../stand.svelte";
 
 /** Antwort jeder Änderung des Servers */
 export interface Antwort {
@@ -53,12 +53,21 @@ async function rueckgaengig(journal: string): Promise<void> {
   await aendern(() => senden(`/rueckgaengig/${journal}`));
 }
 
-/** Ändert über den Server. Getrennt wirkt nichts: Schreibendes ist gesperrt, die Meldung sagt es. Ergebnis: die Antwort,
- *  oder null, wenn es nicht wirkte. Ohne Meldung des Servers (nichts geschah oder Kleines) bleibt die alte stehen. */
+/** So lange wartet eine Änderung ohne Verbindung darauf, dass sie wieder steht (etwa gleich nach dem Aufwachen des
+ *  Telefons), bevor sie aufgibt */
+const VERBINDUNG_ABWARTEN_MS = 5000;
+
+/** Ändert über den Server. Ohne Verbindung wird erst neu verbunden (die Meldung sagt es); steht sie nicht bald, wirkt
+ *  nichts: Schreibendes ist gesperrt, die Meldung sagt es. Ergebnis: die Antwort, oder null, wenn es nicht wirkte. Ohne
+ *  Meldung des Servers (nichts geschah oder Kleines) bleibt die alte stehen. */
 export async function aendern(anfrage: () => Promise<Antwort>, { vorab, beiKonflikt }: Aenderung = {}): Promise<Antwort | null> {
   if (stand.verbindung === "getrennt") {
-    stand.meldung = { text: "Keine Verbindung: Änderungen sind gesperrt, bis die Verbindung wieder steht" };
-    return null;
+    stand.meldung = { text: "Keine Verbindung, verbinde neu ..." };
+    if (!(await verbindungAbwarten(VERBINDUNG_ABWARTEN_MS))) {
+      stand.meldung = { text: "Keine Verbindung: Ändern ist gesperrt, bis sie wieder steht" };
+      return null;
+    }
+    stand.meldung = null;
   }
   vorab?.();
   try {

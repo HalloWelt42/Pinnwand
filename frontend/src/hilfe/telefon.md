@@ -20,6 +20,10 @@ eine Karte öffnet sie also auch am Telefon.
 - **Über den Reitern** steht die Leiste deines Timers, wenn du einen hast: läuft oder angehalten, die Zeit und die
   Karte. Der Knopf daneben hält an oder setzt fort, ein Tippen auf die Leiste führt zu **Zeit**.
 - Die Meldung nach einer Änderung erscheint ebenfalls über den Reitern, mit **Rückgängig** wie am Rechner.
+- Fehlt die Verbindung zum Server (kein Netz, das Telefon hat geschlafen), steht unter dem Kopf **Keine Verbindung**.
+  Du siehst weiter den letzten Stand, Ändern ist so lange gesperrt. Die Pinnwand verbindet sich von selbst neu, sobald
+  das Netz zurück ist oder du sie wieder öffnest; **Neu verbinden** versucht es sofort. Tippst du ohne Verbindung auf
+  **Speichern** oder **Anlegen**, verbindet sie erst neu und speichert dann; die Eingabe bleibt dabei stehen.
 
 ## Als App auf den Home-Bildschirm {#app}
 Leg die Pinnwand auf den Home-Bildschirm deines Telefons, dann startet sie wie eine App: mit eigenem Symbol, im

@@ -124,9 +124,11 @@ Die Fußleiste unten zeigt, ob die Pinnwand verbunden ist:
 
 - **Live verbunden** mit grünem Punkt: Änderungen anderer erscheinen sofort.
 - **Getrennt, verbinde neu** mit rotem Punkt: die Verbindung zum Server ist abgerissen. Du siehst den letzten Stand,
-  aber Ändern ist gesperrt, damit nichts nur scheinbar gespeichert wird. Versuchst du es trotzdem, meldet die Pinnwand
-  "Keine Verbindung: Änderungen sind gesperrt, bis die Verbindung wieder steht". Sie verbindet sich von selbst neu und
-  holt dann den ganzen Stand.
+  aber Ändern ist gesperrt, damit nichts nur scheinbar gespeichert wird. Versuchst du es trotzdem, verbindet die
+  Pinnwand sofort neu ("Keine Verbindung, verbinde neu ...") und speichert, sobald die Verbindung steht. Steht sie nach
+  einigen Sekunden nicht, meldet sie "Keine Verbindung: Ändern ist gesperrt, bis sie wieder steht". Von selbst verbindet
+  sie sich ebenfalls neu, gleich wenn das Netz zurück ist oder das Fenster wieder nach vorn kommt, und holt dann den
+  ganzen Stand.
 - **Kellerwolke** mit Punkt: die Verbindung zur Kellerwolke, über die du angemeldet bist und in der die Anhänge liegen.
   Zeigst du darauf, steht dort ihre Adresse oder, bei rotem Punkt, was nicht stimmt.
 - Rechts **Pinnwand** mit der Nummer der Fassung, die gerade läuft.

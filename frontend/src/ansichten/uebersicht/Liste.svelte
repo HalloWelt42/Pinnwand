@@ -9,7 +9,8 @@
   import { ZEITFENSTER_VORGABE } from "../../anzeige";
   import { sammelLabel, sammelPrioritaet, sammelVerschieben, sammelZuweisen } from "../../daten/anwendung/karten.svelte";
   import { inPapierkorb } from "../../daten/anwendung/papierkorb.svelte";
-  import { dauer, datum, faelligText } from "../../daten/format";
+  import { dauer, datum, faelligText, gesamtnummer } from "../../daten/format";
+  import Kennungsknopf from "../../teile/Kennungsknopf.svelte";
   import { konto, mitKonto } from "../../daten/stand.svelte";
   import Person from "../../board/Person.svelte";
   import { PRIORITAETEN, ZEITFENSTER } from "../../anzeige";
@@ -156,6 +157,7 @@
                                     onclick={(e) => e.stopPropagation()} onchange={() => umschalten(k.id)} /></td>
             <td class="sp-nr"><span class="pw-schluessel">{k.schluessel}</span></td>
             <td class="sp-titel">
+              <Kennungsknopf wert={gesamtnummer(k.nummer)} klasse="pw-gesamtnummer" />
               <a href={pfad(k)} onclick={(e) => e.stopPropagation()}>
                 {#if k.art === "idee"}<i class="fa-solid fa-lightbulb pw-uebersicht-idee" title="Idee"></i>{/if}
                 {#if k.blockiert}<i class="fa-solid fa-ban pw-uebersicht-blockiert" title="Blockiert: {k.blockiert}"></i>{/if}{k.titel}</a>

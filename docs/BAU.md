@@ -386,6 +386,22 @@ zurücksetzen und löschen. Alles ohne Rückweg; zur Sicherheit tippt die Person
 | `POST /konten/{id}/entfernen` | `{bestaetigung}` (Name des Kontos) |
 | `POST /boards/{id}/ordner` | `{ordner, stelle}`: Stelle im Ordner ab 0 (Ziehen in der Seitenleiste), ohne ans Ende |
 
+### Gesamtnummer der Karten
+
+Nachtrag vom 30.10.2026 (HELF-49, Nutzer: "Alle Tickets müssen durchnummeriert sein als 2. ID ... das muss eine Logik
+im Programm hart regeln"). Neben dem Schlüssel im Board (HAUS-12) trägt jede Karte `nummer`, fortlaufend über alle
+Boards, angezeigt als "# 101" klein über dem Titel, kopierbar und durchsuchbar (#101).
+
+- Vergabe nur im Rahmen einer Änderung über `Kontext.neue_nummern` (Schlüssel und Gesamtnummer zusammen), aus dem Zähler
+  `karten` in der Tabelle `zaehler` (Schemastufe 5, nur vorwärts wie die Laufnummern, für niemanden sichtbar). Jeder Weg,
+  auf dem eine Karte entsteht (anlegen, mehrere, Duplizieren, Serien), holt sie dort; scheitert die Änderung, rollt die
+  Transaktion den Zähler mit zurück, es entsteht keine Lücke.
+- Eindeutig auch in der Datenbank: Spalte `karten.nummer` mit eindeutigem Index. Umzug, Papierkorb (die Karte trägt ihre
+  Nummer im Eintrag) und Löschen ändern keine Nummer; eine Nummer wird nie wieder vergeben, nie wird neu nummeriert.
+- Nachtrag beim ersten Start mit der Stufe (`anwendung/gesamtnummer.py`): alle vorhandenen Karten samt Papierkorb in der
+  Reihenfolge der Anlage (in derselben Sekunde nach der Nummer im ersten Board), die älteste ist # 1; Rückgängig von
+  Änderungen aus der Zeit davor gilt danach nicht mehr (es ginge auf Stände ohne Nummer zurück).
+
 ## 10. Prüfen
 
 - Tests je Anwendungsfall (Recht, Regel, Fassung, Journal, Rückgängig, Ereignis) gegen eine Datenbank im Speicher; der

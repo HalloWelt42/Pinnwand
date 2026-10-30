@@ -225,12 +225,13 @@ export function woerter(suche: string): string[] {
 }
 
 function suchtext(k: Karte, b: Board): string {
-  return [k.schluessel, k.titel, k.beschreibung?.replace(/<[^>]+>/g, " "), k.notizen?.replace(/<[^>]+>/g, " "),
+  return [k.schluessel, `#${k.nummer}`, k.titel, k.beschreibung?.replace(/<[^>]+>/g, " "), k.notizen?.replace(/<[^>]+>/g, " "),
     ...k.labels.map((l) => b.labels.find((x) => x.id === l)?.name), ...Object.values(k.felder), ...k.kommentare.map((c) => c.text),
     ...k.checkliste.map((p) => p.text), ...k.zustaendig.map((p) => konto(p).name)].filter(Boolean).join(" ").toLowerCase();
 }
 
-/** Volltextsuche in Board, Liste und Archiv: jedes Wort muss in den Werten der Karte vorkommen (Schlüssel, Titel,
+/** Volltextsuche in Board, Liste und Archiv: jedes Wort muss in den Werten der Karte vorkommen (Schlüssel, Gesamtnummer
+ *  als #101 (gefunden auch mit "# 101" oder "101"), Titel,
  *  Beschreibung, Notizen, Labels, eigene Felder, Kommentare, Checkliste, Zuständige), nie in gespeicherten Rohtexten */
 export function passt(k: Karte, b: Board, suche: string | string[]): boolean {
   const w = typeof suche === "string" ? woerter(suche) : suche;
@@ -497,7 +498,7 @@ export function verknuepfTreffer(k: Karte, suche: string, hoechstens = 8): Karte
   const b = board(k.board);
   const offen = new Set(b.spalten.filter((x) => !x.erledigt).map((x) => x.id));
   return stand.karten.filter((x) => offen.has(x.spalte) && verknuepfbar(k, x)
-    && (x.titel.toLowerCase().includes(s) || x.schluessel.toLowerCase().includes(s))).slice(0, hoechstens);
+    && (x.titel.toLowerCase().includes(s) || x.schluessel.toLowerCase().includes(s) || `#${x.nummer}` === s.replace(/\s+/g, ""))).slice(0, hoechstens);
 }
 
 /** Ein Ordner deiner Kellerwolke zum Anhängen (null: Meine Dateien): was die Kellerwolke dir dort zeigt, Ordner zuerst.

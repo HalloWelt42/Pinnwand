@@ -10,7 +10,7 @@
   import { inPapierkorb } from "../daten/anwendung/papierkorb.svelte";
   import { anhalten, fortsetzen, starten } from "../daten/anwendung/timer.svelte";
   import { ICH } from "../daten/ich";
-  import { alterTage, datum, dauer, faelligText } from "../daten/format";
+  import { alterTage, datum, dauer, faelligText, gesamtnummer } from "../daten/format";
   import { frisch, gruppenmitglieder, konto, stand } from "../daten/stand.svelte";
   import type { Board, Karte } from "../modell";
   import { alterung } from "../regeln/board";
@@ -107,6 +107,7 @@
     <div class="labels">{#each labels as l (l.id)}<span class="pw-label" data-farbe={l.farbe}>{l.name}</span>{/each}</div>
   {/if}
   {#if karte.blockiert}<div class="blockiert"><i class="fa-solid fa-ban"></i><span>{karte.blockiert}</span></div>{/if}
+  <Kennungsknopf wert={gesamtnummer(karte.nummer)} klasse="pw-gesamtnummer" />
   <div class="titel">{karte.titel}</div>
   {#if auszug}<p class="pw-karte-auszug">{auszug}</p>{/if}
   {#if felder.length}
@@ -137,7 +138,7 @@
             title="Verknüpft mit {andere.length} {andere.length === 1 ? 'weiteren Karte' : 'weiteren Karten'}: ziehen zusammen{geteilt ? '; die Zeit ist geteilt und zählt einmal' : ''}">
         <i class="fa-solid fa-link"></i>{andere.length + 1}</span>
     {/if}
-    <Kennungsknopf schluessel={karte.schluessel} />
+    <Kennungsknopf wert={karte.schluessel} />
     {#if faellig}<span class="pw-angabe {faellig.klasse}" title="Fällig {datum(karte.faellig!, true)}"><i class="fa-regular fa-calendar"></i>{faellig.text}</span>{/if}
     {#if erledigt && karte.abgeschlossen}
       <span class="pw-angabe gut" title="Abgeschlossen"><i class="fa-solid fa-check"></i>{datum(karte.abgeschlossen, true)}</span>

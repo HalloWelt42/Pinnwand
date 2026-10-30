@@ -206,6 +206,8 @@ export interface Karte {
   id: Kennung;
   board: Kennung;
   schluessel: string;
+  /** Gesamtnummer über alle Boards, vom Server fortlaufend vergeben; angezeigt als "# 101" (gesamtnummer()) */
+  nummer: number;
   spalte: Kennung;
   titel: string;
   art: "arbeit" | "idee";

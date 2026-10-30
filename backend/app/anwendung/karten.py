@@ -154,8 +154,8 @@ def zielspalte(b: Board, spalte: Kennung | None) -> Spalte:
 def neue_karte(k: Kontext, b: Board, ziel: Spalte, e: Kartenentwurf, art: Kartenart, faellig: str | None = None) -> Karte:
     """Eine neue Karte für die Zielspalte mit der nächsten Nummer des Boards; zuständig ist, wer sie anlegt. Der Entwurf
     ist geprüft; eingereiht und gespeichert wird mit `in_spalte_legen`."""
-    nummer = k.naechste_nummer(b.id)
-    c = Karte(id=neue_kennung("c"), board=b.id, schluessel=f"{b.kuerzel}-{nummer}", spalte=ziel.id, titel=e.titel, art=art,
+    schluessel, nummer = k.neue_nummern(b.id)
+    c = Karte(id=neue_kennung("c"), board=b.id, schluessel=schluessel, nummer=nummer, spalte=ziel.id, titel=e.titel, art=art,
               beschreibung=e.beschreibung, checkliste=[Punkt(text=t) for t in e.checkliste], zustaendig=[k.konto.id],
               faellig=faellig or None, bewegt_am=k.jetzt, erstellt_am=k.jetzt,
               verlauf=[Ereignis(zeit=k.jetzt, von=k.konto.id, text="hat die Karte angelegt")])
@@ -233,10 +233,10 @@ class Karten:
             ziel = spalte_von(b, q.spalte)
             if ziel is None:
                 raise Abgelehnt("Diese Spalte gibt es in diesem Board nicht", 400)
-            nummer = k.naechste_nummer(b.id)
+            schluessel, nummer = k.neue_nummern(b.id)
             titel = f"{q.titel} (Kopie)"[:TITEL_LAENGE]
             c = q.model_copy(deep=True, update={
-                "id": neue_kennung("c"), "schluessel": f"{b.kuerzel}-{nummer}", "titel": titel,
+                "id": neue_kennung("c"), "schluessel": schluessel, "nummer": nummer, "titel": titel,
                 "checkliste": [p.model_copy(update={"erledigt": False}) for p in q.checkliste], "kommentare": [],
                 "blockiert": None, "transkripte": [], "gruppe": None, "serie": None, "anhaenge": [],
                 "abgeschlossen": abschluss(q, k.heute) if ziel.erledigt else None, "bewegt_am": k.jetzt, "erstellt_am": k.jetzt,

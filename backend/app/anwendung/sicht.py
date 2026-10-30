@@ -27,6 +27,8 @@ JE_KONTO = {"ordner": "konto", "hinweise": "konto", "vorlagen": "konto", "berich
 ZEIT = {"zeiteintraege", "timer"}
 #: Arbeitszeit einer Person, ohne Board
 ARBEITSZEIT = {"zeitkonten", "abwesenheiten"}
+#: Zähler des Servers (Gesamtnummer): niemand bekommt sie zu sehen
+INTERN = {"zaehler"}
 
 
 def mitglieder(b: Board | dict | None) -> set[Kennung]:
@@ -101,6 +103,8 @@ class Sicht:
         if tabelle in ZEIT:
             b = self._board(d["board"], vorher)
             return {d["konto"]} | (zeit_seher(Board.model_validate(b)) if b else set())
+        if tabelle in INTERN:
+            return set()
         if tabelle in ARBEITSZEIT:
             return {d["konto"]} | abwesenheit_seher(self._alle_boards(vorher), d["konto"])
         return None

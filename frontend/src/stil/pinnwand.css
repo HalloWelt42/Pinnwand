@@ -56,6 +56,8 @@
 /* Kennung als Knopf (teile/Kennungsknopf): sieht aus wie die Kennung, ein Klick kopiert sie */
 .pw-kennung { background: none; border: 0; padding: 0; border-radius: var(--r1); cursor: copy; line-height: inherit; }
 .pw-kennung:hover { color: var(--akzent); }
+/* Gesamtnummer über dem Titel (# 101): klein und ruhig; als Knopf nur so breit wie die Zahl */
+.pw-gesamtnummer { display: block; width: fit-content; font-family: var(--schrift-zahl); font-size: var(--marke); font-weight: 600; color: var(--text-3); letter-spacing: 0.02em; }
 
 /* Farbpunkt einer Spalte oder eines Boards */
 .pw-farbpunkt { width: 10px; height: 10px; border-radius: 50%; background: var(--f, var(--stahl)); flex: none; display: inline-block; }

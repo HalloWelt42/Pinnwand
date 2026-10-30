@@ -177,7 +177,8 @@ def vorbuchen(k: Kontext, lage: Lage, s: Serie, b: Board) -> int:
     for v in vorkommen(s, k.heute, vorlauf_ende(s, k.heute), lage.umfeld(s)):
         if v.stand not in ("heute", "vorgebucht") or v.karte:
             continue
-        c = Karte(id=neue_kennung("c"), board=b.id, schluessel=f"{b.kuerzel}-{k.naechste_nummer(b.id)}", spalte=ziel.id,
+        schluessel, nummer = k.neue_nummern(b.id)
+        c = Karte(id=neue_kennung("c"), board=b.id, schluessel=schluessel, nummer=nummer, spalte=ziel.id,
                   titel=karten_titel(s), beschreibung=s.beschreibung, labels=list(s.labels),
                   zustaendig=anwesende(s, b, v.ohne), faellig=v.tag, schaetzung_min=s.dauer_min, serie=s.id,
                   bewegt_am=k.jetzt, erstellt_am=k.jetzt,

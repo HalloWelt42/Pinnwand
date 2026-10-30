@@ -6,7 +6,7 @@
   import { erledigen } from "../../daten/anwendung/karten.svelte";
   import { anhalten, fortsetzen, starten } from "../../daten/anwendung/timer.svelte";
   import { ICH } from "../../daten/ich";
-  import { alterTage, datum, dauer, faelligText } from "../../daten/format";
+  import { alterTage, datum, dauer, faelligText, gesamtnummer } from "../../daten/format";
   import { board, konto, stand } from "../../daten/stand.svelte";
   import Person from "../../board/Person.svelte";
   import type { Karte } from "../../modell";
@@ -58,6 +58,7 @@
       <span class="ort" data-farbe={b.farbe}><span class="pw-farbpunkt"></span><span class="pw-schluessel">{k.schluessel}</span>
         <span class="spalte">{spalte?.name}</span></span>
     {/if}
+    <span class="pw-gesamtnummer">{gesamtnummer(k.nummer)}</span>
     <span class="titel">{k.titel}</span>
     {#if fortschritt > 0}
       <span class="haltetext"><i class="fa-solid fa-hand-pointer"></i>Weiter halten: erledigt, wenn der Ring voll ist</span>

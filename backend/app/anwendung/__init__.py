@@ -18,6 +18,7 @@ from .arbeitszeit import Arbeitszeit
 from .aufbau import Aufbau
 from .berichte import Berichte
 from .boards import Boards, Zugang
+from . import gesamtnummer
 from .ereignisse import Ereignisse
 from .hinweise import Hinweise
 from .inhalt import Inhalte
@@ -82,13 +83,15 @@ class Dienste:
 
 
 class Start(Begleiter):
-    """Schema einrichten und die mitgelieferten Vorlagen anlegen oder auf den neuen Stand bringen."""
+    """Schema einrichten, fehlende Gesamtnummern der Karten einmal nachtragen und die mitgelieferten Vorlagen anlegen
+    oder auf den neuen Stand bringen."""
 
     def __init__(self, db: Datenbank) -> None:
         self.db = db
 
     async def starten(self) -> None:
         await einrichten(self.db)
+        await self.db.transaktion(gesamtnummer.nachtragen)
         for v in MITGELIEFERT:
             await self.db.ausfuehren("INSERT INTO vorlagen (id, fassung, daten, konto) VALUES (?, 1, ?, NULL) "
                                      "ON CONFLICT(id) DO UPDATE SET daten=excluded.daten",

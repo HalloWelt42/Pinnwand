@@ -24,6 +24,8 @@ class Tabelle:
     spalten: tuple[str, ...] = ()
     #: Feld im JSON je Spalte (Vorgabe: gleicher Name)
     felder: dict[str, str] = field(default_factory=dict)
+    #: Spalten, die eine spätere Stufe nachträgt (ALTER TABLE); die Stufe der Tabelle selbst legt sie nicht an
+    nachgetragen: tuple[str, ...] = ()
 
     def werte(self, daten: dict) -> list[Any]:
         return [daten.get(self.felder.get(s, s)) for s in self.spalten]
@@ -33,7 +35,7 @@ class Tabelle:
 TABELLEN_DER_STUFEN: tuple[tuple[Tabelle, ...], ...] = ((
     Tabelle("konten", ("kellerwolke",)),
     Tabelle("boards", ("kuerzel",)),
-    Tabelle("karten", ("board", "schluessel", "spalte", "reihe")),
+    Tabelle("karten", ("board", "schluessel", "spalte", "reihe", "nummer"), nachgetragen=("nummer",)),
     Tabelle("gruppen", ("board",)),
     Tabelle("laufnummern", ("board",)),
     Tabelle("ordner", ("konto", "reihe")),
@@ -52,12 +54,18 @@ TABELLEN_DER_STUFEN: tuple[tuple[Tabelle, ...], ...] = ((
     Tabelle("termine", ("board", "datum")),
 ), (
     Tabelle("berichte", ("konto", "erstellt")),
+), (
+    Tabelle("zaehler"),
 ))
 TABELLEN: dict[str, Tabelle] = {t.name: t for stufe in TABELLEN_DER_STUFEN for t in stufe}
 
 
+#: Art der Spalten, die keine Texte sind
+SPALTENART = {"reihe": "REAL", "nummer": "INTEGER"}
+
+
 def _tabelle_sql(t: Tabelle) -> str:
-    zusatz = "".join(f", {s} {'REAL' if s == 'reihe' else 'TEXT'}" for s in t.spalten)
+    zusatz = "".join(f", {s} {SPALTENART.get(s, 'TEXT')}" for s in t.spalten if s not in t.nachgetragen)
     return f"CREATE TABLE {t.name} (id TEXT PRIMARY KEY, fassung INTEGER NOT NULL DEFAULT 1, daten TEXT NOT NULL{zusatz});"
 
 
@@ -94,6 +102,12 @@ STUFEN: list[str] = [
     """,
     _tabellen_sql(3) + """
     CREATE INDEX berichte_konto ON berichte(konto, erstellt);
+    """,
+    # Gesamtnummer jeder Karte über alle Boards (HELF-49): eindeutig in der Datenbank, vergeben über den Zähler
+    # "karten" in zaehler; vorhandene Karten nummeriert der Start einmal nach (anwendung/gesamtnummer.py)
+    _tabellen_sql(4) + """
+    ALTER TABLE karten ADD COLUMN nummer INTEGER;
+    CREATE UNIQUE INDEX karten_nummer ON karten(nummer);
     """,
 ]
 

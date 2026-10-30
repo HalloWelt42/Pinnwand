@@ -9,7 +9,8 @@
   import { bearbeiten, kommentieren } from "../../daten/anwendung/karten.svelte";
   import { anhalten, fortsetzen, starten, stoppen } from "../../daten/anwendung/timer.svelte";
   import { ICH } from "../../daten/ich";
-  import { alterTage, datum, dauer, faelligText, uhrzeit, wann } from "../../daten/format";
+  import { alterTage, datum, dauer, faelligText, gesamtnummer, uhrzeit, wann } from "../../daten/format";
+  import Kennungsknopf from "../../teile/Kennungsknopf.svelte";
   import { board, karte as holeKarte, konto, stand } from "../../daten/stand.svelte";
   import Person from "../../board/Person.svelte";
   import { boardPfad, gehe, wert } from "../../weg.svelte";
@@ -64,6 +65,7 @@
   <TelefonSchale titel={k.schluessel} kopierbar unter={b.name} reiter="boards" {zurueck} karte={k.id}>
     <section class="pw-tel-kopfblock">
       {#if labels.length}<div class="labels">{#each labels as l (l.id)}<span class="pw-label" data-farbe={l.farbe}>{l.name}</span>{/each}</div>{/if}
+      <Kennungsknopf wert={gesamtnummer(k.nummer)} klasse="pw-gesamtnummer pw-tel-gesamtnummer" />
       <h2 class="pw-tel-kartentitel">{k.titel}</h2>
       {#if k.art === "idee"}<span class="pw-angabe pw-tel-idee"><i class="fa-solid fa-lightbulb"></i>Idee</span>{/if}
       {#if k.blockiert}<div class="hinweis gefahr"><i class="fa-solid fa-ban"></i><div><b>Blockiert:</b> {k.blockiert}</div></div>{/if}

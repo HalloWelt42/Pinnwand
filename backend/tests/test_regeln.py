@@ -37,7 +37,7 @@ def test_alterung_archiv_abschluss():
     e = BoardEinstellungen(alterung_warnung=4, alterung_gefahr=8, archiv_tage=30)
     assert [alterung(t, e) for t in (3, 4, 8)] == ["flaeche", "warnung", "gefahr"]
     assert alterung(100, BoardEinstellungen(alterung_warnung=0, alterung_gefahr=0)) == "flaeche"
-    k = Karte(id="c", board="b", schluessel="HAUS-1", spalte="s", titel="x", bewegt_am="", erstellt_am="",
+    k = Karte(id="c", board="b", schluessel="HAUS-1", nummer=1, spalte="s", titel="x", bewegt_am="", erstellt_am="",
               abgeschlossen="2026-09-01")
     assert im_archiv(k, e, "2026-10-27") and not im_archiv(k, e, "2026-09-30")
     assert abschluss(k, "2026-10-27") == "2026-10-27"

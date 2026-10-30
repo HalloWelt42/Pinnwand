@@ -59,7 +59,7 @@
       <a class="pw-tel-knopf" href={zurueck} title="Zurück" aria-label="Zurück"><i class="fa-solid fa-chevron-left"></i></a>
     {/if}
     <div class="titel">
-      <h1>{#if kopierbar}<Kennungsknopf schluessel={titel} klasse="pw-tel-kennung" />{:else}{titel}{/if}</h1>
+      <h1>{#if kopierbar}<Kennungsknopf wert={titel} klasse="pw-tel-kennung" />{:else}{titel}{/if}</h1>
       {#if unter}<span class="unter">{unter}</span>{/if}
     </div>
     {#if glocke}

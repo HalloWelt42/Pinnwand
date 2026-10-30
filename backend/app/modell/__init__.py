@@ -181,6 +181,9 @@ class Karte(Modell):
     id: Kennung
     board: Kennung
     schluessel: str
+    #: Gesamtnummer über alle Boards ("# 101"): fortlaufend und lückenlos, nur vom Server vergeben (`Kontext.neue_karte`),
+    #: bleibt bei Umzug, Papierkorb und Löschen; nie wiederverwendet
+    nummer: int
     spalte: Kennung
     titel: str
     art: Kartenart = "arbeit"

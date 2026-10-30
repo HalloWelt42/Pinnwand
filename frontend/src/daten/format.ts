@@ -89,3 +89,8 @@ export function wann(iso: string): string {
   if (t === 1) return `gestern ${uhrzeit(iso)}`;
   return `${datum(iso)} ${uhrzeit(iso)}`;
 }
+
+/** Gesamtnummer einer Karte, wie sie über dem Titel steht und kopiert wird: "# 101" */
+export function gesamtnummer(nummer: number): string {
+  return `# ${nummer}`;
+}

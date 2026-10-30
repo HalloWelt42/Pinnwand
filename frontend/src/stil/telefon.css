@@ -32,6 +32,7 @@
 }
 .pw-tel-kopf .titel { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
 .pw-tel-kopf.mit-zurueck { padding-left: var(--a1); }
+.pw-tel-gesamtnummer { min-height: 32px; }
 .pw-tel-kopf .pw-tel-kennung { font: inherit; color: inherit; letter-spacing: inherit; min-height: 44px; }
 .pw-tel-kopf h1 { font-size: var(--titel); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pw-tel-kopf .unter { font-size: var(--klein); color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -18,7 +18,9 @@ from .ereignisse import Ereignisse, Geaendert, Neuigkeit
 from .sicht import Sicht
 
 #: Zähler laufen nur vorwärts: Rückgängig lässt sie stehen (und prüft sie nicht)
-NUR_VORWAERTS = {"laufnummern"}
+NUR_VORWAERTS = {"laufnummern", "zaehler"}
+#: Zähler der Gesamtnummer der Karten in der Tabelle zaehler
+GESAMTNUMMER = "karten"
 #: Folgen für andere (ein Hinweis an sie): Rückgängig nimmt sie mit, auch wenn die Person sie inzwischen gelesen hat
 NACHSICHTIG = {"hinweise"}
 
@@ -101,6 +103,20 @@ class Kontext:
         d = self.s.lies("laufnummern", board_id) or {"id": board_id, "board": board_id, "zahl": 0}
         zahl = int(d["zahl"]) + 1
         self.s.schreib("laufnummern", {**d, "zahl": zahl})
+        return zahl
+
+    def neue_nummern(self, board_id: Kennung) -> tuple[str, int]:
+        """Schlüssel im Board (HAUS-12) und Gesamtnummer für eine neue Karte, beide aus ihren Zählern in dieser
+        Transaktion: scheitert das Anlegen, ist keine Nummer verbraucht. Jeder Weg, auf dem eine Karte neu entsteht,
+        holt sie hier."""
+        b = self.board(board_id)
+        return f"{b.kuerzel}-{self.naechste_nummer(board_id)}", self.naechste_gesamtnummer()
+
+    def naechste_gesamtnummer(self) -> int:
+        """Die nächste Gesamtnummer über alle Boards; der Zähler "karten" steht danach auf ihr."""
+        d = self.s.lies("zaehler", GESAMTNUMMER) or {"id": GESAMTNUMMER, "zahl": 0}
+        zahl = int(d["zahl"]) + 1
+        self.s.schreib("zaehler", {**d, "zahl": zahl})
         return zahl
 
     def pruefe_fassung(self, stand: dict, fassung: int | None, was: str) -> None:

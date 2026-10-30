@@ -13,7 +13,7 @@
   import { transkripteDa } from "../daten/anwendung/transkripte.svelte";
   import { karteText, liest, vorlesen, vorlesenDa } from "../daten/anwendung/vorlesen.svelte";
   import { uhr } from "../daten/uhr.svelte";
-  import { alterTage, datumJahr } from "../daten/format";
+  import { alterTage, datumJahr, gesamtnummer } from "../daten/format";
   import { konto, mitKonto, stand } from "../daten/stand.svelte";
   import { PRIORITAETEN } from "../anzeige";
   import type { Board, Karte, Kennung, Prioritaet } from "../modell";
@@ -162,7 +162,7 @@
 </script>
 
 <div class="pw-detail-kopf">
-  <Kennungsknopf schluessel={k.schluessel} klasse="pw-detail-schluessel" />
+  <Kennungsknopf wert={k.schluessel} klasse="pw-detail-schluessel" />
   <span class="zustand" data-farbe={spalte.farbe}><span class="pw-farbpunkt"></span>{spalte.name}</span>
   <span class="pw-umschalter" title={board.module.zeiterfassung ? "Arbeit hat Zeiterfassung, eine Idee nicht; Umschalten hält laufende Timer an und bucht"
                                                                 : "Arbeit oder Idee; nur Arbeit lässt sich mit anderen Karten verknüpfen"}>
@@ -210,6 +210,7 @@
         <button class="knopf haupt klein" disabled={!schreiben} onclick={meineUebernehmen}>Meine übernehmen</button></span>
     </div>
   {/if}
+  <Kennungsknopf wert={gesamtnummer(k.nummer)} klasse="pw-gesamtnummer" />
   <input class="pw-detail-titel" value={k.titel} disabled={!schreiben} aria-label="Titel" use:verwerfbar onchange={titelAendern} onkeydown={enterVerlaesst} />
 
   <Textfeld name="Beschreibung" text={k.beschreibung} leer="Keine Beschreibung." {schreiben} vorlesen={vorlesenDa(board) ? () => vorlesen(`beschreibung-${k.id}`, markdownText(k.beschreibung ?? ""), board.id) : undefined}

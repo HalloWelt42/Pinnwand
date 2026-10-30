@@ -105,10 +105,19 @@ Umziehen braucht im alten Board das Recht Karten löschen und im neuen das Recht
 ## Duplizieren {#duplizieren}
 Der Knopf mit den zwei Blättern im Kopf des Kartendetails (**Duplizieren: Kopie in derselben Spalte, ohne Zeiten, Kommentare und Anhänge**) legt eine Kopie am Ende derselben Spalte an und öffnet sie. Die Kopie heißt wie das Original mit "(Kopie)" dahinter, bekommt die nächste Nummer und übernimmt Inhalt und Angaben; alle Punkte der Checkliste sind wieder offen. Ohne Kopie bleiben Zeiten, Kommentare, Anhänge, Blockade, Transkripte, Verknüpfung und Serie. Duplizieren braucht das Recht Karten anlegen.
 
-## Schlüssel kopieren {#kennung}
-Ein Klick auf den Schlüssel einer Karte, etwa HAUS-12, legt ihn in die Zwischenablage: auf der Karte im Board, im Kopf
-des Kartendetails und am Telefon oben im Kopf der Karte. Die Karte öffnet sich dabei nicht; die Meldung sagt
-"HAUS-12 kopiert". So zeigst du jemandem schnell, welche Karte du meinst.
+## Nummern einer Karte {#kennung}
+Jede Karte hat zwei Nummern:
+
+- den **Schlüssel** im Board, etwa HAUS-12: Kürzel des Boards und die laufende Nummer darin. Zieht die Karte in ein
+  anderes Board um, bekommt sie dort einen neuen Schlüssel; der alte führt weiter zu ihr.
+- die **Gesamtnummer**, etwa **# 101**, klein über dem Titel: über alle Boards fortlaufend, in der Reihenfolge, in der
+  die Karten entstanden. Jede neue Karte bekommt die nächste, auch eine Kopie oder eine Karte aus einer Serie. Die
+  Pinnwand vergibt sie selbst, jede nur einmal; Umziehen, Papierkorb und Löschen ändern sie nicht, und eine Nummer
+  wird nie wieder vergeben.
+
+Ein Klick auf eine der beiden Nummern legt sie in die Zwischenablage: auf der Karte im Board, in der Liste, im
+Kartendetail und am Telefon in der Karte. Die Karte öffnet sich dabei nicht; die Meldung sagt etwa "# 101 kopiert". Die
+Suche findet eine Karte auch über ihre Gesamtnummer, etwa mit #101.
 
 ## Verweis kopieren {#verweis}
 Der Knopf mit der Kette im Kopf des Kartendetails (**Verweis kopieren**) legt die Adresse der Karte in die Zwischenablage, etwa zum Einfügen in eine Nachricht. Wer sie öffnet und Mitglied des Boards ist, landet direkt bei der Karte, auch wenn sie inzwischen im Archiv liegt. Die Meldung zeigt die kopierte Adresse; klappt das Kopieren nicht, steht die Adresse dort zum Abschreiben.

@@ -145,6 +145,8 @@ Die Pinnwand prüft jedes Recht bei jeder Änderung, am Rechner wie am Telefon; 
 
 Wer schon einmal in der Pinnwand angemeldet war, sieht das Board sofort in seiner Seitenleiste. Wer noch nie da war, steht mit dem Vermerk **wartet auf die erste Anmeldung** im Board und sieht es, sobald er sich mit diesem Kellerwolke-Konto zum ersten Mal anmeldet. Ein Kontoname besteht nur aus Buchstaben, Ziffern, Punkt, Bindestrich, Unterstrich und @, ohne Leerzeichen.
 
+Ein App-Zugang deiner Kellerwolke, etwa der Helfer, ist in der Pinnwand eine eigene Person mit eigenem Namen, Kürzel und eigener Farbe; sein Kürzel trägt einen gestrichelten Ring, und beim Überfahren steht, wem er gehört. Eingeladen wird er als Kontoname und Zugang mit Schrägstrich, etwa **admin/Helfer**. Was er tut (Kommentare, Verlauf, Zeiten, Timer), läuft unter ihm, nicht unter deinem Konto; sein Timer läuft neben deinem. Beim ersten Anmelden übernimmt er seine Zeiten, deren Notiz mit seinem Namen und Doppelpunkt beginnt (etwa "Helfer: ..."), und wird Mitglied im Board, das wie er heißt.
+
 ### Rolle und Entfernen
 - In der Tabelle **Mitglieder** wählst du je Person ihre **Rolle**; daneben steht, seit wann sie dabei ist.
 - **Entfernen** nimmt eine Person nach einer Rückfrage aus dem Board. Das Board verschwindet aus ihrer Seitenleiste, an offenen Karten fällt ihre Zuständigkeit weg, ihr laufender Timer in diesem Board hält an und bucht, und aus den Serien des Boards fällt sie heraus. Gebuchte Zeiten bleiben an den Karten und im Zeitkonto.

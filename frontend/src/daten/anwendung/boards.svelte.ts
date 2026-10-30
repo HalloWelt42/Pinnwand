@@ -31,8 +31,9 @@ export function neueBoardFarbe(): Farbe {
   return NEU_FARBEN.find((f) => !stand.boards.some((b) => b.farbe === f)) ?? NEU_FARBEN[0];
 }
 
-/** Kontonamen der Kellerwolke, gleich KONTONAME in backend/app/anwendung/boards.py */
-const KONTONAME = /^[\p{L}\p{N}_.@-]{1,64}$/u;
+/** Kontonamen der Kellerwolke, oder Konto/Zugang für einen App-Zugang (HELF-43); gleich KONTONAME in
+ *  backend/app/anwendung/boards.py */
+const KONTONAME = /^[\p{L}\p{N}_.@-]{1,64}(\/[\p{L}\p{N}_ .@-]{1,64})?$/u;
 
 export function kontonameOk(name: string): boolean {
   return KONTONAME.test(name.trim());

@@ -24,6 +24,8 @@
   background: color-mix(in srgb, var(--f, var(--stahl)) var(--toenung), var(--karte)); color: var(--f, var(--stahl));
   box-shadow: 0 0 0 2px var(--karte);
 }
+/* ein App-Zugang (HELF-43): gestrichelter Ring statt voller Fläche, damit man ihn vom Menschen unterscheidet */
+.pw-person.app { outline: 1px dashed currentColor; outline-offset: 1px; }
 .pw-person.gross { width: 38px; height: 38px; font-size: var(--klein); }
 .pw-personen { display: inline-flex; align-items: center; gap: 3px; }
 .pw-personen .mehr { margin-left: 4px; font-size: var(--marke); color: var(--text-3); }

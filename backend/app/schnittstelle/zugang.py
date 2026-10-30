@@ -17,6 +17,7 @@ class GeruestZugang:
 
     async def freischalten(self, namen: Iterable[str]) -> None:
         weitere = list(self.g.einstellungen.stand.weitere_konten)
-        neu = [n for n in dict.fromkeys(namen) if n and n != self.g.besitzer and n not in weitere]
+        # App-Zugänge (Konto/Zugang) melden sich mit ihrem App-Schlüssel an, als ihr Konto: nichts freizuschalten
+        neu = [n for n in dict.fromkeys(namen) if n and "/" not in n and n != self.g.besitzer and n not in weitere]
         if neu:
             await self.g.einstellungen.aendern({"weitere_konten": [*weitere, *neu]})

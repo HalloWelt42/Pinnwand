@@ -136,7 +136,7 @@ class Abfragen:
             commitbezuege=await self.a.v.alle("commitbezuege", f"board IN ({frage})", tuple(ids)) if ids else [],
             hinweiswege=Hinweiswege(da=list(WEGE_DA), vorgabe={a: {w: vorgabe(a, w) for w in WEGE_DA} for a in ARTEN_DA}),
             ki_bereit=self.ki_bereit(),
-            app_besitzer=bool(self.besitzer()) and konto.kellerwolke == self.besitzer(),
+            app_besitzer=bool(self.besitzer()) and konto.kellerwolke_konto == self.besitzer(),
             transkription_adresse=self.transkription_adresse(),
             vertonung_adresse=self.vertonung_adresse(),
             terminnamen=await self._terminnamen({d["termin"] for d in zeiteintraege if d.get("termin")}

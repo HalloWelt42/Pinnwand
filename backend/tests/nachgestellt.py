@@ -404,6 +404,11 @@ def kellerwolke(request: httpx.Request) -> httpx.Response:
     if request.url.host == "vt.test":
         return VERTONUNG.antwort(request)
     if pfad == "/api/v1/ablage/ich":
+        # ein App-Zugang einer Person (HELF-43): kw_app_<zugang>_<person>, etwa kw_app_helfer_anna
+        teile = (request.headers.get("authorization") or "").removeprefix("Bearer ").split("_")
+        if len(teile) == 4 and teile[3] in PERSONEN:
+            return httpx.Response(200, json={"app": teile[2].capitalize(), "konto": teile[3], "konto_id": PERSONEN[teile[3]],
+                                             "rechte": []})
         return httpx.Response(200, json={"app": "Pinnwand", "konto": "anna", "rechte": []})
     if pfad.startswith("/api/v1/ablage/"):
         return ABLAGE.antwort(request, pfad.removeprefix("/api/v1/ablage"))

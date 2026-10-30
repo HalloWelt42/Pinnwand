@@ -17,6 +17,10 @@ export interface Konto {
   kellerwolke: string;
   /** Kennung dieser Anlage, neu bei jedem Zurücksetzen (die Oberfläche vergisst dann ihre Merker) */
   anlage?: string;
+  /** ein App-Zugang einer Person (HELF-43, etwa der Helfer): der Name des Zugangs; `kellerwolke` ist dann Konto/Zugang */
+  app?: string;
+  /** bei einem App-Zugang: die Person, der er gehört */
+  inhaber?: Kennung;
 }
 
 /** Eine Person aus den Konten der Kellerwolke, gefunden per Name beim Einladen */

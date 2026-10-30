@@ -26,7 +26,8 @@ NEU_FARBEN: list[Farbe] = ["tuerkis", "himmel", "honig", "violett", "rose", "san
 #: Vorgabe des Zeitfensters neuer Erledigt-Spalten (wie in der alten App)
 ZEITFENSTER_VORGABE = "heute"
 #: Kontonamen der Kellerwolke: Buchstaben, Ziffern, Punkt, Bindestrich, Unterstrich, @
-KONTONAME = re.compile(r"^[\w.@-]{1,64}$")
+#: Kontoname der Kellerwolke, oder Konto/Zugang für die Person eines App-Zugangs (HELF-43, etwa admin/Helfer)
+KONTONAME = re.compile(r"^[\w.@-]{1,64}(/[\w .@-]{1,64})?$")
 #: Längster Name eines Boards, einer Spalte, eines Labels, Feldes, einer Option, Rolle, Vorlage oder eines Ordners
 NAME_LAENGE = 100
 #: Namen der Module für Meldungen, gleich MODULE in frontend/src/anzeige.ts

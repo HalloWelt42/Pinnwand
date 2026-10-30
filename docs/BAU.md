@@ -391,6 +391,17 @@ zurücksetzen und löschen. Alles ohne Rückweg; zur Sicherheit tippt die Person
 | `POST /konten/{id}/entfernen` | `{bestaetigung}` (Name des Kontos) |
 | `POST /boards/{id}/ordner` | `{ordner, stelle}`: Stelle im Ordner ab 0 (Ziehen in der Seitenleiste), ohne ans Ende |
 
+### App-Zugang als eigene Person
+
+Nachtrag vom 30.10.2026 (HELF-43, Nutzer: "du als Helfer bist also auch eine Board-Person, ich sehe deine Zeiten").
+Wer sich mit dem App-Schlüssel eines Zugangs der Kellerwolke anmeldet (Anmeldung mit `app`, nicht im Auftrag eines
+Menschen), ist eine eigene Person: Kennung `<Person>.app-<zugang>`, Name und Kürzel aus dem Zugang, eigene Farbe,
+`kellerwolke` = `Konto/Zugang` (admin/Helfer), `app` und `inhaber`. Eingeladen wird sie mit diesem Namen (`KONTONAME`
+erlaubt den Schrägstrich, "Weitere Konten" bekommt ihn nicht); als Besitzer der App zählt sie wie ihr Inhaber
+(`Konto.kellerwolke_konto`). Beim ersten Anmelden übernimmt sie nur sicher Erkennbares: Zeiteinträge des Inhabers mit
+der Notiz "Zugang: ..." und die Mitgliedschaft (Rolle Mitglied) im Board, das wie der Zugang heißt. Kommentare und
+Verlauf von früher bleiben beim Inhaber (darin ist nicht zu unterscheiden, wer schrieb).
+
 ### Gesamtnummer der Karten
 
 Nachtrag vom 30.10.2026 (HELF-49, Nutzer: "Alle Tickets müssen durchnummeriert sein als 2. ID ... das muss eine Logik

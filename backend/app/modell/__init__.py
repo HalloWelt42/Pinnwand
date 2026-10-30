@@ -45,6 +45,15 @@ class Konto(Modell):
     kellerwolke: str
     #: Kennung dieser Anlage des Kontos, neu bei jedem Zurücksetzen; ändert sie sich, vergisst die Oberfläche ihre Merker
     anlage: Kennung | None = None
+    #: ein App-Zugang einer Person (HELF-43), etwa der Helfer: der Name des Zugangs; sonst ein Mensch
+    app: str | None = None
+    #: bei einem App-Zugang: die Kennung der Person, der er gehört
+    inhaber: Kennung | None = None
+
+    @property
+    def kellerwolke_konto(self) -> str:
+        """Das Kellerwolke-Konto dahinter (bei einem App-Zugang das seiner Person; `kellerwolke` ist dann Konto/Zugang)."""
+        return self.kellerwolke.split("/")[0] if self.app else self.kellerwolke
 
 
 class Ordner(Modell):

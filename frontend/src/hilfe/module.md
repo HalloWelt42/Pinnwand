@@ -32,7 +32,7 @@ Die Einträge in der Seitenleiste erscheinen, sobald mindestens eines deiner Boa
 | Modul | Was es zeigt | Braucht | Feld |
 |---|---|---|---|
 | **Transkripte** | Im Kartendetail den Abschnitt **Transkripte**, am Telefon unter **Erfassen** den Knopf **Sprechen** | die Transkription | Transkript-Marken |
-| **Vorlesen** | Lautsprecher-Knöpfe an Beschreibung, Karte und Kommentaren, den Knopf **Vorlesen** in Heute und bei den Berichten | die Vertonung | keins |
+| **Vorlesen** | Lautsprecher-Knöpfe an Beschreibung, Karte und Kommentaren, den Knopf **Vorlesen** in Heute und bei den Berichten | die App Vorlesen | keins |
 | **KI an der Karte** | Zauberstab-Knöpfe im Kartendetail, **Vorschlagen** an der Checkliste, **Aus Text** beim Anlegen in einer Spalte | die Leitstelle | keins |
 
 Die Anbindungen haben keine eigenen Rechte. Sie richten sich nach den Rechten des Boards, etwa **Karten bearbeiten** oder **Karten anlegen**. Mehr dazu in [Transkripte](hilfe:transkripte), [Vorlesen](hilfe:vorlesen) und [KI an der Karte](hilfe:ki).
@@ -78,12 +78,12 @@ Die Anbindungen sprechen mit eigenen Diensten. Eine Verbindung besteht aus der A
 |---|---|---|
 | **Leitstelle** | KI an der Karte | Adresse und Schlüssel der Leitstelle, dazu wahlweise das Modell (ohne Wahl entscheidet die Leitstelle) |
 | **Transkription** | Transkripte und Spracheingabe | Adresse |
-| **Vertonung** | Vorlesen | Adresse, dazu Stimme und Tempo |
+| **Vorlesen** | Vorlesen | Adresse (Stimme und Tempo wählt man in der App Vorlesen) |
 | **Kellerwolke** | Anmeldung, Anhänge, Berichte | Adresse und App-Schlüssel |
 
 Diese Verbindungen gelten für die ganze Pinnwand, nicht je Board. Du trägst sie unter **Einstellungen**, Reiter
 **App und Verbindungen** ein: Gruppe **Verbindungen** für die Adressen und Schlüssel, Gruppe **KI an der Karte** für das
-Modell, Gruppe **Vorlesen** für Stimme und Tempo. Geänderte Werte tragen einen Punkt, bis du sie in der Leiste unten
+Modell. Geänderte Werte tragen einen Punkt, bis du sie in der Leiste unten
 mit **Speichern** übernimmst; **Verwerfen** lässt alles, wie es war (siehe
 [App und Verbindungen](hilfe:einstellungen/app)).
 
@@ -96,6 +96,6 @@ Ein Modul kann an sein, ohne dass sein Dienst verbunden ist. Dann zeigt die Pinn
 |---|---|
 | **KI an der Karte** | "Die Leitstelle ist in den Einstellungen der App noch nicht eingerichtet; bis dahin erscheinen keine Vorschläge." |
 | **Transkripte** | "Die Adresse der Transkription fehlt in den Einstellungen der App; bis dahin gibt es keine Transkripte." |
-| **Vorlesen** | "Die Adresse der Vertonung fehlt in den Einstellungen der App; bis dahin wird nichts vorgelesen." |
+| **Vorlesen** | "Die Adresse der App Vorlesen fehlt in den Einstellungen der App; bis dahin wird nichts vorgelesen." |
 
 Ist die Verbindung eingetragen, aber der Dienst gerade nicht erreichbar oder lässt er dein Konto nicht zu, merkst du es erst beim Benutzen: Dann nennt die Pinnwand den Grund an der Stelle, an der du geklickt hast, etwa "Die Transkription ist gerade nicht erreichbar" oder "Die Leitstelle kann gerade nicht". Alles andere in der Pinnwand läuft dabei ganz normal weiter.

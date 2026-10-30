@@ -338,25 +338,25 @@ sprechen kann nur, wer die Transkription selbst nutzen darf. Was an der Karte st
 
 ### Vorlesen
 
-Modul `vorlesen` in `MODULE_DA`, ohne eigene Rechte (Mechanik M-114). Die Vertonung ist eine App des Verbunds; ihre
-Adresse steht in `vertonung_adresse`, Stimme und Tempo in `vorlesen_stimme` und `vorlesen_tempo` (angeboten werden nur
-Stimmen aus dem Katalog der Vertonung und private, die sie der Pinnwand freigibt; nie gesammelte fremde). Gefragt wird
-über `appkern.verbund` im Auftrag der Person.
+Modul `vorlesen` in `MODULE_DA`, ohne eigene Rechte (Mechanik M-114). Gesprochen wird von der App Vorlesen, der einen
+Stelle für Sprachausgabe im Verbund (HELF-55, vorher die Vertonung); ihre Adresse steht in `vorlesen_adresse` (Feld,
+Angebot und Verbindung aus `appkern.vorlesen`, Anschluss `Sprachausgabe` in `anwendung/vorlesen.py`, Umsetzung
+`schnittstelle/sprachausgabe.py`). Stimme, Sprache und Tempo wählt man in der App Vorlesen; die Pinnwand hat keine
+eigenen Felder dafür. Gefragt wird mit dem App-Schlüssel im Auftrag der Person.
 
 - Vorgelesen wird, was die Oberfläche zeigt: die Beschreibung (Knopf am Feld), die ganze Karte (Kopf des Details: Titel,
   Beschreibung, offene Punkte), ein Kommentar (Lautsprecher am Kommentar), der Tagesplan in Heute (Überfälliges, Heute,
   Termine, Serien) und ein Bericht (in der Vorschau, in der Liste bei Markdown). Markdown wird vorher zu Klartext.
 - `POST /vorlesen` mit `{text, board}` (ohne Board: Heute und Berichte, dann muss das Modul in einem Board der Person an
-  sein): der Server prüft Modul und Länge (höchstens 40 000 Zeichen), teilt an Satzgrenzen in Teile von höchstens 7500
-  Zeichen (die Vertonung nimmt je Aufruf 8000) und reicht den Strom der Vertonung Satz für Satz weiter
-  (`application/x-ndjson`, Zeilen `satz`, `ende`, `fehler` wie bei der Vertonung, die Sätze über alle Teile
-  durchgezählt). Fehler vor dem ersten Satz als HTTP-Ablehnung, danach als Zeile `fehler`.
+  sein): der Server prüft Modul und Länge (höchstens 40 000 Zeichen) und reicht den Text am Stück an die App Vorlesen;
+  sie teilt an Satzgrenzen und liefert Satz für Satz (`application/x-ndjson`, Zeilen `satz`, `ende`, `fehler`), die
+  Zeilen gehen unverändert durch. Fehler vor dem ersten Satz als HTTP-Ablehnung, danach als Zeile `fehler`.
 - Gespielt wird mit dem Vorleser des Appkerns (Satz für Satz lückenlos, im Tippen gestartet, ein zweites Tippen hält an,
   immer nur ein Ton). Ohne eingetragene Adresse zeigt die Oberfläche keine Knöpfe zum Vorlesen.
 - Nachtrag vom 30.10.2026 (HELF-34, Nutzer: "Alle Kommentare vorlesbar machen ... mit leichtem Vorlauf ... bei
   Auslastung mehr Vorlauf", "Alles vorlesbar machen"): dazu Notizen, Checkliste (offene, dann erledigte Punkte), alle
   Kommentare und der Verlauf (je neueste zuerst, wie angezeigt), am Telefon die ganze Karte und alle Kommentare. Der
-  Vorleser des Appkerns (ab 0.61) spielt mit Vorlauf: erst ab 1,5 Sekunden bereitem Ton, bei langsamer Vertonung
+  Vorleser des Appkerns (ab 0.61) spielt mit Vorlauf: erst ab 1,5 Sekunden bereitem Ton, bei langsamem Sprechdienst
   gemessen mehr (höchstens 20), nach einem Abriss wieder mit Vorlauf und für die nächsten Läufe mehr.
 
 | Weg | Inhalt |

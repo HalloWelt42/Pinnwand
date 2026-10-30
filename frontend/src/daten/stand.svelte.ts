@@ -53,8 +53,8 @@ export interface Zustand {
   kiBereit: boolean;
   /** wo die Transkription liegt (leer: nicht eingerichtet, keine Transkripte und keine Spracheingabe) */
   transkriptionAdresse: string;
-  /** wo die Vertonung liegt (leer: nicht eingerichtet, kein Vorlesen) */
-  vertonungAdresse: string;
+  /** wo die App Vorlesen liegt (leer: nicht eingerichtet, kein Vorlesen) */
+  vorlesenAdresse: string;
   /** du bist Besitzer der App: du kannst alle Konten zurücksetzen und löschen */
   appBesitzer: boolean;
   /** Verbindung zum Ereignisstrom; getrennt: letzter Stand sichtbar, Schreibendes gesperrt */
@@ -65,7 +65,7 @@ export interface Zustand {
 export const stand = $state<Zustand>({
   geladen: false, moduleDa: [], konten: [], boards: [], karten: [], gruppen: [], laufnummern: [], ordner: [], timer: [], zeiteintraege: [],
   zeitkonten: [], abwesenheiten: [], serien: [], termine: [], hinweise: [], hinweiswege: { da: ["pinnwand"], vorgabe: {} }, einstellungen: { hinweise: {} } as PersonEinstellungen, papierkorb: [],
-  entfernt: [], kartennamen: [], terminnamen: [], vorlagen: [], berichte: [], commitbezuege: [], kiBereit: false, transkriptionAdresse: "", vertonungAdresse: "", appBesitzer: false, verbindung: "getrennt", meldung: null,
+  entfernt: [], kartennamen: [], terminnamen: [], vorlagen: [], berichte: [], commitbezuege: [], kiBereit: false, transkriptionAdresse: "", vorlesenAdresse: "", appBesitzer: false, verbindung: "getrennt", meldung: null,
 });
 
 /** Antwort von /stand: die Teile, die der Server schon kennt (die übrigen kommen mit ihren Stufen) */
@@ -96,7 +96,7 @@ interface Serverstand {
   hinweiswege: Hinweiswege;
   kiBereit: boolean;
   transkriptionAdresse: string;
-  vertonungAdresse: string;
+  vorlesenAdresse: string;
   appBesitzer: boolean;
   einstellungen: PersonEinstellungen;
 }
@@ -150,7 +150,7 @@ export async function laden(): Promise<void> {
     moduleDa: s.moduleDa, konten: s.konten, boards: s.boards, karten: s.karten, gruppen: s.gruppen, laufnummern: s.laufnummern, ordner: s.ordner,
     timer: s.timer, zeiteintraege: s.zeiteintraege, zeitkonten: s.zeitkonten, abwesenheiten: s.abwesenheiten,
     serien: s.serien, termine: s.termine, hinweise: s.hinweise, vorlagen: s.vorlagen, papierkorb: s.papierkorb, entfernt: s.entfernt, kartennamen: s.kartennamen, terminnamen: s.terminnamen, berichte: s.berichte, commitbezuege: s.commitbezuege ?? [], hinweiswege: s.hinweiswege,
-    kiBereit: s.kiBereit, transkriptionAdresse: s.transkriptionAdresse, vertonungAdresse: s.vertonungAdresse, appBesitzer: s.appBesitzer,
+    kiBereit: s.kiBereit, transkriptionAdresse: s.transkriptionAdresse, vorlesenAdresse: s.vorlesenAdresse, appBesitzer: s.appBesitzer,
     einstellungen: s.einstellungen, geladen: true,
   });
   let nochmal = false;

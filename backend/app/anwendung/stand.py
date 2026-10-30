@@ -53,8 +53,8 @@ class Stand(Modell):
     app_besitzer: bool = False
     #: wo die Transkription liegt (leer: nicht eingerichtet, die Oberfläche zeigt keine Transkripte)
     transkription_adresse: str
-    #: wo die Vertonung liegt (leer: nicht eingerichtet, die Oberfläche zeigt kein Vorlesen)
-    vertonung_adresse: str
+    #: wo die App Vorlesen liegt (leer: nicht eingerichtet, die Oberfläche zeigt kein Vorlesen)
+    vorlesen_adresse: str
 
 
 class Hinweiswege(Modell):
@@ -73,13 +73,13 @@ class Team(Modell):
 
 class Abfragen:
     def __init__(self, anwendung: Anwendung, ki_bereit: Callable[[], bool] = lambda: False,
-                 transkription_adresse: Callable[[], str] = lambda: "", vertonung_adresse: Callable[[], str] = lambda: "",
+                 transkription_adresse: Callable[[], str] = lambda: "", vorlesen_adresse: Callable[[], str] = lambda: "",
                  besitzer: Callable[[], str | None] = lambda: None) -> None:
         self.a = anwendung
         self.besitzer = besitzer
         self.ki_bereit = ki_bereit
         self.transkription_adresse = transkription_adresse
-        self.vertonung_adresse = vertonung_adresse
+        self.vorlesen_adresse = vorlesen_adresse
 
     async def alle_boards(self) -> list[Board]:
         return [Board.model_validate(d) for d in await self.a.v.alle("boards")]
@@ -138,7 +138,7 @@ class Abfragen:
             ki_bereit=self.ki_bereit(),
             app_besitzer=bool(self.besitzer()) and konto.kellerwolke_konto == self.besitzer(),
             transkription_adresse=self.transkription_adresse(),
-            vertonung_adresse=self.vertonung_adresse(),
+            vorlesen_adresse=self.vorlesen_adresse(),
             terminnamen=await self._terminnamen({d["termin"] for d in zeiteintraege if d.get("termin")}
                                                 - {d["id"] for d in termine}),
         )

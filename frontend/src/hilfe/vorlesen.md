@@ -4,12 +4,12 @@ untertitel: Karten, Notizen, Checklisten, Kommentare, Verlauf, Tagesplan und Ber
 bereich: Verbund
 symbol: fa-volume-high
 ---
-Mit dem Modul Vorlesen liest dir die Pinnwand Texte laut vor: die ganze Karte, Beschreibung, Notizen und Checkliste, einen oder alle Kommentare, den Verlauf, deinen Tagesplan und Berichte, am Rechner wie am Telefon. Das hilft, wenn du gerade nicht lesen kannst oder willst. Gesprochen wird über die Vertonung, eine eigene App, die aus Text Sprache macht.
+Mit dem Modul Vorlesen liest dir die Pinnwand Texte laut vor: die ganze Karte, Beschreibung, Notizen und Checkliste, einen oder alle Kommentare, den Verlauf, deinen Tagesplan und Berichte, am Rechner wie am Telefon. Das hilft, wenn du gerade nicht lesen kannst oder willst. Gesprochen wird über die App Vorlesen, die eine Stelle für Sprachausgabe aller eigenen Apps.
 
 ## Was du brauchst {#voraussetzungen}
 - Das Modul **Vorlesen** ist an (siehe [Module einschalten](hilfe:module/einschalten)). An Karten und Kommentaren muss es im Board dieser Karte an sein. Für Heute und die Berichte genügt es, wenn eines deiner Boards es an hat.
-- Die Vertonung ist mit der Pinnwand verbunden. Fehlt die Verbindung, gibt es keine Lautsprecher-Knöpfe; warum, sagt der Reiter **Module** (siehe [Wenn eine Verbindung fehlt](hilfe:module/verbindung-fehlt)).
-- Die Pinnwand fragt die Vertonung in deinem Namen. Dein Konto muss die Vertonung also nutzen dürfen.
+- Die App Vorlesen ist mit der Pinnwand verbunden. Fehlt die Verbindung, gibt es keine Lautsprecher-Knöpfe; warum, sagt der Reiter **Module** (siehe [Wenn eine Verbindung fehlt](hilfe:module/verbindung-fehlt)).
+- Die Pinnwand fragt die App Vorlesen in deinem Namen. Dein Konto muss sie also nutzen dürfen.
 
 ## Was vorgelesen werden kann {#was}
 | Was | Wo | Knopf |
@@ -41,7 +41,7 @@ Formatierungen wie fett oder Listenzeichen liest sie nicht mit, nur den Text.
 Am Ende des Textes hört das Vorlesen von selbst auf, und der Knopf zeigt wieder den Lautsprecher.
 
 ## Vorlauf {#vorlauf}
-Damit das Vorlesen nicht stockt, beginnt es erst, wenn mindestens anderthalb Sekunden Ton bereitliegen, bei einem kurzen Text, sobald er ganz gesprochen ist. Die Pinnwand misst dabei, wie schnell die Vertonung liefert. Ist der Rechner der Vertonung ausgelastet und spricht sie langsamer, als vorgelesen wird, wartet sie entsprechend länger, höchstens 20 Sekunden. Reißt der Ton trotzdem einmal ab, wartet sie, bis wieder genug da ist, und plant beim nächsten Mal mehr Vorlauf ein. Läuft es danach flüssig, wird der Vorlauf nach und nach wieder kürzer. Das gilt nur in diesem Browser, bis zum Neuladen.
+Damit das Vorlesen nicht stockt, beginnt es erst, wenn mindestens anderthalb Sekunden Ton bereitliegen, bei einem kurzen Text, sobald er ganz gesprochen ist. Die Pinnwand misst dabei, wie schnell der Ton kommt. Ist der Rechner, der spricht, ausgelastet und kommt der Ton langsamer, als vorgelesen wird, wartet sie entsprechend länger, höchstens 20 Sekunden. Reißt der Ton trotzdem einmal ab, wartet sie, bis wieder genug da ist, und plant beim nächsten Mal mehr Vorlauf ein. Läuft es danach flüssig, wird der Vorlauf nach und nach wieder kürzer. Das gilt nur in diesem Browser, bis zum Neuladen.
 
 ## Immer nur eins auf einmal {#ein-ton}
 Es klingt immer nur ein Text gleichzeitig:
@@ -50,16 +50,16 @@ Es klingt immer nur ein Text gleichzeitig:
 - Startest du im Kartendetail eine Transkript-Stelle zum Abspielen (siehe [Abspielen ab der Stelle](hilfe:transkripte/abspielen)), endet das Vorlesen.
 
 ## Stimme und Tempo {#stimme}
-Stimme und Tempo sind für die ganze Pinnwand eingestellt und gelten für alle gleich. Sie gehören zu den Einstellungen der App, nicht zu deinen persönlichen Einstellungen.
+Stimme, Sprache und Tempo wählst du nicht in der Pinnwand, sondern in der App Vorlesen, Seite **Vorlesen**; dort kannst du eine Probe hören, bevor du speicherst. Die Wahl gilt für alle Apps, die vorlesen, also auch für die Pinnwand.
 
-- **Stimme:** eine Stimme aus dem Katalog der Vertonung oder eine private Stimme, die die Vertonung für die Pinnwand freigegeben hat. Ohne Wahl spricht die Vorgabe der Vertonung.
+- **Stimme:** eine der festen Stimmen aus dem Katalog des Sprechdienstes. Geklonte Stimmen gibt es dort nicht.
 - **Tempo:** 1 ist das gewohnte Tempo. Kleinere Werte bis 0,5 lesen langsamer, größere bis 2 schneller.
 
-Gesprochen wird deutsch. Zahlen und Abkürzungen spricht die Vertonung ausgeschrieben.
+Ab Werk wird deutsch gesprochen.
 
 ## Grenzen {#grenzen}
 - Am Stück liest die Pinnwand höchstens 40.000 Zeichen vor. Ein längerer Text wird abgelehnt mit "Der Text ist länger als 40000 Zeichen".
-- Lange Texte teilt die Pinnwand an Satzgrenzen in Teile und lässt sie nacheinander sprechen. Du hörst davon nichts: Es klingt wie ein Stück.
+- Lange Texte teilt die App Vorlesen an Satzgrenzen und spricht sie Satz für Satz. Du hörst davon nichts: Es klingt wie ein Stück.
 - Leere Texte gibt es nicht zu hören; die Beschreibung zeigt ihren Lautsprecher erst, wenn sie Text hat.
 
 ## Wenn es stumm bleibt {#fehler}
@@ -67,8 +67,9 @@ Geht das Vorlesen nicht oder bricht es ab, nennt die Meldung unten rechts den Gr
 
 | Meldung | Was sie heißt |
 |---|---|
-| "Die Vertonung lässt das nicht zu: ..." | Dein Konto oder die eingestellte Stimme ist in der Vertonung nicht freigegeben. |
-| "Die Vertonung ist gerade nicht erreichbar (...)" | Die Vertonung läuft gerade nicht oder ist nicht erreichbar. Später noch einmal versuchen. |
+| "Die App Vorlesen lässt das nicht zu: ..." | Dein Konto darf die App Vorlesen nicht nutzen. |
+| "Die App Vorlesen ist gerade nicht erreichbar (...)" | Die App Vorlesen läuft gerade nicht oder ist nicht erreichbar. Später noch einmal versuchen. |
+| "Der Sprechdienst kann gerade nicht: ..." | Der Rechner, der spricht, schläft oder der Sprechdienst startet gerade. Später noch einmal versuchen. |
 | "Vorlesen ist im Board ... aus" | Jemand hat das Modul in diesem Board inzwischen ausgeschaltet. |
 | "Vorlesen ist in keinem deiner Boards an" | Für Heute und Berichte muss mindestens eines deiner Boards Vorlesen an haben. |
 | "Vorlesen brach ab: keine Verbindung zur App" | Die Verbindung zur Pinnwand riss ab. |

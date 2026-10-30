@@ -1,6 +1,6 @@
 """Probebetrieb: das Backend mit der nachgestellten Kellerwolke und Leitstelle der Tests (backend/tests/nachgestellt.py),
 eingerichtet und bereit zum Anmelden als anna, bert oder cora (Passwort "geheim"); die Leitstelle antwortet mit
-Beispielen in der verlangten Form, die Transkription hat ein Telefonat, die Vertonung spricht stille Sätze (cora
+Beispielen in der verlangten Form, die Transkription hat ein Telefonat, die App Vorlesen spricht stille Sätze (cora
 darf beide nicht nutzen). Für die Prüfung der echten Oberfläche ohne echte
 Zugangsdaten; die Daten liegen in einem eigenen Ordner.
 
@@ -23,7 +23,7 @@ sys.path[:0] = [str(BACKEND), str(BACKEND / "tests")]
 
 from app.main import app_bauen  # noqa: E402
 from nachgestellt import (  # noqa: E402
-    EINRICHTUNG, LEITSTELLE_EINRICHTUNG, PASSWORT, TRANSKRIPTION_EINRICHTUNG, VERTONUNG_EINRICHTUNG, kellerwolke,
+    EINRICHTUNG, LEITSTELLE_EINRICHTUNG, PASSWORT, TRANSKRIPTION_EINRICHTUNG, VORLESEN_EINRICHTUNG, kellerwolke,
 )
 
 
@@ -43,7 +43,7 @@ def main() -> None:
                 httpx.post(f"{basis}/einrichtung", json=EINRICHTUNG).raise_for_status()
             token = httpx.post(f"{basis}/anmeldung", json={"kennung": "anna", "passwort": PASSWORT}).json()["token"]
             httpx.patch(f"{basis}/einstellungen", headers={"X-Kellerwolke-Sitzung": token},
-                        json={"werte": LEITSTELLE_EINRICHTUNG | TRANSKRIPTION_EINRICHTUNG | VERTONUNG_EINRICHTUNG}).raise_for_status()
+                        json={"werte": LEITSTELLE_EINRICHTUNG | TRANSKRIPTION_EINRICHTUNG | VORLESEN_EINRICHTUNG}).raise_for_status()
             break
         except httpx.HTTPError:
             time.sleep(0.1)

@@ -1,7 +1,7 @@
 ---
 zweck: "Plant Arbeit auf Boards: Karten in Spalten mit der Mechanik der alten Pinnwand, mehrere Boards mit eigenen Mitgliedern, Rollen und Rechten, angemeldet mit dem Konto der Kellerwolke, live für alle Beteiligten."
 geraet: [pi]
-abhaengigkeiten: [kellerwolke, leitstelle, transkription, vertonung, appkern]
+abhaengigkeiten: [kellerwolke, leitstelle, transkription, vorlesen, appkern]
 daten:
   - "Pi: {{wurzel}}/daten/pinnwand.sqlite, alle Boards, Karten, Ordner, Hinweise, Vorlagen, Zeiteinträge, Timer, Zeitkonten, Abwesenheiten, Serien und Termine, das Journal für Rückgängig und die Einstellungen"
   - "Kellerwolke: Anhänge der Karten in der Ablage der Pinnwand, ein Ordner je Board; erstellte Berichte im Ordner Berichte"
@@ -42,7 +42,7 @@ Checkliste, Labels und, in der Schnelleingabe einer Spalte unter "Aus Text", meh
 wird nur, was man in der Vorschau bestätigt, mit Rückgängig. Das Modul Transkripte hängt Stellen aus der
 [[Transkription]] an eine Karte (suchen, abspielen ab der Stelle, Notiz) und bringt am Telefon unter Erfassen
 "Sprechen": der Text wächst beim Sprechen an jeder Pause, nach dem Stopp stehen Titel und Beschreibung zum Prüfen da. Suchen, hören und sprechen kann nur, wer die
-Transkription selbst nutzen darf. Vorlesen spricht über die [[Vertonung]] die Beschreibung, die ganze Karte, einen
+Transkription selbst nutzen darf. Vorlesen spricht über die App [[Vorlesen]] die Beschreibung, die ganze Karte, einen
 Kommentar, den Tagesplan in Heute und Berichte (Lautsprecher-Knopf; ein zweites Tippen hält an). Die Pinnwand entsteht
 in Stufen: Boards, Zeit und Planung sind da, vom Verbund die Berichte, Mitteilungen aufs Telefon, KI an der Karte,
 Transkripte und Vorlesen; die Anbindung an den Assistenten folgt.
@@ -63,9 +63,10 @@ Was eine Stufe noch nicht hat, zeigt die Oberfläche nicht.
   (die Auswahl bietet gefundene an). Angemeldet wird mit dem App-Schlüssel der Pinnwand im Auftrag der Person; die
   Transkription muss die Konten zulassen, die sie über die Pinnwand nutzen sollen. Ohne Adresse läuft alles andere wie
   gewohnt.
-- [[Vertonung]] für das Modul Vorlesen: in der Pinnwand unter Einstellungen, App und Verbindungen ihre Adresse eintragen;
-  Stimme und Tempo stehen dort in der Gruppe Vorlesen (zur Wahl: Katalog der Vertonung und private Stimmen, die sie der
-  Pinnwand freigibt). Ohne Adresse läuft alles andere wie gewohnt, nur ohne Vorlesen.
+- [[Vorlesen]] für das Modul Vorlesen: in der Pinnwand unter Einstellungen, App und Verbindungen in der Gruppe
+  Verbindungen die Adresse der App Vorlesen eintragen (die Auswahl bietet gefundene an). Stimme und Tempo wählt man in
+  der App Vorlesen, nicht hier. Angemeldet wird mit dem App-Schlüssel der Pinnwand im Auftrag der Person. Ohne Adresse
+  läuft alles andere wie gewohnt, nur ohne Vorlesen.
 - [[Appkern]]: Gerüst, Anmeldung und Oberfläche; Oberfläche und Backend sind auf denselben Commit festgelegt.
 
 ## Neu einrichten
@@ -156,6 +157,6 @@ Karte hängt.
   stimmt die Adresse nicht oder sie läuft nicht. Spracheingabe braucht die Pinnwand vom Home-Bildschirm über HTTPS und die
   Erlaubnis fürs Mikrofon.
 - Vorlesen bleibt stumm: am iPhone die Pinnwand vom Home-Bildschirm öffnen und den Knopf selbst antippen (Ton startet
-  nur aus einer Berührung). "Die Vertonung lässt das nicht zu" heißt, das Konto oder die gewählte Stimme ist dort nicht
-  freigegeben; eine Katalogstimme wählen.
+  nur aus einer Berührung). "Die App Vorlesen lässt das nicht zu" heißt, das Konto darf sie nicht nutzen (dort unter
+  Zugang, Weitere Konten); "Der Sprechdienst kann gerade nicht" heißt, der Mac schläft oder der Dienst startet.
 - Docker legt `daten/` oder `sicherungen/` für root an: die Ordner vor dem ersten Start als `pi` anlegen (Schritt 2).

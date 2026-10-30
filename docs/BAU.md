@@ -407,8 +407,15 @@ Menschen), ist eine eigene Person: Kennung `<Person>.app-<zugang>`, Name und Kü
 `kellerwolke` = `Konto/Zugang` (admin/Helfer), `app` und `inhaber`. Eingeladen wird sie mit diesem Namen (`KONTONAME`
 erlaubt den Schrägstrich, "Weitere Konten" bekommt ihn nicht); als Besitzer der App zählt sie wie ihr Inhaber
 (`Konto.kellerwolke_konto`). Beim ersten Anmelden übernimmt sie nur sicher Erkennbares: Zeiteinträge des Inhabers mit
-der Notiz "Zugang: ..." und die Mitgliedschaft (Rolle Mitglied) im Board, das wie der Zugang heißt. Kommentare und
-Verlauf von früher bleiben beim Inhaber (darin ist nicht zu unterscheiden, wer schrieb).
+der Notiz "Zugang: ..." und die Mitgliedschaft (Rolle Mitglied) im Board, das wie der Zugang heißt.
+
+Altbestand (Nutzer 30.10.: "Ja, eindeutige übertragen"; `anwendung/altbestand.py`, einmal beim Start, Merker in
+`zaehler`): Kommentare und Verlaufszeilen des Inhabers ab 30.10.2026, 15:00, die eindeutig vom Helfer stammen, gehen auf
+ihn über. Eindeutig heißt, erkannt am Journal: Meldungen, die nur seine Werkzeuge schreiben (Priorität "Einschätzung des
+Helfers", "Start gesetzt", "Start nachgetragen", "Anforderung umgeschrieben", "Titel gekürzt", gebuchte Zeit), und
+Kommentare im Board Helfer mit den Merkmalen seiner Berichte (Ursache, Fassung, ausgerollt, "Nutzer 30.10.", ...), dazu
+je eine Zeile "hat kommentiert". Verschieben, Anlegen und Erledigen bleiben beim Inhaber (vom Menschen nicht zu
+unterscheiden); deren Rückgängig aus dieser Zeit gilt danach nicht mehr.
 
 ### Gesamtnummer der Karten
 
@@ -478,7 +485,9 @@ Programm, in Stufen ausrollen).
 - Verknüpft wird jeder Schlüssel in der Nachricht (Kürzel, Bindestrich, Nummer, etwa HELF-12; auch frühere Schlüssel
   einer umgezogenen Karte), wenn es die Karte gibt. Von Hand: `GET /karten/{id}/commits/suche?text=` (Anfang des Hashs
   oder Wörter der Nachricht, neueste zuerst, höchstens 20), `POST /karten/{id}/commits` mit `{commit}`, lösen mit
-  `DELETE /karten/{id}/commits/{bezug}`; beides mit dem Recht "Karten bearbeiten", Verlaufszeile und Rückgängig. Ein
+  `DELETE /karten/{id}/commits/{bezug}`; Verlaufszeile und Rückgängig. Suchen und von Hand verknüpfen nur der Besitzer
+  der App (Nutzer 30.10.: "Nur Besitzer", die Suche reicht über private Repos), lösen mit dem Recht "Karten bearbeiten";
+  andere sehen nur die schon verknüpften Commits. Ein
   gelöster Bezug aus der Nachricht bleibt als `geloest` stehen, damit der nächste Abgleich ihn nicht wieder anhängt.
 - Der Nachtrag ist ein Lauf des Sammlers über die ganze Geschichte (`--alles`); danach sendet er je Repo nur, was
   seit dem letzten Lauf dazukam.

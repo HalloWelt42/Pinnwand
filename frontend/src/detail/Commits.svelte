@@ -1,12 +1,14 @@
 <script lang="ts">
   // Commits an der Karte (HELF-35): je Commit der kurze Hash, die erste Zeile der Nachricht, Repo, Person und Zeit. Mit
   // Verweis öffnet der Knopf den Commit in seiner Git-Verwaltung; ein lokaler Commit (ohne Verweis) klappt hier auf und
-  // zeigt die ganze Nachricht und die geänderten Dateien. Wer die Karte bearbeiten darf, sucht unter den bekannten
-  // Commits (Anfang des Hashs oder Wörter der Nachricht) und verknüpft von Hand, oder löst einen (mit Rückgängig).
+  // zeigt die ganze Nachricht und die geänderten Dateien. Der Besitzer der App sucht unter den bekannten Commits (Anfang
+  // des Hashs oder Wörter der Nachricht) und verknüpft von Hand; wer die Karte bearbeiten darf, löst einen (mit
+  // Rückgängig). Andere sehen nur, was schon an der Karte hängt.
   // Vorschläge (unsichere Zuordnungen aus dem Nachtrag) stehen darunter mit ihrem Grund: übernehmen oder verwerfen.
   import { Hilfepunkt, Suchfeld } from "appkern-oberflaeche";
   import { bestaetigen, betreff, commitsDer, loesen, suchen, verknuepfen, vorschlaegeDer } from "../daten/anwendung/commits.svelte";
   import { wann } from "../daten/format";
+  import { stand } from "../daten/stand.svelte";
   import type { Commit, Karte } from "../modell";
   import { verwerfen } from "../teile/verwerfen";
 
@@ -123,7 +125,8 @@
     </div>
   {/if}
 
-  {#if schreiben}
+  {#if schreiben && stand.appBesitzer}
+    <!-- suchen und von Hand verknüpfen: nur der Besitzer der App (die Suche reicht über alle Repos, auch private) -->
     <Suchfeld klasse="pw-detail-suche" symbol={sucht ? "fa-spinner fa-spin-pulse" : "fa-code-commit"} placeholder="Commit suchen: Hash oder Wörter der Nachricht"
               aria-label="Commit suchen" bind:wert={text} oninput={eingabe} {@attach verwerfen} />
     {#if fehler}

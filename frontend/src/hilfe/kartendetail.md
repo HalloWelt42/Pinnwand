@@ -101,12 +101,12 @@ Der Abschnitt **Commits** zeigt je Commit den kurzen Hash, die erste Zeile der N
 
 - Liegt das Repo bei einer Git-Verwaltung, öffnet der Pfeil den Commit dort in einem neuen Fenster.
 - Liegt es nur auf dem Rechner, klappt der Pfeil nach unten den Commit hier auf: die ganze Nachricht und die geänderten Dateien.
-- **Commit suchen** findet bekannte Commits über den Anfang des Hashs oder über Wörter der Nachricht; ein Klick auf einen Treffer verknüpft ihn von Hand mit der Karte.
+- **Commit suchen** findet bekannte Commits über den Anfang des Hashs oder über Wörter der Nachricht; ein Klick auf einen Treffer verknüpft ihn von Hand mit der Karte. Suchen und von Hand verknüpfen darf nur der Besitzer der App, denn die Suche reicht über alle eingespielten Repos, auch private; alle anderen sehen nur die Commits, die schon an der Karte hängen.
 - Das X löst einen Commit von der Karte, mit Rückgängig. Hing er über den Schlüssel in der Nachricht an ihr, bleibt er gelöst, auch wenn der Sammler ihn wieder meldet.
 
 Unter den Commits stehen **Vorschläge**: Commits, die wahrscheinlich, aber nicht sicher zur Karte gehören, je mit dem Grund. Vorgeschlagen wird ein Commit, dessen Hash in der Beschreibung oder einem Kommentar der Karte steht, und ein Commit ohne Kartenschlüssel aus dem Repo, das der Titel vorn nennt (etwa "Pinnwand: ..."), aus der Zeit, in der die Karte in Arbeit war. Der Haken übernimmt ihn, als wäre er von Hand verknüpft; das X verwirft ihn, und er kommt nicht wieder.
 
-Verknüpfen und lösen geht mit dem Recht Karten bearbeiten; der Abschnitt steht da, sobald die Karte Commits hat oder im Board schon Commits hängen. Am Telefon stehen die Commits zum Lesen in der Karte.
+Lösen, Übernehmen und Verwerfen gehen mit dem Recht Karten bearbeiten; der Abschnitt steht da, sobald die Karte Commits hat oder im Board schon Commits hängen. Am Telefon stehen die Commits zum Lesen in der Karte.
 
 ## Abschnitte der Module {#module}
 Je nach den Modulen des Boards hat das Detail weitere Abschnitte:

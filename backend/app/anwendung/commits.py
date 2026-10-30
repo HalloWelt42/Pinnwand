@@ -31,6 +31,8 @@ WECHSEL = re.compile(r"^hat sie von (.+) nach (.+) verschoben$")
 #: so viele Vorschläge bekommt eine Karte höchstens (je Lauf)
 VORSCHLAEGE_JE_KARTE = 20
 GRUND_HASH = "Hash im Text der Karte"
+#: Suchen und von Hand verknüpfen (Nutzer 30.10.: "Nur Besitzer"); andere sehen nur, was schon an der Karte hängt
+NUR_BESITZER = "Commits suchen und von Hand verknüpfen darf nur der Besitzer der App"
 GRUND_ARBEIT = "Repo im Titel, Commit während der Arbeit an der Karte"
 
 
@@ -258,7 +260,10 @@ class Commits:
         return await self.a.aendern(konto, arbeit)
 
     async def verknuepfen(self, konto: Konto, karte_id: Kennung, commit_id: Kennung) -> Antwort:
-        """Einen bekannten Commit von Hand an die Karte hängen (Recht Karten bearbeiten); war er gelöst, gilt er wieder."""
+        """Einen bekannten Commit von Hand an die Karte hängen (nur der Besitzer der App, wie die Suche, und mit dem Recht
+        Karten bearbeiten); war er gelöst, gilt er wieder."""
+        if not self.besitzer_der_app(konto):
+            raise Abgelehnt(NUR_BESITZER, 403)
 
         def arbeit(k: Kontext) -> str:
             karte = karte_lesen(k, karte_id)
@@ -302,7 +307,10 @@ class Commits:
 
     async def suchen(self, konto: Konto, karte_id: Kennung, text: str) -> list[Commit]:
         """Bekannte Commits zum Verknüpfen: Anfang des Hashs oder Wörter der Nachricht (alle müssen vorkommen), neueste
-        zuerst. Wer die Karte bearbeiten darf."""
+        zuerst. Nur der Besitzer der App (Nutzer 30.10.: "Nur Besitzer"; die Suche reicht über alle eingespielten Repos,
+        auch private), und nur an einer Karte, die er bearbeiten darf."""
+        if not self.besitzer_der_app(konto):
+            raise Abgelehnt(NUR_BESITZER, 403)
         d = await self.a.v.lies("karten", karte_id)
         b = await self.a.v.lies("boards", d["board"]) if d else None
         if d is None or b is None or not hat_recht(Board.model_validate(b), "karten.bearbeiten", konto.id):

@@ -48,3 +48,25 @@ async def test_einladen_als_konto_und_zugang(pw: Pinnwand):
     assert [b["kuerzel"] for b in s["boards"]] == ["HAUS"]
     m = next(m for m in s["boards"][0]["mitglieder"] if m["kellerwolke"] == "anna/Helfer")
     assert m["konto"] == s["ich"]
+
+
+async def test_altbestand_eindeutiges_geht_ueber(pw: Pinnwand):
+    """Was der Helfer vor seiner eigenen Person unter anna tat, geht über, wenn es eindeutig ist (Merkmale seiner Berichte
+    und Werkzeuge); Verschieben und eigene Kommentare annas bleiben bei anna. Nur einmal."""
+    from app.anwendung import altbestand
+    helf = await pw.board("anna", "Helfer", "HELF")
+    k = await pw.karte("anna", helf, "Ticket")
+    await ok(pw, "anna", f"/karten/{k['id']}/kommentieren", {"text": "Ursache gefunden, ausgerollt in 0.2.0."})
+    await ok(pw, "anna", f"/karten/{k['id']}/kommentieren", {"text": "Danke, sieht gut aus."})
+    await ok(pw, "anna", f"/karten/{k['id']}/bearbeiten", {"felder": {"prioritaet": "hoch"}, "text": "HELF-1: Priorität hoch (Einschätzung des Helfers)"})
+    await ok(pw, "anna", f"/karten/{k['id']}/verschieben", {"nach": next(s["id"] for s in helf["spalten"] if s["name"] == "Dran")})
+    pw.kopf["helfer"] = HELFER
+    helfer = (await pw.stand("helfer"))["ich"]
+    v = pw.app.state.dienste.anwendung.v
+    assert await v.db.transaktion(lambda c: altbestand.uebertragen(c, "2026-10-27T00:00:00")) == 3
+    assert await v.db.transaktion(lambda c: altbestand.uebertragen(c, "2026-10-27T00:00:00")) == 0
+    karte = next(x for x in (await pw.stand("anna"))["karten"] if x["id"] == k["id"])
+    assert [(c["text"][:7], c["von"]) for c in karte["kommentare"]] == [("Ursache", helfer), ("Danke, ", "1")]
+    verlauf = [(e["text"], e["von"] == helfer) for e in karte["verlauf"]]
+    assert verlauf == [("hat die Karte angelegt", False), ("hat kommentiert", True), ("hat kommentiert", False),
+                       ("hat die Priorität auf Hoch gesetzt", True), ("hat sie von Offen nach Dran verschoben", False)]

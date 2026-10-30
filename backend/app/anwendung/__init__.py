@@ -19,7 +19,7 @@ from .aufbau import Aufbau
 from .berichte import Berichte
 from .boards import Boards, Zugang
 from .commits import Commits
-from . import gesamtnummer
+from . import altbestand, gesamtnummer
 from .ereignisse import Ereignisse
 from .hinweise import Hinweise
 from .inhalt import Inhalte
@@ -86,8 +86,8 @@ class Dienste:
 
 
 class Start(Begleiter):
-    """Schema einrichten, fehlende Gesamtnummern der Karten einmal nachtragen und die mitgelieferten Vorlagen anlegen
-    oder auf den neuen Stand bringen."""
+    """Schema einrichten, fehlende Gesamtnummern der Karten einmal nachtragen, den Altbestand des Helfers einmal
+    übertragen (HELF-43) und die mitgelieferten Vorlagen anlegen oder auf den neuen Stand bringen."""
 
     def __init__(self, db: Datenbank) -> None:
         self.db = db
@@ -95,6 +95,7 @@ class Start(Begleiter):
     async def starten(self) -> None:
         await einrichten(self.db)
         await self.db.transaktion(gesamtnummer.nachtragen)
+        await self.db.transaktion(altbestand.uebertragen)
         for v in MITGELIEFERT:
             await self.db.ausfuehren("INSERT INTO vorlagen (id, fassung, daten, konto) VALUES (?, 1, ?, NULL) "
                                      "ON CONFLICT(id) DO UPDATE SET daten=excluded.daten",

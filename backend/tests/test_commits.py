@@ -79,18 +79,23 @@ async def test_von_hand_verknuepfen_und_loesen(pw: Pinnwand):
     k1 = await pw.karte("anna", b, "Fenster")
     k2 = await pw.karte("anna", b, "Keller")
     await einspielen(pw, commit("a", "HAUS-1: Fenster"), commit("b", "Aufräumen im Keller", "2026-10-30T11:00:00"))
-    # suchen: Anfang des Hashs oder Wörter der Nachricht
+    # suchen und von Hand verknüpfen: nur der Besitzer der App (anna); bert sieht nur, was schon an der Karte hängt
     r = await pw.get("bert", f"/karten/{k2['id']}/commits/suche?text=keller")
+    assert (r.status_code, r.json()["detail"]) == (403, "Commits suchen und von Hand verknüpfen darf nur der Besitzer der App")
+    await abgelehnt(pw, "bert", f"/karten/{k2['id']}/commits", {"commit": "HalloWelt42/Pinnwand@" + "b" * 40}, 403,
+                    "Commits suchen und von Hand verknüpfen darf nur der Besitzer der App")
+    # suchen: Anfang des Hashs oder Wörter der Nachricht
+    r = await pw.get("anna", f"/karten/{k2['id']}/commits/suche?text=keller")
     assert [c["hash"][:1] for c in r.json()] == ["b"]
-    r = await pw.get("bert", f"/karten/{k2['id']}/commits/suche?text=" + "a" * 6)
+    r = await pw.get("anna", f"/karten/{k2['id']}/commits/suche?text=" + "a" * 6)
     assert [c["id"] for c in r.json()] == ["HalloWelt42/Pinnwand@" + "a" * 40]
-    a = await ok(pw, "bert", f"/karten/{k2['id']}/commits", {"commit": "HalloWelt42/Pinnwand@" + "b" * 40})
+    a = await ok(pw, "anna", f"/karten/{k2['id']}/commits", {"commit": "HalloWelt42/Pinnwand@" + "b" * 40})
     assert a["meldung"] == "HAUS-2: Commit bbbbbbb verknüpft" and a["rueckgaengig"]
-    await abgelehnt(pw, "bert", f"/karten/{k2['id']}/commits", {"commit": "HalloWelt42/Pinnwand@" + "b" * 40}, 409,
+    await abgelehnt(pw, "anna", f"/karten/{k2['id']}/commits", {"commit": "HalloWelt42/Pinnwand@" + "b" * 40}, 409,
                     "Commit bbbbbbb hängt schon an HAUS-2")
-    await abgelehnt(pw, "bert", f"/karten/{k2['id']}/commits", {"commit": "x@1234567"}, 404, "Diesen Commit kennt die Pinnwand nicht")
+    await abgelehnt(pw, "anna", f"/karten/{k2['id']}/commits", {"commit": "x@1234567"}, 404, "Diesen Commit kennt die Pinnwand nicht")
     hand = next(x for x in await bezuege(pw) if x["karte"] == k2["id"])
-    assert hand["art"] == "hand" and hand["von"] == (await pw.stand("bert"))["ich"]
+    assert hand["art"] == "hand" and hand["von"] == (await pw.stand("anna"))["ich"]
     # von Hand gelöst: weg; Rückgängig bringt ihn zurück
     r = await pw.c.delete(f"/api/v1/karten/{k2['id']}/commits/{hand['id']}", headers=pw.kopf["bert"])
     assert r.json()["meldung"] == "HAUS-2: Commit bbbbbbb gelöst"
@@ -114,9 +119,14 @@ async def test_rechte_beim_verknuepfen(pw: Pinnwand):
     k = await pw.karte("anna", b, "Fenster")
     await einspielen(pw, commit("a", "irgendwas"))
     await abgelehnt(pw, "bert", f"/karten/{k['id']}/commits", {"commit": "HalloWelt42/Pinnwand@" + "a" * 40}, 403,
-                    "Dir fehlt im Board Haushalt das Recht Karten bearbeiten")
+                    "Commits suchen und von Hand verknüpfen darf nur der Besitzer der App")
     r = await pw.get("bert", f"/karten/{k['id']}/commits/suche?text=irgendwas")
-    assert r.status_code == 404
+    assert r.status_code == 403
+    # lösen braucht das Recht Karten bearbeiten (ein Leser darf es nicht)
+    await ok(pw, "anna", f"/karten/{k['id']}/commits", {"commit": "HalloWelt42/Pinnwand@" + "a" * 40})
+    bezug = next(x for x in await bezuege(pw) if x["karte"] == k["id"])
+    r = await pw.c.delete(f"/api/v1/karten/{k['id']}/commits/{bezug['id']}", headers=pw.kopf["bert"])
+    assert (r.status_code, r.json()["detail"]) == (403, "Dir fehlt im Board Haushalt das Recht Karten bearbeiten")
 
 
 async def test_umzug_und_fruehere_schluessel(pw: Pinnwand):

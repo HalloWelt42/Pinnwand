@@ -332,7 +332,7 @@
 
   <Anhaenge karte={k} {schreiben} />
 
-  {#if commitsDer(k.id).length || vorschlaegeDer(k.id).length || (schreiben && commitsImBoard(board))}
+  {#if commitsDer(k.id).length || vorschlaegeDer(k.id).length || (schreiben && stand.appBesitzer && commitsImBoard(board))}
     <Commits karte={k} {schreiben} />
   {/if}
 

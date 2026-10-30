@@ -65,9 +65,10 @@ async def test_saetze_im_auftrag_der_person(pw: Pinnwand):
     assert ruf.url.path == "/api/v1/vorlesen/strom" and ruf.headers["x-kellerwolke-sitzung"] == "t-bert"
     assert ruf.headers["authorization"].startswith("Bearer kw_app_")
     await lesen(pw, "anna", {"text": "Kurz."})                      # ohne Board: Heute und Berichte
-    # keine eigenen Felder für Stimme und Tempo mehr, die Adresse steht unter Verbindungen mit Angebot
+    # kein eigenes Feld für das Tempo mehr; die Stimme bietet der Appkern seit HELF-65 je App aus der App Vorlesen an;
+    # die Adresse steht unter Verbindungen mit Angebot
     felder = {f["name"]: f for f in (await pw.get("anna", "/einstellungen")).json()}
-    assert "vorlesen_stimme" not in felder and "vorlesen_tempo" not in felder and "vertonung_adresse" not in felder
+    assert "vorlesen_tempo" not in felder and "vertonung_adresse" not in felder
     assert felder["vorlesen_adresse"]["gruppe"] == "Verbindungen" and felder["vorlesen_adresse"]["angebot"]
     verbindungen = {v["name"]: v for v in (await pw.get("anna", "/verbindungen")).json()}
     assert verbindungen["Vorlesen"]["ok"]

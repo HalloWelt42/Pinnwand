@@ -10,7 +10,7 @@ from typing import TypeVar
 from fastapi import HTTPException, Request
 
 from appkern.app import Geruest
-from appkern.anmeldung.api import COOKIE, KOPF
+from appkern.anmeldung.api import KOPF
 from appkern.anmeldung.dienst import Konto as Anmeldekonto
 
 from ..anwendung import Dienste
@@ -21,9 +21,9 @@ T = TypeVar("T")
 
 
 def sitzung(request: Request) -> str:
-    """Die Anmeldung der Person an dieser App (Kopf, bei Inhaltsadressen auch das Inhalts-Cookie): mit ihr fragt die
-    Pinnwand die Kellerwolke und andere Apps in ihrem Auftrag."""
-    return request.headers.get(KOPF) or request.cookies.get(COOKIE, "")
+    """Die Anmeldung der Person an dieser App (Kopf, bei Inhaltsadressen auch das Inhalts-Cookie der Pinnwand, das je App
+    eigen ist): mit ihr fragt die Pinnwand die Kellerwolke und andere Apps in ihrem Auftrag."""
+    return request.headers.get(KOPF) or request.cookies.get(request.app.state.geruest.inhalt_cookie, "")
 
 
 class Zugriff:

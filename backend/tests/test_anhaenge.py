@@ -272,3 +272,21 @@ async def test_bilder_am_kommentar(pw: Pinnwand):
     # ohne Bilder wie bisher
     await ok(pw, "bert", f"/karten/{k['id']}/kommentieren", {"text": "Danke"})
     assert (await karte(pw, "anna"))["kommentare"][-1].get("bilder", []) == []
+
+
+async def test_bild_ueber_das_inhalts_cookie_der_pinnwand(pw: Pinnwand):
+    """HELF-56: Bilder kommen im Browser über das Inhalts-Cookie (ein <img> sendet keinen Kopf). Es heißt je App eigen
+    (app_inhalt_pinnwand); setzt eine andere App auf demselben Rechner ihr Cookie, bleibt das Bild erreichbar."""
+    _, k = await mit_bert(pw)
+    await hochladen(pw, "anna", k, ("Bild.png", b"\\x89PNG bild", "image/png"))
+    datei = (await karte(pw, "anna"))["anhaenge"][0]["datei"]
+    r = await pw.c.post("/api/v1/anmeldung/zugang", headers=pw.kopf["anna"])
+    assert r.status_code == 204 and "app_inhalt_pinnwand" in r.cookies
+    keks = r.cookies["app_inhalt_pinnwand"]
+    pw.c.cookies.clear()
+    pw.c.cookies.set("app_inhalt_pinnwand", keks)
+    pw.c.cookies.set("app_inhalt", "t-fremde-app")                    # das alte gemeinsame Cookie einer anderen App
+    r = await pw.c.get(f"/api/v1/inhalt/anhaenge/{k['id']}/{datei}")
+    assert (r.status_code, r.content) == (200, b"\\x89PNG bild")
+    pw.c.cookies.clear()
+    assert (await pw.c.get(f"/api/v1/inhalt/anhaenge/{k['id']}/{datei}")).status_code == 401

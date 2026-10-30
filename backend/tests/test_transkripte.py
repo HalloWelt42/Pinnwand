@@ -112,7 +112,7 @@ async def test_ton_mit_bereichen(pw: Pinnwand):
     assert r.headers["content-range"] == f"bytes 1000-1999/{len(TRANSKRIPTION.ton)}" and r.headers["content-type"] == "audio/wav"
     assert TRANSKRIPTION.anfragen[-1].headers["x-kellerwolke-sitzung"] == "t-bert"
     # der Spieler sendet keinen Kopf, nur das Inhalts-Cookie der Anmeldung
-    pw.c.cookies.set("app_inhalt", "t-anna")
+    pw.c.cookies.set("app_inhalt_pinnwand", "t-anna")                # Inhalts-Cookie je App (HELF-56)
     assert (await pw.c.get(pfad, headers={"Range": "bytes=0-9"})).content == TRANSKRIPTION.ton[:10]
     pw.c.cookies.clear()
     assert (await pw.c.get(pfad)).status_code == 401

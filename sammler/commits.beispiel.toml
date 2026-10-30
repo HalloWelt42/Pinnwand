@@ -11,6 +11,8 @@ hauszertifikat = true
 wurzeln = ["~/Entwicklung"]
 tiefe = 3
 besitzer = ["HalloWelt42"]
+# Ordner, deren Repos nie dazugehören (etwa Arbeit für die Firma, auch rein lokale Repos darin)
+ohne = ["~/Entwicklung/Firma"]
 
 # Git-Verwaltungen, beliebig viele und gleichberechtigt: Name, Rechner wie im Remote, Muster des Verweises auf einen
 # Commit ({weg} ist Besitzer/Name des Repos, {hash} der Commit). Ein Repo verweist auf die Verwaltung seines Remotes.

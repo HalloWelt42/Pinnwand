@@ -80,10 +80,13 @@ def repos_finden(e: dict) -> list[Repo]:
     besitzer = {b.lower() for b in e.get("besitzer", [])}
     eigene = {str(Path(p).expanduser()): z for p, z in (e.get("repo") or {}).items()}
     tiefe = int(e.get("tiefe", 3))
+    ohne = [Path(o).expanduser() for o in e.get("ohne", [])]
     gefunden: list[Repo] = []
     for wurzel in (Path(w).expanduser() for w in e.get("wurzeln", [])):
         for g in (p for t in range(1, tiefe + 1) for p in sorted(wurzel.glob("/".join(["*"] * t) + "/.git"))):
             pfad = g.parent
+            if any(pfad == o or o in pfad.parents for o in ohne):
+                continue
             r = remote(pfad)
             eigen = eigene.get(str(pfad), {})
             if eigen.get("aus"):
@@ -150,7 +153,8 @@ def main() -> None:
     stand = {} if args.alles or not stand_datei.exists() else json.loads(stand_datei.read_text())
     gesamt = {"commits": 0, "neu": 0, "verknuepft": 0}
     for r in repos:
-        liste = commits(r, stand.get(r.kennung))
+        # der Stand gilt je Ordner: zwei Klone desselben Repos tragen dieselbe Kennung, aber nicht denselben Stand
+        liste = commits(r, stand.get(str(r.pfad)))
         for i in range(0, len(liste), PAKET):
             try:
                 antwort = senden(e, r, liste[i:i + PAKET])
@@ -160,7 +164,7 @@ def main() -> None:
             gesamt["neu"] += antwort.get("neu", 0)
             gesamt["verknuepft"] += antwort.get("verknuepft", 0)
         if liste:
-            stand[r.kennung] = liste[-1]["hash"]
+            stand[str(r.pfad)] = liste[-1]["hash"]
             stand_datei.write_text(json.dumps(stand, indent=1))
     # unsichere Zuordnungen als Vorschlag zum Bestätigen am Ticket (Hash im Text, Repo im Titel während der Arbeit)
     vorschlaege = schicken(e, "/commits/vorschlaege", {}).get("vorschlaege", 0)

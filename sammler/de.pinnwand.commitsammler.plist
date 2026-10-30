@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Commitsammler der Pinnwand stündlich auf dem Mac (HELF-35). Einrichten siehe README, Abschnitt Commits. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>de.pinnwand.commitsammler</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Library/Frameworks/Python.framework/Versions/3.12/bin/python3</string>
+    <string>/Users/alpha/Entwicklung/Werkzeuge/Pinnwand/sammler/commitsammler.py</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict><key>PATH</key><string>/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string></dict>
+  <key>StartInterval</key><integer>3600</integer>
+  <key>LowPriorityIO</key><true/>
+  <key>Nice</key><integer>10</integer>
+  <key>StandardOutPath</key><string>/Users/alpha/Library/Logs/pinnwand-commitsammler.log</string>
+  <key>StandardErrorPath</key><string>/Users/alpha/Library/Logs/pinnwand-commitsammler.log</string>
+</dict>
+</plist>

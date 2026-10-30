@@ -42,7 +42,15 @@ python3 sammler/commitsammler.py --alles     # Nachtrag: die ganze Geschichte, d
 python3 sammler/commitsammler.py             # danach: was seit dem letzten Lauf dazukam
 ```
 
-Einspielen darf nur der Besitzer der App. Je Git-Verwaltung steht in der Datei, wie ein Verweis auf einen Commit
+Stündlich von selbst (LaunchAgent, Protokoll in `~/Library/Logs/pinnwand-commitsammler.log`):
+
+```bash
+cp sammler/de.pinnwand.commitsammler.plist ~/Library/LaunchAgents/
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/de.pinnwand.commitsammler.plist
+launchctl kickstart gui/$(id -u)/de.pinnwand.commitsammler   # einmal sofort
+```
+
+Einspielen darf nur der Besitzer der App; suchen und von Hand verknüpfen am Ticket auch. Je Git-Verwaltung steht in der Datei, wie ein Verweis auf einen Commit
 aussieht; je Repo lässt sich das Ziel wählen oder "lokal" setzen, dann zeigt die Pinnwand den Commit selbst.
 
 ## Prüfungen

@@ -1,8 +1,9 @@
 """Vorlesen (Modul vorlesen, Mechanik M-114): die Vertonung spricht, was die Oberfläche zeigt (Beschreibung, Karte,
 Kommentar, Tagesplan, Bericht), Satz für Satz als Strom. Sie ist eine andere App hinter dem Anschluss `Sprachausgabe`
 (Baustein `appkern.vorlesen`, HELF-73); gefragt wird im Auftrag der Person, mit der Vorlesestimme der Pinnwand. Der
-Server prüft Modul, Mitgliedschaft und Länge; was vor dem ersten Satz scheitert, ist eine Ablehnung mit Grund, danach
-kommt eine Zeile `fehler`. Die Zeilen gehen an den Vorleser des Appkerns."""
+Server prüft Modul und Mitgliedschaft; eine Grenze für die Länge gibt es nicht, der Baustein spricht lange Texte in
+Paketen (HELF-107). Was vor dem ersten Satz scheitert, ist eine Ablehnung mit Grund, danach kommt eine Zeile `fehler`.
+Die Zeilen gehen an den Vorleser des Appkerns."""
 
 from __future__ import annotations
 
@@ -13,8 +14,6 @@ from ..modell import Board, Kennung, Konto, Modell
 from ..regeln.board import mitglied, modul_an
 from .rahmen import Abgelehnt, Anwendung
 
-#: so viel Text liest die Pinnwand am Stück vor
-TEXT_HOECHSTENS = 40_000
 NICHT_EINGERICHTET = "Vorlesen ist nicht eingerichtet (Einstellungen, Verbindungen)"
 
 
@@ -66,8 +65,6 @@ class Vorlesen:
         text = e.text.strip()
         if not text:
             raise Abgelehnt("Es gibt nichts vorzulesen")
-        if len(text) > TEXT_HOECHSTENS:
-            raise Abgelehnt(f"Der Text ist länger als {TEXT_HOECHSTENS} Zeichen")
         return text
 
     def sprechen(self, sitzung: str, text: str) -> AsyncIterator[bytes]:

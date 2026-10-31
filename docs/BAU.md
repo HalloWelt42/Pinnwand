@@ -348,7 +348,7 @@ freigibt; leer heißt ab Werk), Anschluss `Sprachausgabe` in `anwendung/vorlesen
   Beschreibung, offene Punkte), ein Kommentar (Lautsprecher am Kommentar), der Tagesplan in Heute (Überfälliges, Heute,
   Termine, Serien) und ein Bericht (in der Vorschau, in der Liste bei Markdown). Markdown wird vorher zu Klartext.
 - `POST /vorlesen` mit `{text, board}` (ohne Board: Heute und Berichte, dann muss das Modul in einem Board der Person an
-  sein): der Server prüft Modul und Länge (höchstens 40 000 Zeichen); der Baustein teilt an Satzgrenzen in Teile bis
+  sein): der Server prüft das Modul (eine Grenze für die Länge gibt es nicht, HELF-107); der Baustein teilt an Satzgrenzen in Teile bis
   7500 Zeichen (die Vertonung nimmt je Aufruf 8000) und reicht den Strom Satz für Satz weiter (`application/x-ndjson`,
   Zeilen `satz`, `ende`, `fehler`, die Sätze über alle Teile durchgezählt). Fehler vor dem ersten Satz als HTTP-Ablehnung, danach als Zeile `fehler`.
 - Gespielt wird mit dem Vorleser des Appkerns (Satz für Satz lückenlos, im Tippen gestartet, ein zweites Tippen hält an,

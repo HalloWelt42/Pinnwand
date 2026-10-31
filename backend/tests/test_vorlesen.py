@@ -87,7 +87,11 @@ async def test_langer_text_in_teilen(pw: Pinnwand):
     assert len(gesprochen) == 2 and all(len(json.loads(a.content)["text"]) <= 7500 for a in gesprochen)
     assert [z["nr"] for z in zeilen if z["art"] == "satz"] == list(range(130))
     assert zeilen[-1] == {"art": "ende", "saetze": 130, "dauer_ms": 130_000}
-    await abgelehnt(pw, "anna", "/vorlesen", {"text": "x" * 40_001, "board": b["id"]}, 400, "Der Text ist länger als 40000 Zeichen")
+    # über der früheren Grenze von 40 000 Zeichen: geht in Paketen durch (HELF-107)
+    VORLESEN.anfragen.clear()
+    zeilen = await lesen(pw, "anna", {"text": satz * 700, "board": b["id"]})
+    gesprochen = [a for a in VORLESEN.anfragen if a.url.path == "/api/v1/sprechen/strom"]
+    assert len(gesprochen) == 7 and zeilen[-1] == {"art": "ende", "saetze": 700, "dauer_ms": 700_000}
 
 
 async def test_fehler_vor_und_nach_dem_ersten_satz(pw: Pinnwand):

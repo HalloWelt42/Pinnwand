@@ -73,6 +73,7 @@ Oben zeigt der Zähler erledigt/gesamt und ein Balken den Fortschritt; ist alles
 Unten im Detail stehen die Reiter **Kommentare** und **Verlauf**, je mit ihrer Zahl.
 
 - Oben steht das Feld **Kommentar schreiben, @ erwähnt eine Person**, darunter die Kommentare, der neueste zuerst. Ins Feld tippen. Enter sendet, Umschalt und Enter macht eine neue Zeile; **Senden** geht ebenso. Kommentare verstehen dieselbe Schreibweise wie die Beschreibung.
+- Über dem Feld stehen kleine Knöpfe für die Schreibweise: **fett**, *kursiv*, Überschrift, Liste, Häkchenliste, Zitat, Code und Verweis. Ein Knopf setzt die Zeichen um den markierten Text oder vor jede markierte Zeile. **Vorschau** zeigt unter dem Feld, wie der Kommentar nach dem Senden aussieht, mit Überschriften, Listen, Häkchen, Zitaten, Code, Codeblöcken und Tabellen. Eingefügter Text behält seine Zeilen.
 - Mit @ erwähnst du ein Mitglied des Boards: @ und dahinter sein Vorname, sein Kontoname der Kellerwolke oder sein Kürzel, etwa @Anna. Die Erwähnung wird hervorgehoben, der volle Name erscheint beim Überfahren.
 - Wer in einem Kommentar erwähnt ist, bekommt einen Hinweis; die übrigen Zuständigen der Karte bekommen einen Hinweis, dass kommentiert wurde. Wer in Beschreibung oder Notizen neu erwähnt wird, bekommt ebenfalls einen Hinweis.
 

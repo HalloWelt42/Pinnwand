@@ -16,6 +16,7 @@
   import { board, karte as holeKarte, konto, stand } from "../../daten/stand.svelte";
   import Person from "../../board/Person.svelte";
   import Kommentarbilder from "../../teile/Kommentarbilder.svelte";
+  import MarkdownLeiste from "../../teile/MarkdownLeiste.svelte";
   import { boardPfad, gehe, wert } from "../../weg.svelte";
   import TelefonSchale from "./TelefonSchale.svelte";
   import Verschieben from "./Verschieben.svelte";
@@ -50,6 +51,7 @@
 
   let blattOffen = $state(false);
   let kommentar = $state("");
+  let kommentarFeld = $state<HTMLTextAreaElement>();
 
   /** das Feld leert sich erst, wenn der Kommentar gespeichert ist (bei getrennter Verbindung bleibt der Text stehen) */
   async function senden(): Promise<void> {
@@ -193,7 +195,9 @@
             <i class="fa-solid {liest(`kommentare-${k.id}`) ? 'fa-stop' : 'fa-volume-high'}"></i></button>
         {/if}</div>
       <div class="pw-tel-schreiben">
-        <textarea class="eingabe" rows="2" bind:value={kommentar} placeholder="Kommentar schreiben; mit @ erwähnen"></textarea>
+        <MarkdownLeiste feld={kommentarFeld} bind:text={kommentar} optionen={md} gross>
+          <textarea class="eingabe" rows="3" bind:this={kommentarFeld} bind:value={kommentar} placeholder="Kommentar schreiben; mit @ erwähnen"></textarea>
+        </MarkdownLeiste>
         <button class="knopf" disabled={!kommentar.trim()} onclick={senden}><i class="fa-solid fa-paper-plane"></i>Senden</button>
       </div>
       <!-- neueste zuerst, nach unten in die Vergangenheit (HELF-50) -->

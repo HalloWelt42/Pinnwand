@@ -296,3 +296,10 @@ button.navi { width: 100%; border: 0; background: none; font: inherit; text-alig
 .pw-bildansicht-zurueck, .pw-bildansicht-weiter { position: absolute; top: 50%; transform: translateY(-50%); }
 .pw-bildansicht-zurueck { left: var(--a3); }
 .pw-bildansicht-weiter { right: var(--a3); }
+
+/* Schreibhilfe für Markdown (HELF-92): kleine Knöpfe über dem Feld, die Vorschau darunter */
+.pw-mdleiste { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.pw-mdleiste .pw-mdleiste-vorschau { margin-left: auto; }
+.pw-mdleiste.gross .knopf.symbol { width: 44px; height: 44px; }
+.pw-mdleiste.gross .pw-mdleiste-vorschau { height: 44px; }
+.pw-mdleiste-ansicht { padding: var(--a2) var(--a3); border-radius: var(--r2); background: var(--karte-2); overflow-wrap: anywhere; }

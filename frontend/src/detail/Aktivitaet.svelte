@@ -12,6 +12,7 @@
   import type { Board, Karte } from "../modell";
   import Person from "../board/Person.svelte";
   import Kommentarbilder from "../teile/Kommentarbilder.svelte";
+  import MarkdownLeiste from "../teile/MarkdownLeiste.svelte";
   import { markdownHtml, markdownText, type MarkdownOptionen } from "../teile/markdown";
   import { verwerfbar } from "../teile/verwerfen";
   import { enter } from "../teile/taste";
@@ -20,6 +21,7 @@
 
   let reiter = $state<"kommentare" | "verlauf">("kommentare");
   let text = $state("");
+  let eingabe = $state<HTMLTextAreaElement>();
   /** neueste zuerst; was im selben Augenblick geschah, in der Folge, in der es geschah, von hinten */
   const verlauf = $derived([...karte.verlauf].reverse().sort((a, b) => b.zeit.localeCompare(a.zeit)));
   /** Kommentare neueste zuerst, mit ihrer Stelle an der Karte (die Kennung des Vorlesens hängt daran) */
@@ -56,9 +58,11 @@
     {#if darf(board, "kommentieren")}
       <div class="pw-kommentar"><Person id={ICH} />
         <div class="pw-kommentar-neu">
-          <textarea class="eingabe" rows="2" bind:value={text} use:verwerfbar onkeydown={taste} aria-label="Kommentar"
-                    placeholder="Kommentar schreiben, @ erwähnt eine Person"
-                    title="Enter sendet, Umschalt und Enter macht eine neue Zeile; Markdown wie **fett**, *kursiv* und - Liste"></textarea>
+          <MarkdownLeiste feld={eingabe} bind:text {optionen}>
+            <textarea class="eingabe" rows="3" bind:this={eingabe} bind:value={text} use:verwerfbar onkeydown={taste} aria-label="Kommentar"
+                      placeholder="Kommentar schreiben, @ erwähnt eine Person"
+                      title="Enter sendet, Umschalt und Enter macht eine neue Zeile; Markdown wie **fett**, *kursiv*, - Liste, - [ ] Häkchen, > Zitat, | Tabelle |"></textarea>
+          </MarkdownLeiste>
           <div><button class="knopf klein" disabled={!text.trim()} onclick={senden}><i class="fa-solid fa-paper-plane"></i>Senden</button></div>
         </div>
       </div>

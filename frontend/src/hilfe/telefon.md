@@ -99,7 +99,8 @@ Ein Tippen auf eine Karte öffnet sie. Von oben nach unten:
 - **Checkliste**: Punkte abhaken durch Tippen.
 - **Beschreibung** zum Lesen.
 - **Kommentare**: oben schreiben, darunter der neueste zuerst; mit @ erwähnst du jemanden. **Senden** speichert den
-  Kommentar.
+  Kommentar. Die Knöpfe über dem Feld setzen fett, kursiv, Überschrift, Liste, Häkchen, Zitat, Code und Verweis;
+  **Vorschau** zeigt den Kommentar so, wie er nach dem Senden erscheint.
 
 **Zurück** führt dorthin, woher du kamst: zu Heute, zu den Hinweisen oder zum Board.
 

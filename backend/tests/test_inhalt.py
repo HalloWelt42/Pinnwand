@@ -16,6 +16,39 @@ async def bearbeiten(pw: Pinnwand, wer: str, k: dict, felder: dict, **mehr):
     return await pw.post(wer, f"/karten/{k['id']}/bearbeiten", {"felder": felder, **mehr})
 
 
+async def test_eigenen_kommentar_bearbeiten(pw: Pinnwand):
+    """HELF-94: wer kommentiert hat, ändert seinen Kommentar; die alte Fassung steht im Verlauf, der Kommentar trägt die
+    Zeit der Bearbeitung, Bilder bleiben. Fremde Kommentare lehnt der Server ab, auch für Besitzer."""
+    b = await pw.board("anna", einladungen=[{"kellerwolke": "bert", "rolle": "leser"}, {"kellerwolke": "cora"}])
+    for wer in ("bert", "cora"):
+        await pw.anmelden(wer)
+        await pw.stand(wer)
+    k = await pw.karte("anna", b, "Fenster")
+    await pw.post("bert", f"/karten/{k['id']}/kommentieren", {"text": "| A | B |\n| 1 | 2 |"})
+    await pw.post("anna", f"/karten/{k['id']}/kommentieren", {"text": "Danke"})
+    pfad = f"/karten/{k['id']}/kommentare/1/bearbeiten"
+
+    r = await pw.post("bert", pfad, {"text": "Tabelle:\n\n| A | B |\n|---|---|\n| 1 | 2 |"})
+    assert (r.status_code, r.json()["meldung"]) == (200, "Kommentar an HAUS-1 bearbeitet")
+    c = await karte(pw, "anna", "HAUS-1")
+    erster = c["kommentare"][0]
+    assert erster["text"] == "Tabelle:\n\n| A | B |\n|---|---|\n| 1 | 2 |" and erster["bearbeitet"] == "2026-10-27T10:00:00"
+    assert erster["zeit"] == "2026-10-27T10:00:00" and c["kommentare"][1].get("bearbeitet") is None
+    e = c["verlauf"][-1]
+    assert (e["von"], e["text"], e["vorher"]) == ("2", "hat einen Kommentar bearbeitet", "| A | B |\n| 1 | 2 |")
+
+    # fremd, unbekannt, leer: abgelehnt
+    for wer, nr, text, status, meldung in [
+            ("anna", 1, "Anders", 403, "Nur eigene Kommentare lassen sich bearbeiten"),
+            ("cora", 2, "Anders", 403, "Nur eigene Kommentare lassen sich bearbeiten"),
+            ("bert", 3, "Anders", 404, "HAUS-1 hat keinen Kommentar 3"),
+            ("bert", 0, "Anders", 404, "HAUS-1 hat keinen Kommentar 0"),
+            ("bert", 1, "  ", 400, "Ein Kommentar braucht Text")]:
+        r = await pw.post(wer, f"/karten/{k['id']}/kommentare/{nr}/bearbeiten", {"text": text})
+        assert (r.status_code, r.json().get("detail")) == (status, meldung)
+    assert (await karte(pw, "anna", "HAUS-1"))["kommentare"][1]["text"] == "Danke"
+
+
 async def test_felder_und_verlauf(pw: Pinnwand):
     b = await pw.board("anna", einladungen=[{"kellerwolke": "bert"}])
     await pw.anmelden("bert")

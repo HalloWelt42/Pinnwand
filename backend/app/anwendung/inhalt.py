@@ -227,6 +227,34 @@ class Inhalte:
 
         return await self.a.aendern(konto, arbeit)
 
+    async def kommentar_bearbeiten(self, konto: Konto, karte_id: Kennung, nr: int, text: str) -> Antwort:
+        """Eigenen Kommentar ändern (HELF-94). `nr` zählt die Kommentare der Karte in der Reihenfolge ihres Entstehens ab 1
+        (sie werden nur angehängt, die Nummer bleibt). Nur wer ihn schrieb, darf ihn ändern; die alte Fassung steht im
+        Verlauf, der Kommentar trägt die Zeit der Bearbeitung. Hinweise gehen nur an neu Erwähnte."""
+        t = text.strip()
+
+        def arbeit(k: Kontext) -> str:
+            c = karte_lesen(k, karte_id)
+            b = k.board_mit_recht(c.board, "kommentieren")
+            if not 1 <= nr <= len(c.kommentare):
+                raise Abgelehnt(f"{c.schluessel} hat keinen Kommentar {nr}", 404)
+            alt = c.kommentare[nr - 1]
+            if alt.von != konto.id:
+                raise Abgelehnt("Nur eigene Kommentare lassen sich bearbeiten", 403)
+            if not t:
+                raise Abgelehnt("Ein Kommentar braucht Text")
+            if len(t) > KOMMENTAR_LAENGE:
+                raise Abgelehnt(f"Ein Kommentar hat höchstens {KOMMENTAR_LAENGE} Zeichen")
+            if t == alt.text:
+                return f"Kommentar an {c.schluessel} unverändert"
+            c.kommentare[nr - 1] = alt.model_copy(update={"text": t, "bearbeitet": k.jetzt})
+            vermerken(k, c, "hat einen Kommentar bearbeitet", vorher=alt.text)
+            speichern(k, c)
+            hinweise.erwaehnt(k, b, c, sorted(hinweise.erwaehnte(k, b, t) - hinweise.erwaehnte(k, b, alt.text)))
+            return f"Kommentar an {c.schluessel} bearbeitet"
+
+        return await self.a.aendern(konto, arbeit)
+
     async def sammel_zuweisen(self, konto: Konto, ids: list[Kennung], person: Kennung) -> Antwort:
         def arbeit(k: Kontext) -> str:
             b, karten = gleiche_karten(k, ids, "karten.bearbeiten")

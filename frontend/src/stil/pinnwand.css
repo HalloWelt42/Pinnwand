@@ -303,3 +303,14 @@ button.navi { width: 100%; border: 0; background: none; font: inherit; text-alig
 .pw-mdleiste.gross .knopf.symbol { width: 44px; height: 44px; }
 .pw-mdleiste.gross .pw-mdleiste-vorschau { height: 44px; }
 .pw-mdleiste-ansicht { padding: var(--a2) var(--a3); border-radius: var(--r2); background: var(--karte-2); overflow-wrap: anywhere; }
+
+/* Eigenen Kommentar bearbeiten (HELF-94): der Stift in der Kopfzeile, das Feld an Stelle des Textes, die alte Fassung im Verlauf */
+.pw-kommentar .blase .kopf-zeile .pw-kommentar-bearbeiten { margin-left: auto; align-self: center; }
+.pw-kommentar .blase .kopf-zeile .pw-kommentar-bearbeiten + .pw-kommentar-vorlesen { margin-left: 0; }
+.pw-tel-kommentar .blase:has(> .kopfzeile .pw-tel-kommentar-bearbeiten) { position: relative; }
+.pw-tel-kommentar .kopfzeile:has(.pw-tel-kommentar-bearbeiten) { padding-right: 44px; }
+.pw-tel-kommentar .kopfzeile .pw-tel-kommentar-bearbeiten { position: absolute; top: 0; right: 0; }
+.pw-kommentar-aendern { display: flex; flex-direction: column; gap: var(--a2); margin-top: var(--a2); }
+.pw-kommentar-aendern-knoepfe { display: flex; justify-content: flex-end; gap: var(--a2); }
+.pw-verlauf-vorher summary { cursor: pointer; color: var(--text-3); }
+.pw-verlauf-vorher .pw-md { margin-top: var(--a1); padding: var(--a2) var(--a3); border-radius: var(--r2); background: var(--karte-2); overflow-wrap: anywhere; }

@@ -150,6 +150,8 @@ class Kommentar(Modell):
     #: Bilder zum Kommentar (HELF-56): Namen hochgeladener Bild-Anhänge der Karte; die Dateien liegen wie jeder Anhang in
     #: der Kellerwolke (Ablage der Pinnwand, Ordner des Boards), der Kommentar zeigt sie von dort
     bilder: list[str] = Field(default_factory=list)
+    #: wann die Person ihren Kommentar zuletzt bearbeitet hat (HELF-94); die alte Fassung steht im Verlauf der Karte
+    bearbeitet: str | None = None
 
 
 AnhangArt = Literal["pdf", "bild", "tabelle", "text", "ton"]
@@ -192,6 +194,8 @@ class Ereignis(Modell):
     zeit: str
     von: Kennung
     text: str
+    #: die vorige Fassung, wenn das Ereignis einen Text ersetzt (bearbeiteter Kommentar, HELF-94)
+    vorher: str | None = None
 
 
 class Karte(Modell):

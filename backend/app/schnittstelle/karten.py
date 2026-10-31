@@ -80,6 +80,11 @@ class Art(Modell):
     art: Literal["arbeit", "idee"]
 
 
+class KommentarText(Modell):
+    """Neuer Text eines eigenen Kommentars (HELF-94); die Bilder bleiben."""
+    text: str
+
+
 class Kommentar(Modell):
     text: str
     #: Namen hochgeladener Bild-Anhänge der Karte, die der Kommentar zeigt (HELF-56)
@@ -153,5 +158,9 @@ def router(z: Zugriff) -> APIRouter:
     @r.post("/karten/{karte_id}/kommentieren", response_model=Antwort)
     async def kommentieren(karte_id: Kennung, e: Kommentar, konto: Konto = Depends(ich)) -> Antwort:
         return await tun(d.inhalte.kommentieren(konto, karte_id, e.text, e.bilder))
+
+    @r.post("/karten/{karte_id}/kommentare/{nr}/bearbeiten", response_model=Antwort)
+    async def kommentar_bearbeiten(karte_id: Kennung, nr: int, e: KommentarText, konto: Konto = Depends(ich)) -> Antwort:
+        return await tun(d.inhalte.kommentar_bearbeiten(konto, karte_id, nr, e.text))
 
     return r

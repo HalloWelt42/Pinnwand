@@ -101,6 +101,8 @@ Ein Tippen auf eine Karte öffnet sie. Von oben nach unten:
 - **Kommentare**: oben schreiben, darunter der neueste zuerst; mit @ erwähnst du jemanden. **Senden** speichert den
   Kommentar. Die Knöpfe über dem Feld setzen fett, kursiv, Überschrift, Liste, Häkchen, Zitat, Code und Verweis;
   **Vorschau** zeigt den Kommentar so, wie er nach dem Senden erscheint.
+  Den Stift an einem eigenen Kommentar tippen, um ihn zu ändern; **Speichern** übernimmt, danach steht "bearbeitet"
+  mit der Zeit daran.
 
 **Zurück** führt dorthin, woher du kamst: zu Heute, zu den Hinweisen oder zum Board.
 

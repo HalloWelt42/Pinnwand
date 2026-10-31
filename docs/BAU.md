@@ -401,6 +401,17 @@ hochgeladener Bild-Anhänge der Karte, höchstens 10; verknüpfte aus einer frem
 hält nur die Namen, die Datei bleibt eine Wahrheit am Anhang. Die Oberfläche zeigt sie klein im Kommentar und groß über
 der Seite (`teile/Kommentarbilder.svelte`), über die Inhaltsadresse, am Rechner und am Telefon.
 
+### Kommentare bearbeiten
+
+Nachtrag vom 31.10.2026 (HELF-94, Nutzer: "Andere Kommentare betrifft das aber auch, denn du bist derjenige, der
+kommentiert"). Jede Person ändert ihre eigenen Kommentare: `POST /karten/{id}/kommentare/{nr}/bearbeiten` mit `{text}`;
+`nr` zählt die Kommentare der Karte ab 1 in der Reihenfolge ihres Entstehens (sie werden nur angehängt, die Nummer
+bleibt). Der Server erzwingt: nur wer ihn schrieb (403), mit dem Recht Kommentieren, Text wie beim Kommentieren; die
+Bilder bleiben. `Kommentar.bearbeitet` trägt die Zeit, der Verlauf eine Zeile "hat einen Kommentar bearbeitet" mit
+`Ereignis.vorher` (die alte Fassung). Hinweise nur an neu Erwähnte. Oberfläche am Rechner und am Telefon über
+`teile/KommentarAendern.svelte` mit der Schreibhilfe (`teile/MarkdownLeiste.svelte`, HELF-92). Das Werkzeug des Helfers
+(`ticket.py kommentar-bearbeiten KEY NR "Text"`) nutzt denselben Weg und ergänzt bei Tabellen Leerzeile und Trennzeile.
+
 ### Hinweise bündeln
 
 Nachtrag vom 30.10.2026 (HELF-54, Nutzer: "Alarmhinweise mit Button alle als gelesen bestätigen können, sonst flutet

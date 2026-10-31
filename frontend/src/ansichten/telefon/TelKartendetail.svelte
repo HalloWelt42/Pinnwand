@@ -16,6 +16,7 @@
   import { board, karte as holeKarte, konto, stand } from "../../daten/stand.svelte";
   import Person from "../../board/Person.svelte";
   import Kommentarbilder from "../../teile/Kommentarbilder.svelte";
+  import KommentarAendern from "../../teile/KommentarAendern.svelte";
   import MarkdownLeiste from "../../teile/MarkdownLeiste.svelte";
   import { boardPfad, gehe, wert } from "../../weg.svelte";
   import TelefonSchale from "./TelefonSchale.svelte";
@@ -52,6 +53,8 @@
   let blattOffen = $state(false);
   let kommentar = $state("");
   let kommentarFeld = $state<HTMLTextAreaElement>();
+  /** Stelle (ab 0) des eigenen Kommentars, der gerade bearbeitet wird (HELF-94) */
+  let bearbeite = $state<number | null>(null);
 
   /** das Feld leert sich erst, wenn der Kommentar gespeichert ist (bei getrennter Verbindung bleibt der Text stehen) */
   async function senden(): Promise<void> {
@@ -201,11 +204,20 @@
         <button class="knopf" disabled={!kommentar.trim()} onclick={senden}><i class="fa-solid fa-paper-plane"></i>Senden</button>
       </div>
       <!-- neueste zuerst, nach unten in die Vergangenheit (HELF-50) -->
-      {#each [...k.kommentare].reverse() as c, i (i)}
+      {#each k.kommentare.map((c, i) => ({ c, i })).reverse() as { c, i } (i)}
         <div class="pw-tel-kommentar">
           <Person id={c.von} />
-          <div class="blase"><div class="kopfzeile"><b>{konto(c.von).name}</b><span>{wann(c.zeit)}</span></div>
-            <div class="pw-md">{@html markdownHtml(c.text, md)}</div>
+          <div class="blase"><div class="kopfzeile"><b>{konto(c.von).name}</b><span>{wann(c.zeit)}</span>
+            {#if c.bearbeitet}<span>bearbeitet {wann(c.bearbeitet)}</span>{/if}
+            {#if c.von === ICH && darf(b, "kommentieren") && bearbeite !== i}
+              <button class="knopf ohne symbol pw-tel-kommentar-bearbeiten" aria-label="Kommentar bearbeiten" onclick={() => (bearbeite = i)}>
+                <i class="fa-solid fa-pen"></i></button>
+            {/if}</div>
+            {#if bearbeite === i}
+              <KommentarAendern karte={k.id} nr={i + 1} text={c.text} optionen={md} gross fertig={() => (bearbeite = null)} />
+            {:else}
+              <div class="pw-md">{@html markdownHtml(c.text, md)}</div>
+            {/if}
             {#if c.bilder?.length}<Kommentarbilder karte={k} namen={c.bilder} />{/if}</div>
         </div>
       {/each}

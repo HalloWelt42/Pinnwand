@@ -12,6 +12,7 @@
   import type { Board, Karte } from "../modell";
   import Person from "../board/Person.svelte";
   import Kommentarbilder from "../teile/Kommentarbilder.svelte";
+  import KommentarAendern from "../teile/KommentarAendern.svelte";
   import MarkdownLeiste from "../teile/MarkdownLeiste.svelte";
   import { markdownHtml, markdownText, type MarkdownOptionen } from "../teile/markdown";
   import { verwerfbar } from "../teile/verwerfen";
@@ -22,6 +23,8 @@
   let reiter = $state<"kommentare" | "verlauf">("kommentare");
   let text = $state("");
   let eingabe = $state<HTMLTextAreaElement>();
+  /** Stelle (ab 0) des eigenen Kommentars, der gerade bearbeitet wird (HELF-94) */
+  let bearbeite = $state<number | null>(null);
   /** neueste zuerst; was im selben Augenblick geschah, in der Folge, in der es geschah, von hinten */
   const verlauf = $derived([...karte.verlauf].reverse().sort((a, b) => b.zeit.localeCompare(a.zeit)));
   /** Kommentare neueste zuerst, mit ihrer Stelle an der Karte (die Kennung des Vorlesens hängt daran) */
@@ -70,13 +73,22 @@
     {#each kommentare as { c, i } (i)}
       <div class="pw-kommentar"><Person id={c.von} />
         <div class="blase"><div class="kopf-zeile"><b>{konto(c.von).name}</b><span>{wann(c.zeit)}</span>
+          {#if c.bearbeitet}<span title="Zuletzt bearbeitet; die alte Fassung steht im Verlauf">bearbeitet {wann(c.bearbeitet)}</span>{/if}
+          {#if c.von === ICH && darf(board, "kommentieren") && bearbeite !== i}
+            <button class="knopf ohne symbol klein pw-kommentar-bearbeiten" title="Kommentar bearbeiten" aria-label="Kommentar bearbeiten"
+                    onclick={() => (bearbeite = i)}><i class="fa-solid fa-pen"></i></button>
+          {/if}
           {#if vorlesenDa(board)}
             {@const kennung = `kommentar-${karte.id}-${i}`}
             <button class="knopf ohne symbol klein pw-kommentar-vorlesen" title={liest(kennung) ? "Vorlesen anhalten" : "Kommentar vorlesen"}
                     aria-pressed={liest(kennung)} onclick={() => vorlesen(kennung, `${konto(c.von).name} schrieb: ${markdownText(c.text)}`, board.id)}>
               <i class="fa-solid {liest(kennung) ? 'fa-stop' : 'fa-volume-high'}"></i></button>
           {/if}</div>
-          <div class="pw-md">{@html markdownHtml(c.text, optionen)}</div>
+          {#if bearbeite === i}
+            <KommentarAendern karte={karte.id} nr={i + 1} text={c.text} {optionen} enterSpeichert fertig={() => (bearbeite = null)} />
+          {:else}
+            <div class="pw-md">{@html markdownHtml(c.text, optionen)}</div>
+          {/if}
           {#if c.bilder?.length}<Kommentarbilder {karte} namen={c.bilder} />{/if}</div></div>
     {:else}
       <div class="schwach pw-detail-leer">Noch keine Kommentare.</div>
@@ -84,7 +96,8 @@
   {:else}
     <div class="pw-verlauf">
       {#each verlauf as e, i (i)}
-        <div class="pw-verlauf-zeile"><span class="zeit">{wann(e.zeit)}</span><span><b title={konto(e.von).name}>{konto(e.von).kuerzel}</b> {e.text}</span></div>
+        <div class="pw-verlauf-zeile"><span class="zeit">{wann(e.zeit)}</span><span><b title={konto(e.von).name}>{konto(e.von).kuerzel}</b> {e.text}
+          {#if e.vorher}<details class="pw-verlauf-vorher"><summary>Alte Fassung</summary><div class="pw-md">{@html markdownHtml(e.vorher, optionen)}</div></details>{/if}</span></div>
       {:else}
         <div class="schwach pw-detail-leer">Noch kein Verlauf.</div>
       {/each}

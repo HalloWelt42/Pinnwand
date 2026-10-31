@@ -137,6 +137,12 @@ export async function kommentieren(id: Kennung, text: string): Promise<boolean> 
   return (await aendern(() => senden(`/karten/${id}/kommentieren`, { text }))) !== null;
 }
 
+/** eigenen Kommentar ändern (HELF-94); `nr` zählt die Kommentare der Karte ab 1 in der Reihenfolge ihres Entstehens */
+export async function kommentarBearbeiten(id: Kennung, nr: number, text: string): Promise<boolean> {
+  if (!text.trim()) return false;
+  return (await aendern(() => senden(`/karten/${id}/kommentare/${nr}/bearbeiten`, { text }))) !== null;
+}
+
 export function sammelZuweisen(ids: Kennung[], kontoId: Kennung): void {
   void aendern(() => senden("/karten/sammel/zuweisen", { ids, konto: kontoId }));
 }

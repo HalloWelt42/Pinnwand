@@ -27,9 +27,9 @@ def karten_der_spalte(k: Kontext, spalte_id: Kennung) -> list[Karte]:
     return [Karte.model_validate(d) for d in k.s.alle("karten", "spalte=?", (spalte_id,), "reihe")]
 
 
-def vermerken(k: Kontext, karte: Karte, text: str) -> None:
-    """Eine Zeile im Verlauf der Karte (M-64)."""
-    karte.verlauf.append(Ereignis(zeit=k.jetzt, von=k.konto.id, text=text))
+def vermerken(k: Kontext, karte: Karte, text: str, vorher: str | None = None) -> None:
+    """Eine Zeile im Verlauf der Karte (M-64); `vorher`: die ersetzte Fassung eines Textes (HELF-94)."""
+    karte.verlauf.append(Ereignis(zeit=k.jetzt, von=k.konto.id, text=text, vorher=vorher))
 
 
 def speichern(k: Kontext, karte: Karte) -> Karte:

@@ -175,6 +175,8 @@ export interface Kommentar {
   text: string;
   /** Bilder zum Kommentar (HELF-56): Namen hochgeladener Bild-Anhänge der Karte (die Dateien liegen in der Kellerwolke) */
   bilder?: string[];
+  /** wann die Person ihren Kommentar zuletzt bearbeitet hat (HELF-94); die alte Fassung steht im Verlauf */
+  bearbeitet?: string | null;
 }
 
 /** Eine Datei an einer Karte: hochgeladen in den Ordner des Boards in der Ablage der Pinnwand, oder aus der eigenen
@@ -242,6 +244,8 @@ export interface Ereignis {
   zeit: string;
   von: Kennung;
   text: string;
+  /** die vorige Fassung, wenn das Ereignis einen Text ersetzt (bearbeiteter Kommentar, HELF-94) */
+  vorher?: string | null;
 }
 
 export interface Karte {

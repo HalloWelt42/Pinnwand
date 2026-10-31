@@ -19,7 +19,7 @@ from .fassung import FASSUNG, WURZEL
 from .schnittstelle import anhaenge, transkripte
 from .schnittstelle.ablage import KellerwolkeAblage
 from .schnittstelle.rest import router
-from .schnittstelle.sprachausgabe import VorlesenApp
+from .schnittstelle.sprachausgabe import VorlesenUeberVertonung
 from .schnittstelle.sprachmodell import LeitstellenModell
 from .schnittstelle.transkription import VerbundTranskription
 from .schnittstelle.zugang import GeruestZugang
@@ -36,7 +36,7 @@ def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None, uh
                       push=True, sicherungen=sicherungen, transport=transport)
     ablage = KellerwolkeAblage(geruest)
     transkription = VerbundTranskription(geruest)
-    sprachausgabe = VorlesenApp(geruest)          # Feld, Angebot und Verbindung der App Vorlesen
+    sprachausgabe = VorlesenUeberVertonung(geruest)   # Felder, Angebote und Verbindung der Vertonung
     dienste = Dienste.bauen(geruest.db, GeruestZugang(geruest), ablage, uhr, push=geruest.push,
                             sprachmodell=LeitstellenModell(geruest), transkription=transkription,
                             sprachausgabe=sprachausgabe)

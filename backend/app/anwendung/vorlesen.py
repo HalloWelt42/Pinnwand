@@ -1,9 +1,8 @@
-"""Vorlesen (Modul vorlesen, Mechanik M-114): die App Vorlesen, die eine Stelle für Sprachausgabe im Verbund, spricht,
-was die Oberfläche zeigt (Beschreibung, Karte, Kommentar, Tagesplan, Bericht), Satz für Satz als Strom. Sie ist eine
-andere App hinter dem Anschluss `Sprachausgabe`; gefragt wird im Auftrag der Person. Stimme und Tempo wählt man in der
-App Vorlesen, die Sätze teilt sie selbst. Der Server prüft Modul, Mitgliedschaft und Länge; was vor dem ersten Satz
-scheitert, ist eine Ablehnung mit Grund, danach kommt eine Zeile `fehler`. Die Zeilen gehen unverändert an den
-Vorleser des Appkerns."""
+"""Vorlesen (Modul vorlesen, Mechanik M-114): die Vertonung spricht, was die Oberfläche zeigt (Beschreibung, Karte,
+Kommentar, Tagesplan, Bericht), Satz für Satz als Strom. Sie ist eine andere App hinter dem Anschluss `Sprachausgabe`
+(Baustein `appkern.vorlesen`, HELF-73); gefragt wird im Auftrag der Person, mit der Vorlesestimme der Pinnwand. Der
+Server prüft Modul, Mitgliedschaft und Länge; was vor dem ersten Satz scheitert, ist eine Ablehnung mit Grund, danach
+kommt eine Zeile `fehler`. Die Zeilen gehen an den Vorleser des Appkerns."""
 
 from __future__ import annotations
 
@@ -21,11 +20,11 @@ NICHT_EINGERICHTET = "Vorlesen ist nicht eingerichtet (Einstellungen, Verbindung
 
 class Sprachausgabe(Protocol):
     def adresse(self) -> str:
-        """Wo die App Vorlesen liegt (leer: nicht eingerichtet)."""
+        """Wo die Vertonung liegt (leer: nicht eingerichtet)."""
         ...
 
     def zeilen(self, sitzung: str, text: str) -> AsyncIterator[bytes]:
-        """Die Zeilen der App Vorlesen (`satz`, `ende`, `fehler`, je mit Zeilenende), sobald sie kommen; abgelehnt mit
+        """Die Zeilen der Vertonung (`satz`, `ende`, `fehler`, je mit Zeilenende), sobald sie kommen; abgelehnt mit
         Grund, bevor die erste kommt."""
         ...
 
@@ -72,6 +71,6 @@ class Vorlesen:
         return text
 
     def sprechen(self, sitzung: str, text: str) -> AsyncIterator[bytes]:
-        """Die Zeilen für den Browser, wie die App Vorlesen sie liefert. Lehnt sie vor dem ersten Satz ab, kommt die
+        """Die Zeilen für den Browser, wie die Vertonung sie liefert. Lehnt sie vor dem ersten Satz ab, kommt die
         Ablehnung als Ausnahme beim ersten Lesen."""
         return self.s.zeilen(sitzung, text)

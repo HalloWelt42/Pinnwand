@@ -4,12 +4,12 @@ untertitel: Karten, Notizen, Checklisten, Kommentare, Verlauf, Tagesplan und Ber
 bereich: Verbund
 symbol: fa-volume-high
 ---
-Mit dem Modul Vorlesen liest dir die Pinnwand Texte laut vor: die ganze Karte, Beschreibung, Notizen und Checkliste, einen oder alle Kommentare, den Verlauf, deinen Tagesplan und Berichte, am Rechner wie am Telefon. Das hilft, wenn du gerade nicht lesen kannst oder willst. Gesprochen wird über die App Vorlesen, die eine Stelle für Sprachausgabe aller eigenen Apps.
+Mit dem Modul Vorlesen liest dir die Pinnwand Texte laut vor: die ganze Karte, Beschreibung, Notizen und Checkliste, einen oder alle Kommentare, den Verlauf, deinen Tagesplan und Berichte, am Rechner wie am Telefon. Das hilft, wenn du gerade nicht lesen kannst oder willst. Gesprochen wird über die Vertonung, eine eigene App, die aus Text Sprache macht.
 
 ## Was du brauchst {#voraussetzungen}
 - Das Modul **Vorlesen** ist an (siehe [Module einschalten](hilfe:module/einschalten)). An Karten und Kommentaren muss es im Board dieser Karte an sein. Für Heute und die Berichte genügt es, wenn eines deiner Boards es an hat.
-- Die App Vorlesen ist mit der Pinnwand verbunden. Fehlt die Verbindung, gibt es keine Lautsprecher-Knöpfe; warum, sagt der Reiter **Module** (siehe [Wenn eine Verbindung fehlt](hilfe:module/verbindung-fehlt)).
-- Die Pinnwand fragt die App Vorlesen in deinem Namen. Dein Konto muss sie also nutzen dürfen.
+- Die Vertonung ist mit der Pinnwand verbunden. Fehlt die Verbindung, gibt es keine Lautsprecher-Knöpfe; warum, sagt der Reiter **Module** (siehe [Wenn eine Verbindung fehlt](hilfe:module/verbindung-fehlt)).
+- Die Pinnwand fragt die Vertonung in deinem Namen. Dein Konto muss sie also nutzen dürfen.
 
 ## Was vorgelesen werden kann {#was}
 | Was | Wo | Knopf |
@@ -50,16 +50,16 @@ Es klingt immer nur ein Text gleichzeitig:
 - Startest du im Kartendetail eine Transkript-Stelle zum Abspielen (siehe [Abspielen ab der Stelle](hilfe:transkripte/abspielen)), endet das Vorlesen.
 
 ## Stimme und Tempo {#stimme}
-Stimme, Sprache und Tempo wählst du nicht in der Pinnwand, sondern in der App Vorlesen, Seite **Vorlesen**; dort kannst du eine Probe hören, bevor du speicherst. Die Wahl gilt für alle Apps, die vorlesen, also auch für die Pinnwand.
+Die Stimme ist für die ganze Pinnwand eingestellt und gilt für alle gleich: unter **Einstellungen**, **App und
+Verbindungen**, Gruppe **Verbindungen**, Feld **Vorlesestimme**. Zur Wahl stehen die Stimmen aus dem Katalog der
+Vertonung und die privaten Stimmen, die die Vertonung der Pinnwand freigibt; die Liste kommt jedes Mal aus der
+Vertonung. Ohne Wahl spricht die Stimme ab Werk der Vertonung.
 
-- **Stimme:** eine der festen Stimmen aus dem Katalog des Sprechdienstes. Geklonte Stimmen gibt es dort nicht.
-- **Tempo:** 1 ist das gewohnte Tempo. Kleinere Werte bis 0,5 lesen langsamer, größere bis 2 schneller.
-
-Ab Werk wird deutsch gesprochen.
+Gesprochen wird deutsch. Zahlen und Abkürzungen spricht die Vertonung ausgeschrieben.
 
 ## Grenzen {#grenzen}
 - Am Stück liest die Pinnwand höchstens 40.000 Zeichen vor. Ein längerer Text wird abgelehnt mit "Der Text ist länger als 40000 Zeichen".
-- Lange Texte teilt die App Vorlesen an Satzgrenzen und spricht sie Satz für Satz. Du hörst davon nichts: Es klingt wie ein Stück.
+- Lange Texte teilt die Pinnwand an Satzgrenzen in Teile und lässt sie nacheinander sprechen. Du hörst davon nichts: Es klingt wie ein Stück.
 - Leere Texte gibt es nicht zu hören; die Beschreibung zeigt ihren Lautsprecher erst, wenn sie Text hat.
 
 ## Wenn es stumm bleibt {#fehler}
@@ -67,9 +67,8 @@ Geht das Vorlesen nicht oder bricht es ab, nennt die Meldung unten rechts den Gr
 
 | Meldung | Was sie heißt |
 |---|---|
-| "Die App Vorlesen lässt das nicht zu: ..." | Dein Konto darf die App Vorlesen nicht nutzen. |
-| "Die App Vorlesen ist gerade nicht erreichbar (...)" | Die App Vorlesen läuft gerade nicht oder ist nicht erreichbar. Später noch einmal versuchen. |
-| "Der Sprechdienst kann gerade nicht: ..." | Der Rechner, der spricht, schläft oder der Sprechdienst startet gerade. Später noch einmal versuchen. |
+| "Die Vertonung lässt das nicht zu: ..." | Dein Konto oder die eingestellte Stimme ist in der Vertonung nicht freigegeben. |
+| "Die Vertonung ist gerade nicht erreichbar (...)" | Die Vertonung läuft gerade nicht oder ist nicht erreichbar. Später noch einmal versuchen. |
 | "Vorlesen ist im Board ... aus" | Jemand hat das Modul in diesem Board inzwischen ausgeschaltet. |
 | "Vorlesen ist in keinem deiner Boards an" | Für Heute und Berichte muss mindestens eines deiner Boards Vorlesen an haben. |
 | "Vorlesen brach ab: keine Verbindung zur App" | Die Verbindung zur Pinnwand riss ab. |

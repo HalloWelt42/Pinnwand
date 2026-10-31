@@ -1,6 +1,7 @@
-"""Stufe 4, Vorlesen über die App Vorlesen: Modul und Mitgliedschaft geprüft, der ganze Text geht im Auftrag der Person
-an die App Vorlesen (sie teilt die Sätze, Stimme und Tempo wählt man dort), ihre Zeilen kommen unverändert durch;
-Fehler vor dem ersten Satz als Ablehnung, danach als Zeile. Die Pinnwand hat keine eigene Stimme mehr."""
+"""Stufe 4, Vorlesen über die Vertonung (Baustein appkern.vorlesen, HELF-73): Modul und Mitgliedschaft geprüft, der
+Text geht im Auftrag der Person an die Vertonung (lange Texte in Teilen, Sätze durchgezählt), die Zeilen kommen an den
+Vorleser; Fehler vor dem ersten Satz als Ablehnung, danach als Zeile. Die Vorlesestimme wählt die Pinnwand aus dem, was
+die Vertonung ihr anbietet."""
 
 from __future__ import annotations
 
@@ -49,7 +50,7 @@ async def test_ohne_modul_und_adresse(pw: Pinnwand):
     await abgelehnt(pw, "anna", "/vorlesen", {"text": "Hallo.", "board": b["id"]}, 503,
                     "Vorlesen ist nicht eingerichtet (Einstellungen, Verbindungen)")
     await einstellen(pw, **VORLESEN_EINRICHTUNG)
-    assert (await pw.stand("anna"))["vorlesenAdresse"] == "https://vl.test"
+    assert (await pw.stand("anna"))["vorlesenAdresse"] == "https://vt.test"
     await abgelehnt(pw, "anna", "/vorlesen", {"text": "   ", "board": b["id"]}, 400, "Es gibt nichts vorzulesen")
     assert VORLESEN.anfragen == []
 
@@ -60,25 +61,30 @@ async def test_saetze_im_auftrag_der_person(pw: Pinnwand):
     assert [(z["art"], z.get("nr"), z.get("text")) for z in zeilen] == [
         ("satz", 0, "Fenster putzen."), ("satz", 1, "Leiter holen!"), ("ende", None, None)]
     assert zeilen[-1] == {"art": "ende", "saetze": 2, "dauer_ms": 2000} and zeilen[0]["ton"]
-    assert VORLESEN.koerper() == {"text": "Fenster putzen. Leiter holen!"}       # Stimme und Tempo wählt die App Vorlesen
+    assert VORLESEN.koerper() == {"text": "Fenster putzen. Leiter holen!", "ausschreiben": True}   # ohne Wahl: ab Werk
     ruf = VORLESEN.anfragen[-1]
-    assert ruf.url.path == "/api/v1/vorlesen/strom" and ruf.headers["x-kellerwolke-sitzung"] == "t-bert"
+    assert ruf.url.path == "/api/v1/sprechen/strom" and ruf.headers["x-kellerwolke-sitzung"] == "t-bert"
     assert ruf.headers["authorization"].startswith("Bearer kw_app_")
     await lesen(pw, "anna", {"text": "Kurz."})                      # ohne Board: Heute und Berichte
-    # kein eigenes Feld für das Tempo mehr; die Stimme bietet der Appkern seit HELF-65 je App aus der App Vorlesen an;
-    # die Adresse steht unter Verbindungen mit Angebot
+    # Adresse und Vorlesestimme aus dem Baustein, unter Verbindungen; zur Wahl steht, was die Vertonung der Pinnwand gibt
     felder = {f["name"]: f for f in (await pw.get("anna", "/einstellungen")).json()}
-    assert "vorlesen_tempo" not in felder and "vertonung_adresse" not in felder
-    assert felder["vorlesen_adresse"]["gruppe"] == "Verbindungen" and felder["vorlesen_adresse"]["angebot"]
+    assert "vorlesen_tempo" not in felder and "vorlesen_adresse" not in felder
+    assert felder["vertonung_adresse"]["gruppe"] == "Verbindungen" and felder["vertonung_adresse"]["angebot"]
+    angebot = (await pw.get("anna", "/einstellungen/angebot/vorlesen_stimme")).json()
+    assert [o["wert"] for o in angebot["optionen"]] == ["", "katalog:stimme_a"]      # private gibt sie nicht frei
+    await einstellen(pw, vorlesen_stimme="katalog:stimme_a")
+    await lesen(pw, "anna", {"text": "Mit Stimme."})
+    assert VORLESEN.koerper()["stimme"] == {"art": "katalog", "name": "stimme_a"}
     verbindungen = {v["name"]: v for v in (await pw.get("anna", "/verbindungen")).json()}
-    assert verbindungen["Vorlesen"]["ok"]
+    assert verbindungen["Vertonung"]["ok"]
 
 
-async def test_langer_text_am_stueck(pw: Pinnwand):
+async def test_langer_text_in_teilen(pw: Pinnwand):
     b = await mit_vorlesen(pw)
     satz = "Das ist ein Satz mit genau so vielen Wörtern, dass er lang genug ist. "
     zeilen = await lesen(pw, "anna", {"text": satz * 130, "board": b["id"]})
-    assert len(VORLESEN.anfragen) == 1                                  # die App Vorlesen teilt selbst
+    gesprochen = [a for a in VORLESEN.anfragen if a.url.path == "/api/v1/sprechen/strom"]
+    assert len(gesprochen) == 2 and all(len(json.loads(a.content)["text"]) <= 7500 for a in gesprochen)
     assert [z["nr"] for z in zeilen if z["art"] == "satz"] == list(range(130))
     assert zeilen[-1] == {"art": "ende", "saetze": 130, "dauer_ms": 130_000}
     await abgelehnt(pw, "anna", "/vorlesen", {"text": "x" * 40_001, "board": b["id"]}, 400, "Der Text ist länger als 40000 Zeichen")
@@ -86,12 +92,12 @@ async def test_langer_text_am_stueck(pw: Pinnwand):
 
 async def test_fehler_vor_und_nach_dem_ersten_satz(pw: Pinnwand):
     b = await mit_vorlesen(pw)
-    # cora ist Mitglied, darf die App Vorlesen aber nicht nutzen: noch vor dem ersten Satz, also eine Ablehnung
+    # cora ist Mitglied, darf die Vertonung aber nicht nutzen: noch vor dem ersten Satz, also eine Ablehnung
     await ok(pw, "anna", f"/boards/{b['id']}/mitglieder", {"kellerwolke": "cora", "rolle": "mitglied"})
     assert (await pw.anmelden("cora")).status_code == 200
     await abgelehnt(pw, "cora", "/vorlesen", {"text": "Hallo.", "board": b["id"]}, 403,
-                    "Die App Vorlesen lässt das nicht zu: Dieses Konto darf Vorlesen nicht nutzen")
+                    "Die Vertonung lässt das nicht zu: Dieses Konto darf die Vertonung nicht nutzen")
     # bricht sie mittendrin ab, steht das als letzte Zeile da
     VORLESEN.fehler_nach = 1
     zeilen = await lesen(pw, "anna", {"text": "Eins. Zwei. Drei.", "board": b["id"]})
-    assert [z["art"] for z in zeilen] == ["satz", "fehler"] and zeilen[-1]["meldung"] == "Der Sprechdienst kann gerade nicht"
+    assert [z["art"] for z in zeilen] == ["satz", "fehler"] and zeilen[-1]["meldung"] == "Der Sprechdienst ist weg"

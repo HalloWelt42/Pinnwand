@@ -1,6 +1,6 @@
-"""Die App Vorlesen über den Baustein des Appkerns (`appkern.vorlesen`): Feld `vorlesen_adresse` mit Angebot aus dem
-Verzeichnis, Verbindung in der Fußleiste, Strom mit dem App-Schlüssel im Auftrag der Person. Die Anwendung kennt nur
-den Anschluss `Sprachausgabe`; Stimme und Tempo wählt man in der App Vorlesen."""
+"""Vorlesen über die Vertonung mit dem Baustein des Appkerns (`appkern.vorlesen`): Felder `vertonung_adresse` und
+`vorlesen_stimme` mit Angeboten (Verzeichnis, Stimmen der Vertonung für die Pinnwand), Verbindung in der Fußleiste,
+Strom mit dem App-Schlüssel im Auftrag der Person. Die Anwendung kennt nur den Anschluss `Sprachausgabe`."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from appkern.vorlesen import Vorlesen, VorlesenFehler
 from ..anwendung.rahmen import Abgelehnt
 
 
-class VorlesenApp:
+class VorlesenUeberVertonung:
     def __init__(self, geruest: Geruest) -> None:
         self.baustein = Vorlesen(geruest)
 

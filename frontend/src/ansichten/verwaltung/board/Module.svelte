@@ -19,7 +19,7 @@
   function fehlt(id: ModulKennung): string {
     if (id === "ki" && !stand.kiBereit) return "Die Leitstelle ist in den Einstellungen der App noch nicht eingerichtet; bis dahin erscheinen keine Vorschläge.";
     if (id === "transkripte" && !stand.transkriptionAdresse) return "Die Adresse der Transkription fehlt in den Einstellungen der App; bis dahin gibt es keine Transkripte.";
-    if (id === "vorlesen" && !stand.vorlesenAdresse) return "Die Adresse der App Vorlesen fehlt in den Einstellungen der App; bis dahin wird nichts vorgelesen.";
+    if (id === "vorlesen" && !stand.vorlesenAdresse) return "Die Adresse der Vertonung fehlt in den Einstellungen der App; bis dahin wird nichts vorgelesen.";
     return "";
   }
 </script>

@@ -1,4 +1,4 @@
-// Vorlesen (Modul vorlesen, M-114): der Text, den die Oberfläche zeigt, geht über den Server an die App Vorlesen und kommt
+// Vorlesen (Modul vorlesen, M-114): der Text, den die Oberfläche zeigt, geht über den Server an die Vertonung und kommt
 // Satz für Satz zurück; gespielt wird mit dem Vorleser des Appkerns (im Tippen gestartet, ein zweites Tippen hält an,
 // immer nur ein Ton). Markdown wird vorher zu Klartext. Jede Stelle vergibt eine Kennung, damit ihr Knopf weiß, ob er
 // gerade liest.
@@ -15,7 +15,7 @@ import { konto, stand } from "../stand.svelte";
 
 const TAGE = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
-/** Gibt es Vorlesen (in diesem Board; ohne Board: in einem deiner Boards)? Dazu muss die App Vorlesen eingetragen sein. */
+/** Gibt es Vorlesen (in diesem Board; ohne Board: in einem deiner Boards)? Dazu muss die Vertonung eingetragen sein. */
 export function vorlesenDa(b?: Board): boolean {
   if (!stand.vorlesenAdresse) return false;
   return b ? modulAn(b, "vorlesen", stand.moduleDa) : modulIrgendwo("vorlesen");

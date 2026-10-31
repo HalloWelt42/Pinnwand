@@ -2,8 +2,8 @@
 Passwort "geheim", anna besitzt den App-Schlüssel, bert und cora dürfen erst nach einer Einladung. Dazu die Ablage im
 Speicher (`ABLAGE`), so weit der Zugang des Appkerns sie für Anhänge ruft: Ordner, Dateien schreiben, lesen und in den
 Papierkorb legen im Zweig der App, und die Dateiwahl mit der Anmeldung einer Person in ihren eigenen Dateien. Dazu die
-Leitstelle (`LEITSTELLE`) mit Antworten des Modells der Reihe nach, die Transkription (`TRANSKRIPTION`) und die App
-Vorlesen (`VORLESEN`)."""
+Leitstelle (`LEITSTELLE`) mit Antworten des Modells der Reihe nach, die Transkription (`TRANSKRIPTION`) und die
+Vertonung zum Vorlesen (`VORLESEN`)."""
 
 from __future__ import annotations
 
@@ -340,15 +340,15 @@ class Transkription:
 
 TRANSKRIPTION = Transkription()
 
-#: die App Vorlesen für die Einstellungen der App (Adresse nur zum Schein)
-VORLESEN_EINRICHTUNG = {"vorlesen_adresse": "https://vl.test"}
+#: die Vertonung zum Vorlesen für die Einstellungen der App (Adresse nur zum Schein)
+VORLESEN_EINRICHTUNG = {"vertonung_adresse": "https://vt.test"}
 
 
 @dataclass
-class VorleseApp:
-    """Die App Vorlesen (Host vl.test), so weit die Pinnwand sie ruft: Text als Strom, Satz für Satz (je Satz eine stille
-    WAV); sie teilt selbst an Satzgrenzen. cora darf sie nicht nutzen. `fehler_nach` bricht nach so vielen Sätzen mit
-    einer Zeile `fehler` ab; jede Anfrage steht in `anfragen`."""
+class Vertonung:
+    """Die Vertonung (Host vt.test), so weit die Pinnwand sie zum Vorlesen ruft: Stimmen (Katalog; private gibt sie der
+    Pinnwand nicht frei) und Sprechen als Strom, Satz für Satz (je Satz eine stille WAV). cora darf sie nicht nutzen.
+    `fehler_nach` bricht nach so vielen Sätzen mit einer Zeile `fehler` ab; jede Anfrage steht in `anfragen`."""
 
     anfragen: list[httpx.Request] = field(default_factory=list)
     fehler_nach: int | None = None
@@ -363,21 +363,25 @@ class VorleseApp:
     def antwort(self, request: httpx.Request) -> httpx.Response:
         pfad = request.url.path
         if pfad == "/api/v1/app":
-            return httpx.Response(200, json={"fassung": "0.1.0"})
+            return httpx.Response(200, json={"fassung": "0.17.0"})
         self.anfragen.append(request)
         if request.headers.get("x-kellerwolke-sitzung") == "t-cora":
-            return httpx.Response(403, json={"detail": "Dieses Konto darf Vorlesen nicht nutzen"})
-        if pfad == "/api/v1/vorlesen/strom" and request.method == "POST":
+            return httpx.Response(403, json={"detail": "Dieses Konto darf die Vertonung nicht nutzen"})
+        if pfad == "/api/v1/stimmen":
+            if request.url.params.get("bereich") == "privat":
+                return httpx.Response(403, json={"detail": "Private Stimmen sind dieser App nicht erlaubt"})
+            return httpx.Response(200, json=[{"id": "katalog:stimme_a", "name": "stimme_a", "bereich": "katalog"}])
+        if pfad == "/api/v1/sprechen/strom" and request.method == "POST":
             text = json.loads(request.content)["text"]
             saetze = [t for t in re.split(r"(?<=[.!?])\s+", text) if t]
             ton = base64.b64encode(stille(1, 8000)).decode("ascii")
             zeilen = []
             for i, t in enumerate(saetze):
                 if self.fehler_nach is not None and i >= self.fehler_nach:
-                    zeilen.append({"art": "fehler", "meldung": "Der Sprechdienst kann gerade nicht"})
+                    zeilen.append({"art": "fehler", "meldung": "Der Sprechdienst ist weg"})
                     break
-                zeilen.append({"art": "satz", "nr": i, "text": t, "von_zeichen": 0, "bis_zeichen": len(t), "dauer_ms": 1000,
-                               "ton": ton})
+                zeilen.append({"art": "satz", "nr": i, "text": t, "gesprochen": t, "von_zeichen": 0, "bis_zeichen": len(t),
+                               "dauer_ms": 1000, "ton": ton})
             else:
                 zeilen.append({"art": "ende", "saetze": len(saetze), "dauer_ms": 1000 * len(saetze)})
             return httpx.Response(200, content="".join(json.dumps(z) + "\n" for z in zeilen),
@@ -385,7 +389,7 @@ class VorleseApp:
         return _fehlt()
 
 
-VORLESEN = VorleseApp()
+VORLESEN = Vertonung()
 
 
 def kellerwolke(request: httpx.Request) -> httpx.Response:
@@ -397,7 +401,7 @@ def kellerwolke(request: httpx.Request) -> httpx.Response:
         return LEITSTELLE.antwort(request)
     if request.url.host == "tr.test":
         return TRANSKRIPTION.antwort(request)
-    if request.url.host == "vl.test":
+    if request.url.host == "vt.test":
         return VORLESEN.antwort(request)
     if pfad == "/api/v1/ablage/ich":
         # ein App-Zugang einer Person (HELF-43): kw_app_<zugang>_<person>, etwa kw_app_helfer_anna

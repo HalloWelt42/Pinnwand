@@ -53,7 +53,7 @@ class Stand(Modell):
     app_besitzer: bool = False
     #: wo die Transkription liegt (leer: nicht eingerichtet, die Oberfläche zeigt keine Transkripte)
     transkription_adresse: str
-    #: wo die App Vorlesen liegt (leer: nicht eingerichtet, die Oberfläche zeigt kein Vorlesen)
+    #: wo die Vertonung zum Vorlesen liegt (leer: nicht eingerichtet, die Oberfläche zeigt kein Vorlesen)
     vorlesen_adresse: str
 
 

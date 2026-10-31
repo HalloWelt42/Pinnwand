@@ -338,19 +338,19 @@ sprechen kann nur, wer die Transkription selbst nutzen darf. Was an der Karte st
 
 ### Vorlesen
 
-Modul `vorlesen` in `MODULE_DA`, ohne eigene Rechte (Mechanik M-114). Gesprochen wird von der App Vorlesen, der einen
-Stelle für Sprachausgabe im Verbund (HELF-55, vorher die Vertonung); ihre Adresse steht in `vorlesen_adresse` (Feld,
-Angebot und Verbindung aus `appkern.vorlesen`, Anschluss `Sprachausgabe` in `anwendung/vorlesen.py`, Umsetzung
-`schnittstelle/sprachausgabe.py`). Stimme, Sprache und Tempo wählt man in der App Vorlesen; die Pinnwand hat keine
-eigenen Felder dafür. Gefragt wird mit dem App-Schlüssel im Auftrag der Person.
+Modul `vorlesen` in `MODULE_DA`, ohne eigene Rechte (Mechanik M-114). Gesprochen wird von der Vertonung über den
+Baustein `appkern.vorlesen` (HELF-73; die eigene App Vorlesen aus HELF-55 ist stillgelegt): Felder `vertonung_adresse`
+und `vorlesen_stimme` (Auswahl jedes Mal aus der Vertonung: Katalog und die privaten Stimmen, die sie der Pinnwand
+freigibt; leer heißt ab Werk), Anschluss `Sprachausgabe` in `anwendung/vorlesen.py`, Umsetzung
+`schnittstelle/sprachausgabe.py`. Gefragt wird mit dem App-Schlüssel im Auftrag der Person.
 
 - Vorgelesen wird, was die Oberfläche zeigt: die Beschreibung (Knopf am Feld), die ganze Karte (Kopf des Details: Titel,
   Beschreibung, offene Punkte), ein Kommentar (Lautsprecher am Kommentar), der Tagesplan in Heute (Überfälliges, Heute,
   Termine, Serien) und ein Bericht (in der Vorschau, in der Liste bei Markdown). Markdown wird vorher zu Klartext.
 - `POST /vorlesen` mit `{text, board}` (ohne Board: Heute und Berichte, dann muss das Modul in einem Board der Person an
-  sein): der Server prüft Modul und Länge (höchstens 40 000 Zeichen) und reicht den Text am Stück an die App Vorlesen;
-  sie teilt an Satzgrenzen und liefert Satz für Satz (`application/x-ndjson`, Zeilen `satz`, `ende`, `fehler`), die
-  Zeilen gehen unverändert durch. Fehler vor dem ersten Satz als HTTP-Ablehnung, danach als Zeile `fehler`.
+  sein): der Server prüft Modul und Länge (höchstens 40 000 Zeichen); der Baustein teilt an Satzgrenzen in Teile bis
+  7500 Zeichen (die Vertonung nimmt je Aufruf 8000) und reicht den Strom Satz für Satz weiter (`application/x-ndjson`,
+  Zeilen `satz`, `ende`, `fehler`, die Sätze über alle Teile durchgezählt). Fehler vor dem ersten Satz als HTTP-Ablehnung, danach als Zeile `fehler`.
 - Gespielt wird mit dem Vorleser des Appkerns (Satz für Satz lückenlos, im Tippen gestartet, ein zweites Tippen hält an,
   immer nur ein Ton). Ohne eingetragene Adresse zeigt die Oberfläche keine Knöpfe zum Vorlesen.
 - Nachtrag vom 30.10.2026 (HELF-34, Nutzer: "Alle Kommentare vorlesbar machen ... mit leichtem Vorlauf ... bei

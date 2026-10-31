@@ -121,7 +121,7 @@ Dabei gilt:
 Der Reiter **App und Verbindungen** gilt nicht nur für dich, sondern für die ganze Pinnwand und alle, die sie nutzen.
 Die Einstellungen stehen in Gruppen:
 
-- **Verbindungen**: Adressen und Schlüssel der Kellerwolke, der Leitstelle, der Transkription und der App Vorlesen (siehe
+- **Verbindungen**: Adressen und Schlüssel der Kellerwolke, der Leitstelle, der Transkription und der Vertonung samt Vorlesestimme (siehe
   [Verbindungen zu anderen Apps](hilfe:module/verbindungen)). Wo das System Adressen kennt, wählst du sie aus der Liste;
   **Eigener Wert ...** öffnet ein Textfeld.
 - **KI an der Karte**: das Modell, mit dem die Leitstelle Vorschläge macht (siehe [KI an der Karte](hilfe:ki)).

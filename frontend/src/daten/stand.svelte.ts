@@ -53,7 +53,7 @@ export interface Zustand {
   kiBereit: boolean;
   /** wo die Transkription liegt (leer: nicht eingerichtet, keine Transkripte und keine Spracheingabe) */
   transkriptionAdresse: string;
-  /** wo die App Vorlesen liegt (leer: nicht eingerichtet, kein Vorlesen) */
+  /** wo die Vertonung zum Vorlesen liegt (leer: nicht eingerichtet, kein Vorlesen) */
   vorlesenAdresse: string;
   /** du bist Besitzer der App: du kannst alle Konten zurücksetzen und löschen */
   appBesitzer: boolean;

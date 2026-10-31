@@ -108,7 +108,7 @@ Karten der Serientage legt die Pinnwand jeden Tag selbst an; wie Serien entstehe
 [Serien und Termine](hilfe:serien).
 
 ## Tagesplan vorlesen {#vorlesen}
-Hat eines deiner Boards das Modul Vorlesen an und ist die App Vorlesen angebunden, steht im Kopf der Knopf
+Hat eines deiner Boards das Modul Vorlesen an und ist die Vertonung angebunden, steht im Kopf der Knopf
 **Vorlesen**. Er liest deinen Tagesplan vor:
 
 1. den Tag mit Wochentag und Datum,

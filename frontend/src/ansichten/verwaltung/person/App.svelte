@@ -1,6 +1,6 @@
 <script lang="ts">
   // App und Verbindungen: die Einstellungen der ganzen Pinnwand (für alle, die sie nutzen), aus dem Gerüst des Appkerns:
-  // Verbindungen zu Kellerwolke, Leitstelle, Transkription und der App Vorlesen, KI an der Karte, Zugang, Sicherung.
+  // Verbindungen zu Kellerwolke, Leitstelle, Transkription und Vertonung (mit der Vorlesestimme), KI an der Karte, Zugang, Sicherung.
   // Je Gruppe ein Bereich mit Hilfepunkt; geänderte Werte stehen im Entwurf, bis die Leiste unten sie speichert.
   import { EinstellungsZeile, einstellungen, einstellungenLaden, einstellungenSpeichern, einstellungenVerwerfen,
            Hilfepunkt } from "appkern-oberflaeche";

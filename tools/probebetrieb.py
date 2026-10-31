@@ -1,6 +1,6 @@
 """Probebetrieb: das Backend mit der nachgestellten Kellerwolke und Leitstelle der Tests (backend/tests/nachgestellt.py),
 eingerichtet und bereit zum Anmelden als anna, bert oder cora (Passwort "geheim"); die Leitstelle antwortet mit
-Beispielen in der verlangten Form, die Transkription hat ein Telefonat, die App Vorlesen spricht stille Sätze (cora
+Beispielen in der verlangten Form, die Transkription hat ein Telefonat, die Vertonung spricht stille Sätze (cora
 darf beide nicht nutzen). Für die Prüfung der echten Oberfläche ohne echte
 Zugangsdaten; die Daten liegen in einem eigenen Ordner.
 

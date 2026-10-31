@@ -3,7 +3,9 @@
   // deiner Boards das Modul eingeschaltet hat), darunter deine Boards nach deinen Ordnern (Ordner ordnen nur, sie tragen
   // keine Rechte), Boards ohne Ordner zuletzt unter "Ohne Ordner". Boards ziehen in einen Ordner, aus ihm heraus und
   // innerhalb um; Ordner werden hier umbenannt, gelöscht und angelegt. Unten Hilfe, Einstellungen und das Ein- und
-  // Ausklappen (gemerkt auf diesem Gerät, Baustein seitenleiste des Appkerns).
+  // Ausklappen (gemerkt auf diesem Gerät, Baustein seitenleiste des Appkerns). Die Ordner mit ihren Boards sind ein
+  // eigenes Rollfeld zwischen den Bereichen oben und den Knöpfen darunter (HELF-82): bei vielen Boards rollt nur die
+  // Liste, "Board anlegen", "Ordner anlegen" und der Fuß bleiben stehen, nichts schiebt sich übereinander.
   import { hilfe, Hilfepunkt, seitenleiste, seitenleisteUmschalten } from "appkern-oberflaeche";
   import { dndzone, TRIGGERS, type DndEvent } from "svelte-dnd-action";
   import { boardGruppen, modulIrgendwo, ungelesen } from "../daten/abfragen";
@@ -101,6 +103,7 @@
     {#if id === "hinweise" && zahl}<span class="zaehler pille gefahr">{zahl}</span>{/if}</a>
 {/each}
 <div class="etikett pw-boards-etikett">Boards<Hilfepunkt thema="uebersicht" abschnitt="ordner" titel="Hilfe zu Ordnern und Boards" /></div>
+<div class="pw-boardliste" aria-label="Deine Boards nach Ordnern">
 {#each ordner as o (o.id)}
   <div class="pw-ordner" class:bearbeiten={bearbeiten === o.id}>
     <i class="fa-solid fa-folder"></i>
@@ -129,6 +132,7 @@
   <div class="pw-ordner"><i class="fa-regular fa-folder"></i><span class="pw-ordner-name">Ohne Ordner</span></div>
   {@render boardsIn("")}
 {/if}
+</div>
 <a class="navi" class:aktiv={aktiv === "board-neu"} href="/boards/neu"><i class="fa-solid fa-plus"></i>Board anlegen</a>
 {#if neuOffen}
   <div class="pw-ordner-neu">

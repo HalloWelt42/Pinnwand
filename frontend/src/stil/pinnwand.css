@@ -165,7 +165,14 @@ button.navi { width: 100%; border: 0; background: none; font: inherit; text-alig
   font-family: var(--schrift-zahl); font-size: var(--marke); font-weight: 700;
   background: color-mix(in srgb, var(--f, var(--stahl)) var(--toenung), transparent); color: var(--f, var(--stahl));
 }
-.pw-seite-fuss { margin-top: auto; padding-top: var(--a3); display: flex; flex-direction: column; gap: 2px; }
+/* Seitenleiste (HELF-82): die Ordner mit ihren Boards sind ein eigenes Rollfeld, das den Platz zwischen den Bereichen oben
+   und den Knöpfen unten nimmt; alles andere behält seine Höhe (schrumpfte vorher ein Ordner mit seinen Boards, liefen
+   sie über "Board anlegen"). Ist selbst dafür kein Platz, rollt die ganze Leiste (Leitstand). */
+.pw-schale .seite > * { flex: none; }
+.pw-schale .seite > .pw-boardliste { flex: 1 1 0; min-height: 96px; overflow-y: auto; overscroll-behavior: contain;
+                                     display: flex; flex-direction: column; gap: 2px; }
+.pw-boardliste > * { flex: none; }
+.pw-seite-fuss { padding-top: var(--a3); display: flex; flex-direction: column; gap: 2px; }
 
 /* Die eine Meldung nach jeder Änderung: am Rechner unten rechts über dem Fuß (am Telefon: telefon.css) */
 .pw-meldungen { position: fixed; right: var(--a5); bottom: calc(var(--fuss-hoehe) + var(--a3)); display: flex; flex-direction: column; gap: var(--a2); z-index: 30; max-width: min(460px, calc(100% - 2 * var(--a5))); }

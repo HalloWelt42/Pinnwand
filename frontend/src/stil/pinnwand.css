@@ -253,6 +253,9 @@ button.navi { width: 100%; border: 0; background: none; font: inherit; text-alig
 .pw-md .pw-md-tabelle { overflow-x: auto; }
 .pw-md table { border-collapse: collapse; font-size: var(--klein); }
 .pw-md :is(th, td) { padding: 4px var(--a2); border: 1px solid var(--rand-stark); text-align: left; vertical-align: top; }
+/* Zellen brechen nur zwischen Wörtern (die Blase eines Kommentars bricht sonst mitten im Wort, HELF-94); ist die Tabelle
+   breiter als der Platz, rollt sie in sich */
+.pw-md :is(th, td) { overflow-wrap: normal; word-break: normal; min-width: 7em; }
 .pw-md th { background: var(--karte-2); font-weight: 600; }
 .pw-md :is(th, td).mitte { text-align: center; }
 .pw-md :is(th, td).rechts { text-align: right; }

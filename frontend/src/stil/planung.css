@@ -23,6 +23,7 @@
 .pw-planung-legende .muster.feiertag { background: var(--pw-planung-feiertag); }
 .pw-planung-legende .muster.abwesend { background: var(--pw-planung-abwesend); }
 .pw-planung-legende .muster.heute { width: 3px; background: var(--akzent-flaeche); }
+.pw-planung-legende .muster.arbeit { width: 8px; height: 12px; align-self: flex-end; background: var(--minze); border-radius: 2px; }
 
 /* Flächen der Planung, aus Marken gemischt (Wochenende, Feiertag, Abwesenheit) */
 :root {
@@ -358,11 +359,13 @@
 }
 .pw-serien-formular .pw-dauerfeld.feld { font-size: var(--gross); font-weight: 500; }
 
-/* Arbeit an einer Karte (HELF-46): je Tag ein Säulchen unten in der Spur, so hoch wie die gebuchte Zeit (ein voller
-   Arbeitstag füllt es), je Person in ihrer Farbe gestapelt, über dem Balken der Daten (schmal, damit er lesbar bleibt) */
-.pw-zeitachse-arbeit { position: absolute; bottom: 2px; z-index: 2; pointer-events: auto; height: calc(4px + 30px * var(--hoehe)); display: flex; flex-direction: column-reverse;
-                       padding: 0 calc(var(--tag) * 0.25); box-sizing: border-box; }
+/* Arbeit an einer Karte (HELF-46, HELF-74): eine eigene Spur unten in der Zeile, unter dem Balken der Daten, nie darüber;
+   je Tag ein Säulchen so breit wie der Tag (mit Luft), so hoch wie die gebuchte Zeit (acht Stunden füllen die Spur), je
+   Person in ihrer Farbe gestapelt. Zeilen mit Arbeit werden dafür höher. */
+.pw-zeitachse-zeile.mit-arbeit { min-height: 54px; }
+.pw-zeitachse-arbeit { position: absolute; bottom: 3px; z-index: 0; height: calc(3px + 12px * var(--hoehe)); display: flex; flex-direction: column-reverse;
+                       padding: 0 3px; box-sizing: border-box; }
 .pw-zeitachse-flaeche.monat .pw-zeitachse-arbeit { padding: 0 1px; }
-.pw-zeitachse-arbeit i { display: block; min-height: 1px; background: var(--f, var(--stahl)); opacity: 0.75; }
+.pw-zeitachse-arbeit i { display: block; min-height: 1px; background: var(--f, var(--stahl)); }
 .pw-zeitachse-arbeit i:first-child { border-radius: 0 0 2px 2px; }
 .pw-zeitachse-arbeit i:last-child { border-radius: 2px 2px 0 0; }

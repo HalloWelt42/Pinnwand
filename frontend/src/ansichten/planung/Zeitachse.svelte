@@ -61,6 +61,10 @@
   const VOLL_S = 8 * 3600;
   const aktivitaet = $derived(aktivitaetDesBoards(board, anfang, ende));
   const datiert = (k: Karte): boolean => !!(k.start || k.faellig);
+  /** Hinweis beim Überfahren eines Säulchens: je Person "Helfer: 1:20 h am Fr 30.10." */
+  function arbeitTitel(k: Karte, a: Aktivitaet): string {
+    return [`${k.schluessel}, gebuchte Arbeit`, ...a.personen.map((x) => `${konto(x.konto).name}: ${dauer(x.sekunden)} h am ${datum(a.tag, true)}`)].join("\n");
+  }
   interface Gruppe {
     id: string; name: string; farbe?: string; konto?: Kennung; zeilen: Zeile[];
     /** Zahl im Kopf und ihre Erklärung */
@@ -232,6 +236,8 @@
         <span><i class="muster feiertag"></i>Feiertag</span>
         {#if gruppierung === "person" && abwSichtbar}<span><i class="muster abwesend"></i>Abwesend</span>{/if}
         <span><i class="muster heute"></i>Heute</span>
+        <span title="Säulchen unten in der Zeile einer Karte: an diesem Tag gebuchte Zeit, je Person in ihrer Farbe; je höher, desto mehr (acht Stunden füllen es). Beim Überfahren: wer, wie lange, an welchem Tag">
+          <i class="muster arbeit"></i>Gebuchte Arbeit</span>
       </div>
     </div>
 
@@ -287,7 +293,7 @@
               {@const ve = Math.min(tage.length - 1, l.e)}
               {@const px = (ve - vs + 1) * breite - 4}
               {@const text = ueberfaellig && !z.k.start ? `überfällig, ${balkenText(z, l)}` : balkenText(z, l)}
-              <div class="pw-zeitachse-zeile">
+              <div class="pw-zeitachse-zeile" class:mit-arbeit={z.akt.length > 0}>
                 <a class="name" href={kartenPfad(board, z.k)} data-farbe={farbeDerSpalte(board, z.k)} title="{z.k.schluessel} {z.k.titel}: öffnen">
                   <span class="pw-farbpunkt"></span><span class="pw-schluessel">{z.k.schluessel}</span><span class="titel">{z.k.titel}</span>
                   {#if z.mit.length}<span class="pw-personen" title="Auch zuständig: {z.mit.map((p) => konto(p).name).join(', ')}">{#each z.mit as p (p)}<Person id={p} />{/each}</span>{/if}
@@ -296,7 +302,7 @@
                   {#each g.abwesend as a (a.s)}<span class="abwesend leise" style="left: {a.s * breite}px; width: {(a.e - a.s + 1) * breite}px"></span>{/each}
                   {#each z.akt as a (a.tag)}
                     <span class="pw-zeitachse-arbeit" style="left: {pos(a.tag) * breite}px; width: {breite}px; --hoehe: {Math.min(1, a.sekunden / VOLL_S)}"
-                          title="{z.k.schluessel}, {datum(a.tag, true)}: {dauer(a.sekunden)} gebucht ({a.personen.map((x) => `${konto(x.konto).name} ${dauer(x.sekunden)}`).join(', ')})">
+                          title={arbeitTitel(z.k, a)}>
                       {#each a.personen as x (x.konto)}<i data-farbe={konto(x.konto).farbe} style="flex: {x.sekunden}"></i>{/each}
                     </span>
                   {/each}

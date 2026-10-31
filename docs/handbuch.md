@@ -14,7 +14,7 @@ schluessel_orte:
   - "Pi: {{wurzel}}/zertifikate/, Blattzertifikat mit Schlüssel aus der Hausstelle"
   - "Mac: backend/.env.test im Klon, Modus 0600, Testzugang zur Kellerwolke der Entwicklung (nur für den Verbundtest)"
 einrichten: einrichten.sh
-stand: 8a7a279
+stand: 0789512
 ---
 
 # Pinnwand

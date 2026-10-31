@@ -17,6 +17,8 @@
   import Person from "../../board/Person.svelte";
   import Kommentarbilder from "../../teile/Kommentarbilder.svelte";
   import KommentarAendern from "../../teile/KommentarAendern.svelte";
+  import KommentarKopieren from "../../teile/KommentarKopieren.svelte";
+  import { klickBearbeitet } from "../../teile/klickBearbeitet";
   import MarkdownLeiste from "../../teile/MarkdownLeiste.svelte";
   import { boardPfad, gehe, wert } from "../../weg.svelte";
   import TelefonSchale from "./TelefonSchale.svelte";
@@ -209,12 +211,15 @@
           <Person id={c.von} />
           <div class="blase"><div class="kopfzeile"><b>{konto(c.von).name}</b><span>{wann(c.zeit)}</span>
             {#if c.bearbeitet}<span>bearbeitet {wann(c.bearbeitet)}</span>{/if}
-            {#if c.von === ICH && darf(b, "kommentieren") && bearbeite !== c.id}
-              <button class="knopf ohne symbol pw-tel-kommentar-bearbeiten" aria-label="Kommentar bearbeiten" onclick={() => (bearbeite = c.id)}>
-                <i class="fa-solid fa-pen"></i></button>
-            {/if}</div>
+            <span class="pw-tel-kommentar-knoepfe"><KommentarKopieren text={c.text} />
+              {#if c.von === ICH && darf(b, "kommentieren") && bearbeite !== c.id}
+                <button class="knopf ohne symbol" aria-label="Kommentar bearbeiten" onclick={() => (bearbeite = c.id)}>
+                  <i class="fa-solid fa-pen"></i></button>
+              {/if}</span></div>
             {#if bearbeite === c.id}
               <KommentarAendern karte={k.id} kommentar={c} optionen={md} gross fertig={() => (bearbeite = null)} />
+            {:else if c.von === ICH && darf(b, "kommentieren")}
+              <div class="pw-md" use:klickBearbeitet={() => (bearbeite = c.id)}>{@html markdownHtml(c.text, md)}</div>
             {:else}
               <div class="pw-md">{@html markdownHtml(c.text, md)}</div>
             {/if}

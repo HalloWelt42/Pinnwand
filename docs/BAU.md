@@ -418,6 +418,11 @@ Rechner und am Telefon über `teile/KommentarAendern.svelte` mit der Schreibhilf
 HELF-92). Das Werkzeug des Helfers (`ticket.py kommentar-bearbeiten KEY NR "Text"` und der Befehl zum Löschen, NR wie
 "zeigen" sie nennt) nutzt denselben Weg und ergänzt bei Tabellen Leerzeile und Trennzeile.
 
+Nachtrag vom 31.10.2026 (HELF-98, Nutzer: "Kopierknöpfe für die Kommentarfelder ... und das Ganze per Klick
+editierbar"): jeder Kommentar hat Kopieren (`teile/KommentarKopieren.svelte`, Rohtext in die Zwischenablage über
+`teile/zwischenablage.ts`, auch über http im Heimnetz); ein einfacher Klick ohne Auswahl in den Text eines eigenen
+Kommentars öffnet das Bearbeiten (`teile/klickBearbeitet.ts`: Verweise, Knöpfe und Doppelklick behalten ihren Klick).
+
 ### Hinweise bündeln
 
 Nachtrag vom 30.10.2026 (HELF-54, Nutzer: "Alarmhinweise mit Button alle als gelesen bestätigen können, sonst flutet

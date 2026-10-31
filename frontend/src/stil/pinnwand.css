@@ -308,11 +308,16 @@ button.navi { width: 100%; border: 0; background: none; font: inherit; text-alig
 .pw-mdleiste-ansicht { padding: var(--a2) var(--a3); border-radius: var(--r2); background: var(--karte-2); overflow-wrap: anywhere; }
 
 /* Eigenen Kommentar bearbeiten (HELF-94): der Stift in der Kopfzeile, das Feld an Stelle des Textes, die alte Fassung im Verlauf */
-.pw-kommentar .blase .kopf-zeile .pw-kommentar-bearbeiten { margin-left: auto; align-self: center; }
-.pw-kommentar .blase .kopf-zeile .pw-kommentar-bearbeiten + .pw-kommentar-vorlesen { margin-left: 0; }
-.pw-tel-kommentar .blase:has(> .kopfzeile .pw-tel-kommentar-bearbeiten) { position: relative; }
-.pw-tel-kommentar .kopfzeile:has(.pw-tel-kommentar-bearbeiten) { padding-right: 44px; }
-.pw-tel-kommentar .kopfzeile .pw-tel-kommentar-bearbeiten { position: absolute; top: 0; right: 0; }
+/* Kopieren (HELF-98) steht vorn in der Knopfgruppe rechts, Bearbeiten und Vorlesen folgen */
+.pw-kommentar .blase .kopf-zeile .pw-kommentar-kopieren { margin-left: auto; align-self: center; }
+.pw-kommentar .blase .kopf-zeile .pw-kommentar-bearbeiten { align-self: center; }
+.pw-kommentar .blase .kopf-zeile .pw-kommentar-kopieren ~ .pw-kommentar-vorlesen { margin-left: 0; }
+.pw-kommentar-klickbar { cursor: text; }
+/* am Telefon die Knöpfe (44 px) oben rechts in der Blase, die Kopfzeile macht ihnen Platz */
+.pw-tel-kommentar .blase { position: relative; }
+.pw-tel-kommentar .kopfzeile { padding-right: 44px; min-height: 44px; align-content: center; }
+.pw-tel-kommentar .kopfzeile:has(.pw-tel-kommentar-knoepfe > :nth-child(2)) { padding-right: 88px; }
+.pw-tel-kommentar .pw-tel-kommentar-knoepfe { position: absolute; top: 0; right: 0; display: flex; }
 .pw-kommentar-aendern { display: flex; flex-direction: column; gap: var(--a2); margin-top: var(--a2); }
 .pw-kommentar-aendern-knoepfe { display: flex; justify-content: flex-end; gap: var(--a2); }
 .pw-kommentar-aendern-knoepfe .pw-kommentar-loeschen { margin-right: auto; }

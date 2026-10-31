@@ -16,9 +16,10 @@ async def bearbeiten(pw: Pinnwand, wer: str, k: dict, felder: dict, **mehr):
     return await pw.post(wer, f"/karten/{k['id']}/bearbeiten", {"felder": felder, **mehr})
 
 
-async def test_eigenen_kommentar_bearbeiten(pw: Pinnwand):
-    """HELF-94: wer kommentiert hat, ändert seinen Kommentar; die alte Fassung steht im Verlauf, der Kommentar trägt die
-    Zeit der Bearbeitung, Bilder bleiben. Fremde Kommentare lehnt der Server ab, auch für Besitzer."""
+async def test_eigenen_kommentar_bearbeiten_und_loeschen(pw: Pinnwand):
+    """HELF-94: wer kommentiert hat, ändert oder löscht seinen Kommentar über dessen Kennung; die alte Fassung und der
+    gelöschte Text stehen im Verlauf, Bilder bleiben als Anhang, Rückgängig holt Gelöschtes zurück. Fremde Kommentare
+    lehnt der Server ab, auch für Besitzer."""
     b = await pw.board("anna", einladungen=[{"kellerwolke": "bert", "rolle": "leser"}, {"kellerwolke": "cora"}])
     for wer in ("bert", "cora"):
         await pw.anmelden(wer)
@@ -26,27 +27,40 @@ async def test_eigenen_kommentar_bearbeiten(pw: Pinnwand):
     k = await pw.karte("anna", b, "Fenster")
     await pw.post("bert", f"/karten/{k['id']}/kommentieren", {"text": "| A | B |\n| 1 | 2 |"})
     await pw.post("anna", f"/karten/{k['id']}/kommentieren", {"text": "Danke"})
-    pfad = f"/karten/{k['id']}/kommentare/1/bearbeiten"
+    erster, zweiter = [c["id"] for c in (await karte(pw, "anna", "HAUS-1"))["kommentare"]]
+    assert erster.startswith("m-") and erster != zweiter
+    pfad = f"/karten/{k['id']}/kommentare/{erster}"
 
-    r = await pw.post("bert", pfad, {"text": "Tabelle:\n\n| A | B |\n|---|---|\n| 1 | 2 |"})
+    r = await pw.post("bert", pfad + "/bearbeiten", {"text": "Tabelle:\n\n| A | B |\n|---|---|\n| 1 | 2 |"})
     assert (r.status_code, r.json()["meldung"]) == (200, "Kommentar an HAUS-1 bearbeitet")
     c = await karte(pw, "anna", "HAUS-1")
-    erster = c["kommentare"][0]
-    assert erster["text"] == "Tabelle:\n\n| A | B |\n|---|---|\n| 1 | 2 |" and erster["bearbeitet"] == "2026-10-27T10:00:00"
-    assert erster["zeit"] == "2026-10-27T10:00:00" and c["kommentare"][1].get("bearbeitet") is None
+    eins = c["kommentare"][0]
+    assert eins["text"] == "Tabelle:\n\n| A | B |\n|---|---|\n| 1 | 2 |" and eins["bearbeitet"] == "2026-10-27T10:00:00"
+    assert eins["id"] == erster and c["kommentare"][1].get("bearbeitet") is None
     e = c["verlauf"][-1]
     assert (e["von"], e["text"], e["vorher"]) == ("2", "hat einen Kommentar bearbeitet", "| A | B |\n| 1 | 2 |")
 
     # fremd, unbekannt, leer: abgelehnt
-    for wer, nr, text, status, meldung in [
-            ("anna", 1, "Anders", 403, "Nur eigene Kommentare lassen sich bearbeiten"),
-            ("cora", 2, "Anders", 403, "Nur eigene Kommentare lassen sich bearbeiten"),
-            ("bert", 3, "Anders", 404, "HAUS-1 hat keinen Kommentar 3"),
-            ("bert", 0, "Anders", 404, "HAUS-1 hat keinen Kommentar 0"),
-            ("bert", 1, "  ", 400, "Ein Kommentar braucht Text")]:
-        r = await pw.post(wer, f"/karten/{k['id']}/kommentare/{nr}/bearbeiten", {"text": text})
+    for wer, kid, was, daten, status, meldung in [
+            ("anna", erster, "bearbeiten", {"text": "Anders"}, 403, "Nur eigene Kommentare lassen sich bearbeiten oder löschen"),
+            ("cora", zweiter, "bearbeiten", {"text": "Anders"}, 403, "Nur eigene Kommentare lassen sich bearbeiten oder löschen"),
+            ("anna", erster, "loeschen", None, 403, "Nur eigene Kommentare lassen sich bearbeiten oder löschen"),
+            ("bert", "m-gibtesnicht", "bearbeiten", {"text": "Anders"}, 404, "Diesen Kommentar gibt es an HAUS-1 nicht (mehr)"),
+            ("bert", erster, "bearbeiten", {"text": "  "}, 400, "Ein Kommentar braucht Text")]:
+        r = await pw.post(wer, f"/karten/{k['id']}/kommentare/{kid}/{was}", daten)
         assert (r.status_code, r.json().get("detail")) == (status, meldung)
-    assert (await karte(pw, "anna", "HAUS-1"))["kommentare"][1]["text"] == "Danke"
+
+    # löschen: der Text steht im Verlauf, der andere Kommentar bleibt mit seiner Kennung; Rückgängig holt ihn zurück
+    r = await pw.post("bert", pfad + "/loeschen")
+    assert (r.status_code, r.json()["meldung"]) == (200, "Kommentar an HAUS-1 gelöscht")
+    c = await karte(pw, "anna", "HAUS-1")
+    assert [x["id"] for x in c["kommentare"]] == [zweiter]
+    e = c["verlauf"][-1]
+    assert (e["von"], e["text"], e["vorher"]) == ("2", "hat einen Kommentar gelöscht", "Tabelle:\n\n| A | B |\n|---|---|\n| 1 | 2 |")
+    assert (await pw.post("bert", pfad + "/loeschen")).status_code == 404
+    r = await pw.post("bert", f"/rueckgaengig/{r.json()['rueckgaengig']}")
+    assert r.status_code == 200, r.text
+    assert [x["id"] for x in (await karte(pw, "anna", "HAUS-1"))["kommentare"]] == [erster, zweiter]
 
 
 async def test_felder_und_verlauf(pw: Pinnwand):
@@ -153,3 +167,27 @@ async def test_sammelaktionen(pw: Pinnwand):
     fremd = await pw.karte("anna", andere, "Bohrer")
     r = await pw.post("anna", "/karten/sammel/prioritaet", {"ids": [ids[0], fremd["id"]], "prioritaet": "hoch"})
     assert (r.status_code, r.json()["detail"]) == (400, "Sammelaktionen gehen nur mit Karten eines Boards")
+
+
+def test_kennungen_der_kommentare_nachtragen(tmp_path):
+    """HELF-94: Kommentare von früher bekommen beim Start eine Kennung (an Karten und im Papierkorb); vorhandene
+    bleiben, alte Rückwege gelten danach nicht mehr; ein zweiter Lauf ändert nichts."""
+    import json
+    import sqlite3
+
+    from app.anwendung import kommentarkennung
+
+    v = sqlite3.connect(tmp_path / "p.db")
+    v.row_factory = sqlite3.Row
+    v.executescript("CREATE TABLE karten (id TEXT, fassung INTEGER, daten TEXT); CREATE TABLE papierkorb (id TEXT, fassung INTEGER, daten TEXT);"
+                    "CREATE TABLE journal (id TEXT, rueckgaengig INTEGER); INSERT INTO journal VALUES ('j', 1);")
+    alt = {"von": "1", "zeit": "2026-10-30T10:00:00", "text": "Alt"}
+    v.execute("INSERT INTO karten VALUES ('c-1', 1, ?)", (json.dumps({"kommentare": [alt, {**alt, "id": "m-da"}]}),))
+    v.execute("INSERT INTO papierkorb VALUES ('p-1', 1, ?)", (json.dumps({"karten": [{"kommentare": [alt]}]}),))
+    assert kommentarkennung.nachtragen(v) == 2
+    karte = json.loads(v.execute("SELECT daten FROM karten").fetchone()[0])
+    ids = [c["id"] for c in karte["kommentare"]]
+    assert ids[0].startswith("m-") and ids[1] == "m-da"
+    assert json.loads(v.execute("SELECT daten FROM papierkorb").fetchone()[0])["karten"][0]["kommentare"][0]["id"].startswith("m-")
+    assert v.execute("SELECT rueckgaengig FROM journal").fetchone()[0] == 0
+    assert kommentarkennung.nachtragen(v) == 0

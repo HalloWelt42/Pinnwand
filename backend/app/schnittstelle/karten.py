@@ -159,8 +159,12 @@ def router(z: Zugriff) -> APIRouter:
     async def kommentieren(karte_id: Kennung, e: Kommentar, konto: Konto = Depends(ich)) -> Antwort:
         return await tun(d.inhalte.kommentieren(konto, karte_id, e.text, e.bilder))
 
-    @r.post("/karten/{karte_id}/kommentare/{nr}/bearbeiten", response_model=Antwort)
-    async def kommentar_bearbeiten(karte_id: Kennung, nr: int, e: KommentarText, konto: Konto = Depends(ich)) -> Antwort:
-        return await tun(d.inhalte.kommentar_bearbeiten(konto, karte_id, nr, e.text))
+    @r.post("/karten/{karte_id}/kommentare/{kommentar_id}/bearbeiten", response_model=Antwort)
+    async def kommentar_bearbeiten(karte_id: Kennung, kommentar_id: Kennung, e: KommentarText, konto: Konto = Depends(ich)) -> Antwort:
+        return await tun(d.inhalte.kommentar_bearbeiten(konto, karte_id, kommentar_id, e.text))
+
+    @r.post("/karten/{karte_id}/kommentare/{kommentar_id}/loeschen", response_model=Antwort)
+    async def kommentar_loeschen(karte_id: Kennung, kommentar_id: Kennung, konto: Konto = Depends(ich)) -> Antwort:
+        return await tun(d.inhalte.kommentar_loeschen(konto, karte_id, kommentar_id))
 
     return r

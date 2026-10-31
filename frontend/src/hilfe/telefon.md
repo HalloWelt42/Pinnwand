@@ -102,7 +102,7 @@ Ein Tippen auf eine Karte öffnet sie. Von oben nach unten:
   Kommentar. Die Knöpfe über dem Feld setzen fett, kursiv, Überschrift, Liste, Häkchen, Zitat, Code und Verweis;
   **Vorschau** zeigt den Kommentar so, wie er nach dem Senden erscheint.
   Den Stift an einem eigenen Kommentar tippen, um ihn zu ändern; **Speichern** übernimmt, danach steht "bearbeitet"
-  mit der Zeit daran.
+  mit der Zeit daran. **Löschen** im selben Feld nimmt ihn weg, Rückgängig in der Meldung holt ihn zurück.
 
 **Zurück** führt dorthin, woher du kamst: zu Heute, zu den Hinweisen oder zum Board.
 

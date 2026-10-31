@@ -4,6 +4,8 @@ gerechnet."""
 
 from __future__ import annotations
 
+import secrets
+
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -144,6 +146,8 @@ class Punkt(Modell):
 
 
 class Kommentar(Modell):
+    #: feste Kennung (HELF-94): Bearbeiten und Löschen treffen den Kommentar über sie, nicht über seine Stelle
+    id: Kennung = Field(default_factory=lambda: f"m-{secrets.token_hex(8)}")
     von: Kennung
     zeit: str
     text: str

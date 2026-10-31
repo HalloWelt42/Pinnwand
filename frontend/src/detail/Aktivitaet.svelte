@@ -23,8 +23,8 @@
   let reiter = $state<"kommentare" | "verlauf">("kommentare");
   let text = $state("");
   let eingabe = $state<HTMLTextAreaElement>();
-  /** Stelle (ab 0) des eigenen Kommentars, der gerade bearbeitet wird (HELF-94) */
-  let bearbeite = $state<number | null>(null);
+  /** Kennung des eigenen Kommentars, der gerade bearbeitet wird (HELF-94) */
+  let bearbeite = $state<string | null>(null);
   /** neueste zuerst; was im selben Augenblick geschah, in der Folge, in der es geschah, von hinten */
   const verlauf = $derived([...karte.verlauf].reverse().sort((a, b) => b.zeit.localeCompare(a.zeit)));
   /** Kommentare neueste zuerst, mit ihrer Stelle an der Karte (die Kennung des Vorlesens hängt daran) */
@@ -70,13 +70,13 @@
         </div>
       </div>
     {/if}
-    {#each kommentare as { c, i } (i)}
+    {#each kommentare as { c, i } (c.id)}
       <div class="pw-kommentar"><Person id={c.von} />
         <div class="blase"><div class="kopf-zeile"><b>{konto(c.von).name}</b><span>{wann(c.zeit)}</span>
           {#if c.bearbeitet}<span title="Zuletzt bearbeitet; die alte Fassung steht im Verlauf">bearbeitet {wann(c.bearbeitet)}</span>{/if}
-          {#if c.von === ICH && darf(board, "kommentieren") && bearbeite !== i}
+          {#if c.von === ICH && darf(board, "kommentieren") && bearbeite !== c.id}
             <button class="knopf ohne symbol klein pw-kommentar-bearbeiten" title="Kommentar bearbeiten" aria-label="Kommentar bearbeiten"
-                    onclick={() => (bearbeite = i)}><i class="fa-solid fa-pen"></i></button>
+                    onclick={() => (bearbeite = c.id)}><i class="fa-solid fa-pen"></i></button>
           {/if}
           {#if vorlesenDa(board)}
             {@const kennung = `kommentar-${karte.id}-${i}`}
@@ -84,8 +84,8 @@
                     aria-pressed={liest(kennung)} onclick={() => vorlesen(kennung, `${konto(c.von).name} schrieb: ${markdownText(c.text)}`, board.id)}>
               <i class="fa-solid {liest(kennung) ? 'fa-stop' : 'fa-volume-high'}"></i></button>
           {/if}</div>
-          {#if bearbeite === i}
-            <KommentarAendern karte={karte.id} nr={i + 1} text={c.text} {optionen} enterSpeichert fertig={() => (bearbeite = null)} />
+          {#if bearbeite === c.id}
+            <KommentarAendern karte={karte.id} kommentar={c} {optionen} enterSpeichert fertig={() => (bearbeite = null)} />
           {:else}
             <div class="pw-md">{@html markdownHtml(c.text, optionen)}</div>
           {/if}

@@ -401,16 +401,22 @@ hochgeladener Bild-Anhänge der Karte, höchstens 10; verknüpfte aus einer frem
 hält nur die Namen, die Datei bleibt eine Wahrheit am Anhang. Die Oberfläche zeigt sie klein im Kommentar und groß über
 der Seite (`teile/Kommentarbilder.svelte`), über die Inhaltsadresse, am Rechner und am Telefon.
 
-### Kommentare bearbeiten
+### Kommentare bearbeiten und löschen
 
 Nachtrag vom 31.10.2026 (HELF-94, Nutzer: "Andere Kommentare betrifft das aber auch, denn du bist derjenige, der
-kommentiert"). Jede Person ändert ihre eigenen Kommentare: `POST /karten/{id}/kommentare/{nr}/bearbeiten` mit `{text}`;
-`nr` zählt die Kommentare der Karte ab 1 in der Reihenfolge ihres Entstehens (sie werden nur angehängt, die Nummer
-bleibt). Der Server erzwingt: nur wer ihn schrieb (403), mit dem Recht Kommentieren, Text wie beim Kommentieren; die
-Bilder bleiben. `Kommentar.bearbeitet` trägt die Zeit, der Verlauf eine Zeile "hat einen Kommentar bearbeitet" mit
-`Ereignis.vorher` (die alte Fassung). Hinweise nur an neu Erwähnte. Oberfläche am Rechner und am Telefon über
-`teile/KommentarAendern.svelte` mit der Schreibhilfe (`teile/MarkdownLeiste.svelte`, HELF-92). Das Werkzeug des Helfers
-(`ticket.py kommentar-bearbeiten KEY NR "Text"`) nutzt denselben Weg und ergänzt bei Tabellen Leerzeile und Trennzeile.
+kommentiert"; Löschen nach seiner Entscheidung am Ticket). Jede Person ändert oder löscht ihre eigenen Kommentare:
+`POST /karten/{id}/kommentare/{kommentar}/bearbeiten` mit `{text}`, zum Löschen derselbe Weg mit der Endung fürs
+Löschen (beide in `schnittstelle/karten.py`).
+Getroffen wird der Kommentar über seine feste Kennung `Kommentar.id` (`m-...`), nicht über seine Stelle, denn nach dem
+Löschen rücken die folgenden nach. Kommentare von früher bekommen ihre Kennung beim Start
+(`anwendung/kommentarkennung.py`, auch im Papierkorb; Rückwege aus der Zeit davor gelten danach nicht mehr). Der Server
+erzwingt: nur wer ihn schrieb (403), mit dem Recht Kommentieren, Text wie beim Kommentieren. Bearbeiten: die Bilder
+bleiben, `Kommentar.bearbeitet` trägt die Zeit, der Verlauf "hat einen Kommentar bearbeitet" mit `Ereignis.vorher`
+(die alte Fassung), Hinweise nur an neu Erwähnte. Löschen: der Verlauf "hat einen Kommentar gelöscht" mit dem Text in
+`Ereignis.vorher`, die Bilder bleiben als Anhänge der Karte, Rückgängig holt den Kommentar zurück. Oberfläche am
+Rechner und am Telefon über `teile/KommentarAendern.svelte` mit der Schreibhilfe (`teile/MarkdownLeiste.svelte`,
+HELF-92). Das Werkzeug des Helfers (`ticket.py kommentar-bearbeiten KEY NR "Text"` und der Befehl zum Löschen, NR wie
+"zeigen" sie nennt) nutzt denselben Weg und ergänzt bei Tabellen Leerzeile und Trennzeile.
 
 ### Hinweise bündeln
 

@@ -170,6 +170,8 @@ export interface Kartenentwurf {
 }
 
 export interface Kommentar {
+  /** feste Kennung (HELF-94): Bearbeiten und Löschen treffen den Kommentar über sie */
+  id: Kennung;
   von: Kennung;
   zeit: string;
   text: string;

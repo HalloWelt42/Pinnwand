@@ -137,10 +137,15 @@ export async function kommentieren(id: Kennung, text: string): Promise<boolean> 
   return (await aendern(() => senden(`/karten/${id}/kommentieren`, { text }))) !== null;
 }
 
-/** eigenen Kommentar ändern (HELF-94); `nr` zählt die Kommentare der Karte ab 1 in der Reihenfolge ihres Entstehens */
-export async function kommentarBearbeiten(id: Kennung, nr: number, text: string): Promise<boolean> {
+/** eigenen Kommentar ändern (HELF-94); die alte Fassung steht danach im Verlauf */
+export async function kommentarBearbeiten(id: Kennung, kommentar: Kennung, text: string): Promise<boolean> {
   if (!text.trim()) return false;
-  return (await aendern(() => senden(`/karten/${id}/kommentare/${nr}/bearbeiten`, { text }))) !== null;
+  return (await aendern(() => senden(`/karten/${id}/kommentare/${kommentar}/bearbeiten`, { text }))) !== null;
+}
+
+/** eigenen Kommentar löschen (HELF-94); der Text steht danach im Verlauf, die Meldung bietet Rückgängig */
+export async function kommentarLoeschen(id: Kennung, kommentar: Kennung): Promise<boolean> {
+  return (await aendern(() => senden(`/karten/${id}/kommentare/${kommentar}/loeschen`, {}))) !== null;
 }
 
 export function sammelZuweisen(ids: Kennung[], kontoId: Kennung): void {

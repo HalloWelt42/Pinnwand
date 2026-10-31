@@ -227,31 +227,37 @@ class Inhalte:
 
         return await self.a.aendern(konto, arbeit)
 
-    async def kommentar_bearbeiten(self, konto: Konto, karte_id: Kennung, nr: int, text: str) -> Antwort:
-        """Eigenen Kommentar ändern (HELF-94). `nr` zählt die Kommentare der Karte in der Reihenfolge ihres Entstehens ab 1
-        (sie werden nur angehängt, die Nummer bleibt). Nur wer ihn schrieb, darf ihn ändern; die alte Fassung steht im
-        Verlauf, der Kommentar trägt die Zeit der Bearbeitung. Hinweise gehen nur an neu Erwähnte."""
+    async def kommentar_bearbeiten(self, konto: Konto, karte_id: Kennung, kommentar_id: Kennung, text: str) -> Antwort:
+        """Eigenen Kommentar ändern (HELF-94): nur wer ihn schrieb; die alte Fassung steht im Verlauf, der Kommentar trägt
+        die Zeit der Bearbeitung, die Bilder bleiben. Hinweise gehen nur an neu Erwähnte."""
         t = text.strip()
 
         def arbeit(k: Kontext) -> str:
-            c = karte_lesen(k, karte_id)
-            b = k.board_mit_recht(c.board, "kommentieren")
-            if not 1 <= nr <= len(c.kommentare):
-                raise Abgelehnt(f"{c.schluessel} hat keinen Kommentar {nr}", 404)
-            alt = c.kommentare[nr - 1]
-            if alt.von != konto.id:
-                raise Abgelehnt("Nur eigene Kommentare lassen sich bearbeiten", 403)
+            c, b, nr, alt = _eigener_kommentar(k, konto, karte_id, kommentar_id)
             if not t:
                 raise Abgelehnt("Ein Kommentar braucht Text")
             if len(t) > KOMMENTAR_LAENGE:
                 raise Abgelehnt(f"Ein Kommentar hat höchstens {KOMMENTAR_LAENGE} Zeichen")
             if t == alt.text:
                 return f"Kommentar an {c.schluessel} unverändert"
-            c.kommentare[nr - 1] = alt.model_copy(update={"text": t, "bearbeitet": k.jetzt})
+            c.kommentare[nr] = alt.model_copy(update={"text": t, "bearbeitet": k.jetzt})
             vermerken(k, c, "hat einen Kommentar bearbeitet", vorher=alt.text)
             speichern(k, c)
             hinweise.erwaehnt(k, b, c, sorted(hinweise.erwaehnte(k, b, t) - hinweise.erwaehnte(k, b, alt.text)))
             return f"Kommentar an {c.schluessel} bearbeitet"
+
+        return await self.a.aendern(konto, arbeit)
+
+    async def kommentar_loeschen(self, konto: Konto, karte_id: Kennung, kommentar_id: Kennung) -> Antwort:
+        """Eigenen Kommentar löschen (HELF-94): nur wer ihn schrieb; sein Text steht danach im Verlauf, seine Bilder
+        bleiben als Anhänge an der Karte. Rückgängig holt ihn zurück."""
+
+        def arbeit(k: Kontext) -> str:
+            c, _, nr, alt = _eigener_kommentar(k, konto, karte_id, kommentar_id)
+            del c.kommentare[nr]
+            vermerken(k, c, "hat einen Kommentar gelöscht", vorher=alt.text)
+            speichern(k, c)
+            return f"Kommentar an {c.schluessel} gelöscht"
 
         return await self.a.aendern(konto, arbeit)
 
@@ -307,3 +313,15 @@ def _normal(w: Any) -> Any:
     """Zum Vergleich: leer und fehlend sind gleich, Modelle als Daten."""
     w = _roh(w)
     return None if w in ("", [], {}) else w
+
+
+def _eigener_kommentar(k: Kontext, konto: Konto, karte_id: Kennung, kommentar_id: Kennung) -> tuple[Karte, Board, int, Kommentar]:
+    """Karte, Board, Stelle und Kommentar, den die handelnde Person geschrieben hat (HELF-94); fremde lehnt es ab."""
+    c = karte_lesen(k, karte_id)
+    b = k.board_mit_recht(c.board, "kommentieren")
+    nr = next((i for i, x in enumerate(c.kommentare) if x.id == kommentar_id), None)
+    if nr is None:
+        raise Abgelehnt(f"Diesen Kommentar gibt es an {c.schluessel} nicht (mehr)", 404)
+    if c.kommentare[nr].von != konto.id:
+        raise Abgelehnt("Nur eigene Kommentare lassen sich bearbeiten oder löschen", 403)
+    return c, b, nr, c.kommentare[nr]

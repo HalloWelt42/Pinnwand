@@ -1,4 +1,4 @@
-appkern[web,push] @ https://github.com/HalloWelt42/appkern/archive/a4eef936d14cdfa290ec65a41db5d0d1345f787a.tar.gz
+appkern[web,push] @ https://github.com/HalloWelt42/appkern/archive/4d2bec5ba7d7338a566b941a74b0f1e8cbfda934.tar.gz
 uvicorn[standard]>=0.30
 fpdf2>=2.8
 pytest>=8

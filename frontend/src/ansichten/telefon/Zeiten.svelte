@@ -143,9 +143,9 @@
   <section class="pw-tel-abschnitt" aria-label="Stand">
     <div class="etikett">Stand</div>
     <div class="pw-tel-stand">
-      <div class="kennzahl" class:laeuft={!!timer?.seit}><span>Heute</span><b>{dauer(heuteIst)}</b><small>Soll {dauer(heuteSoll)}</small>
+      <div class="kennzahl" data-kennzahl class:laeuft={!!timer?.seit}><span>Heute</span><b>{dauer(heuteIst)}</b><small>Soll {dauer(heuteSoll)}</small>
         <div class="balken" class:lebt={!!timer?.seit}><b style="width: {heuteSoll ? Math.min(100, (100 * heuteIst) / heuteSoll) : 0}%"></b></div></div>
-      <div class="kennzahl"><span>Woche</span><b>{dauer(wocheIst)}</b><small>Soll {dauer(wocheSoll)}</small>
+      <div class="kennzahl" data-kennzahl><span>Woche</span><b>{dauer(wocheIst)}</b><small>Soll {dauer(wocheSoll)}</small>
         <div class="balken"><b style="width: {wocheSoll ? Math.min(100, (100 * wocheIst) / wocheSoll) : 0}%"></b></div></div>
     </div>
     <div class="pw-tel-tage">

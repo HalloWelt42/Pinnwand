@@ -84,6 +84,8 @@ export interface Spalte {
   zeitfenster?: Zeitfenster;
   /** Vorgabe der Ordnung für alle; ohne: Erledigt nach Erledigung, sonst nach Priorität */
   sortierung?: Spaltensortierung;
+  /** Symbol im Status des Kartendetails (HELF-165), aus SPALTENSYMBOLE; ohne: Farbpunkt, die Erledigt-Spalte mit Haken */
+  symbol?: string;
 }
 
 export type FeldArt = "text" | "zahl" | "datum" | "auswahl" | "verweis";
@@ -455,6 +457,7 @@ export interface VorlageSpalte {
   erledigt: boolean;
   grenze?: number;
   sortierung?: Spaltensortierung;
+  symbol?: string;
 }
 
 /** Vorlage eines neuen Boards: Spalten, eigene Felder, Labels und Module; eigene Vorlagen entstehen aus einem Board */

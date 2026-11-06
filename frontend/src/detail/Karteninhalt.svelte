@@ -3,7 +3,7 @@
   // der Module nur, wenn das Modul im Board an ist. Jede Änderung läuft über einen Anwendungsfall mit Rückgängig; der
   // Status über denselben Weg wie das Ziehen (Gruppe zieht mit, Abschluss, Timer). Felder, die beim Verlassen speichern,
   // verwerfen mit Escape (M-125). Im Kopf: Arbeit oder Idee, Duplizieren, Verweis kopieren, Vollbild, Schließen.
-  import { Hilfepunkt } from "appkern-oberflaeche";
+  import { Hilfepunkt, Stufenwahl } from "appkern-oberflaeche";
   import { darf, kartenNummer, umzugsziele, zeitDerGruppe, zeitDerKarte } from "../daten/abfragen";
   import { artSetzen, bearbeiten, duplizieren, verschieben, type Kartenaenderung } from "../daten/anwendung/karten.svelte";
   import { melden } from "../daten/anwendung/meldung.svelte";
@@ -15,8 +15,8 @@
   import { uhr } from "../daten/uhr.svelte";
   import { alterTage, datumJahr, gesamtnummer } from "../daten/format";
   import { konto, mitKonto, stand } from "../daten/stand.svelte";
-  import { PRIORITAETEN } from "../anzeige";
-  import type { Board, Karte, Kennung, Prioritaet } from "../modell";
+  import { prioritaet, prioritaetsStufen, statusStufen } from "../anzeige";
+  import type { Board, Karte, Kennung } from "../modell";
   import { alterung } from "../regeln/board";
   import { tageZwischen } from "../regeln/tage";
   import Person from "../board/Person.svelte";
@@ -227,13 +227,11 @@
     <div class="etikett">Angaben<Hilfepunkt thema="kartendetail" abschnitt="angaben" /></div>
     <div class="pw-felder">
       <span class="name"><i class="fa-solid fa-table-columns"></i>Status</span>
-      <span class="wert"><select class="eingabe" value={k.spalte} disabled={!darf(board, "karten.verschieben")} aria-label="Status"
-                                 onchange={(e) => verschieben(k.id, e.currentTarget.value)}>
-        {#each board.spalten as s (s.id)}<option value={s.id}>{s.name}</option>{/each}</select></span>
+      <span class="wert"><Stufenwahl wert={k.spalte} optionen={statusStufen(board.spalten)} beschriftung="Status" anzeige="gewaehlt"
+                                     gesperrt={!darf(board, "karten.verschieben")} onwahl={(s) => verschieben(k.id, s)} /></span>
       <span class="name"><i class="fa-solid fa-flag"></i>Priorität</span>
-      <span class="wert"><select class="eingabe" value={k.prioritaet} disabled={!schreiben} aria-label="Priorität"
-                                 onchange={(e) => setzen({ prioritaet: e.currentTarget.value as Prioritaet }, "Priorität gesetzt")}>
-        {#each PRIORITAETEN as [w, n] (w)}<option value={w}>{n}</option>{/each}</select></span>
+      <span class="wert"><Stufenwahl wert={k.prioritaet} optionen={prioritaetsStufen()} beschriftung="Priorität" anzeige="gewaehlt"
+                                     gesperrt={!schreiben} onwahl={(p) => setzen({ prioritaet: p }, `Priorität ${prioritaet(p).name}`)} /></span>
       <span class="name"><i class="fa-solid fa-play"></i>Start</span>
       <span class="wert"><DatumFeld tag={k.start ?? ""} leerErlaubt titel="Start wie 28.10.2026; leer: kein Start"
                                     ontag={(t) => setzen({ start: t || undefined }, t ? `Start ${datumJahr(t, true)}` : "Start entfernt")} /></span>

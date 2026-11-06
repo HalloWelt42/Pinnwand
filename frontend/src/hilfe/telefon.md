@@ -92,7 +92,7 @@ Ein Tippen auf eine Karte öffnet sie. Von oben nach unten:
   [Karte bearbeiten](hilfe:telefon/bearbeiten)).
 - **Status**: die Spalte und seit wann die Karte dort steht, darunter **Verschieben nach** (siehe
   [Verschieben](hilfe:telefon/verschieben)).
-- **Angaben**: Fällig, Priorität, Zuständig und die eigenen Felder des Boards.
+- **Angaben**: Fällig, Priorität (mit Symbol und Farbe), Zuständig und die eigenen Felder des Boards.
 - **Zeit**, wenn das Board die Zeiterfassung an hat und die Karte Arbeit ist: die gebuchte Zeit, der Stand gegen die
   Schätzung und die Knöpfe **Start**, **Anhalten**, **Fortsetzen** und **Stopp**. **Nachbuchen** öffnet **Zeit** mit
   dieser Karte.

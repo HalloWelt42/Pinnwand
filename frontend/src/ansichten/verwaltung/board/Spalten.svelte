@@ -1,15 +1,16 @@
 <script lang="ts">
-  // Spalten: Reihenfolge per Ziehen am Griff (wie im Board), je Spalte Name, Farbe, Sortierung, Grenze oder Zeitfenster und ob sie
+  // Spalten: Reihenfolge per Ziehen am Griff (wie im Board), je Spalte Name, Farbe, Symbol (Status im Kartendetail), Sortierung, Grenze oder Zeitfenster und ob sie
   // anfangs eingeklappt steht; genau eine Erledigt-Spalte. Löschen fragt in der Fläche und sagt, wohin die Karten gehen: verschieben (derselbe Weg wie Ziehen:
   // Alter neu, Gruppe zieht mit, Grenze warnt) oder mit der Spalte in den Papierkorb (Wiederherstellen an der alten
   // Stelle, mit Zeiten). Die Erledigt-Spalte und die letzte Spalte bleiben. Alles über die Anwendungsfälle.
+  import { Stufenwahl } from "appkern-oberflaeche";
   import { dragHandle, dragHandleZone, type DndEvent } from "svelte-dnd-action";
   import { darf, laufendAuf, sortierungVorgabe, zeitDerKarte } from "../../../daten/abfragen";
   import { spalteAendern, spalteAnlegen, spaltenOrdnen, zurErledigtSpalte } from "../../../daten/anwendung/boards.svelte";
   import { spalteLoeschen } from "../../../daten/anwendung/papierkorb.svelte";
   import { dauer } from "../../../daten/format";
   import { kartenDerSpalte, stand } from "../../../daten/stand.svelte";
-  import { SPALTENSORTIERUNGEN, ZEITFENSTER, ZEITFENSTER_VORGABE } from "../../../anzeige";
+  import { SPALTENSORTIERUNGEN, spaltenSymbol, spaltensymbolStufen, ZEITFENSTER, ZEITFENSTER_VORGABE } from "../../../anzeige";
   import type { Board, Farbe, Spalte, Spaltensortierung, Zeitfenster } from "../../../modell";
   import Farbwahl from "../../../teile/Farbwahl.svelte";
   import { EINSTELLUNG_GRENZEN as GRENZEN } from "../../../regeln/board";
@@ -98,6 +99,10 @@
           <div class="angaben">
             <span class="angabe"><span class="etikett">Farbe</span>
               <Farbwahl kompakt wert={s.farbe} waehlen={(f) => f && spalteAendern(board.id, s.id, { farbe: f })} wofuer="Farbe der Spalte {s.name}" /></span>
+            <span class="angabe pw-verwaltung-symbol" title="Zeichen der Spalte im Status des Kartendetails; ohne Wahl ein Farbpunkt, die Erledigt-Spalte ein Haken">
+              <span class="etikett">Symbol</span>
+              <Stufenwahl wert={spaltenSymbol(s)} optionen={spaltensymbolStufen(s.farbe)} beschriftung="Symbol der Spalte {s.name}"
+                          onwahl={(x) => spalteAendern(board.id, s.id, { symbol: x })} /></span>
             <span class="angabe" title="Wie die Spalte im Board anfangs steht; jede Person klappt sie für sich um">
               <span class="etikett">Anfangs eingeklappt</span>
               <button class="schalter" class:an={!!s.eingeklappt} aria-pressed={!!s.eingeklappt} aria-label="Spalte {s.name} anfangs eingeklappt"

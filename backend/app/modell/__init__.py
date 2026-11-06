@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import secrets
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
@@ -18,6 +18,8 @@ Zeitfenster = Literal["heute", "gestern", "woche", "monat", "jahr", "alle"]
 #: gekommen), Erledigung, Anlage (je neueste oben) oder von Hand; gerechnet wird sie in der Oberfläche (`spaltenOrdnung`)
 Spaltensortierung = Literal["prioritaet", "faellig", "arbeitsbeginn", "erledigung", "anlage", "hand"]
 FeldArt = Literal["text", "zahl", "datum", "auswahl", "verweis"]
+#: Klasse eines Symbols wie "fa-inbox" (HELF-165); die Auswahl mit Namen steht in der Oberfläche (anzeige.ts)
+Symbol = Annotated[str, Field(pattern=r"^fa-[a-z0-9-]{1,40}$")]
 ModulKennung = Literal["zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte", "vorlesen", "ki"]
 Prioritaet = Literal["keine", "niedrig", "mittel", "hoch", "dringend"]
 HinweisArt = Literal["zugewiesen", "faellig", "erwaehnt", "termin", "kommentar", "verschoben"]
@@ -82,6 +84,8 @@ class Spalte(Modell):
     zeitfenster: Zeitfenster | None = None
     #: Vorgabe der Ordnung für alle; ohne: Erledigt nach Erledigung, sonst nach Priorität (jede Person stellt für sich um)
     sortierung: Spaltensortierung | None = None
+    #: Symbol im Status des Kartendetails (HELF-165); ohne: Farbpunkt, die Erledigt-Spalte mit Haken
+    symbol: Symbol | None = None
 
 
 class Feld(Modell):
@@ -324,6 +328,7 @@ class VorlageSpalte(Modell):
     erledigt: bool = False
     grenze: int | None = None
     sortierung: Spaltensortierung | None = None
+    symbol: Symbol | None = None
 
 
 class VorlageFeld(Modell):

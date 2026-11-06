@@ -505,6 +505,21 @@ Weiterscrollen, durchsucht werden kann aber immer alles").
   nächsten; ebenso die Liste und die Spalte am Telefon. Suche und Filter laufen immer über alle Karten des Stands, nicht
   nur über die gezeigten; Zahl und Grenze im Kopf zählen alle.
 
+### Status und Priorität als Knopfleiste
+
+Nachtrag vom 06.11.2026 (HELF-165, Nutzer: "aus der Dropdownliste mit wenigen Einträgen eher solche Felder, also
+Klickbuttons", "mit Symbolik und passenden Farben", "der Text reicht als Hover"; Entwurf `frontend/entwuerfe/helf-165.html`,
+gewählt Form B, Symbol je Spalte, am Telefon nur die Priorität mit Symbol).
+
+- Status und Priorität im Kartendetail sind die `Stufenwahl` des Appkerns (ab 0.86): eine Wahl, Symbol und Farbe je Wahl,
+  die gewählte mit Namen, alle mit Namen und Wirkung beim Überfahren; Pfeiltasten wandern, Leertaste oder Enter wählt.
+- Jede Spalte kann ein Symbol tragen (`Spalte.symbol`, `VorlageSpalte.symbol`, nur Symbolklassen `fa-...`; Weg zum Ändern
+  der Spalte mit `symbol`, `null` entfernt es). Die Auswahl mit Namen steht in `SPALTENSYMBOLE` (`frontend/src/anzeige.ts`),
+  ohne Wahl gilt `spaltenSymbol`: Farbpunkt, die Erledigt-Spalte mit Haken. Mitgelieferte Vorlagen bringen Symbole mit,
+  eine aus einem Board gespeicherte Vorlage übernimmt sie; bestehende Boards bekommen keine von selbst.
+- Prioritäten mit Name, Symbol, Farbmarke und Hinweis stehen einmal in `PRIORITAETEN` (`anzeige.ts`); Punkt auf der Karte,
+  Filter, Liste und Telefon nehmen die Farbe über `prioFarbe` (vorher eine eigene Zuordnung in `pinnwand.css`).
+
 ### Commits an Karten
 
 Nachtrag vom 30.10.2026 (HELF-35, Nutzer: Commits "in Tickets verankert", Quellen "GitHub oder GitLab, lokal oder

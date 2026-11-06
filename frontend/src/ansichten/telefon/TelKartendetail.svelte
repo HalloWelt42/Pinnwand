@@ -3,7 +3,7 @@
   // großem Knopf, Timer starten oder anhalten, Checkliste abhaken, Kommentare lesen und schreiben; Titel, Beschreibung,
   // Fällig und Zuständig über "Bearbeiten" (eigener Weg), alles Weitere am Rechner. Der Status ändert sich über denselben
   // Weg wie das Ziehen im Board.
-  import { PRIORITAETEN } from "../../anzeige";
+  import { prioFarbe, prioritaet } from "../../anzeige";
   import { markdownHtml } from "../../teile/markdown";
   import { darf, kartenName, kartenNummer, timerErlaubt, timerVon, zeitDerKarte } from "../../daten/abfragen";
   import { bearbeiten, kommentieren } from "../../daten/anwendung/karten.svelte";
@@ -49,8 +49,7 @@
   const andererTimer = $derived(timer && timer.karte !== k.id ? kartenName(timer.karte).schluessel : "");
   const gesamt = $derived(zeitDerKarte(k.id));
   const anteil = $derived(k.schaetzungMin ? gesamt / 60 / k.schaetzungMin : 0);
-  const prioName = $derived(PRIORITAETEN.find(([p]) => p === k.prioritaet)?.[1] ?? "");
-  const PRIO_KLASSE: Partial<Record<string, string>> = { hoch: "warnung", dringend: "gefahr" };
+  const prio = $derived(prioritaet(k.prioritaet));
 
   let blattOffen = $state(false);
   let kommentar = $state("");
@@ -109,7 +108,7 @@
         <span class="name"><i class="fa-regular fa-calendar"></i>Fällig</span>
         <span class="wert">{#if k.faellig}{#if faellig?.klasse}<span class="pw-angabe {faellig.klasse}">{faellig.text}</span>{/if}{datum(k.faellig, true)}{:else}<span class="schwach">ohne</span>{/if}</span>
         <span class="name"><i class="fa-solid fa-flag"></i>Priorität</span>
-        <span class="wert">{#if PRIO_KLASSE[k.prioritaet]}<span class="pw-angabe {PRIO_KLASSE[k.prioritaet]}">{prioName}</span>{:else}{prioName}{/if}</span>
+        <span class="wert"><span class="pw-prio-angabe" style={prioFarbe(k.prioritaet)} title={prio.hinweis}><i class="fa-solid {prio.symbol}"></i>{prio.name}</span></span>
         <span class="name"><i class="fa-solid fa-user"></i>Zuständig</span>
         <span class="wert personen">
           {#each k.zustaendig as p (p)}<span class="person"><Person id={p} />{konto(p).name}</span>{:else}<span class="schwach">niemand</span>{/each}

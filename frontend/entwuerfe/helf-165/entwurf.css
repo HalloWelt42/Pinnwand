@@ -1,0 +1,25 @@
+/* Der Baustein Stufenwahl kam nach der Freigabe in den Appkern (leitstand.css, teile/Stufenwahl.svelte). */
+
+/* ═══ Seite des Entwurfs (nur hier) ═══════════════════════════════════════════════════════════════════════════════ */
+body { margin: 0; background: var(--hg); color: var(--text); font-family: var(--schrift); font-size: var(--text-groesse, 16px); }
+.ent-seite { max-width: 1440px; margin: 0 auto; padding: var(--a5) var(--a5) var(--a7); display: flex; flex-direction: column; gap: var(--a6); }
+.ent-seite > header h1 { font-size: var(--seitentitel); margin: 0 0 var(--a2); }
+.ent-seite > header p, .ent-abschnitt > p { margin: 0; color: var(--text-2); max-width: 980px; line-height: 1.5; }
+.ent-abschnitt { display: flex; flex-direction: column; gap: var(--a3); }
+.ent-abschnitt > h2 { margin: 0; font-size: var(--titel); display: flex; align-items: center; gap: var(--a2); }
+.ent-abschnitt > h2 .zustand { font-size: var(--klein); }
+.ent-paar { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr)); gap: var(--a4); }
+.ent-thema { background: var(--hg); color: var(--text); border: 1px solid var(--rand); border-radius: var(--r3); padding: var(--a4);
+             display: flex; flex-direction: column; gap: var(--a3); min-width: 0; }
+.ent-thema > .etikett { margin: 0; }
+.ent-leiste { position: relative; width: 100%; max-width: 640px; background: var(--hg); border-radius: var(--r2);
+              box-shadow: 0 0 0 1px var(--rand-stark), var(--schatten-schwebend); overflow: hidden; }
+.ent-leiste .pw-detail-inhalt { overflow: visible; }
+.ent-tabelle { display: grid; grid-template-columns: minmax(0, 170px) minmax(0, 1fr); gap: var(--a3); align-items: center; }
+.ent-tabelle > .name { color: var(--text-2); font-size: var(--klein); }
+.ent-tabelle > .wert { display: flex; flex-wrap: wrap; gap: var(--a3); align-items: center; min-width: 0; }
+.ent-notiz { font-size: var(--klein); color: var(--text-2); }
+.ent-telefone { display: flex; flex-wrap: wrap; gap: var(--a4); }
+.ent-telefon { width: 390px; max-width: 100%; background: var(--hg); color: var(--text); border: 1px solid var(--rand-stark); border-radius: 28px;
+               padding: var(--a4) var(--a3); display: flex; flex-direction: column; gap: var(--a4); }
+.ent-telefon > .etikett { margin: 0; }

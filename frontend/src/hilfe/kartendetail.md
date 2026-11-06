@@ -41,8 +41,8 @@ Unter den Texten stehen die Angaben der Karte:
 
 | Angabe | Bedeutung |
 | - | - |
-| **Status** | die Spalte; umstellen verschiebt die Karte oben in diese Spalte, wie Ziehen (Recht Karten verschieben) |
-| **Priorität** | Keine, Niedrig, Mittel, Hoch oder Dringend |
+| **Status** | die Spalte als Knopfleiste mit Symbol und Farbe jeder Spalte; ein Klick verschiebt die Karte oben in diese Spalte, wie Ziehen (Recht Karten verschieben), die Erledigt-Spalte schließt sie ab |
+| **Priorität** | Keine, Niedrig, Mittel, Hoch oder Dringend als Knopfleiste: Strich, Pfeil abwärts, Gleich, Pfeil aufwärts, Doppelpfeil, von grau bis rot |
 | **Start** | ab wann an der Karte gearbeitet wird |
 | **Fällig** | bis wann sie fertig sein soll |
 | **Zuständig** | wer sich kümmert; mehrere Personen sind möglich |
@@ -57,6 +57,7 @@ Darunter folgen die eigenen Felder des Boards (siehe [Felder](hilfe:boardeinstel
 - **Zuständig**: das X an einer Person nimmt sie heraus. Im Feld **Mitglied des Boards zuweisen** ab zwei Buchstaben den Namen tippen und aus bis zu sechs Vorschlägen wählen; Enter nimmt den ersten. Zuständig sein kann nur, wer Mitglied des Boards ist. Wer neu zuständig wird, bekommt einen Hinweis.
 - **Labels**: ein Klick auf ein Label setzt oder entfernt es. Mit dem Modul KI an der Karte schlägt der Zauberstab daneben passende Labels vor.
 - **Blockiert** und die Textfelder der eigenen Felder speichern beim Verlassen oder mit Enter; Escape verwirft die Eingabe. Ein Zahlenfeld nimmt auch ein Komma.
+- **Status** und **Priorität**: die gewählte Wahl trägt ihren Namen, die anderen zeigen nur ihr Symbol; beim Überfahren steht der Name und was die Wahl bewirkt. Ein Klick gilt sofort. Mit der Tastatur springt Tab in die Leiste, die Pfeiltasten wandern, Leertaste oder Enter wählt. Die Symbole der Spalten stellst du unter [Spalten](hilfe:boardeinstellungen/spalten) ein.
 - Auswahlfelder speichern sofort.
 
 Darunter stehen drei Angaben zum Lesen: **Im Status** mit der Sanduhr (Tage seit dem letzten Wechsel der Spalte, gefärbt nach der Alterung des Boards), **Durchlaufzeit** (Tage vom Anlegen bis zum Abschluss, bei offenen Karten bis heute) und **Erstellt** mit Datum und dem Kürzel der Person, die die Karte angelegt hat.

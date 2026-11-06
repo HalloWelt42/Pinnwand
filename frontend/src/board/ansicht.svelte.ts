@@ -80,7 +80,7 @@ export function wirksamerFilter(f: Kartenfilter, b: Board): Kartenfilter {
   return {
     suche: f.suche,
     personen: f.personen.filter((p) => b.mitglieder.some((m) => m.konto === p)),
-    prioritaeten: f.prioritaeten.filter((p) => PRIORITAETEN.some(([w]) => w === p)),
+    prioritaeten: f.prioritaeten.filter((p) => PRIORITAETEN.some((x) => x.wert === p)),
     labels: f.labels.filter((l) => b.labels.some((x) => x.id === l)),
     felder,
   };

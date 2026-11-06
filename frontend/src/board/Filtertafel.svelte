@@ -3,7 +3,7 @@
   // Prioritäten, Labels und die eigenen Auswahlfelder des Boards. Innerhalb einer Zeile reicht ein Treffer, über die
   // Zeilen muss alles passen. Angeboten wird alles, was das Board kennt (in der alten App fehlten Labels, die nur an
   // erledigten Karten hingen). Gilt in Board, Liste, Kalender und Zeitachse und wird je Board an diesem Gerät gemerkt.
-  import { PRIORITAETEN } from "../anzeige";
+  import { prioFarbe, PRIORITAETEN } from "../anzeige";
   import type { Kartenfilter } from "../daten/abfragen";
   import { konto, mitKonto } from "../daten/stand.svelte";
   import type { Board } from "../modell";
@@ -31,10 +31,10 @@
   </div>
   <div class="pw-filtertafel-zeile" role="group" aria-label="Priorität">
     <span class="etikett">Priorität</span>
-    {#each PRIORITAETEN.slice().reverse() as [p, name] (p)}
+    {#each PRIORITAETEN.slice().reverse() as { wert: p, name } (p)}
       <button class="chip" class:aktiv={filter.prioritaeten.includes(p)} aria-pressed={filter.prioritaeten.includes(p)}
               title={p === "keine" ? "Karten ohne Priorität" : undefined} onclick={() => filterUmschalten(schluessel, "prioritaeten", p)}>
-        {#if p !== "keine"}<span class="pw-prio" data-prioritaet={p}></span>{/if}{p === "keine" ? "Ohne" : name}</button>
+        {#if p !== "keine"}<span class="pw-prio" style={prioFarbe(p)}></span>{/if}{p === "keine" ? "Ohne" : name}</button>
     {/each}
   </div>
   {#if board.labels.length}

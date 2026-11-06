@@ -4,7 +4,7 @@
   // der Person: starten, anhalten, fortsetzen; fremde Timer nur zur Ansicht; bei geteilter Zeit zeigt er die Zeit der
   // Gruppe, über der Schätzung rot. Beim Überfahren oder mit dem Fokus erscheinen oben rechts die Kette zum Verknüpfen
   // (nur Arbeit) und der Papierkorb, je nach Recht.
-  import { PRIORITAETEN } from "../anzeige";
+  import { prioFarbe, prioritaet as prioAnzeige } from "../anzeige";
   import { darf, laufendAuf, timerErlaubt, timerVon, zeitDerGruppe, zeitDerKarte } from "../daten/abfragen";
   import { verknuepfen } from "../daten/anwendung/karten.svelte";
   import { inPapierkorb } from "../daten/anwendung/papierkorb.svelte";
@@ -37,7 +37,7 @@
   const alter = $derived(alterTage(karte.bewegtAm));
   const alterKlasse = $derived(alterung(alter, board.einstellungen));
   const faellig = $derived(karte.faellig && !erledigt ? faelligText(karte.faellig) : null);
-  const prioritaet = $derived(karte.prioritaet === "keine" ? "" : PRIORITAETEN.find(([p]) => p === karte.prioritaet)?.[1] ?? "");
+  const prioritaet = $derived(karte.prioritaet === "keine" ? "" : prioAnzeige(karte.prioritaet).name);
   const auszug = $derived(karte.beschreibung ? markdownText(karte.beschreibung).replace(/\n/g, " ") : "");
 
   // Gruppe verknüpfter Karten: bei geteilter Zeit zeigt der Zeitknopf die Zeit der ganzen Gruppe (jede Sekunde einmal)
@@ -156,7 +156,7 @@
     {#if commits}<span class="pw-angabe" title="{commits} {commits === 1 ? 'Commit' : 'Commits'} an dieser Karte"><i class="fa-solid fa-code-commit"></i>{commits}</span>{/if}
     {#if karte.serie}<span class="pw-angabe" title="Aus einer Serie"><i class="fa-solid fa-repeat"></i></span>{/if}
     <span class="rechts">
-      {#if prioritaet}<span class="pw-prio" data-prioritaet={karte.prioritaet} role="img" aria-label="Priorität {prioritaet}" title="Priorität: {prioritaet}"></span>{/if}
+      {#if prioritaet}<span class="pw-prio" style={prioFarbe(karte.prioritaet)} role="img" aria-label="Priorität {prioritaet}" title="Priorität: {prioritaet}"></span>{/if}
       {#if karte.zustaendig.length}
         <span class="pw-personen">{#each karte.zustaendig.slice(0, 3) as p (p)}<Person id={p} />{/each}</span>
       {/if}

@@ -147,6 +147,17 @@ async def test_spalten_anlegen_aendern_ordnen(pw: Pinnwand):
     s = next(x for x in (await board(pw))["spalten"] if x["id"] == warten)
     assert (s["farbe"], s.get("grenze"), s["eingeklappt"]) == ("honig", None, True)
 
+    # Symbol der Spalte (HELF-165): die Vorlage bringt eines mit, setzen, entfernen, nur Symbolklassen
+    assert [s.get("symbol") for s in neu["spalten"]] == ["fa-inbox", "fa-person-digging", "fa-circle-check", None]
+    a = await ok(pw, "anna", f"/boards/{b['id']}/spalten/{warten}/aendern", {"symbol": "fa-hourglass-half"})
+    assert a["meldung"] == "Spalte Wartet: neues Symbol"
+    assert next(x for x in (await board(pw))["spalten"] if x["id"] == warten)["symbol"] == "fa-hourglass-half"
+    a = await ok(pw, "anna", f"/boards/{b['id']}/spalten/{warten}/aendern", {"symbol": None})
+    assert a["meldung"] == "Spalte Wartet: ohne Symbol"
+    assert next(x for x in (await board(pw))["spalten"] if x["id"] == warten).get("symbol") is None
+    r = await pw.post("anna", f"/boards/{b['id']}/spalten/{warten}/aendern", {"symbol": "x\" onclick=\"y"})
+    assert r.status_code == 422
+
     erledigt = spalte(neu, "Erledigt")
     pfad = f"/boards/{b['id']}/spalten"
     for sp, daten, meldung in [

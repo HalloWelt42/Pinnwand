@@ -17,7 +17,7 @@
   import Kennungsknopf from "../../teile/Kennungsknopf.svelte";
   import { konto, mitKonto } from "../../daten/stand.svelte";
   import Person from "../../board/Person.svelte";
-  import { PRIORITAETEN, ZEITFENSTER } from "../../anzeige";
+  import { prioFarbe, PRIORITAETEN, ZEITFENSTER } from "../../anzeige";
   import type { Board, Karte, Prioritaet, Spalte } from "../../modell";
   import Personenwahl from "../../teile/Personenwahl.svelte";
   import { boardPfad, gehe } from "../../weg.svelte";
@@ -27,7 +27,7 @@
 
   /** vorgeführter Zustand "auswahl": drei Karten gewählt, die Sammelleiste zeigt ihre Aktionen */
   /** Name und Rang je Priorität (dringend zuerst) */
-  const PRIO = Object.fromEntries(PRIORITAETEN.map(([p, name], i) => [p, { name, rang: PRIORITAETEN.length - 1 - i }])) as
+  const PRIO = Object.fromEntries(PRIORITAETEN.map(({ wert, name }, i) => [wert, { name, rang: PRIORITAETEN.length - 1 - i }])) as
     Record<Prioritaet, { name: string; rang: number }>;
 
   interface Zeile { karte: Karte; spalte: Spalte; rang: number }
@@ -131,7 +131,7 @@
       </select>
       <select class="eingabe" aria-label="Priorität setzen" onchange={(e) => gewaehltWert(e, (w) => sammelPrioritaet(gewaehlt, w as Prioritaet))}>
         <option value="">Priorität ...</option>
-        {#each PRIORITAETEN as [w, name] (w)}<option value={w}>{name}</option>{/each}
+        {#each PRIORITAETEN as { wert, name } (wert)}<option value={wert}>{name}</option>{/each}
       </select>
       <span class="rechts">
         <button class="knopf ohne gefahr klein" title="Mit Zeiten, Kommentaren, Anhängen und Verknüpfungen; im Papierkorb wiederherstellbar"
@@ -182,7 +182,7 @@
             <td>{#if k.zustaendig.length}<span class="pw-personen" title={k.zustaendig.map((p) => konto(p).name).join(", ")}>
               {#each k.zustaendig as p (p)}<Person id={p} />{/each}</span>{:else}<span class="schwach">niemand</span>{/if}</td>
             <td>{#if k.prioritaet === "keine"}<span class="schwach">keine</span>
-              {:else}<span class="pw-uebersicht-prio" data-prioritaet={k.prioritaet}><i class="fa-solid fa-flag"></i>{PRIO[k.prioritaet].name}</span>{/if}</td>
+              {:else}<span class="pw-uebersicht-prio" style={prioFarbe(k.prioritaet)}><i class="fa-solid fa-flag"></i>{PRIO[k.prioritaet].name}</span>{/if}</td>
             <td>
               {#if z.spalte.erledigt && k.abgeschlossen}<span class="pw-angabe gut" title="Abgeschlossen"><i class="fa-solid fa-check"></i>{datum(k.abgeschlossen, true)}</span>
               {:else if faellig}<span class="pw-angabe {faellig.klasse}"><i class="fa-regular fa-calendar"></i>{faellig.text}</span>{/if}

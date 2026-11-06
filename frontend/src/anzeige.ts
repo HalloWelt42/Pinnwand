@@ -1,7 +1,8 @@
 // Namen und Zeichen für Menschen, eine Quelle für alle Ansichten: Farben, Zeitfenster, Prioritäten, Herkunft von Zeiten,
 // Hinweise und Module. Schlüssel werden nie gedruckt, immer ihr Name von hier.
 
-import type { Farbe, Herkunft, HinweisArt, HinweisWeg, ModulKennung, Prioritaet, Spaltensortierung, Zeitfenster } from "./modell";
+import type { Wahlstufe } from "appkern-oberflaeche";
+import type { Farbe, Herkunft, HinweisArt, HinweisWeg, Kennung, ModulKennung, Prioritaet, Spalte, Spaltensortierung, Zeitfenster } from "./modell";
 
 /** Palette in der Reihenfolge jeder Farbwahl; Wort und Farbe gehören zusammen */
 export const FARBEN: Farbe[] = ["koralle", "rose", "violett", "flieder", "himmel", "petrol", "tuerkis", "minze", "honig", "sand", "stahl"];
@@ -27,8 +28,54 @@ export const SPALTENSORTIERUNGEN: Record<Spaltensortierung, { name: string; symb
   hand: { name: "Von Hand", symbol: "fa-hand", erklaerung: "Reihenfolge von Hand; nur so lässt sich in der Spalte umsortieren, neue Karten kommen oben hin" },
 };
 
-export const PRIORITAETEN: [Prioritaet, string][] = [["keine", "Keine"], ["niedrig", "Niedrig"], ["mittel", "Mittel"], ["hoch", "Hoch"],
-  ["dringend", "Dringend"]];
+/** Prioritäten von wenig nach viel (HELF-165): Name, Symbol und Farbmarke, eine Wahrheit für Kartendetail, Karte, Filter
+    und Liste; der Hinweis sagt beim Überfahren, was die Wahl bedeutet */
+export interface PrioritaetAnzeige { wert: Prioritaet; name: string; symbol: string; farbe: string; hinweis: string }
+export const PRIORITAETEN: PrioritaetAnzeige[] = [
+  { wert: "keine", name: "Keine", symbol: "fa-minus", farbe: "text-2", hinweis: "ohne Priorität; in Spalten nach Priorität ganz unten" },
+  { wert: "niedrig", name: "Niedrig", symbol: "fa-angle-down", farbe: "stahl", hinweis: "kann warten" },
+  { wert: "mittel", name: "Mittel", symbol: "fa-equals", farbe: "honig", hinweis: "normale Arbeit" },
+  { wert: "hoch", name: "Hoch", symbol: "fa-angle-up", farbe: "warn", hinweis: "bald erledigen" },
+  { wert: "dringend", name: "Dringend", symbol: "fa-angles-up", farbe: "gefahr", hinweis: "zuerst; in Spalten nach Priorität ganz oben" },
+];
+
+export function prioritaet(p: Prioritaet): PrioritaetAnzeige {
+  return PRIORITAETEN.find((x) => x.wert === p) ?? PRIORITAETEN[0];
+}
+
+/** die Farbe einer Priorität als Wert für --prio (Punkt auf der Karte, Filter, Liste) */
+export const prioFarbe = (p: Prioritaet): string => `--prio: var(--${prioritaet(p).farbe})`;
+
+/** Priorität als Knopfleiste (Kartendetail) */
+export function prioritaetsStufen(): Wahlstufe<Prioritaet>[] {
+  return PRIORITAETEN.map((p) => ({ wert: p.wert, titel: p.name, symbol: p.symbol, farbe: p.farbe, hinweis: p.hinweis }));
+}
+
+/** Auswahl für das Symbol einer Spalte (Einstellungen des Boards); die Vorlagen des Servers nehmen ihre Symbole von hier */
+export const SPALTENSYMBOLE: { symbol: string; name: string }[] = [
+  { symbol: "fa-inbox", name: "Eingang" }, { symbol: "fa-lightbulb", name: "Idee" }, { symbol: "fa-circle-question", name: "Klären" },
+  { symbol: "fa-scale-balanced", name: "Bewerten" }, { symbol: "fa-calendar-days", name: "Geplant" }, { symbol: "fa-list-check", name: "Bereit" },
+  { symbol: "fa-person-digging", name: "In Arbeit" }, { symbol: "fa-hammer", name: "Bauen" }, { symbol: "fa-pen", name: "Schreiben" },
+  { symbol: "fa-hourglass-half", name: "Wartet" }, { symbol: "fa-pause", name: "Pausiert" }, { symbol: "fa-magnifying-glass", name: "Prüfung" },
+  { symbol: "fa-user-check", name: "Freigabe" }, { symbol: "fa-truck", name: "Ausliefern" }, { symbol: "fa-circle-check", name: "Erledigt" },
+  { symbol: "fa-box-archive", name: "Abgelegt" }, { symbol: "fa-ban", name: "Verworfen" }, { symbol: "fa-circle", name: "Punkt" },
+];
+
+/** die Symbole als Knopfleiste in der Farbe der Spalte (Einstellungen, Spalten) */
+export function spaltensymbolStufen(farbe: Farbe): Wahlstufe<string>[] {
+  return SPALTENSYMBOLE.map((x) => ({ wert: x.symbol, titel: x.name, symbol: x.symbol, farbe }));
+}
+
+/** Symbol einer Spalte: das gewählte, sonst ein Farbpunkt, die Erledigt-Spalte mit Haken */
+export const spaltenSymbol = (s: Spalte): string => s.symbol ?? (s.erledigt ? "fa-circle-check" : "fa-circle");
+
+/** Status als Knopfleiste (Kartendetail): je Spalte des Boards Name, Symbol und Farbe der Spalte */
+export function statusStufen(spalten: Spalte[]): Wahlstufe<Kennung>[] {
+  return spalten.map((s) => ({
+    wert: s.id, titel: s.name, symbol: spaltenSymbol(s), farbe: s.farbe,
+    hinweis: s.erledigt ? "schließt die Karte ab; ein laufender Timer an ihr hält an und bucht" : "verschiebt die Karte in diese Spalte",
+  }));
+}
 
 export const HERKUNFT: Record<Herkunft, string> = { timer: "Timer", hand: "nachgetragen", korrektur: "Korrektur", serie: "Serie", termin: "Termin" };
 

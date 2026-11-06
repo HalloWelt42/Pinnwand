@@ -267,11 +267,9 @@ button.navi { width: 100%; border: 0; background: none; font: inherit; text-alig
 .pw-zahlfeld .einheit { font-size: var(--klein); color: var(--text-3); }
 .pw-zahlfeld .fehler { flex-basis: 100%; font-size: var(--klein); color: var(--gefahr); }
 
-/* Farbe je Priorität, eine Zuordnung für Board, Liste und Detail (immer mit Wort oder Hinweis, nie Farbe allein) */
-[data-prioritaet] { --prio: var(--stahl); }
-[data-prioritaet="dringend"] { --prio: var(--gefahr); }
-[data-prioritaet="hoch"] { --prio: var(--warn); }
-[data-prioritaet="mittel"] { --prio: var(--honig); }
+/* Priorität als Angabe mit Symbol, Farbe und Namen (Telefon, HELF-165); die Farbe setzt prioFarbe (anzeige.ts) als --prio */
+.pw-prio-angabe { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 var(--a3); border-radius: var(--r3); font-weight: 600;
+                  color: var(--prio); background: color-mix(in srgb, var(--prio) var(--toenung), transparent); }
 
 /* ═══ Rückfrage ohne Rückweg (teile/Endgueltig.svelte): Folgen, Wort zum Eintippen, Knöpfe ═══════════════════════ */
 

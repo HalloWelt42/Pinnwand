@@ -67,6 +67,7 @@ Der Reiter **Spalten** zeigt alle Spalten untereinander, in der Reihenfolge des 
 
 - Am Griff links ziehen ordnet sie um, wie im Board.
 - Name, **Farbe** und die Zahl ihrer Karten.
+- **Symbol**: das Zeichen der Spalte im Status des Kartendetails, aus einer Leiste gewählt (beim Überfahren steht der Name). Ohne Wahl zeigt eine offene Spalte einen Farbpunkt, die Erledigt-Spalte einen Haken; neue Boards bringen die Symbole ihrer Vorlage mit.
 - **Anfangs eingeklappt**: wie die Spalte im Board zuerst steht; jede Person klappt sie danach für sich um.
 - Bei offenen Spalten die **Grenze** (1 bis 999 offene Karten, leer heißt keine; sie warnt nur) und **Zur Erledigt-Spalte machen**.
 - Bei der Erledigt-Spalte ihr **Zeitfenster**, also welche erledigten Karten das Board zuerst zeigt, und die Marke **Erledigt-Spalte**.

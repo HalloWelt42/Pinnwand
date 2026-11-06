@@ -9,7 +9,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from ..modell import Board, Farbe, Feld, FeldArt, Karte, Kennung, Konto, Label, Modell, Spalte, Spaltensortierung, Zeitfenster
+from ..modell import (Board, Farbe, Feld, FeldArt, Karte, Kennung, Konto, Label, Modell, Spalte, Spaltensortierung, Symbol,
+                      Zeitfenster)
 from ..regeln.board import abschluss, spalte_von, zahl_fehler
 from .boards import ZEITFENSTER_VORGABE, am_board, anzahl, name_pruefen, neue_reihenfolge, vergeben
 from .kartenbasis import speichern
@@ -28,6 +29,8 @@ class Spaltenaenderung(Modell):
     sortierung: Spaltensortierung | None = None
     #: Vorgabe für alle: die Spalte steht anfangs eingeklappt (jede Person klappt für sich um)
     eingeklappt: bool | None = None
+    #: null: kein eigenes Symbol (Farbpunkt, die Erledigt-Spalte mit Haken)
+    symbol: Symbol | None = None
 
     def gesendet(self) -> dict[str, Any]:
         return {n: getattr(self, n) for n in self.model_fields_set}
@@ -110,6 +113,9 @@ def spalte_aendern(s: Spalte, neu: dict[str, Any]) -> list[str]:
     if neu.get("sortierung") and neu["sortierung"] != s.sortierung:
         s.sortierung = neu["sortierung"]
         teile.append(f"sortiert nach {SORTIERUNG_NAME[s.sortierung]}")
+    if "symbol" in neu and neu["symbol"] != s.symbol:
+        s.symbol = neu["symbol"]
+        teile.append("neues Symbol" if s.symbol else "ohne Symbol")
     if neu.get("eingeklappt") is not None:
         wert = neu["eingeklappt"] or None
         if wert != s.eingeklappt:
@@ -138,8 +144,8 @@ class Aufbau:
         return await self._am_board(konto, board_id, tun)
 
     async def spalte_aendern(self, konto: Konto, board_id: Kennung, spalte_id: Kennung, a: Spaltenaenderung) -> Antwort:
-        """Name, Farbe, Grenze (offene Spalten), Zeitfenster (die Erledigt-Spalte), Sortierung und ob sie anfangs eingeklappt
-        steht."""
+        """Name, Farbe, Symbol, Grenze (offene Spalten), Zeitfenster (die Erledigt-Spalte), Sortierung und ob sie anfangs
+        eingeklappt steht."""
         neu = a.gesendet()
 
         def tun(k: Kontext, b: Board) -> str | None:

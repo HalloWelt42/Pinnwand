@@ -20,12 +20,12 @@ import { board, karte, kartenDerSpalte, konto, stand } from "./stand.svelte";
 
 // ═══ Timer ═══════════════════════════════════════════════════════════════════════════════════════════════
 
-/** Der eine Timer einer Person (läuft oder angehalten) */
+/** Der eine Timer eines Menschen (läuft oder angehalten); ein App-Zugang hat je Karte einen (HELF-193), dafür laufendAuf */
 export function timerVon(konto = ICH): Timer | undefined {
   return stand.timer.find((t) => t.konto === konto);
 }
 
-/** Laufende Timer auf einer Karte (jede Person hat höchstens einen; die anderer nur mit dem Recht "Zeiten anderer sehen") */
+/** Laufende Timer auf einer Karte (je Person höchstens einer hier; die anderer nur mit dem Recht "Zeiten anderer sehen") */
 export function laufendAuf(karteId: string): Timer[] {
   return stand.timer.filter((t) => t.karte === karteId && t.seit);
 }
@@ -103,7 +103,8 @@ export function eintraegeVon(kontoId: string, von: string, bis = von) {
 /** Ist eines Tags: Einträge und der Teil der laufenden Sitzung an diesem Tag */
 export function istAm(konto: string, tag: string): number {
   const eintraege = stand.zeiteintraege.filter((e) => e.konto === konto && e.datum === tag).reduce((s, e) => s + e.sekunden, 0);
-  return eintraege + sitzungAm(timerVon(konto), tag);
+  // ein App-Zugang (der Helfer) hat je Karte einen Timer (HELF-193): alle laufenden zählen
+  return eintraege + stand.timer.filter((t) => t.konto === konto).reduce((s, t) => s + sitzungAm(t, tag), 0);
 }
 
 /** Ist eines Zeitraums: die Summe der Tage */

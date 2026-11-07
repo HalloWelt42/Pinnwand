@@ -33,7 +33,7 @@ Die Hilfe öffnet sich über "Hilfe" in der Seitenleiste oder das Fragezeichen i
 Fenster; die kleinen i-Knöpfe an Bedienelementen springen zum passenden Abschnitt. Die Seitenleiste klappt unten ein und
 aus (je Gerät gemerkt); Ordner werden dort angelegt, umbenannt und gelöscht, Boards per Ziehen einsortiert.
 
-Zeiterfassung (Timer je Person, Stundenzettel), Arbeitszeit (Zeitkonto, Urlaub, Team), Serien und Termine, Berichte
+Zeiterfassung (Timer je Person; ein Helfer-Zugang je Karte, der in Spalten mit "Zeit läuft hier" von selbst läuft; Stundenzettel), Arbeitszeit (Zeitkonto, Urlaub, Team), Serien und Termine, Berichte
 (PDF, Tabelle, Markdown in der Kellerwolke) und KI an der Karte sind Module, die man je Board in seinen Einstellungen
 unter Module einschaltet (Knopf "Einstellungen" im Kopf des Boards; unter Einstellungen in der Seitenleiste steht je
 Board ein Weg dorthin); die Karten der Serien legt die Pinnwand jeden Tag selbst an. KI an der Karte schlägt über die

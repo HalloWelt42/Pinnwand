@@ -56,7 +56,7 @@ Im Einzelnen:
 - Die Felder des Moduls verschwinden. Im Reiter **Felder** stehen sie unter **Felder der Module**: Ein Modul bringt sie mit und nimmt sie beim Abschalten wieder mit.
 - Die Rechte des Moduls ruhen. Im Reiter **Rollen und Rechte** steht bei ihnen **Modul aus** mit dem Satz "Diese Rechte ruhen und gelten wieder, sobald das Modul an ist." Die Häkchen bleiben, wie sie sind.
 - Gebuchte Zeiten, Serien, Termine und verknüpfte Transkript-Stellen bleiben gespeichert.
-- **Zeiterfassung aus:** Alle laufenden Timer in diesem Board halten an und werden gebucht, von allen Mitgliedern. Lief dein eigener Timer, nennt die Meldung die gebuchte Zeit, etwa "dein Timer ist gestoppt, 0:25 gebucht".
+- **Zeiterfassung aus:** Alle laufenden Timer in diesem Board halten an und werden gebucht, von allen Mitgliedern, auch die des Helfers in Spalten mit **Zeit läuft hier**. Lief dein eigener Timer, nennt die Meldung die gebuchte Zeit, etwa "dein Timer ist gestoppt, 0:25 gebucht".
 - **Serien und Termine aus:** Die Pinnwand legt in diesem Board keine neuen Karten aus Serien mehr an, bis du das Modul wieder einschaltest.
 
 ## Module aus Vorlagen {#vorlagen}

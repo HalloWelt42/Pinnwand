@@ -86,6 +86,9 @@ class Spalte(Modell):
     sortierung: Spaltensortierung | None = None
     #: Symbol im Status des Kartendetails (HELF-165); ohne: Farbpunkt, die Erledigt-Spalte mit Haken
     symbol: Symbol | None = None
+    #: Zeit läuft hier (HELF-193, "Dran heißt, man arbeitet dran"): für jeden zuständigen App-Zugang (etwa den Helfer)
+    #: läuft auf jeder Karte dieser Spalte ein eigener Timer; er bucht, wenn die Karte die Spalte verlässt
+    misst: bool | None = None
 
 
 class Feld(Modell):
@@ -329,6 +332,7 @@ class VorlageSpalte(Modell):
     grenze: int | None = None
     sortierung: Spaltensortierung | None = None
     symbol: Symbol | None = None
+    misst: bool | None = None
 
 
 class VorlageFeld(Modell):
@@ -418,7 +422,9 @@ class Zeiteintrag(Modell):
 
 
 class Timer(Modell):
-    """Der eine Timer einer Person (Kennung gleich dem Konto): läuft seit `seit` oder ist angehalten."""
+    """Der eine Timer eines Menschen (Kennung gleich dem Konto): läuft seit `seit` oder ist angehalten. Ein App-Zugang
+    (etwa der Helfer, der in mehreren Sitzungen parallel arbeitet) hat je Karte einen eigenen (Kennung Konto:Karte,
+    HELF-193)."""
 
     id: Kennung
     konto: Kennung

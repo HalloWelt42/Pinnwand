@@ -14,6 +14,11 @@ class TimerStart(Modell):
     karte: Kennung
 
 
+class TimerStopp(Modell):
+    """Ein App-Zugang (etwa der Helfer) hat je Karte einen Timer: ohne Karte enden alle seine (HELF-193)."""
+    karte: Kennung | None = None
+
+
 class Buchung(Modell):
     karte: Kennung
     datum: str
@@ -73,8 +78,8 @@ def router(z: Zugriff) -> APIRouter:
         return await tun(d.zeiterfassung.fortsetzen(konto))
 
     @r.post("/timer/stoppen", response_model=Antwort)
-    async def stoppen(konto: Konto = Depends(ich)) -> Antwort:
-        return await tun(d.zeiterfassung.stoppen(konto))
+    async def stoppen(e: TimerStopp | None = None, konto: Konto = Depends(ich)) -> Antwort:
+        return await tun(d.zeiterfassung.stoppen(konto, e.karte if e else None))
 
     @r.post("/zeiten", response_model=Antwort)
     async def buchen(e: Buchung, konto: Konto = Depends(ich)) -> Antwort:

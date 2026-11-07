@@ -175,7 +175,7 @@ def vorlage_aus(b: Board, name: str, konto: Kennung) -> Vorlage:
     """Aufbau eines Boards als eigene Vorlage: Spalten, Kartenart, Felder, Labels, Module; ohne Karten und Mitglieder."""
     return Vorlage(
         id=neue_kennung("v"), name=name, beschreibung=f"Eigene Vorlage aus {b.name}", symbol="fa-copy", eigen=True, konto=konto,
-        spalten=[VorlageSpalte(name=s.name, farbe=s.farbe, erledigt=s.erledigt, grenze=s.grenze, sortierung=s.sortierung,
+        spalten=[VorlageSpalte(name=s.name, farbe=s.farbe, erledigt=s.erledigt, grenze=s.grenze, sortierung=s.sortierung, misst=s.misst,
                                symbol=s.symbol)
                  for s in b.spalten],
         kartenart=b.kartenart,
@@ -207,7 +207,7 @@ class Boards:
             b = Board(
                 id=neue_kennung("b"), name=n, kuerzel=kuerzel, kartenart=v.kartenart,
                 farbe=next((f for f in NEU_FARBEN if f not in farben), NEU_FARBEN[0]),
-                spalten=[Spalte(id=neue_kennung("s"), name=s.name, farbe=s.farbe, erledigt=s.erledigt, grenze=s.grenze,
+                spalten=[Spalte(id=neue_kennung("s"), name=s.name, farbe=s.farbe, erledigt=s.erledigt, grenze=s.grenze, misst=s.misst,
                                 zeitfenster=ZEITFENSTER_VORGABE if s.erledigt else None, sortierung=s.sortierung,
                                 symbol=s.symbol)
                          for s in v.spalten],

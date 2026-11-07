@@ -177,6 +177,8 @@ class Inhalte:
                 vermerken(k, c, zeile)
             for name, wert in neu.items():
                 setattr(c, name, wert)
+            if "zustaendig" in neu:
+                zeiterfassung.dran_abgleichen(k, c, b)        # ein App-Zugang wird zuständig oder nicht mehr (HELF-193)
             speichern(k, c)
             hinweise.nach_bearbeiten(k, b, alt, c)
             return f"{c.schluessel}: {(text or '').strip()[:200] or 'Gespeichert'}"

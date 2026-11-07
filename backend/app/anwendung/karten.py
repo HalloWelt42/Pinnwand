@@ -75,7 +75,9 @@ def wechseln(k: Kontext, karte: Karte, ziel: Spalte, b: Board, mitgezogen: bool)
     karte.abgeschlossen = abschluss(karte, k.heute) if ziel.erledigt else None
     vermerken(k, karte, f"mit verknüpfter Karte verschoben nach {ziel.name}" if mitgezogen
               else "hat sie erledigt" if ziel.erledigt else f"hat sie von {alt.name if alt else '?'} nach {ziel.name} verschoben")
-    return zeiterfassung.timer_beenden(k, [karte]) if ziel.erledigt else 0
+    if ziel.erledigt:
+        return zeiterfassung.timer_beenden(k, [karte])
+    return zeiterfassung.dran_abgleichen(k, karte, b)     # misst die Spalte, läuft die Zeit zuständiger App-Zugänge (HELF-193)
 
 
 def hinein(k: Kontext, b: Board, ids: list[Kennung], ziel: Spalte, platz: int | None) -> str:
@@ -167,6 +169,7 @@ def in_spalte_legen(k: Kontext, b: Board, ziel: Spalte, karten: list[Karte]) -> 
     einen Hinweis."""
     einreihen(k, ziel, karten, None)
     for c in karten:
+        zeiterfassung.dran_abgleichen(k, c, b)            # neu in einer messenden Spalte (HELF-193)
         speichern(k, c)
         hinweise.erwaehnt(k, b, c, sorted(hinweise.erwaehnte(k, b, c.beschreibung)))
 

@@ -136,6 +136,8 @@ export interface Spaltenaenderung {
   zeitfenster?: Zeitfenster;
   /** anfangs eingeklappt für alle; jede Person klappt für sich um */
   eingeklappt?: boolean;
+  /** Zeit läuft hier für zuständige App-Zugänge (HELF-193) */
+  misst?: boolean;
   /** Vorgabe der Sortierung für alle; jede Person stellt für sich um */
   sortierung?: Spaltensortierung;
   /** null: kein eigenes Symbol */

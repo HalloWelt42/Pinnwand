@@ -86,6 +86,8 @@ export interface Spalte {
   sortierung?: Spaltensortierung;
   /** Symbol im Status des Kartendetails (HELF-165), aus SPALTENSYMBOLE; ohne: Farbpunkt, die Erledigt-Spalte mit Haken */
   symbol?: string;
+  /** Zeit läuft hier (HELF-193): zuständige App-Zugänge wie der Helfer haben auf jeder Karte einen eigenen Timer */
+  misst?: boolean;
 }
 
 export type FeldArt = "text" | "zahl" | "datum" | "auswahl" | "verweis";

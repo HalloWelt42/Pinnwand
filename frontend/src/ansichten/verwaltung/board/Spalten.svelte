@@ -123,6 +123,12 @@
               <span class="angabe" title="Genau eine Erledigt-Spalte je Board: ihre Karten gelten als erledigt und laden nach Abschlussdatum">
                 <span class="zustand fertig"><i class="fa-solid fa-circle-check"></i>Erledigt-Spalte</span></span>
             {:else}
+              {#if board.module.zeiterfassung}
+                <span class="angabe" title="Dran heißt, man arbeitet dran: ist ein Helfer-Zugang zuständig, läuft auf jeder Karte dieser Spalte seine Zeit und bucht, wenn die Karte die Spalte verlässt. Deine eigene Zeit startest du weiter selbst.">
+                  <span class="etikett">Zeit läuft hier</span>
+                  <button class="schalter" class:an={!!s.misst} aria-pressed={!!s.misst} aria-label="In Spalte {s.name} läuft die Zeit"
+                          onclick={() => spalteAendern(board.id, s.id, { misst: !s.misst })}></button>{s.misst ? "ja" : "nein"}</span>
+              {/if}
               <span class="angabe"><span class="etikett">Grenze</span>
                 <Zahlfeld wert={s.grenze} setzen={(g) => spalteAendern(board.id, s.id, { grenze: g ?? null })} min={GRENZEN.grenze[0]} max={GRENZEN.grenze[1]}
                           leer="keine" name="Grenze der Spalte {s.name}" einheit="offene Karten" /></span>

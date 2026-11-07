@@ -183,6 +183,49 @@ def timer_im_board_beenden(k: Kontext, board_id: Kennung, konto: Kennung | None 
     return beenden(k, [t for t in timer if konto is None or t.konto == konto], {})
 
 
+# ═══ Zeit läuft in der Spalte (HELF-193) ═══════════════════════════════════════════════════════════════════════════
+
+def ist_app(k: Kontext, konto: Kennung) -> bool:
+    """Ein App-Zugang (etwa der Helfer): er arbeitet in mehreren Sitzungen parallel und hat je Karte einen Timer."""
+    return bool((k.s.lies("konten", konto) or {}).get("app"))
+
+
+def timer_kennung(konto: Kennung, karte: Kennung, app: bool) -> Kennung:
+    """Ein Mensch hat einen Timer (Kennung das Konto), ein App-Zugang einen je Karte."""
+    return f"{konto}:{karte}" if app else konto
+
+
+def spalte_misst(b: Board, c: Karte) -> bool:
+    """Läuft auf dieser Karte in ihrer Spalte die Zeit? Spalte misst, nicht erledigt, Arbeit, Zeiterfassung an."""
+    sp = spalte_von(b, c.spalte)
+    return bool(sp and sp.misst and not sp.erledigt and c.art == "arbeit" and modul_an(b, "zeiterfassung"))
+
+
+def dran_abgleichen(k: Kontext, c: Karte, b: Board) -> int:
+    """Die eine Stelle für "Dran heißt, man arbeitet dran" (HELF-193): steht die Karte in einer messenden Spalte, läuft
+    für jeden zuständigen App-Zugang mit dem Recht zu buchen ein Timer auf ihr; sonst laufen keine (gebucht wird beim
+    Ende). Menschen startet die Spalte nie einen Timer. Ergebnis: die dabei gebuchte Zeit der handelnden Person."""
+    soll = {x for x in c.zustaendig if ist_app(k, x) and hat_recht(b, "zeit.buchen", x)} if spalte_misst(b, c) else set()
+    laufend = [Timer.model_validate(d) for d in k.s.alle("timer", "karte=?", (c.id,))]
+    app_timer = {t.konto: t for t in laufend if t.id == timer_kennung(t.konto, c.id, True)}
+    weg = [t for x, t in app_timer.items() if x not in soll]
+    gebucht = beenden(k, weg, {c.id: c})
+    for x in sorted(soll - set(app_timer)):
+        k.s.schreib("timer", Timer(id=timer_kennung(x, c.id, True), konto=x, karte=c.id, board=c.board, seit=k.jetzt).json_daten())
+        c.start = c.start or k.heute
+        vermerken(k, c, f"Zeit von {name_von(k, x)} läuft (Spalte {spalte_von(b, c.spalte).name})")
+    return gebucht
+
+
+def spalte_abgleichen(k: Kontext, b: Board, spalte: Kennung) -> None:
+    """Nach dem Umschalten einer Spalte: jede Karte darin gleicht ihre Timer ab."""
+    for d in k.s.alle("karten", "board=?", (b.id,)):
+        c = Karte.model_validate(d)
+        if c.spalte == spalte:
+            dran_abgleichen(k, c, b)
+            speichern(k, c)
+
+
 def zeit_umziehen(k: Kontext, karte_id: Kennung, board_id: Kennung) -> None:
     """Die Zeit einer Karte zieht mit ihr in ein anderes Board: ihre Einträge gehören dann dorthin (und sind dort
     sichtbar, wo man Zeiten anderer sehen darf)."""
@@ -294,6 +337,16 @@ class Zeiterfassung:
         def arbeit(k: Kontext) -> str | None:
             c = karte_lesen(k, karte_id)
             timer_pruefen(k.board(c.board), c, k.konto.id)
+            if ist_app(k, k.konto.id):
+                # ein App-Zugang arbeitet parallel: je Karte ein eigener Timer, keiner pausiert einen anderen (HELF-193)
+                kennung = timer_kennung(k.konto.id, c.id, True)
+                if k.s.lies("timer", kennung):
+                    return None
+                k.s.schreib("timer", Timer(id=kennung, konto=k.konto.id, karte=c.id, board=c.board, seit=k.jetzt).json_daten())
+                c.start = c.start or k.heute
+                vermerken(k, c, "hat den Timer gestartet")
+                speichern(k, c)
+                return f"Timer läuft auf {c.schluessel}"
             vorher = timer_von(k, k.konto.id)
             if vorher and vorher.karte == c.id and vorher.seit:
                 return None
@@ -338,10 +391,18 @@ class Zeiterfassung:
 
         return await self.a.aendern(konto, arbeit)
 
-    async def stoppen(self, konto: Konto) -> Antwort:
-        """Die Sitzung wird gebucht, der Timer endet. Den eigenen Timer stoppen geht immer, auch ohne Recht."""
+    async def stoppen(self, konto: Konto, karte_id: Kennung | None = None) -> Antwort:
+        """Die Sitzung wird gebucht, der Timer endet. Den eigenen Timer stoppen geht immer, auch ohne Recht. Ein App-Zugang
+        stoppt den Timer der genannten Karte, ohne Karte alle seine."""
 
         def arbeit(k: Kontext) -> str | None:
+            if ist_app(k, k.konto.id):
+                eigene = [Timer.model_validate(d) for d in k.s.alle("timer", "konto=?", (k.konto.id,))
+                          if karte_id is None or d.get("karte") == karte_id]
+                if not eigene:
+                    return None
+                sek = beenden(k, eigene, {})
+                return f"{', '.join(schluessel_von(k, t.karte) for t in eigene)} gestoppt" + (f", {dauer_text(sek)} gebucht" if sek else "")
             t = timer_von(k, k.konto.id)
             if t is None:
                 return None

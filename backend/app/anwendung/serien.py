@@ -334,6 +334,7 @@ class Serien:
                 if ziel and c.spalte != ziel.id:
                     einreihen(k, ziel, [c], None)
                     c.spalte = ziel.id
+                zeiterfassung.dran_abgleichen(k, c, b)        # Spalte oder Zuständige neu (HELF-193)
                 speichern(k, c)
             schreiben(k, neu)
             n = vorbuchen(k, lage, neu, b)

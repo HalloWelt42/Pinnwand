@@ -180,6 +180,7 @@ def karte_zurueck(k: Kontext, e: Geloescht) -> str:
     serientag_zurueck(k, c)
     vermerken(k, c, "hat sie wiederhergestellt")
     einreihen(k, ziel, [c], e.stelle.platz)
+    zeiterfassung.dran_abgleichen(k, c, b)                # zurück in einer messenden Spalte: die Zeit läuft wieder (HELF-193)
     speichern(k, c)
     if alt is None:
         return f"{c.schluessel} wiederhergestellt, in {ziel.name} in {b.name}; ihre Spalte gibt es nicht mehr"

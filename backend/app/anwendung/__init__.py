@@ -19,7 +19,7 @@ from .aufbau import Aufbau
 from .berichte import Berichte
 from .boards import Boards, Zugang
 from .commits import Commits
-from . import altbestand, gesamtnummer, kommentarkennung
+from . import altbestand, gesamtnummer, kommentarkennung, spaltenmessung
 from .ereignisse import Ereignisse
 from .hinweise import Hinweise
 from .inhalt import Inhalte
@@ -97,6 +97,7 @@ class Start(Begleiter):
         await self.db.transaktion(gesamtnummer.nachtragen)
         await self.db.transaktion(altbestand.uebertragen)
         await self.db.transaktion(kommentarkennung.nachtragen)
+        await self.db.transaktion(spaltenmessung.nachtragen)
         for v in MITGELIEFERT:
             await self.db.ausfuehren("INSERT INTO vorlagen (id, fassung, daten, konto) VALUES (?, 1, ?, NULL) "
                                      "ON CONFLICT(id) DO UPDATE SET daten=excluded.daten",

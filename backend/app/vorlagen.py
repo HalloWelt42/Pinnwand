@@ -30,9 +30,11 @@ def _offen(name: str, farbe: Farbe, symbol: str, grenze: int | None = None) -> V
     return VorlageSpalte(name=name, farbe=farbe, grenze=grenze, sortierung="prioritaet", symbol=symbol)
 
 
-def _in_arbeit(name: str, farbe: Farbe = "honig", symbol: str = "fa-person-digging", grenze: int | None = None) -> VorlageSpalte:
-    """Eine Spalte für Arbeit, die läuft: zuletzt begonnen oben (HELF-50)."""
-    return VorlageSpalte(name=name, farbe=farbe, grenze=grenze, sortierung="arbeitsbeginn", symbol=symbol)
+def _in_arbeit(name: str, farbe: Farbe = "honig", symbol: str = "fa-person-digging", grenze: int | None = None,
+               misst: bool = True) -> VorlageSpalte:
+    """Eine Spalte für Arbeit, die läuft: zuletzt begonnen oben (HELF-50); die Zeit zuständiger App-Zugänge läuft hier
+    (HELF-193), außer in einer Prüfspalte."""
+    return VorlageSpalte(name=name, farbe=farbe, grenze=grenze, sortierung="arbeitsbeginn", symbol=symbol, misst=misst)
 
 
 MITGELIEFERT: list[Vorlage] = [
@@ -44,7 +46,7 @@ MITGELIEFERT: list[Vorlage] = [
     Vorlage(id="v-projekt", name="Projekt", beschreibung="Eingang bis Erledigt mit Grenzen in Arbeit und Prüfung",
             symbol="fa-diagram-project",
             spalten=[_offen("Eingang", "stahl", "fa-inbox"), _offen("Geplant", "himmel", "fa-calendar-days"),
-                     _in_arbeit("In Arbeit", grenze=4), _in_arbeit("Prüfung", "flieder", "fa-magnifying-glass", grenze=3), _erledigt()],
+                     _in_arbeit("In Arbeit", grenze=4), _in_arbeit("Prüfung", "flieder", "fa-magnifying-glass", grenze=3, misst=False), _erledigt()],
             module=["zeiterfassung", "arbeitszeit", "serien", "berichte", "transkripte", "vorlesen", "ki"]),
     Vorlage(id="v-ideen", name="Ideen", beschreibung="Gesammelt, Bewerten, Umsetzen; neue Karten sind Ideen", symbol="fa-lightbulb",
             spalten=[_offen("Gesammelt", "flieder", "fa-lightbulb"), _offen("Bewerten", "himmel", "fa-scale-balanced"),

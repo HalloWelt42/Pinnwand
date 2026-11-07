@@ -1,5 +1,5 @@
 """Sprachmodell für KI an der Karte über die Leitstelle des Gerüsts; die Anwendung kennt nur den Anschluss
-`Sprachmodell`. Das Modell kommt aus der Einstellung `ki_modell` (leer: die Kette der App), die Priorität ist hoch,
+`Sprachmodell`. Das Modell kommt aus der Einstellung `ki_modell` (Pflicht: die Leitstelle wählt keins), die Priorität ist hoch,
 weil eine Person auf die Antwort wartet. Fehler der Leitstelle werden Ablehnungen mit Grund; nichts wartet still."""
 
 from __future__ import annotations
@@ -29,8 +29,11 @@ class LeitstellenModell:
         ls = self.g.leitstelle
         if ls is None:
             raise Abgelehnt("Die Leitstelle ist nicht eingerichtet (Einstellungen, Verbindungen)", 503)
+        modell = self.g.einstellungen.stand.ki_modell
+        if not modell:
+            raise Abgelehnt("Kein Modell gewählt (Einstellungen, KI, Modell)", 409)
         try:
-            antwort = await ls.chat([Nachricht.system(auftrag.anweisung), auftrag.text], modell=self.g.einstellungen.stand.ki_modell or None,
+            antwort = await ls.chat([Nachricht.system(auftrag.anweisung), auftrag.text], modell=modell,
                                     titel=auftrag.titel, prioritaet="hoch", response_format=antwortform(auftrag.name, auftrag.schema),
                                     temperature=TEMPERATUR, max_tokens=auftrag.laenge)
         except LeitstellenFehler as f:

@@ -40,7 +40,7 @@ def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None, uh
     dienste = Dienste.bauen(geruest.db, GeruestZugang(geruest), ablage, uhr, push=geruest.push,
                             sprachmodell=LeitstellenModell(geruest), transkription=transkription,
                             sprachausgabe=sprachausgabe)
-    geruest.einstellungen.anbieten("ki_modell", geruest.leitstelle_angebot("text", leer="Kette der App"))
+    geruest.einstellungen.anbieten("ki_modell", geruest.leitstelle_angebot("text"))
     geruest.einstellungen.anbieten("transkription_adresse", geruest.verbund.angebot("Transkription", "transkription", transkription.adresse))
     geruest.verbund.anmelden("Transkription", transkription.adresse)
     geruest.begleiter_anmelden(Start(geruest.db), Vorbuchung(dienste.serien), Faelligkeit(dienste.hinweise), dienste.mitteilungen)

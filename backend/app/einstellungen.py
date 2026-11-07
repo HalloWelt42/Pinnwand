@@ -18,4 +18,5 @@ class AppEinstellungen(Grundeinstellungen, VorlesenEinstellungen):
                                                    "Transkripte und Spracheingabe.")
     ki_modell: str = Field("", title="Modell", json_schema_extra=KI,
                            description="Textmodell der Leitstelle für Zusammenfassung, Checkliste, Labels und Karten aus "
-                                       "Text. Leer: die Leitstelle wählt nach der Kette der App.")
+                                       "Text. Die App nennt es bei jeder Anfrage; ohne Modell bleibt die KI aus (die "
+                                       "Leitstelle wählt keins).")

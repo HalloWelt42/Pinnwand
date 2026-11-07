@@ -32,7 +32,7 @@ async def mit_ki(pw: Pinnwand, rolle: str = "mitglied") -> dict:
     """Haushalt mit KI an der Karte und bert in der Rolle; die Leitstelle ist eingerichtet."""
     b = await mit_bert(pw, rolle)
     await ok(pw, "anna", f"/boards/{b['id']}/module/ki", {"an": True})
-    await einstellen(pw, **LEITSTELLE_EINRICHTUNG)
+    await einstellen(pw, **LEITSTELLE_EINRICHTUNG, ki_modell="gross")
     return b
 
 
@@ -50,10 +50,10 @@ async def test_ohne_leitstelle_keine_vorschlaege(pw: Pinnwand):
                     "Die Leitstelle ist nicht eingerichtet (Einstellungen, Verbindungen)")
     await einstellen(pw, **LEITSTELLE_EINRICHTUNG)
     assert (await pw.stand("anna"))["kiBereit"] is True
-    # das Modell wählt man aus den Textmodellen der Leitstelle, leer gilt die Kette der App
+    # das Modell wählt man aus den Textmodellen der Leitstelle; einen leeren Wert gibt es nicht (die Leitstelle wählt keins)
     r = await pw.get("anna", "/einstellungen/angebot/ki_modell")
     assert r.status_code == 200, r.text
-    assert [o["wert"] for o in r.json()["optionen"]] == ["", "gross"]
+    assert [o["wert"] for o in r.json()["optionen"]] == ["gross"]
     assert LEITSTELLE.anfragen == [] or all(a.url.path == "/v1/models" for a in LEITSTELLE.anfragen)
 
 
@@ -71,7 +71,7 @@ async def test_zusammenfassung(pw: Pinnwand):
 
     anfrage = LEITSTELLE.anfragen[-1]
     koerper = LEITSTELLE.koerper()
-    assert [m["role"] for m in koerper["messages"]] == ["system", "user"] and "model" not in koerper
+    assert [m["role"] for m in koerper["messages"]] == ["system", "user"] and koerper["model"] == "gross", "das Modell nennt immer die App"
     karte = koerper["messages"][1]["content"]
     for teil in ("Karte HAUS-1: Fenster putzen", "Status: Offen", "Fällig: Fr 30.10.2026", "Beschreibung:\nAlle Fenster",
                  "Notizen:\nLeiter fehlt noch", "- [x] Leiter holen", "- bert am Di 27.10.2026: Ich bringe die Leiter"):
@@ -188,3 +188,12 @@ async def test_fehler_der_leitstelle(pw: Pinnwand, wie: str, status: int, meldun
     else:
         LEITSTELLE.antworten.append(antwort(text="  "))
     await abgelehnt(pw, "anna", f"/karten/{k['id']}/ki/zusammenfassung", None, status, meldung)
+
+
+async def test_ohne_modell_bleibt_die_ki_aus(pw: Pinnwand):
+    """Die Leitstelle wählt kein Modell (seit 0.37.0): ohne gewähltes Modell sagt die Pinnwand, wo man es wählt, statt die
+    Leitstelle zu fragen."""
+    b = await mit_ki(pw)
+    await einstellen(pw, ki_modell="")
+    k = await pw.karte("anna", b, "Fenster putzen")
+    await abgelehnt(pw, "anna", f"/karten/{k['id']}/ki/zusammenfassung", None, 409, "Kein Modell gewählt (Einstellungen, KI, Modell)")

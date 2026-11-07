@@ -123,7 +123,7 @@ async def test_notiz_vorschlagen_mit_ki(pw: Pinnwand):
     [m] = marken(await ok(pw, "anna", f"/karten/{k['id']}/transkripte", {"transkript": TELEFONAT, "sekunde": 255}))
     await abgelehnt(pw, "anna", f"/karten/{k['id']}/transkripte/{m['id']}/ki/notiz", None, 403, "KI an der Karte ist im Board Haushalt aus")
     await ok(pw, "anna", f"/boards/{b['id']}/module/ki", {"an": True})
-    await einstellen(pw, **LEITSTELLE_EINRICHTUNG)
+    await einstellen(pw, **LEITSTELLE_EINRICHTUNG, ki_modell="gross")
     LEITSTELLE.antworten.append(json.dumps({"text": "Brandt nennt den Preis der Beschichtung am 28.10."}))
     assert await ok(pw, "anna", f"/karten/{k['id']}/transkripte/{m['id']}/ki/notiz") == {
         "text": "Brandt nennt den Preis der Beschichtung am 28.10."}

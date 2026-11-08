@@ -10,7 +10,7 @@ from test_kern import reihe, spalte
 async def test_vorlagen_bringen_die_sortierung_mit(pw: Pinnwand):
     b = await pw.board("anna")
     assert [(s["name"], s["sortierung"]) for s in b["spalten"]] == [
-        ("Offen", "prioritaet"), ("Dran", "arbeitsbeginn"), ("Erledigt", "erledigung")]
+        ("Offen", "prioritaet"), ("In Arbeit", "arbeitsbeginn"), ("Erledigt", "erledigung")]
     p = await pw.board("anna", "Projekt", "PRO", vorlage="v-projekt")
     assert [s["sortierung"] for s in p["spalten"]] == ["prioritaet", "prioritaet", "arbeitsbeginn", "arbeitsbeginn", "erledigung"]
 
@@ -47,6 +47,6 @@ async def test_neue_karten_oben(pw: Pinnwand):
     await pw.post("anna", f"/karten/{alt['id']}/duplizieren")
     assert (await reihe(pw, "anna", b, "Offen"))[0] == "HAUS-6"
     # verschieben ohne Platz (Status im Detail, Telefon, Liste): oben in der Zielspalte
-    await pw.karte("anna", b, "Schon dran", spalte=spalte(b, "Dran"))
-    await pw.post("anna", f"/karten/{alt['id']}/verschieben", {"nach": spalte(b, "Dran")})
-    assert await reihe(pw, "anna", b, "Dran") == ["HAUS-1", "HAUS-7"]
+    await pw.karte("anna", b, "Schon dran", spalte=spalte(b, "In Arbeit"))
+    await pw.post("anna", f"/karten/{alt['id']}/verschieben", {"nach": spalte(b, "In Arbeit")})
+    assert await reihe(pw, "anna", b, "In Arbeit") == ["HAUS-1", "HAUS-7"]

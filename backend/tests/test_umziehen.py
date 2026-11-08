@@ -69,9 +69,9 @@ async def test_zeit_und_gruppe_ziehen_mit(pw: Pinnwand):
     await ok(pw, "anna", "/zeiten", {"karte": a["id"], "datum": "2026-10-26", "sekunden": 1800})
     await ok(pw, "anna", "/timer/starten", {"karte": a["id"]})
     pw.zeiger.zeit = pw.zeiger.zeit.replace(minute=15)
-    zweite = next(s["id"] for s in werk["spalten"] if s["name"] == "Dran")
+    zweite = next(s["id"] for s in werk["spalten"] if s["name"] == "In Arbeit")
     m = (await ok(pw, "anna", f"/karten/{a['id']}/umziehen", {"board": werk["id"], "spalte": zweite}))["meldung"]
-    assert m == "HAUS-1 ist jetzt WERK-1 in Werkstatt, Dran; dein Timer ist gestoppt, 0:15 gebucht"
+    assert m == "HAUS-1 ist jetzt WERK-1 in Werkstatt, In Arbeit; dein Timer ist gestoppt, 0:15 gebucht"
     s = await pw.stand("anna")
     assert {e["board"] for e in s["zeiteintraege"]} == {werk["id"]} and len(s["zeiteintraege"]) == 2
     assert all(not x.get("gruppe") for x in s["karten"] if x["id"] in (a["id"], b["id"])) and s["gruppen"] == []

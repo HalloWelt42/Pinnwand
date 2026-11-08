@@ -4,7 +4,7 @@ handelnde Person, nur an Mitglieder des Boards und nur auf den Wegen, die die Pe
 meldet der Begleiter `Faelligkeit` einmal am Tag. Gelesen gilt am Konto, auf allen Geräten.
 
 Bündeln (HELF-54, Nutzer: "sonst flutet deine Arbeit"): was dieselbe Person an derselben Karte tut, solange der Hinweis
-darauf ungelesen ist, kommt in diesen einen Hinweis ("Helfer bei HELF-54: nach Dran verschoben, kommentiert, dir
+darauf ungelesen ist, kommt in diesen einen Hinweis ("Helfer bei HELF-54: nach In Arbeit verschoben, kommentiert, dir
 zugewiesen"); er rückt nach oben und trägt die wichtigste Art (zugewiesen vor erwähnt vor Kommentar vor verschoben).
 Nichts geht verloren, jeder Anlass steht im Text, und eine Zuweisung oder Erwähnung kommt weiter aufs Telefon."""
 
@@ -105,7 +105,7 @@ def erwaehnte(k: Kontext, b: Board, text: str | None) -> set[Kennung]:
 # --- Anlässe (in der Transaktion der auslösenden Änderung) -----------------------------------------------------------
 
 def buendel_text(name: str, schluessel: str, teile: list[str]) -> str:
-    """Text eines Bündels: "Helfer bei HELF-54: nach Dran verschoben, kommentiert und dir zugewiesen"; bei sehr vielen
+    """Text eines Bündels: "Helfer bei HELF-54: nach In Arbeit verschoben, kommentiert und dir zugewiesen"; bei sehr vielen
     Anlässen die ersten und die letzten mit "..." dazwischen."""
     if len(teile) > BUENDEL_HOECHSTENS:
         teile = [*teile[:2], "...", *teile[-(BUENDEL_HOECHSTENS - 3):]]

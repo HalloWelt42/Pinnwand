@@ -151,8 +151,8 @@ async def test_karten_aus_text_und_anlegen(pw: Pinnwand):
     assert LEITSTELLE.koerper()["messages"][1]["content"].endswith(text)
     assert (await pw.stand("anna"))["karten"] == []                          # nur ein Vorschlag
 
-    a = await ok(pw, "bert", f"/boards/{b['id']}/karten/mehrere", {"karten": r["karten"], "spalte": spalte(b, "Dran")})
-    assert a["meldung"] == "2 Karten in Dran angelegt (HAUS-1 bis HAUS-2)"
+    a = await ok(pw, "bert", f"/boards/{b['id']}/karten/mehrere", {"karten": r["karten"], "spalte": spalte(b, "In Arbeit")})
+    assert a["meldung"] == "2 Karten in In Arbeit angelegt (HAUS-1 bis HAUS-2)"
     karten = sorted((await pw.stand("anna"))["karten"], key=lambda c: c["reihe"])
     assert [(c["schluessel"], c["titel"], c["zustaendig"], [p["text"] for p in c["checkliste"]]) for c in karten] == [
         ("HAUS-1", "Fenster putzen", ["2"], ["Leiter holen"]), ("HAUS-2", "Gartenmöbel einlagern", ["2"], [])]

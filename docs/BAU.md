@@ -427,7 +427,7 @@ Kommentars öffnet das Bearbeiten (`teile/klickBearbeitet.ts`: Verweise, Knöpfe
 
 Nachtrag vom 30.10.2026 (HELF-54, Nutzer: "Alarmhinweise mit Button alle als gelesen bestätigen können, sonst flutet
 deine Arbeit"). Ursache der Flut: seit der Helfer eine eigene Person ist, löst jede seiner Handlungen an einem Ticket
-einen eigenen Hinweis an die Zuständigen aus (verschoben nach Dran, kommentiert, zugewiesen, nach Prüfung verschoben),
+einen eigenen Hinweis an die Zuständigen aus (verschoben nach In Arbeit, kommentiert, zugewiesen, nach Prüfung verschoben),
 also drei bis vier je Ticket. Jetzt kommt, was dieselbe Person an derselben Karte tut, in den ungelesenen Hinweis dazu
 (`Hinweis.teile`, Text "Helfer bei HELF-54: ..."), mit der wichtigsten Art (zugewiesen, erwähnt, Kommentar, verschoben)
 und neuer Zeit; Fällig und Termin bündeln nicht. Push nur bei einem neuen Hinweis, einem erneuerten Fällig oder wenn ein
@@ -486,7 +486,7 @@ Weiterscrollen, durchsucht werden kann aber immer alles").
 
 - Jede Spalte hat eine Sortierung (`Spalte.sortierung`, `Spaltensortierung`): `prioritaet` (Dringend bis ohne, bei
   gleicher Priorität die neueste Karte oben), Fälligkeit (früheste oben, ohne Datum unten), `arbeitsbeginn`
-  (zuletzt in die Spalte gekommen oben; in einer Spalte wie Dran ist das der Beginn der Arbeit), `erledigung` (zuletzt
+  (zuletzt in die Spalte gekommen oben; in einer Spalte wie In Arbeit ist das der Beginn der Arbeit), `erledigung` (zuletzt
   erledigt oben, am selben Tag die zuletzt abgelegte), `anlage` (zuletzt angelegt oben) und `hand` (Reihe von Hand).
   Ohne Angabe gilt `erledigung` für die Erledigt-Spalte und `prioritaet` für alle anderen. Bei Gleichstand bleibt die
   Reihe von Hand. Eine Wahrheit für Board, Liste und Telefon: `spaltenOrdnung` in `frontend/src/daten/abfragen.ts`.
@@ -495,7 +495,7 @@ Weiterscrollen, durchsucht werden kann aber immer alles").
   diesem Gerät um, mit dem kleinen Symbol im Kopf der Spalte (Ansichtszustand, `ansicht.svelte.ts`). Die
   Werkzeugleiste hat keine eigene Sortierung mehr; sie war dieselbe Sache an zweiter Stelle.
 - Vorlagen tragen die Sortierung je Spalte (`VorlageSpalte.sortierung`), eine aus einem Board gespeicherte Vorlage
-  übernimmt sie. Mitgeliefert: offene Spalten `prioritaet`, in Arbeit (Dran, In Arbeit, Umsetzen) `arbeitsbeginn`,
+  übernimmt sie. Mitgeliefert: offene Spalten `prioritaet`, in Arbeit (In Arbeit, Umsetzen; früher Dran) `arbeitsbeginn`,
   Erledigt `erledigung`.
 - Neue Karten kommen oben in die Spalte: anlegen, mehrere, duplizieren, umziehen, Serienkarten und jedes Verschieben
   ohne Platz (Status im Detail, Telefon, Liste, Sammelaktion; mitgezogene Verknüpfte direkt darunter). `einreihen` ohne

@@ -40,8 +40,8 @@ def _in_arbeit(name: str, farbe: Farbe = "honig", symbol: str = "fa-person-diggi
 MITGELIEFERT: list[Vorlage] = [
     Vorlage(id="v-leer", name="Leer anfangen", beschreibung="Drei Spalten, ohne Module und Felder; alles Weitere stellst du selbst ein.",
             symbol="fa-square", spalten=[_offen("Offen", "stahl", "fa-inbox"), _in_arbeit("In Arbeit"), _erledigt()]),
-    Vorlage(id="v-aufgaben", name="Aufgaben", beschreibung="Offen, Dran, Erledigt: für Aufgaben im Alltag", symbol="fa-list-check",
-            spalten=[_offen("Offen", "stahl", "fa-inbox"), _in_arbeit("Dran"), _erledigt()],
+    Vorlage(id="v-aufgaben", name="Aufgaben", beschreibung="Offen, In Arbeit, Erledigt: für Aufgaben im Alltag", symbol="fa-list-check",
+            spalten=[_offen("Offen", "stahl", "fa-inbox"), _in_arbeit("In Arbeit"), _erledigt()],
             module=["zeiterfassung", "serien", "vorlesen"]),
     Vorlage(id="v-projekt", name="Projekt", beschreibung="Eingang bis Erledigt mit Grenzen in Arbeit und Prüfung",
             symbol="fa-diagram-project",

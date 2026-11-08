@@ -106,13 +106,13 @@ async def test_verschoben_mit_verknuepften(pw: Pinnwand):
     await pw.post("anna", f"/karten/{a['id']}/verknuepfen", {"mit": c["id"]})
     vorher = {n: await texte(pw, n) for n in ("anna", "bert", "cora")}
 
-    await pw.post("anna", f"/karten/{a['id']}/verschieben", {"nach": spalte(b, "Dran")})
+    await pw.post("anna", f"/karten/{a['id']}/verschieben", {"nach": spalte(b, "In Arbeit")})
     # ungelesen von anna an derselben Karte: das Verschieben kommt ins Bündel mit der Zuweisung (HELF-54)
     assert {n: await texte(pw, n) for n in vorher} == {
-        "anna": [], "bert": ["anna bei HAUS-1: dir zugewiesen und nach Dran verschoben"],
-        "cora": ["anna bei HAUS-2: dir zugewiesen und nach Dran verschoben mit HAUS-1"]}
+        "anna": [], "bert": ["anna bei HAUS-1: dir zugewiesen und nach In Arbeit verschoben"],
+        "cora": ["anna bei HAUS-2: dir zugewiesen und nach In Arbeit verschoben mit HAUS-1"]}
     # neu ordnen in derselben Spalte ist kein Verschieben
-    await pw.post("anna", f"/karten/{c['id']}/verschieben", {"nach": spalte(b, "Dran"), "platz": 0})
+    await pw.post("anna", f"/karten/{c['id']}/verschieben", {"nach": spalte(b, "In Arbeit"), "platz": 0})
     assert len(await hinweise(pw, "bert")) == 1
 
     await pw.post("bert", f"/karten/{a['id']}/erledigen")
@@ -139,7 +139,7 @@ async def test_wege_je_art(pw: Pinnwand):
 
     k = await pw.karte("anna", b, "Fenster")
     await bearbeiten(pw, "anna", k, {"zustaendig": ["1", "2"]})
-    await pw.post("anna", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "Dran")})
+    await pw.post("anna", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "In Arbeit")})
     assert [h["art"] for h in await hinweise(pw, "bert")] == ["zugewiesen"]
 
     for daten, meldung in [
@@ -255,10 +255,10 @@ async def test_buendeln_je_person_und_karte(pw: Pinnwand):
     k = await pw.karte("bert", b, "Fenster")
     await bearbeiten(pw, "bert", k, {"zustaendig": ["1"]})                        # anna zugewiesen
     await pw.post("bert", f"/karten/{k['id']}/kommentieren", {"text": "Ursache gefunden"})
-    await pw.post("bert", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "Dran")})
+    await pw.post("bert", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "In Arbeit")})
     await pw.post("bert", f"/karten/{k['id']}/kommentieren", {"text": "Noch etwas"})
     [h] = await hinweise(pw, "anna")
-    assert (h["art"], h["text"]) == ("zugewiesen", "bert bei HAUS-1: dir zugewiesen, kommentiert, nach Dran verschoben und kommentiert")
+    assert (h["art"], h["text"]) == ("zugewiesen", "bert bei HAUS-1: dir zugewiesen, kommentiert, nach In Arbeit verschoben und kommentiert")
     # cora an derselben Karte: eigener Hinweis
     await pw.post("cora", f"/karten/{k['id']}/kommentieren", {"text": "Ich helfe"})
     assert len(await hinweise(pw, "anna")) == 2

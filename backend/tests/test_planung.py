@@ -50,7 +50,7 @@ async def test_aendern_pause_und_auslass(pw: Pinnwand):
     b = await mit_bert(pw)
     s = (await runde(pw, b))["serie"]
     k = await serienkarten(pw)
-    await ok(pw, "anna", f"/karten/{k['2026-10-29']['id']}/verschieben", {"nach": spalte(b, "Dran")})   # angefasst
+    await ok(pw, "anna", f"/karten/{k['2026-10-29']['id']}/verschieben", {"nach": spalte(b, "In Arbeit")})   # angefasst
 
     r = await pw.c.patch(f"/api/v1/serien/{s['id']}", headers=pw.kopf["anna"], json={"uhrzeit": "08:30", "teilnehmer": ["1"]})
     assert r.json()["meldung"] == ("Serie Runde gespeichert; 2 Tage angepasst; angefasste und vergangene Tage bleiben")
@@ -144,8 +144,8 @@ async def test_termine(pw: Pinnwand):
 
 async def test_zielspalte_und_mitglied_gehen(pw: Pinnwand):
     b = await mit_bert(pw)
-    s = (await runde(pw, b, zielspalte=spalte(b, "Dran")))["serie"]
-    await ok(pw, "anna", f"/boards/{b['id']}/spalten/{spalte(b, 'Dran')}/loeschen", {"nach": spalte(b, "Offen")})
+    s = (await runde(pw, b, zielspalte=spalte(b, "In Arbeit")))["serie"]
+    await ok(pw, "anna", f"/boards/{b['id']}/spalten/{spalte(b, 'In Arbeit')}/loeschen", {"nach": spalte(b, "Offen")})
     s = (await pw.stand("anna"))["serien"][0]
     assert s["zielspalte"] == spalte(b, "Offen")
     await ok(pw, "anna", f"/boards/{b['id']}/mitglieder/entfernen", {"kellerwolke": "bert"})

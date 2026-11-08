@@ -59,7 +59,7 @@ async def test_altbestand_eindeutiges_geht_ueber(pw: Pinnwand):
     await ok(pw, "anna", f"/karten/{k['id']}/kommentieren", {"text": "Ursache gefunden, ausgerollt in 0.2.0."})
     await ok(pw, "anna", f"/karten/{k['id']}/kommentieren", {"text": "Danke, sieht gut aus."})
     await ok(pw, "anna", f"/karten/{k['id']}/bearbeiten", {"felder": {"prioritaet": "hoch"}, "text": "HELF-1: Priorität hoch (Einschätzung des Helfers)"})
-    await ok(pw, "anna", f"/karten/{k['id']}/verschieben", {"nach": next(s["id"] for s in helf["spalten"] if s["name"] == "Dran")})
+    await ok(pw, "anna", f"/karten/{k['id']}/verschieben", {"nach": next(s["id"] for s in helf["spalten"] if s["name"] == "In Arbeit")})
     pw.kopf["helfer"] = HELFER
     helfer = (await pw.stand("helfer"))["ich"]
     v = pw.app.state.dienste.anwendung.v
@@ -69,4 +69,4 @@ async def test_altbestand_eindeutiges_geht_ueber(pw: Pinnwand):
     assert [(c["text"][:7], c["von"]) for c in karte["kommentare"]] == [("Ursache", helfer), ("Danke, ", "1")]
     verlauf = [(e["text"], e["von"] == helfer) for e in karte["verlauf"]]
     assert verlauf == [("hat die Karte angelegt", False), ("hat kommentiert", True), ("hat kommentiert", False),
-                       ("hat die Priorität auf Hoch gesetzt", True), ("hat sie von Offen nach Dran verschoben", False)]
+                       ("hat die Priorität auf Hoch gesetzt", True), ("hat sie von Offen nach In Arbeit verschoben", False)]

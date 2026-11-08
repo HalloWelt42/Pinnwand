@@ -124,7 +124,7 @@
                 <span class="zustand fertig"><i class="fa-solid fa-circle-check"></i>Erledigt-Spalte</span></span>
             {:else}
               {#if board.module.zeiterfassung}
-                <span class="angabe" title="Dran heißt, man arbeitet dran: ist ein Helfer-Zugang zuständig, läuft auf jeder Karte dieser Spalte seine Zeit und bucht, wenn die Karte die Spalte verlässt. Deine eigene Zeit startest du weiter selbst.">
+                <span class="angabe" title="In Arbeit heißt, man arbeitet daran: ist ein Helfer-Zugang zuständig, läuft auf jeder Karte dieser Spalte seine Zeit und bucht, wenn die Karte die Spalte verlässt. Deine eigene Zeit startest du weiter selbst.">
                   <span class="etikett">Zeit läuft hier</span>
                   <button class="schalter" class:an={!!s.misst} aria-pressed={!!s.misst} aria-label="In Spalte {s.name} läuft die Zeit"
                           onclick={() => spalteAendern(board.id, s.id, { misst: !s.misst })}></button>{s.misst ? "ja" : "nein"}</span>

@@ -149,7 +149,7 @@ async def test_vorschlaege_aus_hash_und_arbeitszeit(pw: Pinnwand):
     andere = await pw.karte("anna", b, "Keller")
     await ok(pw, "anna", f"/karten/{andere['id']}/kommentieren", {"text": "Erledigt mit Commit bbbbbbbb, nicht 20261030."})
     pw.zeiger.zeit = pw.zeiger.zeit.replace(hour=11)
-    await ok(pw, "anna", f"/karten/{k['id']}/verschieben", {"nach": next(s["id"] for s in b["spalten"] if s["name"] == "Dran")})
+    await ok(pw, "anna", f"/karten/{k['id']}/verschieben", {"nach": next(s["id"] for s in b["spalten"] if s["name"] == "In Arbeit")})
     pw.zeiger.zeit = pw.zeiger.zeit.replace(hour=14)
     await ok(pw, "anna", f"/karten/{k['id']}/erledigen")
     await einspielen(pw, commit("a", "Sortierung je Spalte", "2026-10-27T12:00:00"),      # während der Arbeit

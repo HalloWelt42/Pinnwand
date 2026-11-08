@@ -44,7 +44,7 @@ Groß- und Kleinschreibung spielen keine Rolle. Ein @ in Code oder in einer Adre
   **Serien heute**.
 - Macht jemand die Änderung rückgängig, die einen Hinweis ausgelöst hat, verschwindet der Hinweis mit.
 - Was dieselbe Person an derselben Karte tut, kommt in einen Hinweis, solange du ihn noch nicht gelesen hast, etwa
-  "Helfer bei HELF-54: nach Dran verschoben, kommentiert und dir zugewiesen". Er rückt dabei nach oben und trägt die
+  "Helfer bei HELF-54: nach In Arbeit verschoben, kommentiert und dir zugewiesen". Er rückt dabei nach oben und trägt die
   wichtigste Art: **Zugewiesen** vor **Erwähnt** vor **Kommentar** vor **Verschoben**. Jeder Anlass steht im Text, es
   geht nichts verloren. Aufs Telefon kommt er erneut nur, wenn eine wichtigere Art dazukommt, etwa eine Zuweisung.
   Hast du ihn gelesen, beginnt der nächste Anlass einen neuen Hinweis.

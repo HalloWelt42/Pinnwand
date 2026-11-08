@@ -1,4 +1,4 @@
-"""Zeit läuft in "Dran" (HELF-193): beim Start, in einer Transaktion. Spalten, über deren Messung noch nie entschieden
+"""Zeit läuft in "Dran" (HELF-193; die Spalte heißt seit HELF-198 "In Arbeit"): beim Start, in einer Transaktion. Spalten, über deren Messung noch nie entschieden
 wurde (das Feld fehlt) und die "Dran" heißen, messen ab jetzt; so arbeitete der Helfer schon immer ("Dran heißt, man
 arbeitet dran"). Wer eine Spalte ausschaltet, speichert das ausdrücklich (`misst: false`); sie bleibt dann aus, auch bei
 jedem weiteren Start. Neue Boards bekommen die Messung aus ihrer Vorlage. Gibt es nichts nachzutragen, ändert der Lauf

@@ -80,7 +80,7 @@ async def test_buendel_klingelt_nur_bei_wichtigerem(pw: Pinnwand):
     await mitteilungen.leeren()
     assert PUSH_EINGANG == []                                       # Kommentar: nur in der Pinnwand
     await bearbeiten(pw, "anna", k, {"zustaendig": ["2", "3"]})     # cora dazu: an bert nichts Neues
-    await pw.post("anna", f"/karten/{k['id']}/verschieben", {"nach": next(s["id"] for s in b["spalten"] if s["name"] == "Dran")})
+    await pw.post("anna", f"/karten/{k['id']}/verschieben", {"nach": next(s["id"] for s in b["spalten"] if s["name"] == "In Arbeit")})
     await mitteilungen.leeren()
     assert PUSH_EINGANG == []
     k2 = await pw.karte("anna", b, "Keller")

@@ -38,12 +38,12 @@ Oben in einer Spalte steht immer das Neueste; nach unten geht es in die Vergange
 | - | - | - |
 | **Priorität** | Fahne | Dringend, dann Hoch, Mittel, Niedrig, ohne; bei gleicher Priorität die zuletzt angelegte |
 | **Fälligkeit** | Kalenderblatt | die früheste Fälligkeit; Karten ohne Datum stehen unten |
-| **Arbeitsbeginn** | Spielen | die Karte, die zuletzt in die Spalte kam, in einer Spalte wie Dran also die zuletzt begonnene |
+| **Arbeitsbeginn** | Spielen | die Karte, die zuletzt in die Spalte kam, in einer Spalte wie In Arbeit also die zuletzt begonnene |
 | **Erledigung** | Uhr mit Pfeil | die zuletzt erledigte, am selben Tag die zuletzt abgelegte |
 | **Anlage** | Plus | die zuletzt angelegte |
 | **Von Hand** | Hand | die Reihenfolge, in die ihr die Karten gezogen habt |
 
-Was du dort wählst, gilt nur für dich an diesem Gerät, wie das Zeitfenster. Was für alle zuerst gilt, legt **Sortierung für alle** im Menü der Spalte oder in den Einstellungen des Boards fest; in der Auswahl steht daran "für alle". Ohne eigene Einstellung ordnet die Erledigt-Spalte nach Erledigung und jede andere nach Priorität. Ein neues Board bringt die Sortierung aus seiner Vorlage mit: offene Spalten nach Priorität, Spalten wie Dran oder In Arbeit nach Arbeitsbeginn, Erledigt nach Erledigung. Eine eigene Vorlage übernimmt die Sortierung ihres Boards.
+Was du dort wählst, gilt nur für dich an diesem Gerät, wie das Zeitfenster. Was für alle zuerst gilt, legt **Sortierung für alle** im Menü der Spalte oder in den Einstellungen des Boards fest; in der Auswahl steht daran "für alle". Ohne eigene Einstellung ordnet die Erledigt-Spalte nach Erledigung und jede andere nach Priorität. Ein neues Board bringt die Sortierung aus seiner Vorlage mit: offene Spalten nach Priorität, Spalten wie In Arbeit oder Umsetzen nach Arbeitsbeginn, Erledigt nach Erledigung. Eine eigene Vorlage übernimmt die Sortierung ihres Boards.
 
 Neue Karten kommen oben in die Spalte, ebenso Kopien und Karten, die über **Status**, die Liste oder das Telefon in die Spalte wechseln. In einer sortierten Spalte steht eine hineingezogene Karte dort, wo die Sortierung sie hinstellt; innerhalb der Spalte umsortieren geht nur mit **Von Hand**.
 

@@ -171,7 +171,7 @@ erste der Liste.
 
 | Vorlage | Spalten | Module |
 |---|---|---|
-| Aufgaben | Offen, Dran, Erledigt | Zeiterfassung, Serien und Termine, Vorlesen |
+| Aufgaben | Offen, In Arbeit, Erledigt | Zeiterfassung, Serien und Termine, Vorlesen |
 | Projekt | Eingang, Geplant, In Arbeit (Grenze 4), Prüfung (Grenze 3), Erledigt | alle sieben Module |
 | Ideen | Gesammelt, Bewerten, Umsetzen, Umgesetzt; neue Karten sind Ideen | Transkripte, Vorlesen, KI an der Karte |
 | Leer anfangen | Offen, In Arbeit, Erledigt | keine; alles Weitere stellst du selbst ein |

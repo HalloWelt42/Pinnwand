@@ -31,11 +31,11 @@ async def _timer(pw: Pinnwand) -> dict[str, str]:
 
 async def test_dran_misst_je_karte_fuer_den_helfer(pw: Pinnwand):
     b, helfer = await _helferboard(pw)
-    assert next(s for s in b["spalten"] if s["name"] == "Dran").get("misst") is True
+    assert next(s for s in b["spalten"] if s["name"] == "In Arbeit").get("misst") is True
     a = await pw.karte("anna", b, "Erstes Ticket")
     c = await pw.karte("anna", b, "Zweites Ticket")
     for k in (a, c):
-        await ok(pw, "anna", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "Dran")})
+        await ok(pw, "anna", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "In Arbeit")})
         await _zustaendig(pw, k, [helfer])
     assert await _timer(pw) == {a["id"]: helfer, c["id"]: helfer}, "zwei Dran-Karten, zwei laufende Timer des Helfers"
     await ok(pw, "anna", "/timer/starten", {"karte": a["id"]})                # annas eigener Timer läuft daneben
@@ -52,7 +52,7 @@ async def test_zustaendigkeit_startet_und_bucht(pw: Pinnwand):
     """Wie das Werkzeug des Helfers arbeitet: erst nach Dran, dann zuständig; zurück an den Nutzer bucht."""
     b, helfer = await _helferboard(pw)
     k = await pw.karte("anna", b, "Ticket")
-    await ok(pw, "anna", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "Dran")})
+    await ok(pw, "anna", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "In Arbeit")})
     assert await _timer(pw) == {}, "anna ist zuständig: einem Menschen startet die Spalte nie einen Timer"
     await _zustaendig(pw, k, [helfer])
     assert await _timer(pw) == {k["id"]: helfer}
@@ -64,9 +64,9 @@ async def test_zustaendigkeit_startet_und_bucht(pw: Pinnwand):
 
 async def test_spalte_umschalten_gleicht_ab(pw: Pinnwand):
     b, helfer = await _helferboard(pw)
-    k = await pw.karte("anna", b, "Ticket", spalte=spalte(b, "Dran"))
+    k = await pw.karte("anna", b, "Ticket", spalte=spalte(b, "In Arbeit"))
     await _zustaendig(pw, k, [helfer])
-    dran = spalte(b, "Dran")
+    dran = spalte(b, "In Arbeit")
     assert await _timer(pw) == {k["id"]: helfer}
     await ok(pw, "anna", f"/boards/{b['id']}/spalten/{dran}/aendern", {"misst": False})
     assert await _timer(pw) == {}
@@ -100,7 +100,7 @@ async def test_vorlage_projekt_misst_in_arbeit_nicht_in_pruefung(pw: Pinnwand):
 async def test_der_helfer_legt_gleich_in_dran_an(pw: Pinnwand):
     """Legt der Helfer eine Karte gleich in einer messenden Spalte an, ist er zuständig und seine Zeit läuft sofort."""
     b, helfer = await _helferboard(pw)
-    k = await pw.karte("helfer", b, "Selbst angelegt", spalte=spalte(b, "Dran"))
+    k = await pw.karte("helfer", b, "Selbst angelegt", spalte=spalte(b, "In Arbeit"))
     assert await _timer(pw) == {k["id"]: helfer}
 
 
@@ -116,10 +116,12 @@ async def test_nachtrag_beim_start_macht_dran_messend(pw: Pinnwand):
         d = json.loads(z["daten"])
         for s in d["spalten"]:
             s.pop("misst", None)
+            if s["name"] == "In Arbeit":
+                s["name"] = "Dran"          # ein Board von vor HELF-198
         v.execute("UPDATE boards SET daten=? WHERE id=?", (json.dumps(d), b["id"]))
     db = pw.app.state.dienste.anwendung.v.db
     await db.transaktion(ohne_feld)
     assert await db.transaktion(spaltenmessung.nachtragen) == 1
     assert await db.transaktion(spaltenmessung.nachtragen) == 0, "ein zweiter Lauf ändert nichts"
-    await ok(pw, "anna", f"/boards/{b['id']}/spalten/{spalte(b, 'Dran')}/aendern", {"misst": False})
+    await ok(pw, "anna", f"/boards/{b['id']}/spalten/{spalte(b, 'In Arbeit')}/aendern", {"misst": False})
     assert await db.transaktion(spaltenmessung.nachtragen) == 0, "aus bleibt aus"

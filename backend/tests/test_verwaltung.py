@@ -104,7 +104,7 @@ async def test_als_vorlage_speichern(pw: Pinnwand):
     assert a["meldung"] == ("Vorlage Wohnung gespeichert: 3 Spalten, 1 Feld, 1 Label; sie steht beim Anlegen unter den "
                             "eigenen Vorlagen")
     v = next(x for x in (await pw.stand("anna"))["vorlagen"] if x["name"] == "Wohnung")
-    assert (v["eigen"], v["konto"], [s["name"] for s in v["spalten"]]) == (True, "1", ["Offen", "Dran", "Erledigt"])
+    assert (v["eigen"], v["konto"], [s["name"] for s in v["spalten"]]) == (True, "1", ["Offen", "In Arbeit", "Erledigt"])
     assert v["felder"] == [{"name": "Raum", "art": "auswahl", "optionen": [], "aufKarte": False}]
     assert "Wohnung" not in {x["name"] for x in (await pw.stand("bert"))["vorlagen"]}          # nur für anna
     neu = await pw.board("anna", "Zweitwohnung", "ZWEI", vorlage=v["id"])
@@ -138,7 +138,7 @@ async def test_spalten_anlegen_aendern_ordnen(pw: Pinnwand):
     assert a["meldung"] == "Spalte Warten angelegt, am Ende"
     neu = await board(pw)
     warten = spalte(neu, "Warten")
-    assert [s["name"] for s in neu["spalten"]] == ["Offen", "Dran", "Erledigt", "Warten"]
+    assert [s["name"] for s in neu["spalten"]] == ["Offen", "In Arbeit", "Erledigt", "Warten"]
     a = await ok(pw, "anna", f"/boards/{b['id']}/spalten/{warten}/aendern",
                  {"name": "Wartet", "grenze": 3, "eingeklappt": True, "farbe": "honig"})
     assert a["meldung"] == "Spalte Wartet: heißt jetzt Wartet, neue Farbe, Grenze 3, anfangs eingeklappt"
@@ -173,7 +173,7 @@ async def test_spalten_anlegen_aendern_ordnen(pw: Pinnwand):
     ids = [s["id"] for s in neu["spalten"]]
     a = await ok(pw, "anna", f"{pfad}/ordnen", {"ids": [ids[3], *ids[:3]]})
     assert a["meldung"] == "Spalten von Haushalt neu geordnet"
-    assert [s["name"] for s in (await board(pw))["spalten"]] == ["Wartet", "Offen", "Dran", "Erledigt"]
+    assert [s["name"] for s in (await board(pw))["spalten"]] == ["Wartet", "Offen", "In Arbeit", "Erledigt"]
     await abgelehnt(pw, "anna", f"{pfad}/ordnen", {"ids": ids[:3]}, 400,
                     "Die Reihenfolge muss jede Spalte des Boards genau einmal nennen")
     await abgelehnt(pw, "bert", f"{pfad}/ordnen", {"ids": ids}, 403, "Dir fehlt im Board Haushalt das Recht Board verwalten")
@@ -182,16 +182,16 @@ async def test_spalten_anlegen_aendern_ordnen(pw: Pinnwand):
 
 async def test_zur_erledigt_spalte(pw: Pinnwand):
     b = await pw.board("anna")
-    alt, dran = spalte(b, "Erledigt"), spalte(b, "Dran")
+    alt, dran = spalte(b, "Erledigt"), spalte(b, "In Arbeit")
     fertig = await pw.karte("anna", b, "Fenster", spalte=alt)
     laeuft = await pw.karte("anna", b, "Keller", spalte=dran)
     assert fertig["abgeschlossen"] == "2026-10-27"
     pw.zeiger.zeit = pw.zeiger.zeit.replace(day=28, hour=9)
     a = await ok(pw, "anna", f"/boards/{b['id']}/spalten/{dran}/erledigt")
-    assert a["meldung"] == "Dran ist jetzt die Erledigt-Spalte; Karten in Erledigt sind wieder offen"
+    assert a["meldung"] == "In Arbeit ist jetzt die Erledigt-Spalte; Karten in Erledigt sind wieder offen"
     neu = await board(pw)
     assert [(s["name"], s["erledigt"], s.get("zeitfenster")) for s in neu["spalten"]] == [
-        ("Offen", False, None), ("Dran", True, "heute"), ("Erledigt", False, "heute")]
+        ("Offen", False, None), ("In Arbeit", True, "heute"), ("Erledigt", False, "heute")]
     wieder = await karte(pw, "anna", fertig["schluessel"])
     assert "abgeschlossen" not in wieder and wieder["bewegtAm"] == "2026-10-28T09:00:00"
     assert (await karte(pw, "anna", laeuft["schluessel"]))["abgeschlossen"] == "2026-10-28"
@@ -287,7 +287,7 @@ async def test_rollen_und_rechte(pw: Pinnwand, monkeypatch: pytest.MonkeyPatch):
     a = await ok(pw, "anna", f"{pfad}/leser/recht", {"recht": "karten.verschieben", "an": True})
     assert a["meldung"] == "Zuschauer: Recht erteilt, gilt sofort für 1 Person"
     k = await pw.karte("anna", b, "Fenster")
-    assert (await pw.post("bert", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "Dran")})).status_code == 200
+    assert (await pw.post("bert", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "In Arbeit")})).status_code == 200
 
     # ein Recht eines Moduls, das diese Fassung nicht anbietet (hier: Berichte weggenommen)
     monkeypatch.setattr("app.anwendung.mitglieder.MODULE_DA", ("zeiterfassung", "arbeitszeit", "serien"))

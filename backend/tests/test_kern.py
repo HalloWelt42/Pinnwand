@@ -38,7 +38,7 @@ async def test_board_aus_vorlage(pw: Pinnwand):
     r = await pw.post("anna", "/boards", {"vorlage": "v-aufgaben", "name": "Haushalt", "kuerzel": "HAUS"})
     assert r.json()["meldung"] == "Board Haushalt angelegt, Karten heißen HAUS-1 und so weiter"
     b = (await pw.stand("anna"))["boards"][0]
-    assert [s["name"] for s in b["spalten"]] == ["Offen", "Dran", "Erledigt"]
+    assert [s["name"] for s in b["spalten"]] == ["Offen", "In Arbeit", "Erledigt"]
     assert [s.get("zeitfenster") for s in b["spalten"]] == [None, None, "heute"]
     assert b["mitglieder"] == [{"konto": "1", "kellerwolke": "anna", "rolle": "besitzer", "seit": "2026-10-27"}]
     assert [r["id"] for r in b["rollen"]] == ["besitzer", "mitglied", "leser"]
@@ -100,10 +100,10 @@ async def test_verschieben_platz_und_erledigt(pw: Pinnwand):
     for t in ("Fenster", "Keller", "Dach"):
         await pw.karte("anna", b, t)
     pw.zeiger.zeit = pw.zeiger.zeit.replace(hour=11)
-    r = await pw.post("anna", f"/karten/{(await karte(pw, 'anna', 'HAUS-1'))['id']}/verschieben", {"nach": spalte(b, "Dran")})
-    assert r.json()["meldung"] == "HAUS-1 nach Dran"
+    r = await pw.post("anna", f"/karten/{(await karte(pw, 'anna', 'HAUS-1'))['id']}/verschieben", {"nach": spalte(b, "In Arbeit")})
+    assert r.json()["meldung"] == "HAUS-1 nach In Arbeit"
     k1 = await karte(pw, "anna", "HAUS-1")
-    assert k1["bewegtAm"] == "2026-10-27T11:00:00" and k1["verlauf"][-1]["text"] == "hat sie von Offen nach Dran verschoben"
+    assert k1["bewegtAm"] == "2026-10-27T11:00:00" and k1["verlauf"][-1]["text"] == "hat sie von Offen nach In Arbeit verschoben"
 
     k3 = await karte(pw, "anna", "HAUS-3")
     r = await pw.post("anna", f"/karten/{k3['id']}/verschieben", {"nach": spalte(b, "Offen"), "platz": 0})
@@ -132,9 +132,9 @@ async def test_grenze_ist_nur_eine_warnung(pw: Pinnwand):
 async def test_sammel_verschieben(pw: Pinnwand):
     b = await pw.board("anna")
     ids = [(await pw.karte("anna", b, t))["id"] for t in ("Fenster", "Keller", "Dach")]
-    r = await pw.post("anna", "/karten/sammel/verschieben", {"ids": ids, "nach": spalte(b, "Dran")})
-    assert (r.status_code, r.json()["meldung"]) == (200, "3 Karten nach Dran")
-    assert await reihe(pw, "anna", b, "Dran") == ["HAUS-1", "HAUS-2", "HAUS-3"]
+    r = await pw.post("anna", "/karten/sammel/verschieben", {"ids": ids, "nach": spalte(b, "In Arbeit")})
+    assert (r.status_code, r.json()["meldung"]) == (200, "3 Karten nach In Arbeit")
+    assert await reihe(pw, "anna", b, "In Arbeit") == ["HAUS-1", "HAUS-2", "HAUS-3"]
 
 
 async def test_enge_reihe_wird_neu_nummeriert(pw: Pinnwand):
@@ -160,14 +160,14 @@ async def test_verknuepfte_ziehen_mit(pw: Pinnwand):
     gruppen = (await pw.stand("anna"))["gruppen"]
     assert len(gruppen) == 1 and gruppen[0]["board"] == b["id"]
 
-    await pw.karte("anna", b, "Schon dran", spalte=spalte(b, "Dran"))
-    r = await pw.post("anna", f"/karten/{a['id']}/verschieben", {"nach": spalte(b, "Dran")})
-    assert r.json()["meldung"] == "HAUS-1 nach Dran; 1 verknüpfte zieht mit"
+    await pw.karte("anna", b, "Schon dran", spalte=spalte(b, "In Arbeit"))
+    r = await pw.post("anna", f"/karten/{a['id']}/verschieben", {"nach": spalte(b, "In Arbeit")})
+    assert r.json()["meldung"] == "HAUS-1 nach In Arbeit; 1 verknüpfte zieht mit"
     # die bewegte oben (das Neueste steht oben), die mitgezogene direkt darunter, jede mit eigener Reihe
-    assert await reihe(pw, "anna", b, "Dran") == ["HAUS-1", "HAUS-2", "HAUS-3"]
-    reihen = [k["reihe"] for k in (await pw.stand("anna"))["karten"] if k["spalte"] == spalte(b, "Dran")]
+    assert await reihe(pw, "anna", b, "In Arbeit") == ["HAUS-1", "HAUS-2", "HAUS-3"]
+    reihen = [k["reihe"] for k in (await pw.stand("anna"))["karten"] if k["spalte"] == spalte(b, "In Arbeit")]
     assert len(set(reihen)) == 3
-    assert (await karte(pw, "anna", "HAUS-2"))["verlauf"][-1]["text"] == "mit verknüpfter Karte verschoben nach Dran"
+    assert (await karte(pw, "anna", "HAUS-2"))["verlauf"][-1]["text"] == "mit verknüpfter Karte verschoben nach In Arbeit"
 
     g = gruppen[0]["id"]
     r = await pw.post("anna", f"/gruppen/{g}/zeit-teilen", {"an": False})
@@ -209,7 +209,7 @@ async def test_einladen_schaltet_frei_und_rechte_gelten(pw: Pinnwand):
     mitglied = next(m for m in s["boards"][0]["mitglieder"] if m["kellerwolke"] == "bert")
     assert (mitglied["konto"], mitglied["rolle"]) == ("2", "leser")             # die wartende Einladung gilt jetzt
 
-    r = await pw.post("bert", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "Dran")})
+    r = await pw.post("bert", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "In Arbeit")})
     assert (r.status_code, r.json()["detail"]) == (403, "Dir fehlt im Board Haushalt das Recht Karten verschieben")
     assert (await pw.post("bert", f"/boards/{b['id']}/karten", {"titel": "Hallo"})).status_code == 403
     assert (await pw.post("bert", f"/boards/{b['id']}/mitglieder", {"kellerwolke": "cora"})).status_code == 403
@@ -241,11 +241,11 @@ async def test_board_mit_einladungen_und_fremde_boards(pw: Pinnwand):
     assert r.status_code == 403
     r = await pw.post("bert", "/boards", {"vorlage": "v-aufgaben", "name": "Meins", "kuerzel": "WERK"})
     assert r.json()["detail"] == "WERK ist schon vergeben, an ein Board, das du nicht siehst."
-    r = await pw.post("bert", f"/karten/{geheim['id']}/verschieben", {"nach": spalte(werk, "Dran")})
+    r = await pw.post("bert", f"/karten/{geheim['id']}/verschieben", {"nach": spalte(werk, "In Arbeit")})
     assert r.status_code == 403
     # als Mitglied darf bert in Haushalt verschieben
     k = await pw.karte("anna", haus, "Fenster")
-    assert (await pw.post("bert", f"/karten/{k['id']}/verschieben", {"nach": spalte(haus, "Dran")})).status_code == 200
+    assert (await pw.post("bert", f"/karten/{k['id']}/verschieben", {"nach": spalte(haus, "In Arbeit")})).status_code == 200
 
 
 # --- Rückgängig --------------------------------------------------------------------------------------------------
@@ -254,17 +254,17 @@ async def test_rueckgaengig(pw: Pinnwand):
     b = await pw.board("anna", einladungen=[{"kellerwolke": "bert"}])
     await pw.anmelden("bert")
     k = await pw.karte("anna", b, "Fenster")
-    j1 = (await pw.post("anna", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "Dran")})).json()["rueckgaengig"]
+    j1 = (await pw.post("anna", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "In Arbeit")})).json()["rueckgaengig"]
 
     assert (await pw.post("bert", f"/rueckgaengig/{j1}")).status_code == 403    # nur eigene Änderungen
     r = await pw.post("anna", f"/rueckgaengig/{j1}")
-    assert (r.status_code, r.json()["meldung"], r.json()["rueckgaengig"]) == (200, "Rückgängig: HAUS-1 nach Dran", None)
+    assert (r.status_code, r.json()["meldung"], r.json()["rueckgaengig"]) == (200, "Rückgängig: HAUS-1 nach In Arbeit", None)
     assert (await karte(pw, "anna", "HAUS-1"))["spalte"] == spalte(b, "Offen")
     r = await pw.post("anna", f"/rueckgaengig/{j1}")
     assert (r.status_code, r.json()["detail"]) == (400, "Das ist schon rückgängig gemacht")
 
     # nach einer weiteren Änderung an derselben Karte: Rückgängig würde sie überschreiben
-    j2 = (await pw.post("anna", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "Dran")})).json()["rueckgaengig"]
+    j2 = (await pw.post("anna", f"/karten/{k['id']}/verschieben", {"nach": spalte(b, "In Arbeit")})).json()["rueckgaengig"]
     await pw.post("bert", f"/karten/{k['id']}/erledigen")
     r = await pw.post("anna", f"/rueckgaengig/{j2}")
     assert r.status_code == 409

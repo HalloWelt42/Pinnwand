@@ -123,9 +123,9 @@ async def test_gruppen(pw: Pinnwand):
 
 async def test_karte_ohne_ihre_spalte_kommt_in_die_erste(pw: Pinnwand):
     b = await pw.board("anna")
-    k = await pw.karte("anna", b, "Fenster", spalte=spalte(b, "Dran"))
+    k = await pw.karte("anna", b, "Fenster", spalte=spalte(b, "In Arbeit"))
     await wegwerfen(pw, "anna", k)
-    await pw.post("anna", f"/boards/{b['id']}/spalten/{spalte(b, 'Dran')}/loeschen")
+    await pw.post("anna", f"/boards/{b['id']}/spalten/{spalte(b, 'In Arbeit')}/loeschen")
     r = await pw.post("anna", f"/papierkorb/{(await eintrag(pw, 'anna', 'HAUS-1'))['id']}/wiederherstellen")
     assert r.json()["meldung"] == "HAUS-1 wiederhergestellt, in Offen in Haushalt; ihre Spalte gibt es nicht mehr"
     assert (await karte(pw, "anna", "HAUS-1"))["spalte"] == spalte(b, "Offen")
@@ -147,7 +147,7 @@ async def test_rechte(pw: Pinnwand):
     r = await pw.post("bert", "/papierkorb/entfernen", {"ids": [e["id"]]})
     assert (r.status_code, r.json()["detail"]) == (403, "Dir fehlt im Board Haushalt das Recht Papierkorb leeren")
     assert (await pw.post("bert", f"/boards/{b['id']}/papierkorb/leeren")).status_code == 403
-    r = await pw.post("bert", f"/boards/{b['id']}/spalten/{spalte(b, 'Dran')}/loeschen")
+    r = await pw.post("bert", f"/boards/{b['id']}/spalten/{spalte(b, 'In Arbeit')}/loeschen")
     assert (r.status_code, r.json()["detail"]) == (403, "Dir fehlt im Board Haushalt das Recht Board verwalten")
     assert (await pw.post("bert", f"/boards/{b['id']}/in-papierkorb")).status_code == 403
     assert (await pw.post("bert", f"/papierkorb/{e['id']}/wiederherstellen")).status_code == 200
@@ -166,51 +166,51 @@ async def test_rechte(pw: Pinnwand):
 
 async def test_spalte_mit_karten_in_den_papierkorb(pw: Pinnwand):
     b = await pw.board("anna")
-    dran = spalte(b, "Dran")
+    dran = spalte(b, "In Arbeit")
     x, y = await pw.karte("anna", b, "Fenster", spalte=dran), await pw.karte("anna", b, "Rahmen", spalte=dran)
     await pw.post("anna", f"/karten/{x['id']}/verknuepfen", {"mit": y["id"]})
     r = await pw.post("anna", f"/boards/{b['id']}/spalten/{dran}/loeschen")
-    assert r.json()["meldung"] == "Spalte Dran im Papierkorb mit 2 Karten"
+    assert r.json()["meldung"] == "Spalte In Arbeit im Papierkorb mit 2 Karten"
     s = await pw.stand("anna")
     assert [x["name"] for x in s["boards"][0]["spalten"]] == ["Offen", "Erledigt"]
     assert s["karten"] == [] and s["gruppen"] == []
     [e] = s["papierkorb"]
-    assert (e["art"], e["spalte"]["name"], e["stelle"]) == ("spalte", "Dran", {"platz": 1})
+    assert (e["art"], e["spalte"]["name"], e["stelle"]) == ("spalte", "In Arbeit", {"platz": 1})
     assert [k["schluessel"] for k in e["karten"]] == ["HAUS-2", "HAUS-1"]
 
     r = await pw.post("anna", f"/papierkorb/{e['id']}/wiederherstellen")
-    assert r.json()["meldung"] == "Spalte Dran wiederhergestellt, an der alten Stelle in Haushalt"
+    assert r.json()["meldung"] == "Spalte In Arbeit wiederhergestellt, an der alten Stelle in Haushalt"
     s = await pw.stand("anna")
-    assert [x["name"] for x in s["boards"][0]["spalten"]] == ["Offen", "Dran", "Erledigt"]
-    assert await reihe(pw, "anna", b, "Dran") == ["HAUS-2", "HAUS-1"]
+    assert [x["name"] for x in s["boards"][0]["spalten"]] == ["Offen", "In Arbeit", "Erledigt"]
+    assert await reihe(pw, "anna", b, "In Arbeit") == ["HAUS-2", "HAUS-1"]
     [g] = s["gruppen"]                                                  # beide lagen in der Spalte: wieder verknüpft
     assert {k.get("gruppe") for k in s["karten"]} == {g["id"]}
 
 
 async def test_spalte_loeschen_karten_wandern_vorher(pw: Pinnwand):
     b = await pw.board("anna")
-    dran, offen = spalte(b, "Dran"), spalte(b, "Offen")
+    dran, offen = spalte(b, "In Arbeit"), spalte(b, "Offen")
     await pw.karte("anna", b, "Fenster")
     k2 = await pw.karte("anna", b, "Keller", spalte=dran)
     await pw.karte("anna", b, "Dach", spalte=dran)
     fertig = await pw.karte("anna", b, "Rahmen", spalte=spalte(b, "Erledigt"))
     await pw.post("anna", f"/karten/{k2['id']}/verknuepfen", {"mit": fertig["id"]})
     r = await pw.post("anna", f"/boards/{b['id']}/spalten/{dran}/loeschen", {"nach": offen})
-    assert r.json()["meldung"] == "Spalte Dran im Papierkorb; 2 Karten nach Offen; 1 verknüpfte zieht mit"
+    assert r.json()["meldung"] == "Spalte In Arbeit im Papierkorb; 2 Karten nach Offen; 1 verknüpfte zieht mit"
     assert set(await reihe(pw, "anna", b, "Offen")) == {"HAUS-1", "HAUS-2", "HAUS-3", "HAUS-4"}
-    assert (await karte(pw, "anna", "HAUS-2"))["verlauf"][-1]["text"] == "hat sie von Dran nach Offen verschoben"
+    assert (await karte(pw, "anna", "HAUS-2"))["verlauf"][-1]["text"] == "hat sie von In Arbeit nach Offen verschoben"
     [e] = (await pw.stand("anna"))["papierkorb"]
     assert e["karten"] == []
     # Rückgängig: die Spalte steht wieder, die Karten sind zurück
     await pw.post("anna", f"/rueckgaengig/{r.json()['rueckgaengig']}")
     s = await pw.stand("anna")
-    assert [x["name"] for x in s["boards"][0]["spalten"]] == ["Offen", "Dran", "Erledigt"] and s["papierkorb"] == []
-    assert await reihe(pw, "anna", b, "Dran") == ["HAUS-3", "HAUS-2"]
+    assert [x["name"] for x in s["boards"][0]["spalten"]] == ["Offen", "In Arbeit", "Erledigt"] and s["papierkorb"] == []
+    assert await reihe(pw, "anna", b, "In Arbeit") == ["HAUS-3", "HAUS-2"]
 
 
 async def test_spalte_regeln(pw: Pinnwand):
     b = await pw.board("anna")
-    dran = spalte(b, "Dran")
+    dran = spalte(b, "In Arbeit")
 
     async def loeschen(s: str, daten: dict | None = None):
         return await pw.post("anna", f"/boards/{b['id']}/spalten/{s}/loeschen", daten)

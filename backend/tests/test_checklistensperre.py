@@ -81,6 +81,8 @@ async def test_anlegen_und_umzug_in_gesperrte_spalte(pw: Pinnwand):
     grund = await _abgelehnt(pw, f"/boards/{b['id']}/karten/mehrere",
                              {"karten": [{"titel": "Neu", "checkliste": ["offen"]}], "spalte": spalte(b, "Prüfung")})
     assert "Prüfung nimmt nur Karten" in grund
+    k2 = await _mit_punkten(pw, b, "Zwei offen", [{"text": "a"}, {"text": "b"}])
+    assert (await _abgelehnt(pw, f"/karten/{k2['id']}/erledigen", {})).startswith(f"{k2['schluessel']} hat noch 2 offene Punkte der Checkliste")
     await ok(pw, "anna", f"/boards/{b['id']}/karten/mehrere", {"karten": [{"titel": "Ohne"}], "spalte": spalte(b, "Prüfung")})
     anderes = await _projekt(pw, "ZWEI")
     k = await _mit_punkten(pw, b)

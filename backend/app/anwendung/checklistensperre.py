@@ -21,7 +21,7 @@ PRUEFSPALTEN = ("prüfung", "zur prüfung", "zu testen")
 
 
 def punkte_text(n: int) -> str:
-    return f"{n} offenen {'Punkt' if n == 1 else 'Punkten'}"
+    return f"{n} offenen Punkt" if n == 1 else f"{n} offene Punkte"
 
 
 def pruefen(ziel: Spalte, karten: list[Karte]) -> None:

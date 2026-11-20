@@ -88,7 +88,7 @@ export function sperrgrund(ziel: Spalte, karten: Karte[]): string | null {
   const regel = `${ziel.name} nimmt nur Karten mit vollständig abgehakter Checkliste`;
   if (gesperrt.length === 1) {
     const offen = offenePunkte(gesperrt[0]);
-    return `${gesperrt[0].schluessel} hat noch ${offen.length} offenen ${offen.length === 1 ? "Punkt" : "Punkten"} der Checkliste `
+    return `${gesperrt[0].schluessel} hat noch ${offen.length === 1 ? "1 offenen Punkt" : `${offen.length} offene Punkte`} der Checkliste `
       + `(erster: ${offen[0].slice(0, 80)}); ${regel}`;
   }
   const namen = gesperrt.slice(0, 5).map((k) => k.schluessel).join(", ") + (gesperrt.length > 5 ? " ..." : "");

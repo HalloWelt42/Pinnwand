@@ -3,6 +3,7 @@
 // Grenze, Verlauf) rechnet der Server; die Oberfläche zeigt beim Ziehen vorab, wohin die Karte kommt.
 
 import type { Karte, Kartenentwurf, Kennung, Prioritaet, Spalte } from "../../modell";
+import { sperrgrund } from "../../regeln/board";
 import { bewegteKarte, reihenFuer } from "../../regeln/reihe";
 import { darf } from "../abfragen";
 import { board, karte, kartenDerSpalte } from "../stand.svelte";
@@ -14,6 +15,14 @@ import { aendern, melden, senden, type Antwort } from "./meldung.svelte";
 function verschiebenErlaubt(boardId: Kennung): boolean {
   if (darf(board(boardId), "karten.verschieben")) return true;
   melden("Verschieben abgelehnt: dir fehlt in diesem Board das Recht Karten verschieben");
+  return false;
+}
+
+/** Nimmt die Zielspalte die Karten? Sonst gleich mit Grund ablehnen: offene Punkte der Checkliste (HELF-255) */
+function abgehaktErlaubt(ziel: Spalte, ids: Kennung[]): boolean {
+  const grund = sperrgrund(ziel, ids.map((id) => karte(id)).filter((k): k is Karte => !!k && k.spalte !== ziel.id));
+  if (!grund) return true;
+  melden(`Verschieben abgelehnt: ${grund}`);
   return false;
 }
 
@@ -44,6 +53,7 @@ export function ablegen(spalteId: Kennung, ids: Kennung[]): void {
   const ziel = k0 && board(k0.board).spalten.find((s) => s.id === spalteId);
   if (!k0 || !ziel || !verschiebenErlaubt(k0.board)) return;
   const neu = ids.filter((id) => karte(id)?.spalte !== spalteId);
+  if (!abgehaktErlaubt(ziel, neu)) return;
   if (neu.length > 1) return sammelVerschieben(neu, spalteId);
   const vorher = kartenDerSpalte(spalteId).map((k) => k.id);
   const bewegt = neu[0] ?? bewegteKarte(vorher, ids);
@@ -57,14 +67,15 @@ export function ablegen(spalteId: Kennung, ids: Kennung[]): void {
 export function verschieben(id: Kennung, nach: Kennung): void {
   const k = karte(id);
   const ziel = k && board(k.board).spalten.find((s) => s.id === nach);
-  if (!k || !ziel || k.spalte === nach || !verschiebenErlaubt(k.board)) return;
+  if (!k || !ziel || k.spalte === nach || !verschiebenErlaubt(k.board) || !abgehaktErlaubt(ziel, [id])) return;
   void aendern(() => senden(`/karten/${id}/verschieben`, { nach }), { vorab: vorab(id, ziel) });
 }
 
 /** Mehrere Karten eines Boards in eine Spalte */
 export function sammelVerschieben(ids: Kennung[], nach: Kennung): void {
   const k = karte(ids[0] ?? "");
-  if (!k || !verschiebenErlaubt(k.board)) return;
+  const ziel = k && board(k.board).spalten.find((s) => s.id === nach);
+  if (!k || !ziel || !verschiebenErlaubt(k.board) || !abgehaktErlaubt(ziel, ids)) return;
   void aendern(() => senden("/karten/sammel/verschieben", { ids, nach }));
 }
 

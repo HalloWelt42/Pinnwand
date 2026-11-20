@@ -89,6 +89,9 @@ class Spalte(Modell):
     #: Zeit läuft hier (HELF-193, "Dran heißt, man arbeitet dran"): für jeden zuständigen App-Zugang (etwa den Helfer)
     #: läuft auf jeder Karte dieser Spalte ein eigener Timer; er bucht, wenn die Karte die Spalte verlässt
     misst: bool | None = None
+    #: Nur mit vollständig abgehakter Checkliste (HELF-255, "ohne vollständiges Abarbeiten niemals fertig"): eine Karte
+    #: mit offenem Punkt kommt nicht hinein; kommt hier ein Punkt dazu oder geht ein Haken weg, geht sie zurück
+    nur_abgehakt: bool | None = None
 
 
 class Feld(Modell):
@@ -333,6 +336,7 @@ class VorlageSpalte(Modell):
     sortierung: Spaltensortierung | None = None
     symbol: Symbol | None = None
     misst: bool | None = None
+    nur_abgehakt: bool | None = None
 
 
 class VorlageFeld(Modell):

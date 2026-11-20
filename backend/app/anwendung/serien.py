@@ -19,7 +19,7 @@ from appkern.app import Begleiter
 from ..modell import (Abwesenheit, Auslass, Board, Ereignis, Karte, Kennung, Konto, Modell, Monatsregel, Rhythmus, Serie,
                       Stelle, Zeiteintrag, Zeitkonto)
 from ..regeln.arbeitszeit import fassung_am, ganztags_abwesend
-from ..regeln.board import erledigt_spalte, modul_an, spalte_von
+from ..regeln.board import erledigt_spalte, modul_an, nimmt_nicht, spalte_von
 from ..regeln.feiertage import feiertag
 from ..regeln.serien import NACHTRAG_TAGE, TagKarte, Umfeld, karten_titel, vorkommen, vorlauf_ende
 from ..regeln.tage import datum_kurz, ist_tag, plus_tage
@@ -239,10 +239,12 @@ def serienzeit_buchen(k: Kontext, s: Serie, tag: str, sek: int) -> str | None:
     k.s.schreib("zeiteintraege", Zeiteintrag(id=neue_kennung("z"), karte=c.id, board=c.board, konto=k.konto.id, datum=tag,
                                              von=von, bis=bis, sekunden=sek, herkunft="serie").json_daten())
     ziel = erledigt_spalte(b)
-    erledigt = ziel is not None and c.spalte != ziel.id
+    offen = ziel is not None and c.spalte != ziel.id and nimmt_nicht(ziel, c)     # HELF-255: die Zeit gilt, fertig ist sie nicht
+    erledigt = ziel is not None and c.spalte != ziel.id and not offen
     if erledigt:
         hinein(k, b, [c.id], ziel, None)
-    return f"{dauer_text(sek)} auf {c.schluessel} gebucht ({datum_kurz(tag)})" + (", Karte erledigt" if erledigt else "")
+    return (f"{dauer_text(sek)} auf {c.schluessel} gebucht ({datum_kurz(tag)})" + (", Karte erledigt" if erledigt else "")
+            + (", Karte bleibt offen: Checkliste nicht abgehakt" if offen else ""))
 
 
 def serientag_verwerfen(k: Kontext, s: Serie, tag: str) -> str:

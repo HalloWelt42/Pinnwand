@@ -81,6 +81,33 @@ def erledigt_spalte(b: Board) -> Spalte | None:
     return next((s for s in b.spalten if s.erledigt), None)
 
 
+def offene_punkte(c: Karte) -> list[str]:
+    """Die noch offenen Punkte der Checkliste."""
+    return [p.text for p in c.checkliste if not p.erledigt]
+
+
+def nimmt_nicht(ziel: Spalte, c: Karte) -> bool:
+    """Sperrt die Spalte die Karte, weil ihre Checkliste offene Punkte hat (HELF-255)?"""
+    return bool(ziel.nur_abgehakt) and bool(offene_punkte(c))
+
+
+def rueckweg(b: Board) -> Spalte | None:
+    """Wohin eine Karte zurückgeht, deren Checkliste in einer gesperrten Spalte wieder offen ist: die erste Spalte, die
+    weder erledigt noch gesperrt ist."""
+    return next((s for s in b.spalten if not s.erledigt and not s.nur_abgehakt), None)
+
+
+def wieder_offen(vorher: Karte, nachher: Karte) -> bool:
+    """Ist ein Punkt neu offen (dazugekommen oder Haken entfernt)? Abhaken oder Löschen offener Punkte zählt nicht."""
+    rest = offene_punkte(vorher)
+    for text in offene_punkte(nachher):
+        if text in rest:
+            rest.remove(text)
+        else:
+            return True
+    return False
+
+
 def uebertragen(quelle: Board, ziel: Board, c: Karte) -> int:
     """Eine Karte für ein anderes Board angleichen: Labels und eigene Felder gelten weiter, wenn das Ziel welche mit
     gleichem Namen (und bei Feldern gleicher Art, bei Auswahl mit der Option) hat; Zuständige bleiben, wenn sie dort

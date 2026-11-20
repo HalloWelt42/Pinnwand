@@ -68,7 +68,7 @@ Darunter stehen drei Angaben zum Lesen: **Im Status** mit der Sanduhr (Tage seit
 - Das X am Ende entfernt den Punkt, mit Rückgängig.
 - Im Feld **Punkt hinzufügen, Enter** tippst du einen neuen Punkt; Enter hängt ihn an.
 
-Oben zeigt der Zähler erledigt/gesamt und ein Balken den Fortschritt; ist alles abgehakt, wird der Zähler grün. Dieselbe Angabe steht auf der Karte im Board. Mit dem Modul KI an der Karte schlägt **Vorschlagen** neue Punkte vor; **Übernehmen** hängt nur die angehakten ans Ende. Eine Checkliste hat höchstens 200 Punkte.
+Oben zeigt der Zähler erledigt/gesamt und ein Balken den Fortschritt; ist alles abgehakt, wird der Zähler grün. Dieselbe Angabe steht auf der Karte im Board. Mit dem Modul KI an der Karte schlägt **Vorschlagen** neue Punkte vor; **Übernehmen** hängt nur die angehakten ans Ende. Eine Checkliste hat höchstens 200 Punkte. Nimmt eine Spalte nur Karten mit abgehakter Checkliste (Schalter **Nur abgehakt**, siehe [Spalten](hilfe:boardeinstellungen/spalten)), kommt die Karte erst hinein, wenn alles abgehakt ist; ein neuer oder wieder geöffneter Punkt schickt sie von dort zurück.
 
 ## Kommentare und Erwähnungen {#kommentare}
 Unten im Detail stehen die Reiter **Kommentare** und **Verlauf**, je mit ihrer Zahl.

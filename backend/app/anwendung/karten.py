@@ -9,9 +9,9 @@ from __future__ import annotations
 from pydantic import Field
 
 from ..modell import Board, Ereignis, Gruppe, Karte, Kartenart, Kennung, Konto, Modell, Punkt, Spalte
-from ..regeln.board import abschluss, spalte_von, uebertragen
+from ..regeln.board import abschluss, nimmt_nicht, rueckweg, spalte_von, uebertragen
 from ..regeln.tage import ist_tag
-from . import hinweise, zeiterfassung
+from . import checklistensperre, hinweise, zeiterfassung
 from .commits import bezuege_umziehen
 from .kartenbasis import (
     KURZ_LAENGE, PUNKTE_HOECHSTENS, TEXT_LAENGE, TITEL_LAENGE, gruppen_aufraeumen, karte_lesen, karten_der_spalte, serientag_auslassen, speichern, vermerken,
@@ -92,6 +92,7 @@ def hinein(k: Kontext, b: Board, ids: list[Kennung], ziel: Spalte, platz: int | 
            if d.get("gruppe") == g and d["id"] not in ids and d["spalte"] != ziel.id]
     mit = list({c.id: c for c in mit}.values())
     wechselnde = {c.id for c in karten if c.spalte != ziel.id}
+    checklistensperre.pruefen(ziel, [c for c in karten if c.id in wechselnde] + mit)   # HELF-255
     einreihen(k, ziel, karten + mit, platz)
     gebucht = 0
     for c in karten:
@@ -217,6 +218,7 @@ class Karten:
                 entwurf_pruefen(e)
             ziel = zielspalte(b, spalte)
             karten = [neue_karte(k, b, ziel, e, art or b.kartenart) for e in entwuerfe]
+            checklistensperre.pruefen(ziel, karten)                 # HELF-255
             in_spalte_legen(k, b, ziel, karten)
             grenze = ueber_grenze(k, ziel)
             spanne = karten[0].schluessel if len(karten) == 1 else f"{karten[0].schluessel} bis {karten[-1].schluessel}"
@@ -226,7 +228,8 @@ class Karten:
 
     async def duplizieren(self, konto: Konto, karte_id: Kennung) -> Antwort:
         """Kopie in derselben Spalte oben: Titel mit "(Kopie)", Inhalt und Angaben gleich, Checkliste unerledigt; ohne
-        Kommentare, Blockade, Transkripte, Gruppe, Serie und Anhänge (M-36)."""
+        Kommentare, Blockade, Transkripte, Gruppe, Serie und Anhänge (M-36). Nimmt die Spalte nur abgehakte Karten und hat
+        die Kopie Punkte, kommt sie in die erste Spalte ohne Sperre (HELF-255)."""
 
         def arbeit(k: Kontext) -> str:
             q = karte_lesen(k, karte_id)
@@ -244,9 +247,17 @@ class Karten:
                 "verlauf": [Ereignis(zeit=k.jetzt, von=konto.id, text=f"hat die Karte aus {q.schluessel} dupliziert")],
                 "fassung": 0,
             })
+            zusatz = ""
+            if nimmt_nicht(ziel, c):
+                frei = rueckweg(b)
+                if frei is None:
+                    checklistensperre.pruefen(ziel, [c])         # keine Spalte ohne Sperre: abgelehnt mit Grund
+                else:
+                    ziel, c.spalte, c.abgeschlossen = frei, frei.id, None
+                    zusatz = f" (in {frei.name}: Checkliste offen)"
             einreihen(k, ziel, [c], None)
             speichern(k, c)
-            return f"{q.schluessel} als {c.schluessel} dupliziert"
+            return f"{q.schluessel} als {c.schluessel} dupliziert{zusatz}"
 
         return await self.a.aendern(konto, arbeit)
 
@@ -266,6 +277,7 @@ class Karten:
             ziel = spalte_von(b, spalte) if spalte else next((s for s in b.spalten if not s.erledigt), None)
             if ziel is None:
                 raise Abgelehnt(f"Diese Spalte gibt es im Board {b.name} nicht", 400)
+            checklistensperre.pruefen(ziel, [c])                    # HELF-255
             gebucht = zeiterfassung.timer_beenden(k, [c])
             serientag_auslassen(k, c)                       # ein Serientag zieht als einfache Karte um
             alt, gruppe = c.schluessel, c.gruppe

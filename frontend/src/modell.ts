@@ -88,6 +88,9 @@ export interface Spalte {
   symbol?: string;
   /** Zeit läuft hier (HELF-193): zuständige App-Zugänge wie der Helfer haben auf jeder Karte einen eigenen Timer */
   misst?: boolean;
+  /** Nur mit vollständig abgehakter Checkliste (HELF-255): eine Karte mit offenem Punkt kommt nicht hinein; kommt dort ein
+   *  Punkt dazu oder geht ein Haken weg, geht sie zurück */
+  nurAbgehakt?: boolean;
 }
 
 export type FeldArt = "text" | "zahl" | "datum" | "auswahl" | "verweis";

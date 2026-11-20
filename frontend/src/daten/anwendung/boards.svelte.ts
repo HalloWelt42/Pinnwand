@@ -138,6 +138,8 @@ export interface Spaltenaenderung {
   eingeklappt?: boolean;
   /** Zeit läuft hier für zuständige App-Zugänge (HELF-193) */
   misst?: boolean;
+  /** nur Karten mit vollständig abgehakter Checkliste (HELF-255) */
+  nurAbgehakt?: boolean;
   /** Vorgabe der Sortierung für alle; jede Person stellt für sich um */
   sortierung?: Spaltensortierung;
   /** null: kein eigenes Symbol */

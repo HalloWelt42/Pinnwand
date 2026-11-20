@@ -22,7 +22,7 @@ def start_rollen() -> list[Rolle]:
 # Symbole der Spalten (HELF-165) aus der Auswahl der Oberfläche (SPALTENSYMBOLE in frontend/src/anzeige.ts)
 
 def _erledigt(name: str = "Erledigt") -> VorlageSpalte:
-    return VorlageSpalte(name=name, farbe="minze", erledigt=True, sortierung="erledigung", symbol="fa-circle-check")
+    return VorlageSpalte(name=name, farbe="minze", erledigt=True, sortierung="erledigung", symbol="fa-circle-check", nur_abgehakt=True)
 
 
 def _offen(name: str, farbe: Farbe, symbol: str, grenze: int | None = None) -> VorlageSpalte:
@@ -33,8 +33,9 @@ def _offen(name: str, farbe: Farbe, symbol: str, grenze: int | None = None) -> V
 def _in_arbeit(name: str, farbe: Farbe = "honig", symbol: str = "fa-person-digging", grenze: int | None = None,
                misst: bool = True) -> VorlageSpalte:
     """Eine Spalte für Arbeit, die läuft: zuletzt begonnen oben (HELF-50); die Zeit zuständiger App-Zugänge läuft hier
-    (HELF-193), außer in einer Prüfspalte."""
-    return VorlageSpalte(name=name, farbe=farbe, grenze=grenze, sortierung="arbeitsbeginn", symbol=symbol, misst=misst)
+    (HELF-193), außer in einer Prüfspalte. Eine Prüfspalte nimmt nur Karten mit abgehakter Checkliste (HELF-255)."""
+    return VorlageSpalte(name=name, farbe=farbe, grenze=grenze, sortierung="arbeitsbeginn", symbol=symbol, misst=misst,
+                         nur_abgehakt=None if misst else True)
 
 
 MITGELIEFERT: list[Vorlage] = [

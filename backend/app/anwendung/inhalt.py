@@ -11,9 +11,11 @@ from typing import Any, Literal
 from pydantic import Field
 
 from ..modell import Board, Farbe, Karte, Kennung, Kommentar, Konto, Modell, Prioritaet, Punkt
+from ..regeln.board import rueckweg, spalte_von, wieder_offen
 from ..regeln.tage import datum_text, ist_tag
 from . import hinweise
 from . import zeiterfassung
+from .karten import einreihen, wechseln
 from .kartenbasis import (
     FELD_LAENGE, KOMMENTAR_LAENGE, KURZ_LAENGE, PUNKTE_HOECHSTENS, TEXT_LAENGE, TITEL_LAENGE, karte_lesen, speichern, vermerken,
 )
@@ -179,9 +181,10 @@ class Inhalte:
                 setattr(c, name, wert)
             if "zustaendig" in neu:
                 zeiterfassung.dran_abgleichen(k, c, b)        # ein App-Zugang wird zuständig oder nicht mehr (HELF-193)
+            zurueck = _zurueck_wenn_offen(k, b, alt, c) if "checkliste" in neu else ""
             speichern(k, c)
             hinweise.nach_bearbeiten(k, b, alt, c)
-            return f"{c.schluessel}: {(text or '').strip()[:200] or 'Gespeichert'}"
+            return f"{c.schluessel}: {(text or '').strip()[:200] or 'Gespeichert'}{zurueck}"
 
         return await self.a.aendern(konto, arbeit)
 
@@ -303,6 +306,23 @@ class Inhalte:
             return f"Priorität von {anzahl(len(karten))} gesetzt"
 
         return await self.a.aendern(konto, arbeit)
+
+
+def _zurueck_wenn_offen(k: Kontext, b: Board, alt: Karte, c: Karte) -> str:
+    """HELF-255: steht die Karte in einer Spalte, die nur abgehakte Karten nimmt, und ist ein Punkt neu offen
+    (dazugekommen oder Haken entfernt), geht sie zurück in die erste Spalte ohne Sperre; der Verlauf nennt den Grund.
+    Ergebnis: der Zusatz der Meldung."""
+    hier = spalte_von(b, c.spalte)
+    if hier is None or not hier.nur_abgehakt or not wieder_offen(alt, c):
+        return ""
+    ziel = rueckweg(b)
+    if ziel is None:
+        return ""
+    vermerken(k, c, f"Checkliste wieder offen: zurück aus {hier.name}")
+    einreihen(k, ziel, [c], None)
+    gebucht = wechseln(k, c, ziel, b, False)
+    hinweise.verschoben(k, b, c, ziel)
+    return f"; Checkliste wieder offen, zurück nach {ziel.name}" + zeiterfassung.gestoppt(gebucht)
 
 
 def _roh(w: Any) -> Any:

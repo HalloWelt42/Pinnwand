@@ -1,7 +1,7 @@
 // Regeln eines Boards als reine Funktionen: Rechte aus der Rolle, Alterung der Karten im Status, Zeitfenster der
 // Erledigt-Spalten. Der Server prüft dieselben Rechte bei jedem Weg; die Oberfläche blendet nur aus, was nicht geht.
 
-import type { Board, BoardEinstellungen, Karte, Kennung, ModulKennung, Zeitfenster } from "../modell";
+import type { Board, BoardEinstellungen, Karte, Kennung, ModulKennung, Spalte, Zeitfenster } from "../modell";
 import { montagVon, plusTage, tageZwischen } from "./tage";
 
 /** Rechte jedes Moduls, gleich backend/app/regeln/board.py; ein Recht eines abgeschalteten Moduls gilt nicht */
@@ -69,6 +69,30 @@ export function imFenster(k: Karte, f: Zeitfenster, e: BoardEinstellungen, heute
 /** Liegt eine erledigte Karte im Archiv (Abschluss älter als die Archivgrenze)? */
 export function imArchiv(k: Karte, e: BoardEinstellungen, heute: string): boolean {
   return !!k.abgeschlossen && tageZwischen(k.abgeschlossen, heute) > e.archivTage;
+}
+
+/** Die noch offenen Punkte der Checkliste */
+export function offenePunkte(k: Karte): string[] {
+  return k.checkliste.filter((p) => !p.erledigt).map((p) => p.text);
+}
+
+/** Sperrt die Spalte die Karte, weil ihre Checkliste offene Punkte hat (HELF-255)? Gleich nimmt_nicht im Server */
+export function nimmtNicht(ziel: Spalte, k: Karte): boolean {
+  return !!ziel.nurAbgehakt && offenePunkte(k).length > 0;
+}
+
+/** Grund der Sperre für die Meldung, wörtlich wie der Server ihn nennt */
+export function sperrgrund(ziel: Spalte, karten: Karte[]): string | null {
+  const gesperrt = karten.filter((k) => nimmtNicht(ziel, k));
+  if (!gesperrt.length) return null;
+  const regel = `${ziel.name} nimmt nur Karten mit vollständig abgehakter Checkliste`;
+  if (gesperrt.length === 1) {
+    const offen = offenePunkte(gesperrt[0]);
+    return `${gesperrt[0].schluessel} hat noch ${offen.length} offenen ${offen.length === 1 ? "Punkt" : "Punkten"} der Checkliste `
+      + `(erster: ${offen[0].slice(0, 80)}); ${regel}`;
+  }
+  const namen = gesperrt.slice(0, 5).map((k) => k.schluessel).join(", ") + (gesperrt.length > 5 ? " ..." : "");
+  return `${gesperrt.length} Karten haben noch offene Punkte der Checkliste (${namen}); ${regel}`;
 }
 
 /** Erlaubte Werte der Einstellungen eines Boards und der Grenze einer Spalte (ganze Zahlen, einschließlich) */

@@ -107,6 +107,10 @@
               <span class="etikett">Anfangs eingeklappt</span>
               <button class="schalter" class:an={!!s.eingeklappt} aria-pressed={!!s.eingeklappt} aria-label="Spalte {s.name} anfangs eingeklappt"
                       onclick={() => spalteAendern(board.id, s.id, { eingeklappt: !s.eingeklappt })}></button>{s.eingeklappt ? "ja" : "nein"}</span>
+            <span class="angabe" title="Ohne vollständiges Abarbeiten nie fertig: eine Karte mit offenem Punkt der Checkliste kommt nicht in diese Spalte. Kommt hier ein Punkt dazu oder geht ein Haken weg, geht sie zurück in die erste Spalte ohne diesen Schalter.">
+              <span class="etikett">Nur abgehakt</span>
+              <button class="schalter" class:an={!!s.nurAbgehakt} aria-pressed={!!s.nurAbgehakt} aria-label="Spalte {s.name} nimmt nur Karten mit abgehakter Checkliste"
+                      onclick={() => spalteAendern(board.id, s.id, { nurAbgehakt: !s.nurAbgehakt })}></button>{s.nurAbgehakt ? "ja" : "nein"}</span>
             <span class="angabe" title="Wie die Spalte ihre Karten ordnet; im Board stellt jede Person es mit dem Symbol im Kopf der Spalte für sich um">
               <span class="etikett">Sortierung</span>
               <select class="eingabe" value={sortierungVorgabe(s)} aria-label="Sortierung der Spalte {s.name}"

@@ -11,7 +11,7 @@ from typing import Any
 
 from ..modell import (Board, Farbe, Feld, FeldArt, Karte, Kennung, Konto, Label, Modell, Spalte, Spaltensortierung, Symbol,
                       Zeitfenster)
-from ..regeln.board import abschluss, spalte_von, zahl_fehler
+from ..regeln.board import abschluss, offene_punkte, spalte_von, zahl_fehler
 from .boards import ZEITFENSTER_VORGABE, am_board, anzahl, name_pruefen, neue_reihenfolge, vergeben
 from . import zeiterfassung
 from .kartenbasis import speichern
@@ -34,6 +34,8 @@ class Spaltenaenderung(Modell):
     symbol: Symbol | None = None
     #: Zeit läuft hier: zuständige App-Zugänge haben auf jeder Karte der Spalte einen eigenen Timer (HELF-193)
     misst: bool | None = None
+    #: nur Karten mit vollständig abgehakter Checkliste (HELF-255)
+    nur_abgehakt: bool | None = None
 
     def gesendet(self) -> dict[str, Any]:
         return {n: getattr(self, n) for n in self.model_fields_set}
@@ -126,6 +128,11 @@ def spalte_aendern(s: Spalte, neu: dict[str, Any]) -> list[str]:
         if wert != bool(s.misst) or s.misst is None:
             s.misst = wert
             teile.append("Zeit läuft hier" if wert else "keine Zeit mehr")
+    if neu.get("nur_abgehakt") is not None:
+        wert = bool(neu["nur_abgehakt"])        # auch aus wird gespeichert: dann trägt der Start nichts nach (checklistensperre)
+        if wert != bool(s.nur_abgehakt) or s.nur_abgehakt is None:
+            s.nur_abgehakt = wert
+            teile.append("nur mit abgehakter Checkliste" if wert else "auch mit offener Checkliste")
     if neu.get("eingeklappt") is not None:
         wert = neu["eingeklappt"] or None
         if wert != s.eingeklappt:
@@ -163,6 +170,10 @@ class Aufbau:
             teile = spalte_aendern(s, neu)
             if "misst" in neu and teile:
                 zeiterfassung.spalte_abgleichen(k, b, s.id)
+            if neu.get("nur_abgehakt") and teile:
+                stehen = sum(1 for d in k.s.alle("karten", "spalte=?", (s.id,)) if offene_punkte(Karte.model_validate(d)))
+                if stehen:
+                    teile.append(f"{stehen} {'Karte steht' if stehen == 1 else 'Karten stehen'} schon mit offenen Punkten darin")
             return f"Spalte {s.name}: {', '.join(teile)}" if teile else None
 
         return await self._am_board(konto, board_id, tun)

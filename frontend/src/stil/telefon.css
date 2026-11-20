@@ -101,7 +101,8 @@
 .pw-tel-abschnitt > .etikett .zaehler { height: 22px; min-width: 24px; }
 .pw-tel-breit { width: 100%; }
 .pw-tel-notiz { font-size: var(--klein); color: var(--text-3); }
-.pw-tel .leer { padding: var(--a6) var(--a4); }
+/* Leeranzeige ohne eigenen Seitenrand: den Rand gibt der Rahmen einmal (--rahmen-rand, HELF-70) */
+.pw-tel .leer { padding: var(--a6) 0; }
 
 /* Karte in Listen */
 .pw-tel-karte {

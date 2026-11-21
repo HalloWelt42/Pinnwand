@@ -82,6 +82,21 @@ async def test_felder_und_verlauf(pw: Pinnwand):
     assert r.json() == {"meldung": None, "rueckgaengig": None, "geaendert": []}
 
 
+async def test_lange_kommentare(pw: Pinnwand):
+    """HELF-258: ein Kommentar darf so lang sein wie eine Beschreibung, beim Schreiben und beim Bearbeiten; erst
+    darüber lehnt der Server ab."""
+    b = await pw.board("anna")
+    k = await pw.karte("anna", b, "Fenster")
+    lang = "Erklärung " * 2_000                                       # 20.000 Zeichen, früher abgelehnt
+    assert (await pw.post("anna", f"/karten/{k['id']}/kommentieren", {"text": lang})).status_code == 200
+    kid = (await karte(pw, "anna", "HAUS-1"))["kommentare"][0]["id"]
+    zu_lang = "x" * 50_001
+    for pfad in (f"/karten/{k['id']}/kommentieren", f"/karten/{k['id']}/kommentare/{kid}/bearbeiten"):
+        r = await pw.post("anna", pfad, {"text": zu_lang})
+        assert (r.status_code, r.json()["detail"]) == (400, "Ein Kommentar hat höchstens 50000 Zeichen")
+    assert (await karte(pw, "anna", "HAUS-1"))["kommentare"][0]["text"] == lang.strip()
+
+
 async def test_felder_abgelehnt(pw: Pinnwand):
     b = await pw.board("anna")
     k = await pw.karte("anna", b, "Fenster")
